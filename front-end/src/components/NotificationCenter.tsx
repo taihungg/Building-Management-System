@@ -4,55 +4,18 @@ import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Textarea } from "./ui/textarea";
 import { Label } from "./ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "./ui/select";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
 import { Checkbox } from "./ui/checkbox";
 import { Badge } from "./ui/badge";
 import { Send, Bell, Clock, CheckCircle2 } from "lucide-react";
-import { toast } from "sonner";
-import React from "react";
+import { toast } from "sonner@2.0.3";
 
 const notificationHistory = [
-  {
-    id: 1,
-    title: "Bảo trì thang máy",
-    date: "25/10/2024",
-    recipients: "Tất cả căn hộ",
-    status: "sent",
-  },
-  {
-    id: 2,
-    title: "Thông báo cúp nước",
-    date: "24/10/2024",
-    recipients: "Tòa A, B",
-    status: "sent",
-  },
-  {
-    id: 3,
-    title: "Họp cư dân định kỳ",
-    date: "23/10/2024",
-    recipients: "Tất cả căn hộ",
-    status: "sent",
-  },
-  {
-    id: 4,
-    title: "Nhắc nhở thanh toán phí",
-    date: "22/10/2024",
-    recipients: "15 căn hộ",
-    status: "sent",
-  },
-  {
-    id: 5,
-    title: "Thông báo tăng giá dịch vụ",
-    date: "20/10/2024",
-    recipients: "Tất cả căn hộ",
-    status: "sent",
-  },
+  { id: 1, title: "Bảo trì thang máy", date: "25/10/2024", recipients: "Tất cả căn hộ", status: "sent" },
+  { id: 2, title: "Thông báo cúp nước", date: "24/10/2024", recipients: "Tòa A, B", status: "sent" },
+  { id: 3, title: "Họp cư dân định kỳ", date: "23/10/2024", recipients: "Tất cả căn hộ", status: "sent" },
+  { id: 4, title: "Nhắc nhở thanh toán phí", date: "22/10/2024", recipients: "15 căn hộ", status: "sent" },
+  { id: 5, title: "Thông báo tăng giá dịch vụ", date: "20/10/2024", recipients: "Tất cả căn hộ", status: "sent" },
 ];
 
 export function NotificationCenter() {
@@ -85,18 +48,13 @@ export function NotificationCenter() {
           <CardContent className="space-y-4">
             <div className="space-y-2">
               <Label>Loại thông báo</Label>
-              <Select
-                value={notificationType}
-                onValueChange={setNotificationType}
-              >
+              <Select value={notificationType} onValueChange={setNotificationType}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="general">Thông báo chung</SelectItem>
-                  <SelectItem value="maintenance">
-                    Bảo trì - Sửa chữa
-                  </SelectItem>
+                  <SelectItem value="maintenance">Bảo trì - Sửa chữa</SelectItem>
                   <SelectItem value="payment">Thanh toán</SelectItem>
                   <SelectItem value="event">Sự kiện</SelectItem>
                   <SelectItem value="urgent">Khẩn cấp</SelectItem>
@@ -143,23 +101,15 @@ export function NotificationCenter() {
                   </label>
                 </div>
                 {buildings.map((building) => (
-                  <div
-                    key={building}
-                    className="flex items-center space-x-2 ml-6"
-                  >
+                  <div key={building} className="flex items-center space-x-2 ml-6">
                     <Checkbox
                       id={building}
                       checked={selectedBuildings.includes(building)}
                       onCheckedChange={(checked) => {
                         if (checked) {
-                          setSelectedBuildings([
-                            ...selectedBuildings,
-                            building,
-                          ]);
+                          setSelectedBuildings([...selectedBuildings, building]);
                         } else {
-                          setSelectedBuildings(
-                            selectedBuildings.filter((b) => b !== building)
-                          );
+                          setSelectedBuildings(selectedBuildings.filter((b) => b !== building));
                         }
                       }}
                     />
@@ -269,13 +219,9 @@ export function NotificationCenter() {
                   <div>
                     <p>{notification.title}</p>
                     <div className="flex items-center gap-2 mt-1">
-                      <p className="text-muted-foreground">
-                        {notification.date}
-                      </p>
+                      <p className="text-muted-foreground">{notification.date}</p>
                       <span className="text-muted-foreground">•</span>
-                      <p className="text-muted-foreground">
-                        {notification.recipients}
-                      </p>
+                      <p className="text-muted-foreground">{notification.recipients}</p>
                     </div>
                   </div>
                 </div>

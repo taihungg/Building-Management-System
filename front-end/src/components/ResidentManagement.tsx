@@ -1,97 +1,22 @@
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "./ui/table";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "./ui/table";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Badge } from "./ui/badge";
 import { Search, Plus, Edit, Trash2, UserCircle } from "lucide-react";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "./ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "./ui/dialog";
 import { Label } from "./ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "./ui/select";
-import React from "react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
+
 const residents = [
-  {
-    id: 1,
-    name: "Nguyễn Văn A",
-    apartment: "A101",
-    phone: "0901234567",
-    email: "nguyenvana@email.com",
-    members: 4,
-    status: "active",
-  },
-  {
-    id: 2,
-    name: "Trần Thị B",
-    apartment: "A102",
-    phone: "0902345678",
-    email: "tranthib@email.com",
-    members: 3,
-    status: "active",
-  },
-  {
-    id: 3,
-    name: "Lê Văn C",
-    apartment: "B205",
-    phone: "0903456789",
-    email: "levanc@email.com",
-    members: 2,
-    status: "active",
-  },
-  {
-    id: 4,
-    name: "Phạm Thị D",
-    apartment: "B206",
-    phone: "0904567890",
-    email: "phamthid@email.com",
-    members: 5,
-    status: "active",
-  },
-  {
-    id: 5,
-    name: "Hoàng Văn E",
-    apartment: "C308",
-    phone: "0905678901",
-    email: "hoangvane@email.com",
-    members: 3,
-    status: "inactive",
-  },
-  {
-    id: 6,
-    name: "Vũ Thị F",
-    apartment: "C309",
-    phone: "0906789012",
-    email: "vuthif@email.com",
-    members: 4,
-    status: "active",
-  },
-  {
-    id: 7,
-    name: "Đỗ Văn G",
-    apartment: "D410",
-    phone: "0907890123",
-    email: "dovang@email.com",
-    members: 2,
-    status: "active",
-  },
+  { id: 1, name: "Nguyễn Văn A", apartment: "A101", phone: "0901234567", email: "nguyenvana@email.com", members: 4, status: "active" },
+  { id: 2, name: "Trần Thị B", apartment: "A102", phone: "0902345678", email: "tranthib@email.com", members: 3, status: "active" },
+  { id: 3, name: "Lê Văn C", apartment: "B205", phone: "0903456789", email: "levanc@email.com", members: 2, status: "active" },
+  { id: 4, name: "Phạm Thị D", apartment: "B206", phone: "0904567890", email: "phamthid@email.com", members: 5, status: "active" },
+  { id: 5, name: "Hoàng Văn E", apartment: "C308", phone: "0905678901", email: "hoangvane@email.com", members: 3, status: "inactive" },
+  { id: 6, name: "Vũ Thị F", apartment: "C309", phone: "0906789012", email: "vuthif@email.com", members: 4, status: "active" },
+  { id: 7, name: "Đỗ Văn G", apartment: "D410", phone: "0907890123", email: "dovang@email.com", members: 2, status: "active" },
 ];
 
 export function ResidentManagement() {
@@ -206,11 +131,7 @@ export function ResidentManagement() {
                   </div>
                   <div className="flex gap-2 pt-4">
                     <Button className="flex-1">Thêm mới</Button>
-                    <Button
-                      variant="outline"
-                      className="flex-1"
-                      onClick={() => setIsAddDialogOpen(false)}
-                    >
+                    <Button variant="outline" className="flex-1" onClick={() => setIsAddDialogOpen(false)}>
                       Hủy
                     </Button>
                   </div>
@@ -250,11 +171,7 @@ export function ResidentManagement() {
                   <TableCell>{resident.email}</TableCell>
                   <TableCell>{resident.members} người</TableCell>
                   <TableCell>
-                    <Badge
-                      variant={
-                        resident.status === "active" ? "default" : "secondary"
-                      }
-                    >
+                    <Badge variant={resident.status === "active" ? "default" : "secondary"}>
                       {resident.status === "active" ? "Đang ở" : "Tạm vắng"}
                     </Badge>
                   </TableCell>

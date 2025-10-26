@@ -1,77 +1,26 @@
 import { useState } from "react";
-import {
-  Sidebar,
-  SidebarContent,
-  SidebarHeader,
-  SidebarMenu,
-  SidebarMenuButton,
-  SidebarMenuItem,
-  SidebarProvider,
-  SidebarTrigger,
-} from "./ui/sidebar";
-import {
-  LayoutDashboard,
-  Users,
-  Building2,
-  FileText,
-  CreditCard,
-  Bell,
-  Settings,
-  BarChart3,
-  Receipt,
-} from "lucide-react";
+import { Sidebar, SidebarContent, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarProvider, SidebarTrigger } from "./ui/sidebar";
+import { LayoutDashboard, Users, Building2, FileText, CreditCard, Bell, Settings, BarChart3, Receipt } from "lucide-react";
 import { DashboardOverview } from "./DashboardOverview";
 import { DebtManagement } from "./DebtManagement";
 import { NotificationCenter } from "./NotificationCenter";
 import { ResidentManagement } from "./ResidentManagement";
 import { ApartmentManagement } from "./ApartmentManagement";
 import { ReportPage } from "./ReportPage";
-import React from "react";
+
 const menuItems = [
-  {
-    id: "dashboard",
-    icon: LayoutDashboard,
-    label: "Tổng quan",
-    component: DashboardOverview,
-  },
-  {
-    id: "residents",
-    icon: Users,
-    label: "Quản lý cư dân",
-    component: ResidentManagement,
-  },
-  {
-    id: "apartments",
-    icon: Building2,
-    label: "Quản lý căn hộ",
-    component: ApartmentManagement,
-  },
-  {
-    id: "debt",
-    icon: CreditCard,
-    label: "Tra cứu công nợ",
-    component: DebtManagement,
-  },
-  {
-    id: "notifications",
-    icon: Bell,
-    label: "Gửi thông báo",
-    component: NotificationCenter,
-  },
-  {
-    id: "reports",
-    icon: BarChart3,
-    label: "Báo cáo thống kê",
-    component: ReportPage,
-  },
+  { id: "dashboard", icon: LayoutDashboard, label: "Tổng quan", component: DashboardOverview },
+  { id: "residents", icon: Users, label: "Quản lý cư dân", component: ResidentManagement },
+  { id: "apartments", icon: Building2, label: "Quản lý căn hộ", component: ApartmentManagement },
+  { id: "debt", icon: CreditCard, label: "Tra cứu công nợ", component: DebtManagement },
+  { id: "notifications", icon: Bell, label: "Gửi thông báo", component: NotificationCenter },
+  { id: "reports", icon: BarChart3, label: "Báo cáo thống kê", component: ReportPage },
 ];
 
 export function DashboardLayout() {
   const [activeTab, setActiveTab] = useState("dashboard");
 
-  const ActiveComponent =
-    menuItems.find((item) => item.id === activeTab)?.component ||
-    DashboardOverview;
+  const ActiveComponent = menuItems.find(item => item.id === activeTab)?.component || DashboardOverview;
 
   return (
     <SidebarProvider>
@@ -102,12 +51,14 @@ export function DashboardLayout() {
             </SidebarMenu>
           </SidebarContent>
         </Sidebar>
-
+        
         <main className="flex-1 overflow-auto bg-muted/30">
           <div className="border-b bg-background p-4">
             <div className="flex items-center gap-4">
               <SidebarTrigger />
-              <h1>{menuItems.find((item) => item.id === activeTab)?.label}</h1>
+              <h1>
+                {menuItems.find(item => item.id === activeTab)?.label}
+              </h1>
             </div>
           </div>
           <div className="p-6">

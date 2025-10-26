@@ -5,105 +5,21 @@ import { Badge } from "./ui/badge";
 import { Input } from "./ui/input";
 import { Search, Building, Users, DollarSign } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
-import React from "react";
+
 const apartments = [
-  {
-    id: 1,
-    code: "A101",
-    building: "A",
-    floor: 1,
-    area: 85,
-    status: "occupied",
-    owner: "Nguyễn Văn A",
-    price: 3500000,
-  },
-  {
-    id: 2,
-    code: "A102",
-    building: "A",
-    floor: 1,
-    area: 85,
-    status: "occupied",
-    owner: "Trần Thị B",
-    price: 3500000,
-  },
-  {
-    id: 3,
-    code: "A103",
-    building: "A",
-    floor: 1,
-    area: 95,
-    status: "empty",
-    owner: "-",
-    price: 4000000,
-  },
-  {
-    id: 4,
-    code: "A201",
-    building: "A",
-    floor: 2,
-    area: 85,
-    status: "occupied",
-    owner: "Lê Văn C",
-    price: 3500000,
-  },
-  {
-    id: 5,
-    code: "B205",
-    building: "B",
-    floor: 2,
-    area: 120,
-    status: "occupied",
-    owner: "Phạm Thị D",
-    price: 5000000,
-  },
-  {
-    id: 6,
-    code: "B206",
-    building: "B",
-    floor: 2,
-    area: 120,
-    status: "maintenance",
-    owner: "-",
-    price: 5000000,
-  },
-  {
-    id: 7,
-    code: "C308",
-    building: "C",
-    floor: 3,
-    area: 95,
-    status: "occupied",
-    owner: "Hoàng Văn E",
-    price: 4000000,
-  },
-  {
-    id: 8,
-    code: "C309",
-    building: "C",
-    floor: 3,
-    area: 95,
-    status: "occupied",
-    owner: "Vũ Thị F",
-    price: 4000000,
-  },
-  {
-    id: 9,
-    code: "D410",
-    building: "D",
-    floor: 4,
-    area: 150,
-    status: "occupied",
-    owner: "Đỗ Văn G",
-    price: 6500000,
-  },
+  { id: 1, code: "A101", building: "A", floor: 1, area: 85, status: "occupied", owner: "Nguyễn Văn A", price: 3500000 },
+  { id: 2, code: "A102", building: "A", floor: 1, area: 85, status: "occupied", owner: "Trần Thị B", price: 3500000 },
+  { id: 3, code: "A103", building: "A", floor: 1, area: 95, status: "empty", owner: "-", price: 4000000 },
+  { id: 4, code: "A201", building: "A", floor: 2, area: 85, status: "occupied", owner: "Lê Văn C", price: 3500000 },
+  { id: 5, code: "B205", building: "B", floor: 2, area: 120, status: "occupied", owner: "Phạm Thị D", price: 5000000 },
+  { id: 6, code: "B206", building: "B", floor: 2, area: 120, status: "maintenance", owner: "-", price: 5000000 },
+  { id: 7, code: "C308", building: "C", floor: 3, area: 95, status: "occupied", owner: "Hoàng Văn E", price: 4000000 },
+  { id: 8, code: "C309", building: "C", floor: 3, area: 95, status: "occupied", owner: "Vũ Thị F", price: 4000000 },
+  { id: 9, code: "D410", building: "D", floor: 4, area: 150, status: "occupied", owner: "Đỗ Văn G", price: 6500000 },
 ];
 
 const getStatusBadge = (status: string) => {
-  const variants: Record<
-    string,
-    { label: string; variant: "default" | "destructive" | "secondary" }
-  > = {
+  const variants: Record<string, { label: string; variant: "default" | "destructive" | "secondary" }> = {
     occupied: { label: "Đang ở", variant: "default" },
     empty: { label: "Trống", variant: "secondary" },
     maintenance: { label: "Bảo trì", variant: "destructive" },
@@ -232,9 +148,7 @@ export function ApartmentManagement() {
                     <p className="text-muted-foreground">Phí quản lý</p>
                     <div className="flex items-center gap-2">
                       <DollarSign className="h-4 w-4" />
-                      <span>
-                        {(apartment.price / 1000).toLocaleString()} đ/tháng
-                      </span>
+                      <span>{(apartment.price / 1000).toLocaleString()} đ/tháng</span>
                     </div>
                   </div>
                   <div className="flex gap-2 pt-2">

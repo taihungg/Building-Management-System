@@ -1,29 +1,9 @@
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { Button } from "./ui/button";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "./ui/select";
-import {
-  BarChart,
-  Bar,
-  LineChart,
-  Line,
-  PieChart,
-  Pie,
-  Cell,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  Legend,
-  ResponsiveContainer,
-} from "recharts";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
+import { BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
 import { Download, Calendar, TrendingUp, TrendingDown } from "lucide-react";
-import React from "react";
+
 const monthlyRevenue = [
   { month: "Tháng 1", revenue: 220, target: 200 },
   { month: "Tháng 2", revenue: 240, target: 220 },
@@ -176,9 +156,7 @@ export function ReportPage() {
                   cx="50%"
                   cy="50%"
                   labelLine={false}
-                  label={({ name, percent }) =>
-                    `${name}: ${(percent * 100).toFixed(0)}%`
-                  }
+                  label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
                   outerRadius={80}
                   fill="#8884d8"
                   dataKey="value"
@@ -227,10 +205,10 @@ export function ReportPage() {
                 <YAxis domain={[0, 100]} />
                 <Tooltip />
                 <Legend />
-                <Line
-                  type="monotone"
-                  dataKey="rate"
-                  stroke="#3b82f6"
+                <Line 
+                  type="monotone" 
+                  dataKey="rate" 
+                  stroke="#3b82f6" 
                   strokeWidth={3}
                   name="Tỷ lệ lấp đầy"
                 />
@@ -260,54 +238,12 @@ export function ReportPage() {
               </thead>
               <tbody>
                 {[
-                  {
-                    month: "Tháng 6",
-                    management: 120,
-                    service: 80,
-                    parking: 45,
-                    other: 15,
-                    total: 260,
-                  },
-                  {
-                    month: "Tháng 5",
-                    management: 115,
-                    service: 75,
-                    parking: 42,
-                    other: 14,
-                    total: 246,
-                  },
-                  {
-                    month: "Tháng 4",
-                    management: 118,
-                    service: 78,
-                    parking: 44,
-                    other: 16,
-                    total: 256,
-                  },
-                  {
-                    month: "Tháng 3",
-                    management: 112,
-                    service: 72,
-                    parking: 40,
-                    other: 12,
-                    total: 236,
-                  },
-                  {
-                    month: "Tháng 2",
-                    management: 120,
-                    service: 80,
-                    parking: 45,
-                    other: 15,
-                    total: 260,
-                  },
-                  {
-                    month: "Tháng 1",
-                    management: 115,
-                    service: 76,
-                    parking: 43,
-                    other: 13,
-                    total: 247,
-                  },
+                  { month: "Tháng 6", management: 120, service: 80, parking: 45, other: 15, total: 260 },
+                  { month: "Tháng 5", management: 115, service: 75, parking: 42, other: 14, total: 246 },
+                  { month: "Tháng 4", management: 118, service: 78, parking: 44, other: 16, total: 256 },
+                  { month: "Tháng 3", management: 112, service: 72, parking: 40, other: 12, total: 236 },
+                  { month: "Tháng 2", management: 120, service: 80, parking: 45, other: 15, total: 260 },
+                  { month: "Tháng 1", management: 115, service: 76, parking: 43, other: 13, total: 247 },
                 ].map((row, index) => (
                   <tr key={index} className="border-b">
                     <td className="p-3">{row.month}</td>

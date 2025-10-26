@@ -1,4 +1,4 @@
-import React from "react";
+import "./styles/globals.css";
 import { DashboardLayout } from "./components/DashboardLayout";
 
 export default function App() {
