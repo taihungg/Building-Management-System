@@ -27,5 +27,5 @@ public class Resident extends Person {
 
     private ArrayList<Vehicle> vehicles;
 
-    private ArrayList<Notification> receivedNotifications;
+    private ArrayList<Announcement> receivedAnnouncements;
 }

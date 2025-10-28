@@ -14,7 +14,7 @@ import java.util.UUID;
 @Builder
 @Entity
 @Table(name = "notification")
-public class Notification {
+public class Announcement {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     @Column(

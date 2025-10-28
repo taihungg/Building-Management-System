@@ -1,9 +1,8 @@
 package itep.software.bluemoon.controller;
+import itep.software.bluemoon.entity.Announcement;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
-import itep.software.bluemoon.entity.Notification;
 
 import java.util.List;
 
@@ -14,12 +13,12 @@ public class ResidentController {
     private ResidentService residentService;
 
 
-    @GetMapping("/getAllNontifications")
-    public ResponseEntity<List<Notification>> getAllNotifications(){
+    @GetMapping("/getAllAnnouncement")
+    public ResponseEntity<List<Announcement>> getAllAnnouncement(){
 
-        List<Notification>allNotifications = residentService.getAllNotifications();
+        List<Announcement> allAnnouncements = residentService.getAllAnnouncement();
 
-        return ResponseEntity.ok(allNotifications);
+        return ResponseEntity.ok(allAnnouncements);
     }
 
     
