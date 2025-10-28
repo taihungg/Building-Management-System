@@ -17,24 +17,27 @@ import java.util.UUID;
 @Repository
 public interface NotificationRepository extends JpaRepository<Notification, UUID> {
     
-    // Lấy thông báo theo recipient ID với phân trang
+    // Lấy thông báo theo recipient ID với phân trang (với JOIN FETCH để tránh N+1)
+    @Query("SELECT n FROM Notification n JOIN FETCH n.recipient WHERE n.recipient.id = :recipientId ORDER BY n.createdAt DESC")
     Page<Notification> findByRecipientIdOrderByCreatedAtDesc(
-            UUID recipientId, 
+            @Param("recipientId") UUID recipientId, 
             Pageable pageable
     );
     
-    // Lấy thông báo chưa đọc của một user
+    // Lấy thông báo chưa đọc của một user (với JOIN FETCH)
+    @Query("SELECT n FROM Notification n JOIN FETCH n.recipient WHERE n.recipient.id = :recipientId AND n.isRead = :isRead ORDER BY n.createdAt DESC")
     Page<Notification> findByRecipientIdAndIsReadOrderByCreatedAtDesc(
-            UUID recipientId, 
-            boolean isRead,
+            @Param("recipientId") UUID recipientId, 
+            @Param("isRead") boolean isRead,
             Pageable pageable
     );
     
     // Đếm số thông báo chưa đọc
     long countByRecipientIdAndIsRead(UUID recipientId, boolean isRead);
     
-    // Tìm kiếm có bộ lọc phức tạp
-    @Query("SELECT n FROM Notification n WHERE n.recipient.id = :recipientId " +
+    // Tìm kiếm có bộ lọc phức tạp (với JOIN FETCH)
+    @Query("SELECT n FROM Notification n JOIN FETCH n.recipient " +
+           "WHERE n.recipient.id = :recipientId " +
            "AND (:types IS NULL OR n.type IN :types) " +
            "AND (:isRead IS NULL OR n.isRead = :isRead) " +
            "AND (:fromDate IS NULL OR n.createdAt >= :fromDate) " +
@@ -67,7 +70,7 @@ public interface NotificationRepository extends JpaRepository<Notification, UUID
             @Param("readAt") LocalDateTime readAt
     );
     
-    // Xóa thông báo cũ)
+    // Xóa thông báo cũ
     @Modifying
     @Query("DELETE FROM Notification n WHERE n.createdAt < :beforeDate")
     int deleteOldNotifications(@Param("beforeDate") LocalDateTime beforeDate);
@@ -75,6 +78,13 @@ public interface NotificationRepository extends JpaRepository<Notification, UUID
     // Lấy thông báo theo reference
     List<Notification> findByReferenceIdAndReferenceType(
             UUID referenceId, 
+            String referenceType
+    );
+    
+    // Kiểm tra đã có notification cho reference chưa (tránh duplicate)
+    boolean existsByRecipientIdAndReferenceIdAndReferenceType(
+            UUID recipientId,
+            UUID referenceId,
             String referenceType
     );
 }
