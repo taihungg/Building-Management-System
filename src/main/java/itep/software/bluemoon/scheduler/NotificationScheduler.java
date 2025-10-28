@@ -5,6 +5,7 @@ import itep.software.bluemoon.entity.Bill;
 import itep.software.bluemoon.enumeration.BillStatus;
 import itep.software.bluemoon.enumeration.NotificationType;
 import itep.software.bluemoon.repository.BillRepository;
+import itep.software.bluemoon.repository.NotificationRepository;
 import itep.software.bluemoon.service.NotificationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -24,6 +25,7 @@ public class NotificationScheduler {
     
     private final NotificationService notificationService;
     private final BillRepository billRepository;
+    private final NotificationRepository notificationRepository;
     
     /**
      * Nhắc nhở thanh toán hóa đơn sắp hết hạn
@@ -44,7 +46,21 @@ public class NotificationScheduler {
                             today, 
                             reminderDate);
             
+            int sentCount = 0;
             for (Bill bill : upcomingBills) {
+                // Kiểm tra xem đã gửi notification cho bill này chưa (tránh duplicate)
+                boolean alreadySent = notificationRepository
+                        .existsByRecipientIdAndReferenceIdAndReferenceType(
+                                bill.getApartment().getOwner().getId(),
+                                bill.getId(),
+                                "BILL_REMINDER"
+                        );
+                
+                if (alreadySent) {
+                    log.debug("Reminder already sent for bill: {}", bill.getId());
+                    continue;
+                }
+                
                 CreateNotificationRequest request = CreateNotificationRequest.builder()
                         .title("Nhắc nhở thanh toán hóa đơn")
                         .message(String.format(
@@ -55,13 +71,14 @@ public class NotificationScheduler {
                         .type(NotificationType.BILL_REMINDER)
                         .recipientId(bill.getApartment().getOwner().getId())
                         .referenceId(bill.getId())
-                        .referenceType("BILL")
+                        .referenceType("BILL_REMINDER")
                         .build();
                 
                 notificationService.createNotification(request);
+                sentCount++;
             }
             
-            log.info("Sent {} bill reminder notifications", upcomingBills.size());
+            log.info("Sent {} bill reminder notifications", sentCount);
         } catch (Exception e) {
             log.error("Error sending bill reminder notifications", e);
         }
@@ -84,7 +101,21 @@ public class NotificationScheduler {
                             BillStatus.UNPAID, 
                             today);
             
+            int sentCount = 0;
             for (Bill bill : overdueBills) {
+                // Kiểm tra xem đã gửi notification cho bill này chưa
+                boolean alreadySent = notificationRepository
+                        .existsByRecipientIdAndReferenceIdAndReferenceType(
+                                bill.getApartment().getOwner().getId(),
+                                bill.getId(),
+                                "BILL_OVERDUE"
+                        );
+                
+                if (alreadySent) {
+                    log.debug("Overdue notification already sent for bill: {}", bill.getId());
+                    continue;
+                }
+                
                 CreateNotificationRequest request = CreateNotificationRequest.builder()
                         .title("Hóa đơn quá hạn")
                         .message(String.format(
@@ -95,13 +126,14 @@ public class NotificationScheduler {
                         .type(NotificationType.BILL_OVERDUE)
                         .recipientId(bill.getApartment().getOwner().getId())
                         .referenceId(bill.getId())
-                        .referenceType("BILL")
+                        .referenceType("BILL_OVERDUE")
                         .build();
                 
                 notificationService.createNotification(request);
+                sentCount++;
             }
             
-            log.info("Sent {} overdue bill notifications", overdueBills.size());
+            log.info("Sent {} overdue bill notifications", sentCount);
         } catch (Exception e) {
             log.error("Error sending overdue bill notifications", e);
         }
