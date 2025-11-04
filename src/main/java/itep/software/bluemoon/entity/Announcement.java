@@ -1,11 +1,25 @@
 package itep.software.bluemoon.entity;
 
-import jakarta.persistence.*;
-import lombok.*;
-import org.hibernate.annotations.CreationTimestamp;
-import itep.software.bluemoon.entity.person.Resident;
 import java.time.LocalDateTime;
 import java.util.UUID;
+
+import org.hibernate.annotations.CreationTimestamp;
+
+import itep.software.bluemoon.entity.person.Resident;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.Table;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 @Getter
 @Setter
@@ -13,7 +27,7 @@ import java.util.UUID;
 @AllArgsConstructor
 @Builder
 @Entity
-@Table(name = "notification")
+@Table(name = "announcement")
 public class Announcement {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
@@ -32,11 +46,8 @@ public class Announcement {
     private String message;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "recipient_id", nullable = false)
-    private Resident recipient;
-
-    @Column(name = "is_read", nullable = false)
-    private boolean isRead = false;
+    @JoinColumn(name = "sender_id", nullable = false)
+    private Resident sender;
 
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)

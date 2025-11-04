@@ -1,13 +1,28 @@
 package itep.software.bluemoon.entity;
 
 
-import com.fasterxml.jackson.annotation.JsonManagedReference;
-import itep.software.bluemoon.entity.person.Resident;
-import jakarta.persistence.*;
-import lombok.*;
-
 import java.util.ArrayList;
 import java.util.UUID;
+
+import com.fasterxml.jackson.annotation.JsonManagedReference;
+
+import itep.software.bluemoon.entity.person.Resident;
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.Table;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 @Getter
 @Setter
@@ -36,7 +51,7 @@ public class Apartment {
     private Building building;
 
     @ManyToOne
-    @JoinColumn(name = "resident_id")
+    @JoinColumn(name = "owner_id")
     private Resident owner;
 
     @OneToMany(

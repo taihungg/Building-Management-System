@@ -1,13 +1,23 @@
 package itep.software.bluemoon.entity;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import itep.software.bluemoon.enumeration.UserRole;
-import jakarta.persistence.*;
-import lombok.*;
-import org.springframework.data.annotation.CreatedDate;
-
 import java.time.LocalDate;
 import java.util.UUID;
+
+import org.springframework.data.annotation.CreatedDate;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 @Getter
 @Setter
@@ -46,9 +56,4 @@ public class User {
     @Column(name = "create_date", updatable = false, nullable = false)
     @CreatedDate
     private LocalDate createDate;
-
-    @Enumerated(EnumType.STRING)
-    @Column(name = "user_role", nullable = false)
-    private UserRole role;
-
 }
