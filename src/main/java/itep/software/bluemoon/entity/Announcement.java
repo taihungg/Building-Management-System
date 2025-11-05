@@ -5,7 +5,7 @@ import java.util.UUID;
 
 import org.hibernate.annotations.CreationTimestamp;
 
-import itep.software.bluemoon.entity.person.Resident;
+import itep.software.bluemoon.entity.person.Staff;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -47,7 +47,7 @@ public class Announcement {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "sender_id", nullable = false)
-    private Resident sender;
+    private Staff sender;
 
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
