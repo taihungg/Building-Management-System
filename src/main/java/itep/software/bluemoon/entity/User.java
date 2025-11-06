@@ -5,6 +5,7 @@ import java.util.UUID;
 
 import org.springframework.data.annotation.CreatedDate;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import jakarta.persistence.Column;
@@ -50,10 +51,12 @@ public class User {
     @JsonIgnore
     private String password;
 
+    @Column(name = " is_active")
     @Builder.Default
-    private boolean active = true;
+    private boolean isActive = true;
 
     @Column(name = "create_date", updatable = false, nullable = false)
     @CreatedDate
+    @JsonFormat(pattern = "yyyy-MM-dd")
     private LocalDate createDate;
 }
