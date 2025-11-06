@@ -1,11 +1,23 @@
 package itep.software.bluemoon.entity;
 
-import jakarta.persistence.*;
-import lombok.*;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+
+import itep.software.bluemoon.entity.person.Staff;
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.Table;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 @Getter
 @Setter
@@ -18,10 +30,10 @@ public class Building {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     @Column(
-            name = "id",
-            updatable = false,
-            nullable = false,
-            columnDefinition = "UUID"
+        name = "id",
+        updatable = false,
+        nullable = false,
+        columnDefinition = "UUID"
     )
     private UUID id;
 
@@ -29,10 +41,18 @@ public class Building {
     private String name;
 
     @OneToMany(
-            mappedBy = "building", // <-- 4. "building" là tên thuộc tính bên class Apartment
-            cascade = CascadeType.ALL, // Tùy chọn: Xóa/cập nhật apartment khi building bị xóa
-            orphanRemoval = true
+        mappedBy = "building",
+        cascade = CascadeType.ALL,
+        orphanRemoval = true
     )
-    @Builder.Default // <-- 5. Khởi tạo list
+    @Builder.Default
     private List<Apartment> apartments = new ArrayList<>();
+
+    @OneToMany(
+        mappedBy = "assignedBuilding",
+        cascade = CascadeType.ALL,
+        orphanRemoval = true
+    )
+    @Builder.Default
+    private List<Staff> staffs = new ArrayList<>();
 }

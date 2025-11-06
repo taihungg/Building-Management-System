@@ -3,6 +3,8 @@ package itep.software.bluemoon.entity.person;
 import java.time.LocalDate;
 import java.util.UUID;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
+
 import itep.software.bluemoon.entity.User;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
@@ -34,21 +36,26 @@ public abstract class Person {
     )
     private UUID id;
 
-    @Column(name = "full_name", nullable = false)
+    @Column(name = "first_name", nullable = false)
     private String firstName;
 
+    @Column(name = "middle_name")
     private String middleName;
 
+    @Column(name = "last_name")
     private String lastName;
 
-    @Column(unique = true)
+    @Column(name = "id_card", unique = true)
     private String idCard;
 
+    @Column(name = "dob")
+    @JsonFormat(pattern = "yyyy-MM-dd")
     private LocalDate dob;
 
+    @Column(name = "home_town")
     private String homeTown;
 
-    @OneToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL) // 1.
-    @JoinColumn(name = "account_id", referencedColumnName = "id", unique = true) // 2.
+    @OneToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
+    @JoinColumn(name = "account_id", referencedColumnName = "id", unique = true)
     private User account;
 }

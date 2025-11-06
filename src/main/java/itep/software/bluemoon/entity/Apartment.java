@@ -2,12 +2,12 @@ package itep.software.bluemoon.entity;
 
 
 import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 
 import itep.software.bluemoon.entity.person.Resident;
-import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -42,9 +42,14 @@ public class Apartment {
     )
     private UUID id;
 
+    @Column(name = "room_number")
     private int roomNumber;
+
+    @Column(name = "floor")
     private int floor;
-    private double area;
+
+    @Column(name = "area")
+    private Double area;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "building_id", nullable = false)
@@ -54,15 +59,22 @@ public class Apartment {
     @JoinColumn(name = "owner_id")
     private Resident owner;
 
-    @OneToMany(
-            mappedBy = "apartment",
-            cascade = CascadeType.ALL,
-            orphanRemoval = true
-    )
+    @OneToMany(mappedBy = "apartment")
     @JsonManagedReference
-    private ArrayList<Resident> residents;
+    @Builder.Default
+    private List<Resident> residents = new ArrayList<>();
 
-    private ArrayList<Bill> bills;
+    @OneToMany(
+        mappedBy = "apartment",
+        fetch = FetchType.LAZY
+    )
+    @Builder.Default
+    private List<Bill> bills = new ArrayList<>();
 
-    private ArrayList<Issue> issue;
+    @OneToMany(
+        mappedBy = "apartment",
+        fetch = FetchType.LAZY
+    )
+    @Builder.Default
+    private List<Issue> issues = new ArrayList<>();
 }

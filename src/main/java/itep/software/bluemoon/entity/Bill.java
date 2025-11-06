@@ -8,6 +8,8 @@ import lombok.*;
 import java.time.LocalDate;
 import java.util.UUID;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
+
 @Getter
 @Setter
 @NoArgsConstructor
@@ -19,10 +21,10 @@ public class Bill {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     @Column(
-            name = "id",
-            updatable = false,
-            nullable = false,
-            columnDefinition = "UUID"
+        name = "id",
+        updatable = false,
+        nullable = false,
+        columnDefinition = "UUID"
     )
     private UUID id;
 
@@ -30,10 +32,12 @@ public class Bill {
     @Column(name = "type", nullable = false)
     private BillType type;
 
-    @Column(name = "start_date")
+    @Column(name = "started_date")
+    @JsonFormat(pattern = "yyyy-MM-dd")
     private LocalDate startDate;
 
     @Column(name = "expired_date")
+    @JsonFormat(pattern = "yyyy-MM-dd")
     private LocalDate expiredDate;
 
     @ManyToOne
