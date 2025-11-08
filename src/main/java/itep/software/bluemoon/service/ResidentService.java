@@ -3,6 +3,7 @@ package itep.software.bluemoon.service;
 import java.util.List;
 import java.util.UUID;
 
+import itep.software.bluemoon.model.DTO.ResidentDetailDTO;
 import itep.software.bluemoon.model.DTO.ResidentSummaryDTO;
 import itep.software.bluemoon.model.mapper.EntityToDto;
 import org.springframework.stereotype.Service;
@@ -30,5 +31,11 @@ public class ResidentService {
         return entities.stream()
                 .map(EntityToDto::residentSummaryDTOToDto)
                 .toList();
+    }
+
+    public ResidentDetailDTO getResidentGetail(UUID id){
+        Resident resident = residentRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Resident not found"));
+        return EntityToDto.residentDetailToDto(resident);
     }
 }
