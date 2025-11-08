@@ -36,14 +36,8 @@ public abstract class Person {
     )
     private UUID id;
 
-    @Column(name = "first_name", nullable = false)
-    private String firstName;
-
-    @Column(name = "middle_name")
-    private String middleName;
-
-    @Column(name = "last_name")
-    private String lastName;
+    @Column(name = "full_name", nullable = false)
+    private String fullName;
 
     @Column(name = "id_card", unique = true)
     private String idCard;

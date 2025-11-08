@@ -30,7 +30,7 @@ import lombok.Setter;
 @AllArgsConstructor
 @Builder
 @Entity
-@Table(name = "apartments")
+@Table(name = "apartment")
 public class Apartment {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
