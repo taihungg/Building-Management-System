@@ -57,7 +57,7 @@ public class Resident extends Person {
 
     @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(
-        name = "resident_announcements",
+        name = "resident_announcement",
         joinColumns = @JoinColumn(name = "resident_id"),
         inverseJoinColumns = @JoinColumn(name = "announcement_id")
     )
