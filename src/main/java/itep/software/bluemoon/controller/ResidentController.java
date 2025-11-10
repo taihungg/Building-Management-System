@@ -39,4 +39,14 @@ public class ResidentController {
     public Resident updateResident(@PathVariable UUID id, @RequestBody ResidentUpdateDTO request){
         return residentService.updateResident(id, request);
     }
+
+    @DeleteMapping("/{id}")
+    public void deleteResident(@PathVariable UUID id,
+                               @RequestParam(value = "hard" /* true nếu muốn vĩnh viễn */, defaultValue = "false") boolean hardDelete){
+        if (hardDelete) {
+            residentService.deleteResident(id); // Gọi hàm xóa vĩnh viễn
+        } else {
+            residentService.changeResidentToInactive(id); // Gọi hàm đổi trạng thái
+        }
+    }
 }

@@ -5,6 +5,7 @@ import java.util.UUID;
 
 import itep.software.bluemoon.entity.Apartment;
 import itep.software.bluemoon.entity.User;
+import itep.software.bluemoon.enumeration.ResidentStatus;
 import itep.software.bluemoon.model.DTO.ResidentCreationDTO;
 import itep.software.bluemoon.model.DTO.ResidentUpdateDTO;
 import itep.software.bluemoon.model.projection.ResidentSummary;
@@ -36,12 +37,14 @@ public class ResidentService {
     public ResidentDetailDTO getResidentDetail(UUID id){
         Resident resident = residentRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Resident not found"));
+
         return EntityToDto.residentToResidentDetailDto(resident);
     }
 
     public Resident createResident(ResidentCreationDTO dto){
         Apartment apartment = apartmentRepository.findById(dto.getApartmentID())
                 .orElseThrow(() -> new RuntimeException("Apartment not found"));
+
         return residentRepository.save(
                 Resident.builder()
                 .fullName(dto.getFullName())
@@ -68,5 +71,24 @@ public class ResidentService {
         if(dto.getEmail() != null) userAccount.setEmail(dto.getEmail());
 
         return residentRepository.save(exsistResident);
+    }
+
+    public void changeResidentToInactive(UUID id){
+        Resident existResident = residentRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Resident not found"));
+
+        existResident.setStatus(ResidentStatus.INACTIVE);
+
+        if (existResident.getApartment() != null) {
+            existResident.getApartment().getResidents().remove(existResident);
+            existResident.setApartment(null);
+        }
+
+        residentRepository.save(existResident);
+    }
+
+    //WARNING: this method will clear all relative information
+    public void deleteResident(UUID id){
+        residentRepository.deleteById(id);
     }
 }
