@@ -3,6 +3,7 @@ package itep.software.bluemoon.controller;
 import itep.software.bluemoon.entity.person.Resident;
 import itep.software.bluemoon.model.DTO.ResidentCreationDTO;
 import itep.software.bluemoon.model.DTO.ResidentDetailDTO;
+import itep.software.bluemoon.model.DTO.ResidentUpdateDTO;
 import itep.software.bluemoon.model.projection.ResidentSummary;
 import itep.software.bluemoon.service.ResidentService;
 import lombok.RequiredArgsConstructor;
@@ -32,5 +33,10 @@ public class ResidentController {
     @PostMapping("/create")
     public Resident createResident(@RequestBody ResidentCreationDTO request){
         return residentService.createResident(request);
+    }
+
+    @PutMapping("/{id}")
+    public Resident updateResident(@PathVariable UUID id, @RequestBody ResidentUpdateDTO request){
+        return residentService.updateResident(id, request);
     }
 }

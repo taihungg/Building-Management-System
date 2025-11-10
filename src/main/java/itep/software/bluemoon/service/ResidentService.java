@@ -4,7 +4,9 @@ import java.util.List;
 import java.util.UUID;
 
 import itep.software.bluemoon.entity.Apartment;
+import itep.software.bluemoon.entity.User;
 import itep.software.bluemoon.model.DTO.ResidentCreationDTO;
+import itep.software.bluemoon.model.DTO.ResidentUpdateDTO;
 import itep.software.bluemoon.model.projection.ResidentSummary;
 import itep.software.bluemoon.repository.ApartmentRepository;
 import org.springframework.stereotype.Service;
@@ -49,5 +51,22 @@ public class ResidentService {
                 .apartment(apartment)
                 .build()
         );
+    }
+
+    public Resident updateResident(UUID id, ResidentUpdateDTO dto){
+        Resident exsistResident = residentRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Resident not found"));
+
+        if(dto.getFullName() != null) exsistResident.setFullName(dto.getFullName());
+        if(dto.getIdCard() != null) exsistResident.setIdCard(dto.getIdCard());
+        if(dto.getDob() != null) exsistResident.setDob(dto.getDob());
+        if(dto.getHomeTown() != null) exsistResident.setHomeTown(dto.getHomeTown());
+
+        User userAccount = exsistResident.getAccount();
+        if(userAccount == null) throw new RuntimeException("Resident don't have account");
+        if(dto.getPhone() != null) userAccount.setPhone(dto.getPhone());
+        if(dto.getEmail() != null) userAccount.setEmail(dto.getEmail());
+
+        return residentRepository.save(exsistResident);
     }
 }
