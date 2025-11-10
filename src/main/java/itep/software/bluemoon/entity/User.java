@@ -51,10 +51,6 @@ public class User {
     @JsonIgnore
     private String password;
 
-    @Column(name = " is_active")
-    @Builder.Default
-    private boolean isActive = true;
-
     @Column(name = "create_date", updatable = false, nullable = false)
     @CreatedDate
     @JsonFormat(pattern = "yyyy-MM-dd")
