@@ -9,7 +9,6 @@ import itep.software.bluemoon.entity.Announcement;
 import itep.software.bluemoon.entity.Apartment;
 import itep.software.bluemoon.entity.Issue;
 import itep.software.bluemoon.entity.Vehicle;
-import itep.software.bluemoon.enumeration.ResidentRelationship;
 import itep.software.bluemoon.enumeration.ResidentStatus;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -33,8 +32,6 @@ import lombok.experimental.SuperBuilder;
 @Entity
 @Table(name = "resident")
 public class Resident extends Person {
-    private ResidentRelationship relationship;
-
     @Column(name = "status")
     @Enumerated(EnumType.STRING)
     @Builder.Default

@@ -14,7 +14,6 @@ public class EntityToDto {
                 .idCard(resident.getIdCard())
                 .dob(resident.getDob())
                 .homeTown(resident.getHomeTown())
-                .relationship(resident.getRelationship())
                 .roomNumber(resident.getApartment() != null ? resident.getApartment().getRoomNumber() : null)
                 .email(resident.getAccount() != null ? resident.getAccount().getEmail() : null)
                 .phoneNumber(resident.getAccount() != null ? resident.getAccount().getPhone() : null)

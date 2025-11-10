@@ -1,6 +1,5 @@
 package itep.software.bluemoon.model.DTO;
 
-import itep.software.bluemoon.enumeration.ResidentRelationship;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -19,7 +18,6 @@ public class ResidentDetailDTO {
     private String idCard;
     private LocalDate dob;
     private String homeTown;
-    private ResidentRelationship relationship;
     private int roomNumber;
     private String email;
     private String phoneNumber;
