@@ -9,8 +9,11 @@ import itep.software.bluemoon.entity.Announcement;
 import itep.software.bluemoon.entity.Apartment;
 import itep.software.bluemoon.entity.Issue;
 import itep.software.bluemoon.entity.Vehicle;
-import itep.software.bluemoon.enumeration.ResidentRelationship;
+import itep.software.bluemoon.enumeration.ResidentStatus;
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.JoinTable;
@@ -18,21 +21,21 @@ import jakarta.persistence.ManyToMany;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
+import lombok.experimental.SuperBuilder;
 
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
+@SuperBuilder
 @Entity
 @Table(name = "resident")
 public class Resident extends Person {
-    private ResidentRelationship relationship;
+    @Column(name = "status")
+    @Enumerated(EnumType.STRING)
+    @Builder.Default
+    private ResidentStatus status = ResidentStatus.ACTIVE;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "apartment_id", nullable = false)
