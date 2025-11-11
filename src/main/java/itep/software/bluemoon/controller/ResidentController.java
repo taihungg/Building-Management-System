@@ -5,9 +5,12 @@ import itep.software.bluemoon.model.DTO.ResidentCreationDTO;
 import itep.software.bluemoon.model.DTO.ResidentDetailDTO;
 import itep.software.bluemoon.model.DTO.ResidentUpdateDTO;
 import itep.software.bluemoon.model.projection.ResidentSummary;
+import itep.software.bluemoon.response.ApiResponse;
 import itep.software.bluemoon.service.ResidentService;
 import lombok.RequiredArgsConstructor;
 
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -21,32 +24,62 @@ public class ResidentController {
     private final ResidentService residentService;
 
     @GetMapping
-    public List<ResidentSummary> searchByAllInformation(@RequestParam(value = "keyword", required = false) String keyword){
-        return residentService.searchByAllInformation(keyword);
+    public ResponseEntity<Object> searchByAllInformation(@RequestParam(value = "keyword", required = false) String keyword){
+        List<ResidentSummary> data = residentService.searchByAllInformation(keyword);
+
+        return ApiResponse.responseBuilder(
+                HttpStatus.OK,
+                "Get resident list successfully!",
+                data
+        );
     }
 
     @GetMapping("/{id}")
-    public ResidentDetailDTO viewResidentDetail(@PathVariable UUID id){
-        return residentService.getResidentDetail(id);
+    public ResponseEntity<Object> viewResidentDetail(@PathVariable UUID id){
+        ResidentDetailDTO data = residentService.getResidentDetail(id);
+
+        return ApiResponse.responseBuilder(
+                HttpStatus.OK,
+                "Get resident detail successfully!",
+                data
+        );
     }
 
     @PostMapping("/create")
-    public Resident createResident(@RequestBody ResidentCreationDTO request){
-        return residentService.createResident(request);
+    public ResponseEntity<Object> createResident(@RequestBody ResidentCreationDTO request){
+        Resident data = residentService.createResident(request);
+
+        return ApiResponse.responseBuilder(
+                HttpStatus.CREATED,
+                "Create resident successfully!",
+                data
+        );
     }
 
     @PutMapping("/{id}")
-    public Resident updateResident(@PathVariable UUID id, @RequestBody ResidentUpdateDTO request){
-        return residentService.updateResident(id, request);
+    public ResponseEntity<Object> updateResident(@PathVariable UUID id, @RequestBody ResidentUpdateDTO request){
+        Resident data = residentService.updateResident(id, request);
+
+        return ApiResponse.responseBuilder(
+                HttpStatus.OK,
+                "Update resident successfully!",
+                data
+        );
     }
 
     @DeleteMapping("/{id}")
-    public void deleteResident(@PathVariable UUID id,
+    public ResponseEntity<Object> deleteResident(@PathVariable UUID id,
                                @RequestParam(value = "hard" /* true nếu muốn vĩnh viễn */, defaultValue = "false") boolean hardDelete){
         if (hardDelete) {
             residentService.deleteResident(id); // Gọi hàm xóa vĩnh viễn
         } else {
             residentService.changeResidentToInactive(id); // Gọi hàm đổi trạng thái
         }
+
+        return ApiResponse.responseBuilder(
+                HttpStatus.OK,
+                "Deleted resident successfully!",
+                null
+        );
     }
 }

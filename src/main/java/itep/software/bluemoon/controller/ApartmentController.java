@@ -1,8 +1,11 @@
 package itep.software.bluemoon.controller;
 
 import itep.software.bluemoon.model.projection.ApartmentDropdown;
+import itep.software.bluemoon.response.ApiResponse;
 import itep.software.bluemoon.service.ApartmentService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -18,7 +21,13 @@ public class ApartmentController {
 
     //use this api to get basic list apartment to make UUID apartment input
     @GetMapping("/dropdown")
-    public List<ApartmentDropdown> searchForDropdown(@RequestParam("keyword") String keyword) {
-        return apartmentService.searchApartmentDropdown(keyword);
+    public ResponseEntity<Object> searchForDropdown(@RequestParam("keyword") String keyword) {
+        List<ApartmentDropdown> data = apartmentService.searchApartmentDropdown(keyword);
+
+        return ApiResponse.responseBuilder(
+                HttpStatus.OK,
+                "Get dropdown apartment successfully!",
+                data
+        );
     }
 }
