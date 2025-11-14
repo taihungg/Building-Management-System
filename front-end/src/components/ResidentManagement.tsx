@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState,useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "./ui/table";
 import { Button } from "./ui/button";
@@ -8,27 +8,52 @@ import { Search, Plus, Edit, Trash2, UserCircle } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "./ui/dialog";
 import { Label } from "./ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
+import React from 'react';
 
-const residents = [
-  { id: 1, name: "Nguyễn Văn A", apartment: "A101", phone: "0901234567", email: "nguyenvana@email.com", members: 4, status: "active" },
-  { id: 2, name: "Trần Thị B", apartment: "A102", phone: "0902345678", email: "tranthib@email.com", members: 3, status: "active" },
-  { id: 3, name: "Lê Văn C", apartment: "B205", phone: "0903456789", email: "levanc@email.com", members: 2, status: "active" },
-  { id: 4, name: "Phạm Thị D", apartment: "B206", phone: "0904567890", email: "phamthid@email.com", members: 5, status: "active" },
-  { id: 5, name: "Hoàng Văn E", apartment: "C308", phone: "0905678901", email: "hoangvane@email.com", members: 3, status: "inactive" },
-  { id: 6, name: "Vũ Thị F", apartment: "C309", phone: "0906789012", email: "vuthif@email.com", members: 4, status: "active" },
-  { id: 7, name: "Đỗ Văn G", apartment: "D410", phone: "0907890123", email: "dovang@email.com", members: 2, status: "active" },
-];
+
 
 export function ResidentManagement() {
-  const [searchTerm, setSearchTerm] = useState("");
-  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const[residents, setResidents] =useState([]);
+  const [error, setError] = useState(null);
+  const [searchTerm, setSearchTerm] = useState(" ");
 
-  const filteredResidents = residents.filter(
-    (resident) =>
-      resident.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      resident.apartment.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      resident.phone.includes(searchTerm)
-  );
+  useEffect(()=>{
+    const fetchResidents = async() =>{
+      try{
+        let url = 'http://localhost:8081/api/v1/residents';
+               
+        const response = await fetch(url);   
+        if (!response.ok){
+          throw new Error("Can't get residents");
+        }
+        const res  = await response.json();
+        setResidents(res.data);
+      }
+      catch (err){
+        setError(err.message);
+      }
+    }
+    fetchResidents();
+  }  ,[])
+
+  const filteredResidents = residents.filter(resident => { //luồng hoạt động sẽ là chạy qua từng residents 
+    const searchLower = searchTerm.toLowerCase();
+
+    const fullName = String(resident.fullName).toLowerCase();
+    const room = String(resident.roomNumber).toLowerCase();
+    const phone = String(resident.phoneNumber).toLowerCase();
+    const email = String(resident.email).toLowerCase(); 
+
+    return (
+      fullName.includes(searchLower) ||  // so sánh các thuộc tính của resident xem có 
+      // giống searchTerm ko nếu có thì true ko thì false
+      room.includes(searchLower) ||
+      phone.includes(searchLower) ||
+      email.includes(searchLower)
+    );
+  });
+
+  
 
   return (
     <div className="space-y-6">
@@ -67,7 +92,7 @@ export function ResidentManagement() {
             <CardTitle>Tổng số người</CardTitle>
           </CardHeader>
           <CardContent>
-            <div>{residents.reduce((sum, r) => sum + r.members, 0)} người</div>
+            <div>{residents.length} người</div>
           </CardContent>
         </Card>
       </div>
@@ -83,12 +108,12 @@ export function ResidentManagement() {
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
                 placeholder="Tìm kiếm theo tên, căn hộ, SĐT..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
+                 value={searchTerm}
+                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="pl-9"
               />
             </div>
-            <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+            <Dialog >
               <DialogTrigger asChild>
                 <Button>
                   <Plus className="mr-2 h-4 w-4" />
@@ -131,7 +156,7 @@ export function ResidentManagement() {
                   </div>
                   <div className="flex gap-2 pt-4">
                     <Button className="flex-1">Thêm mới</Button>
-                    <Button variant="outline" className="flex-1" onClick={() => setIsAddDialogOpen(false)}>
+                    <Button variant="outline" className="flex-1"> 
                       Hủy
                     </Button>
                   </div>
@@ -148,32 +173,27 @@ export function ResidentManagement() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Chủ hộ</TableHead>
-                <TableHead>Căn hộ</TableHead>
-                <TableHead>Số điện thoại</TableHead>
+                <TableHead>Số phòng</TableHead>
                 <TableHead>Email</TableHead>
-                <TableHead>Số thành viên</TableHead>
-                <TableHead>Trạng thái</TableHead>
-                <TableHead>Thao tác</TableHead>
+                <TableHead>Số điện thoại</TableHead>
+                <TableHead>ID</TableHead>
+                <TableHead>Họ và tên</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {filteredResidents.map((resident) => (
                 <TableRow key={resident.id}>
+                  
+                  <TableCell>{resident.roomNumber}</TableCell>
+                  <TableCell>{resident.email}</TableCell>
+                  <TableCell>{resident.phoneNumber}</TableCell>
+                  <TableCell>{resident.id}</TableCell>
+                  
                   <TableCell>
                     <div className="flex items-center gap-2">
                       <UserCircle className="h-5 w-5 text-muted-foreground" />
-                      {resident.name}
+                      {resident.fullName}
                     </div>
-                  </TableCell>
-                  <TableCell>{resident.apartment}</TableCell>
-                  <TableCell>{resident.phone}</TableCell>
-                  <TableCell>{resident.email}</TableCell>
-                  <TableCell>{resident.members} người</TableCell>
-                  <TableCell>
-                    <Badge variant={resident.status === "active" ? "default" : "secondary"}>
-                      {resident.status === "active" ? "Đang ở" : "Tạm vắng"}
-                    </Badge>
                   </TableCell>
                   <TableCell>
                     <div className="flex gap-2">
