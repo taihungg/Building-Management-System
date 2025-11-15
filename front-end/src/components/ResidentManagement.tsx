@@ -17,6 +17,19 @@ export function ResidentManagement() {
   const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState(" ");
 
+  // --- TẠO STATE CHO FORM "THÊM MỚI" ---
+const [newName, setNewName] = useState(""); 
+const [newIDCard, setnewIDCard] = useState(""); 
+const [newDOB, setNewDOB] = useState(""); 
+const [newHomeTown, setNewHomeTown] = useState(""); 
+const [newAppartmentID, setNewAppartmentID] = useState(""); 
+
+// Tao state cho apartment
+const [apartmentList, setApartmentList] = useState([]);
+const [apartmentKeyword, setApartmentKeyword] = useState("");
+//kiem soat dong mo dialog
+const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+
   useEffect(()=>{
     const fetchResidents = async() =>{
       try{
@@ -34,9 +47,9 @@ export function ResidentManagement() {
       }
     }
     fetchResidents();
-  }  ,[])
+  }  ,[]) //mảng rỗng này được thiết kế để chỉ chạy 1 lần duy nhất khi component dc tải
 
-  const filteredResidents = residents.filter(resident => { //luồng hoạt động sẽ là chạy qua từng residents 
+  const filteredResidents = residents.filter(resident => { //luồng hoạt động sẽ là chạy qua từng residents lấy các thuộc tính của nó lowercase và só sánh vs searchTerms ròi nếu mà true thì return.
     const searchLower = searchTerm.toLowerCase();
 
     const fullName = String(resident.fullName).toLowerCase();
@@ -53,6 +66,69 @@ export function ResidentManagement() {
     );
   });
 
+  const createResident = async(dataToCreate)=>{
+    try{
+      const response = await fetch('http://localhost:8081/api/v1/residents/create', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(dataToCreate),
+      });
+      if (!response.ok){
+        throw new Error("Can't create residents");
+      }
+      const res  = await response.json();
+      setResidents(prevResidents => [...prevResidents, res.data]);
+
+    }
+    catch(err){
+      setError(err);
+    }
+    return (
+      <div>
+        {error && <p style={{color: 'red'}}>{error.message}</p>}
+        {/* ... (phần còn lại của giao diện) ... */}
+      </div>
+    );
+  }
+  const handleSubmit = async ()=>{
+    try{const dataform ={
+      fullName: newName,
+      idCard: newIDCard,
+      dob: newDOB,
+      homeTown: newHomeTown,
+      apartmentID: newAppartmentID
+    }
+    await createResident(dataform);
+    setNewName ("")
+    setnewIDCard("")
+    setNewDOB("")
+    setNewHomeTown("")
+    setNewAppartmentID("")
+
+    setIsAddDialogOpen(false)}
+    catch (err){
+      alert("Lỗi! Không thể tạo cư dân: " + err.message);
+    }
+  }
+useEffect(()=>{
+  const getApartmentDropDown = async ()=>{
+    try{
+
+      let url = `http://localhost:8081/api/v1/apartments/dropdown?keyword=${encodeURIComponent(apartmentKeyword)}`;      const response = await fetch(url);   
+      if (!response.ok){
+        throw new Error("Can't get apartments");
+      }
+      const res  = await response.json();
+      setApartmentList(res.data);
+    }
+    catch (err){
+      setError(err.message);
+    }
+  }
+  getApartmentDropDown();
+},[apartmentKeyword])
   
 
   return (
@@ -61,10 +137,10 @@ export function ResidentManagement() {
       <div className="grid gap-4 md:grid-cols-4">
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle>Tổng cư dân</CardTitle>
+            <CardTitle>Tổng số người</CardTitle>
           </CardHeader>
           <CardContent>
-            <div>{residents.length} hộ</div>
+            <div>{residents.length} người</div>
           </CardContent>
         </Card>
         <Card>
@@ -89,10 +165,10 @@ export function ResidentManagement() {
         </Card>
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle>Tổng số người</CardTitle>
+            <CardTitle>...</CardTitle>
           </CardHeader>
           <CardContent>
-            <div>{residents.length} người</div>
+            <div>...</div>
           </CardContent>
         </Card>
       </div>
@@ -113,7 +189,7 @@ export function ResidentManagement() {
                 className="pl-9"
               />
             </div>
-            <Dialog >
+            <Dialog open={isAddDialogOpen} onOpenChange ={setIsAddDialogOpen}  >
               <DialogTrigger asChild>
                 <Button>
                   <Plus className="mr-2 h-4 w-4" />
@@ -127,35 +203,49 @@ export function ResidentManagement() {
                 <div className="space-y-4">
                   <div className="space-y-2">
                     <Label>Họ và tên</Label>
-                    <Input placeholder="Nhập họ tên..." />
+                    <Input placeholder="Nhập họ tên..." value = {newName} onChange={(e) => setNewName(e.target.value)}  />
                   </div>
                   <div className="space-y-2">
-                    <Label>Căn hộ</Label>
-                    <Select>
+                    <Label>CCCD</Label>
+                    <Input placeholder="Nhập số CCCD..."  value = {newIDCard} onChange = {(e => setnewIDCard(e.target.value))}/>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Ngày sinh</Label>
+                    <Input type = 'date' placeholder="Nhập ngày sinh (YYYY-MM-DD)..." value = {newDOB} onChange = {(e)=> setNewDOB(e.target.value)} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Quê quán</Label>
+                    <Input type="email" placeholder="Nhập quê quán..." value = {newHomeTown} onChange = {(e)=> setNewHomeTown(e.target.value)} />
+                  </div>
+                 <div className="space-y-2">
+                    <Label>Tìm kiếm căn hộ (Gõ số phòng)</Label>
+                    <Input 
+                      placeholder="Gõ số phòng (ví dụ: A-101)..."
+                      value={apartmentKeyword}
+                      onChange={(e) => setApartmentKeyword(e.target.value)} // <-- Cập nhật TỪ KHÓA
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Chọn căn hộ (Kết quả)</Label>
+                    <Select value={newAppartmentID} onValueChange={(uuid) => setNewAppartmentID(uuid)}>
                       <SelectTrigger>
-                        <SelectValue placeholder="Chọn căn hộ" />
+                        <SelectValue placeholder="Chọn từ kết quả tìm kiếm" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="a101">A101</SelectItem>
-                        <SelectItem value="a102">A102</SelectItem>
-                        <SelectItem value="b205">B205</SelectItem>
+                        {/* Lặp qua 'apartmentList' (đã được useEffect lọc) */}
+                        {apartmentList.map((apartment) => (
+                          <SelectItem 
+                            key={apartment.id} 
+                            value={apartment.id} 
+                          >
+                            {apartment.label} {/* <-- Hiển thị là "A-101 (Tầng 1)" */}
+                          </SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                   </div>
-                  <div className="space-y-2">
-                    <Label>Số điện thoại</Label>
-                    <Input placeholder="Nhập số điện thoại..." />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Email</Label>
-                    <Input type="email" placeholder="Nhập email..." />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Số thành viên</Label>
-                    <Input type="number" placeholder="Nhập số thành viên..." />
-                  </div>
                   <div className="flex gap-2 pt-4">
-                    <Button className="flex-1">Thêm mới</Button>
+                    <Button className="flex-1" onClick={handleSubmit}>Thêm mới</Button>
                     <Button variant="outline" className="flex-1"> 
                       Hủy
                     </Button>
