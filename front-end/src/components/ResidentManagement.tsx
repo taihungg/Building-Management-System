@@ -30,6 +30,10 @@ const [apartmentKeyword, setApartmentKeyword] = useState("");
 //kiem soat dong mo dialog
 const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
 
+//State xu ly viec xoa 
+const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+const [residentToDelete, setResidentToDelete] = useState(null);
+
   useEffect(()=>{
     const fetchResidents = async() =>{
       try{
@@ -116,7 +120,8 @@ useEffect(()=>{
   const getApartmentDropDown = async ()=>{
     try{
 
-      let url = `http://localhost:8081/api/v1/apartments/dropdown?keyword=${encodeURIComponent(apartmentKeyword)}`;      const response = await fetch(url);   
+      let url = `http://localhost:8081/api/v1/apartments/dropdown?keyword=${encodeURIComponent(apartmentKeyword)}`;      
+      const response = await fetch(url);   
       if (!response.ok){
         throw new Error("Can't get apartments");
       }
@@ -129,6 +134,45 @@ useEffect(()=>{
   }
   getApartmentDropDown();
 },[apartmentKeyword])
+
+const openDeleteDialog = (resident) => {
+  setResidentToDelete(resident); 
+  setIsDeleteDialogOpen(true); 
+};
+const handleDelete = async (residentID, isHardDelete) =>{
+    try{
+      let url = `http://localhost:8081/api/v1/residents/${residentID}`;    
+      if (isHardDelete){
+        url += '?hard=true';
+      }  
+      const response = await fetch (url ,{
+        method : "DELETE",
+        headers: {
+          // QUAN TRỌNG: Bạn cần gửi Token nếu API này bị khóa
+          // 'Authorization': 'Bearer ' + yourAuthToken
+        }
+      });
+      if (!response.ok){
+        throw new Error("Can't delete residents");
+      }
+      const res  = await response.json();
+      setResidents(prevResidents => 
+        prevResidents.filter(resident => resident.id !== residentID)
+      );
+      setIsDeleteDialogOpen(false);
+      setResidentToDelete(null);  
+    }
+    
+    catch(err){
+      setError(err);
+    }
+    return (
+      <div>
+        {error && <p style={{color: 'red'}}>{error.message}</p>}
+        {/* ... (phần còn lại của giao diện) ... */}
+      </div>
+    )
+}
   
 
   return (
@@ -287,10 +331,10 @@ useEffect(()=>{
                   </TableCell>
                   <TableCell>
                     <div className="flex gap-2">
-                      <Button variant="ghost" size="sm">
+                      <Button variant="ghost" size="sm"  >
                         <Edit className="h-4 w-4" />
                       </Button>
-                      <Button variant="ghost" size="sm">
+                      <Button variant="ghost" size="sm" onClick={() => openDeleteDialog(resident)}>
                         <Trash2 className="h-4 w-4 text-destructive" />
                       </Button>
                     </div>
@@ -301,6 +345,38 @@ useEffect(()=>{
           </Table>
         </CardContent>
       </Card>
+      <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Xác nhận xóa cư dân?</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <p>
+              Bạn có chắc muốn xóa cư dân: 
+              {/* Hiển thị tên người sắp bị xóa */}
+              <strong> {residentToDelete?.fullName}</strong> 
+              (Phòng: {residentToDelete?.roomNumber})?
+            </p>
+            <p className="text-sm text-muted-foreground">
+              Đây là hành động quan trọng. Lựa chọn hình thức xóa:
+            </p>
+            <div className="flex gap-4 pt-4">
+              {/* Nút Xóa Mềm */}
+              <Button variant="outline" className="flex-1" onClick={() => handleDelete(residentToDelete.id, false)}>
+                Xóa mềm (Đổi trạng thái)
+              </Button>
+              {/* Nút Xóa Cứng */}
+              <Button variant="destructive" className="flex-1" onClick={() => handleDelete(residentToDelete.id, true)}>
+                Xóa vĩnh viễn (Hủy diệt)
+              </Button>
+            </div>
+            {/* Nút Hủy */}
+            <Button variant="secondary" className="w-full" onClick={() => setIsDeleteDialogOpen(false)}>
+              Hủy
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
