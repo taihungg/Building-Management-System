@@ -26,9 +26,9 @@ public class ResidentService {
     private final ResidentRepository residentRepository;
     private final ApartmentRepository apartmentRepository;
 
-    public List<ResidentSummary> searchByAllInformation(String keyword){
+    public List<ResidentSummary> searchByAllInformation(String keyword, boolean includeInactive){
         if (keyword != null && !keyword.isBlank()) {
-            return residentRepository.searchGeneral(keyword.trim());
+            return residentRepository.searchGeneral(keyword.trim(), includeInactive);
         } else {
             return residentRepository.findAllSummary();
         }
