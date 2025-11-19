@@ -54,7 +54,7 @@ public class ResidentController {
         );
     }
 
-    @PostMapping("/create")
+    @PostMapping
     public ResponseEntity<Object> createResident(@RequestBody ResidentCreationDTO request){
         Resident data = residentService.createResident(request);
 
