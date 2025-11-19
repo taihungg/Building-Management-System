@@ -34,6 +34,18 @@ const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
 const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 const [residentToDelete, setResidentToDelete] = useState(null);
 
+//State xu ly cho viec update
+const [residentToUpdate,setResidentToUpdate]= useState(null)
+const [isUpdateDialogOpen, setIsUpdateDialogOpen] = useState(false);
+// Các state riêng cho form update (để tránh xung đột với form create)
+const [updateName, setUpdateName] = useState("");
+    const [updateIDCard, setUpdateIDCard] = useState("");
+    const [updateDOB, setUpdateDOB] = useState("");
+    const [updateHomeTown, setUpdateHomeTown] = useState("");
+    const [updateEmail, setUpdateEmail] = useState(""); // <-- MỚI THÊM
+    const [updatePhone, setUpdatePhone] = useState(""); // <-- MỚI THÊM
+    const [updateApartmentID, setUpdateApartmentID] = useState("");
+
   useEffect(()=>{
     const fetchResidents = async() =>{
       try{
@@ -173,6 +185,63 @@ const handleDelete = async (residentID, isHardDelete) =>{
       </div>
     )
 }
+
+const handleUpdate = async() =>{
+  if (!residentToUpdate) return;
+  const dataToUpdate = {
+    fullName: updateName,
+            idCard: updateIDCard,
+            dob: updateDOB,
+            homeTown: updateHomeTown,
+            email: updateEmail, // <-- MỚI: Thêm email
+            phoneNumber: updatePhone, // <-- MỚI: Thêm phone (lưu ý tên trường backend là 'phoneNumber' hay 'phone' nhé)
+}
+  try{
+    let url = `http://localhost:8081/api/v1/residents/${residentToUpdate.id}`;     
+    const response = await fetch (url ,{
+      method : "PUT",
+      headers: {
+          "Content-Type": "application/json",        
+      },
+      body: JSON.stringify(dataToUpdate),
+    });
+    if (!response.ok){
+      throw new Error("Can't update residents");
+    }
+    const res  = await response.json();
+    const updatedResident = res.data; 
+
+    setResidents(prevResidents => 
+      prevResidents.map(resident => 
+        resident.id === residentToUpdate.id ? updatedResident : resident
+      )
+    );
+    setIsUpdateDialogOpen(false);
+    setResidentToUpdate(null);  
+  }
+    catch(err){
+      setError(err);
+    }
+}
+const openUpdateDialog = (resident) => {
+  setResidentToUpdate(resident);
+  // Điền dữ liệu hiện tại vào form
+  setUpdateName(resident.fullName);
+  setUpdateIDCard(resident.idCard || "");
+  setUpdateDOB(resident.dob || "");
+  setUpdateHomeTown(resident.homeTown || "");
+  setUpdateEmail(resident.email || ""); // <-- MỚI: Set email
+  setUpdatePhone(resident.phoneNumber || ""); // <-- MỚI: Set phone (lưu ý tên trường trong resident object)
+  
+  // Lưu ý: Nếu bạn muốn hiển thị căn hộ hiện tại, bạn cần logic để lấy ID căn hộ từ resident object
+  // Ví dụ: setUpdateApartmentID(resident.apartmentID); 
+  
+  setIsUpdateDialogOpen(true);
+};
+
+
+
+
   
 
   return (
@@ -331,7 +400,7 @@ const handleDelete = async (residentID, isHardDelete) =>{
                   </TableCell>
                   <TableCell>
                     <div className="flex gap-2">
-                      <Button variant="ghost" size="sm"  >
+                      <Button variant="ghost" size="sm" onClick= {()=>openUpdateDialog(resident)}   >
                         <Edit className="h-4 w-4" />
                       </Button>
                       <Button variant="ghost" size="sm" onClick={() => openDeleteDialog(resident)}>
@@ -377,6 +446,78 @@ const handleDelete = async (residentID, isHardDelete) =>{
           </div>
         </DialogContent>
       </Dialog>
+      <Dialog open={isUpdateDialogOpen} onOpenChange={setIsUpdateDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Cập nhật thông tin cư dân</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>Họ và tên</Label>
+              <Input 
+                placeholder="Nhập họ tên..." 
+                value={updateName} 
+                onChange={(e) => setUpdateName(e.target.value)} 
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>CCCD</Label>
+              <Input 
+                placeholder="Nhập số CCCD..." 
+                value={updateIDCard} 
+                onChange={(e) => setUpdateIDCard(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Ngày sinh</Label>
+              <Input 
+                type='date' 
+                placeholder="YYYY-MM-DD" 
+                value={updateDOB} 
+                onChange={(e) => setUpdateDOB(e.target.value)} 
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Quê quán</Label>
+              <Input 
+                placeholder="Nhập quê quán..." 
+                value={updateHomeTown} 
+                onChange={(e) => setUpdateHomeTown(e.target.value)} 
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Email</Label>
+              <Input 
+                placeholder="Nhập email..." 
+                value={updateEmail} 
+                onChange={(e) => setUpdateEmail(e.target.value)} 
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>SDT</Label>
+              <Input 
+                placeholder="Nhập sdt..." 
+                value={updatePhone} 
+                onChange={(e) => setUpdatePhone(e.target.value)} 
+              />
+            </div>
+            
+            {/* Phần chọn căn hộ trong form Update */}
+            
+            
+
+            <div className="flex gap-2 pt-4">
+              <Button className="flex-1" onClick={handleUpdate}>Lưu thay đổi</Button>
+              <Button variant="outline" className="flex-1" onClick={() => setIsUpdateDialogOpen(false)}>
+                Hủy
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
+
+    
+    
   );
 }
