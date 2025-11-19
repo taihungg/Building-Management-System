@@ -22,21 +22,22 @@ public interface ResidentRepository extends JpaRepository<Resident, UUID> {
     // public List<Resident> searchGeneral(@Param("keyword") String keyword);
 
     @Query("SELECT r.id AS id, " +
-            "r.fullName AS fullName, " +
-            "u.phone AS phoneNumber, " +
-            "u.email AS email, " +
-            "a.roomNumber AS roomNumber " +
-            "FROM Resident r " +
-            "LEFT JOIN r.account u " +
-            "LEFT JOIN r.apartment a " +
-            "WHERE LOWER(r.fullName) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
-            "OR r.idCard LIKE CONCAT('%', :keyword, '%') " +
-            "OR u.phone LIKE CONCAT('%', :keyword, '%') " +
-            "OR LOWER(u.email) LIKE LOWER(CONCAT('%', :keyword, '%'))")
-    List<ResidentSummary> searchGeneral(@Param("keyword") String keyword);
+        "r.fullName AS fullName, " +
+        "u.phone AS phoneNumber, " +
+        "u.email AS email, " +
+        "a.roomNumber AS roomNumber " +
+        "FROM Resident r " +
+        "LEFT JOIN r.account u " +
+        "LEFT JOIN r.apartment a " +
+        "WHERE ( LOWER(r.fullName) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
+        "OR r.idCard LIKE CONCAT('%', :keyword, '%') " +
+        "OR u.phone LIKE CONCAT('%', :keyword, '%') " +
+        "OR LOWER(u.email) LIKE LOWER(CONCAT('%', :keyword, '%')))" +
+        "OR (:includeInactive = true AND r.status = 'INACTIVE')")
+    List<ResidentSummary> searchGeneral(@Param("keyword") String keyword, @Param("includeInactive") boolean includeInactive);
 
     @Query("SELECT r.id AS id, r.fullName AS fullName, u.phone AS phoneNumber, " +
-            "u.email AS email, a.roomNumber AS roomNumber " +
-            "FROM Resident r LEFT JOIN r.account u LEFT JOIN r.apartment a")
+        "u.email AS email, a.roomNumber AS roomNumber " +
+        "FROM Resident r LEFT JOIN r.account u LEFT JOIN r.apartment a")
     List<ResidentSummary> findAllSummary();
 }

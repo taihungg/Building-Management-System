@@ -3,18 +3,18 @@ package itep.software.bluemoon.service;
 import java.util.List;
 import java.util.UUID;
 
-import itep.software.bluemoon.entity.Apartment;
-import itep.software.bluemoon.entity.User;
-import itep.software.bluemoon.enumeration.ResidentStatus;
-import itep.software.bluemoon.model.DTO.ResidentCreationDTO;
-import itep.software.bluemoon.model.DTO.ResidentUpdateDTO;
-import itep.software.bluemoon.model.projection.ResidentSummary;
-import itep.software.bluemoon.repository.ApartmentRepository;
 import org.springframework.stereotype.Service;
 
+import itep.software.bluemoon.entity.Apartment;
+import itep.software.bluemoon.entity.User;
 import itep.software.bluemoon.entity.person.Resident;
+import itep.software.bluemoon.enumeration.ResidentStatus;
+import itep.software.bluemoon.model.DTO.ResidentCreationDTO;
 import itep.software.bluemoon.model.DTO.ResidentDetailDTO;
+import itep.software.bluemoon.model.DTO.ResidentUpdateDTO;
 import itep.software.bluemoon.model.mapper.EntityToDto;
+import itep.software.bluemoon.model.projection.ResidentSummary;
+import itep.software.bluemoon.repository.ApartmentRepository;
 import itep.software.bluemoon.repository.ResidentRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -26,14 +26,15 @@ public class ResidentService {
     private final ResidentRepository residentRepository;
     private final ApartmentRepository apartmentRepository;
 
-    public List<ResidentSummary> searchByAllInformation(String keyword){
+    public List<ResidentSummary> searchByAllInformation(String keyword, boolean includeInactive){
         if (keyword != null && !keyword.isBlank()) {
-            return  residentRepository.searchGeneral(keyword.trim());
+            return residentRepository.searchGeneral(keyword.trim(), includeInactive);
         } else {
-            return  residentRepository.findAllSummary();
+            return residentRepository.findAllSummary();
         }
     }
 
+    @SuppressWarnings("null")
     public ResidentDetailDTO getResidentDetail(UUID id){
         Resident resident = residentRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Resident not found"));
@@ -41,6 +42,7 @@ public class ResidentService {
         return EntityToDto.residentToResidentDetailDto(resident);
     }
 
+    @SuppressWarnings("null")
     public Resident createResident(ResidentCreationDTO dto){
         Apartment apartment = apartmentRepository.findById(dto.getApartmentID())
                 .orElseThrow(() -> new RuntimeException("Apartment not found"));
@@ -56,6 +58,7 @@ public class ResidentService {
         );
     }
 
+    @SuppressWarnings("null")
     public Resident updateResident(UUID id, ResidentUpdateDTO dto){
         Resident exsistResident = residentRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Resident not found"));
@@ -73,6 +76,7 @@ public class ResidentService {
         return residentRepository.save(exsistResident);
     }
 
+    @SuppressWarnings("null")
     public void changeResidentToInactive(UUID id){
         Resident existResident = residentRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Resident not found"));
@@ -88,6 +92,7 @@ public class ResidentService {
     }
 
     //WARNING: this method will clear all relative information
+    @SuppressWarnings("null")
     public void deleteResident(UUID id){
         residentRepository.deleteById(id);
     }
