@@ -1,7 +1,9 @@
 package itep.software.bluemoon.controller;
 
 import java.util.List;
+import java.util.UUID;
 
+import itep.software.bluemoon.model.projection.ApartmentSummary;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -28,6 +30,19 @@ public class ApartmentController {
         return ApiResponse.responseBuilder(
                 HttpStatus.OK,
                 "Get dropdown apartment successfully!",
+                data
+        );
+    }
+
+    @GetMapping
+    public ResponseEntity<Object> searchByAllInformation(@RequestParam(value = "keyword", required = false) String keyword,
+                                                         @RequestParam(value = "building", required = false) UUID buildingId,
+                                                         @RequestParam(value = "floor", required = false) Integer floor) {
+        List<ApartmentSummary> data = apartmentService.searchByAllInformation(keyword, buildingId, floor);
+
+        return ApiResponse.responseBuilder(
+                HttpStatus.OK,
+                "Get apartment list successfully!",
                 data
         );
     }
