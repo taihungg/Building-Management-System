@@ -8,6 +8,8 @@ import lombok.NoArgsConstructor;
 import java.time.LocalDate;
 import java.util.UUID;
 
+import itep.software.bluemoon.enumeration.ResidentStatus;
+
 @Data
 @Builder
 @AllArgsConstructor
@@ -21,4 +23,5 @@ public class ResidentDetailDTO {
     private int roomNumber;
     private String email;
     private String phoneNumber;
+    private ResidentStatus status;
 }
