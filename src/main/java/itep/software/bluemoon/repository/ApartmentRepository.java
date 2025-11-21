@@ -13,9 +13,13 @@ import java.util.UUID;
 @Repository
 public interface ApartmentRepository extends JpaRepository<Apartment, UUID> {
     @Query("SELECT a.id as id, " +
-            "CONCAT(a.roomNumber, ' (Tầng ', a.floor, ')') as label " +
-            "FROM Apartment a " +
-            "WHERE CAST(a.roomNumber AS String) LIKE CONCAT('%', :keyword, '%') " +
-            "ORDER BY a.roomNumber ASC")
+        "CONCAT('Tòa ', b.name, ' - P.', a.roomNumber, ' (Tầng ', a.floor, ')') as label " +
+        "FROM Apartment a " +
+        "JOIN a.building b " +
+        "WHERE " +
+        "(LOWER(b.name) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
+        "OR CAST(a.roomNumber AS String) LIKE CONCAT('%', :keyword, '%') " +
+        "OR LOWER(CONCAT(b.name, a.roomNumber)) LIKE LOWER(CONCAT('%', :keyword, '%')))" +
+        "ORDER BY b.name ASC, a.roomNumber ASC")
     List<ApartmentDropdown> searchForDropdown(@Param("keyword") String keyword);
 }
