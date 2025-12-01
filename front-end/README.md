@@ -1,7 +1,7 @@
 
-  # Admin Dashboard for Apartment Management
+  # Apartment Management Interface
 
-  This is a code bundle for Admin Dashboard for Apartment Management. The original project is available at https://www.figma.com/design/EGwCLW0zQqqnsNc5o0zp3N/Admin-Dashboard-for-Apartment-Management.
+  This is a code bundle for Apartment Management Interface. The original project is available at https://www.figma.com/design/bGRjHBUZhnWBt32Td5ZT3h/Apartment-Management-Interface.
 
   ## Running the code
 
