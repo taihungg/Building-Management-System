@@ -38,7 +38,7 @@ public class Resident extends Person {
     private ResidentStatus status = ResidentStatus.ACTIVE;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "apartment_id", nullable = false)
+    @JoinColumn(name = "apartment_id", nullable = true)
     @JsonBackReference
     private Apartment apartment;
 

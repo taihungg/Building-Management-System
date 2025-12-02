@@ -4,13 +4,16 @@ import java.util.List;
 import java.util.UUID;
 
 import itep.software.bluemoon.model.projection.ApartmentSummary;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import itep.software.bluemoon.model.DTO.ApartmentDetailDTO;
 import itep.software.bluemoon.model.projection.ApartmentDropdown;
 import itep.software.bluemoon.response.ApiResponse;
 import itep.software.bluemoon.service.ApartmentService;
@@ -43,6 +46,17 @@ public class ApartmentController {
         return ApiResponse.responseBuilder(
                 HttpStatus.OK,
                 "Get apartment list successfully!",
+                data
+        );
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<Object> viewApartmentDetail(@PathVariable UUID id){
+        ApartmentDetailDTO data = apartmentService.getApartmentDetail(id);
+
+        return ApiResponse.responseBuilder(
+                HttpStatus.OK,
+                "Get apartment detail successfully!",
                 data
         );
     }

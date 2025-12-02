@@ -32,7 +32,6 @@ public interface ResidentRepository extends JpaRepository<Resident, UUID> {
     List<ResidentSummary> searchGeneral(@Param("keyword") String keyword, 
                                         @Param("includeInactive") boolean includeInactive);
 
-
     @Query("SELECT r.id AS id, " +
            "r.fullName AS fullName, " +
            "u.phone AS phoneNumber, " +
@@ -43,4 +42,16 @@ public interface ResidentRepository extends JpaRepository<Resident, UUID> {
            "LEFT JOIN r.account u " +
            "LEFT JOIN r.apartment a")
     List<ResidentSummary> findAllSummary();
+
+    @Query("SELECT r.id AS id, " +
+           "r.fullName AS fullName, " +
+           "u.phone AS phoneNumber, " +
+           "u.email AS email, " +
+           "a.roomNumber AS roomNumber, " +
+           "r.status AS status " +
+           "FROM Resident r " +
+           "LEFT JOIN r.account u " +
+           "LEFT JOIN r.apartment a " +
+           "WHERE a.id = :apartmentId")
+    List<ResidentSummary> findByApartment_Id(@Param("apartmentId") UUID apartmentId);
 }
