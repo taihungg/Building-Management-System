@@ -7,7 +7,7 @@ import java.util.UUID;
 import itep.software.bluemoon.entity.Building;
 import itep.software.bluemoon.entity.person.Resident;
 import itep.software.bluemoon.model.DTO.ApartmentCreationDTO;
-import itep.software.bluemoon.repository.BuildingRepository;
+import itep.software.bluemoon.repository.*;
 import org.springframework.stereotype.Service;
 
 import itep.software.bluemoon.entity.Apartment;
@@ -15,8 +15,6 @@ import itep.software.bluemoon.model.DTO.ApartmentDetailDTO;
 import itep.software.bluemoon.model.projection.Dropdown;
 import itep.software.bluemoon.model.projection.ApartmentSummary;
 import itep.software.bluemoon.model.projection.ResidentSummary;
-import itep.software.bluemoon.repository.ApartmentRepository;
-import itep.software.bluemoon.repository.ResidentRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 
@@ -97,5 +95,19 @@ public class ApartmentService {
                         .owner(owner)
                         .build()
         );
+    }
+
+    public void changeApartmentOwner(UUID apartmentId, UUID ownerId){
+        Apartment apartment = apartmentRepository.findById(apartmentId)
+                .orElseThrow(() -> new RuntimeException("Apartment not found!"));
+
+        Resident newOwner = ownerId != null
+                ? residentRepository.findById(ownerId)
+                .orElseThrow(() -> new RuntimeException("Owner not found!"))
+                : null;
+
+        apartment.setOwner(newOwner);
+
+        apartmentRepository.save(apartment);
     }
 }

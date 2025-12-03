@@ -69,4 +69,15 @@ public class ApartmentController {
                 data
         );
     }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<Object> changeApartmentOwner(@PathVariable(value = "id") UUID apartmentId, @RequestParam(value = "new_owner_id",  required = false) UUID ownerId){
+        apartmentService.changeApartmentOwner(apartmentId, ownerId);
+
+        return ApiResponse.responseBuilder(
+                HttpStatus.OK,
+                "",
+                null
+        );
+    }
 }
