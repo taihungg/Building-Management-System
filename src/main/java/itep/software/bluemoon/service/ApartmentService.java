@@ -12,7 +12,7 @@ import org.springframework.stereotype.Service;
 
 import itep.software.bluemoon.entity.Apartment;
 import itep.software.bluemoon.model.DTO.ApartmentDetailDTO;
-import itep.software.bluemoon.model.projection.ApartmentDropdown;
+import itep.software.bluemoon.model.projection.Dropdown;
 import itep.software.bluemoon.model.projection.ApartmentSummary;
 import itep.software.bluemoon.model.projection.ResidentSummary;
 import itep.software.bluemoon.repository.ApartmentRepository;
@@ -28,7 +28,7 @@ public class ApartmentService {
     private final ResidentRepository residentRepository;
     private final BuildingRepository buildingRepository;
 
-    public List<ApartmentDropdown> searchApartmentDropdown(String keyword){
+    public List<Dropdown> searchApartmentDropdown(String keyword){
         if(keyword == null || keyword.isBlank()) {
             return new ArrayList<>();
         }

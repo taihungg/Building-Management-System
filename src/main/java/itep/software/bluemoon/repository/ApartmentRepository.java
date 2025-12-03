@@ -9,7 +9,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import itep.software.bluemoon.entity.Apartment;
-import itep.software.bluemoon.model.projection.ApartmentDropdown;
+import itep.software.bluemoon.model.projection.Dropdown;
 import itep.software.bluemoon.model.projection.ApartmentSummary;
 
 @Repository
@@ -23,7 +23,7 @@ public interface ApartmentRepository extends JpaRepository<Apartment, UUID> {
         "OR CAST(a.roomNumber AS String) LIKE CONCAT('%', :keyword, '%') " +
         "OR LOWER(CONCAT(b.name, a.roomNumber)) LIKE LOWER(CONCAT('%', :keyword, '%')))" +
         "ORDER BY b.name ASC, a.roomNumber ASC")
-    List<ApartmentDropdown> searchForDropdown(@Param("keyword") String keyword);
+    List<Dropdown> searchForDropdown(@Param("keyword") String keyword);
 
     @Query("SELECT a.id AS id, " +
         "CONCAT('Căn hộ ', a.roomNumber, ' - Tòa ', b.name) AS label, " +

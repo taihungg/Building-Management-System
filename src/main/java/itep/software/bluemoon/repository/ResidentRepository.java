@@ -3,6 +3,7 @@ package itep.software.bluemoon.repository;
 import java.util.List;
 import java.util.UUID;
 
+import itep.software.bluemoon.model.projection.Dropdown;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -13,6 +14,20 @@ import itep.software.bluemoon.model.projection.ResidentSummary;
 
 @Repository
 public interface ResidentRepository extends JpaRepository<Resident, UUID> {
+    @Query("SELECT r.id AS id, " +
+            "CONCAT(r.fullName, ' - ', COALESCE(u.phone, 'No Phone'), ' - P.', COALESCE(CAST(a.roomNumber AS string), 'N/A')) AS label " +
+            "FROM Resident r " +
+            "LEFT JOIN r.account u " +
+            "LEFT JOIN r.apartment a " +
+            "WHERE " +
+            "r.status = 'ACTIVE' " +
+            "AND (:keyword IS NULL OR :keyword = '' OR " +
+            " LOWER(r.fullName) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
+            " u.phone LIKE CONCAT('%', :keyword, '%') OR " +
+            " r.idCard LIKE CONCAT('%', :keyword, '%') OR " +
+            " CAST(a.roomNumber AS string) LIKE CONCAT('%', :keyword, '%')) " +
+            "ORDER BY r.fullName ASC")
+    List<Dropdown> searchForDropdown(@Param("keyword") String keyword);
 
     @Query("SELECT r.id AS id, " +
            "r.fullName AS fullName, " +

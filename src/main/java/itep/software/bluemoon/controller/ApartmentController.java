@@ -12,7 +12,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import itep.software.bluemoon.model.DTO.ApartmentDetailDTO;
-import itep.software.bluemoon.model.projection.ApartmentDropdown;
+import itep.software.bluemoon.model.projection.Dropdown;
 import itep.software.bluemoon.response.ApiResponse;
 import itep.software.bluemoon.service.ApartmentService;
 import lombok.RequiredArgsConstructor;
@@ -26,7 +26,7 @@ public class ApartmentController {
     //use this api to get basic list apartment to make UUID apartment input
     @GetMapping("/dropdown")
     public ResponseEntity<Object> searchForDropdown(@RequestParam("keyword") String keyword) {
-        List<ApartmentDropdown> data = apartmentService.searchApartmentDropdown(keyword);
+        List<Dropdown> data = apartmentService.searchApartmentDropdown(keyword);
 
         return ApiResponse.responseBuilder(
                 HttpStatus.OK,
