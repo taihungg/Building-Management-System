@@ -4,6 +4,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
+import itep.software.bluemoon.entity.Building;
+import itep.software.bluemoon.entity.person.Resident;
+import itep.software.bluemoon.model.DTO.ApartmentCreationDTO;
+import itep.software.bluemoon.repository.BuildingRepository;
 import org.springframework.stereotype.Service;
 
 import itep.software.bluemoon.entity.Apartment;
@@ -22,6 +26,7 @@ import lombok.RequiredArgsConstructor;
 public class ApartmentService {
     private final ApartmentRepository apartmentRepository;
     private final ResidentRepository residentRepository;
+    private final BuildingRepository buildingRepository;
 
     public List<ApartmentDropdown> searchApartmentDropdown(String keyword){
         if(keyword == null || keyword.isBlank()) {
@@ -73,5 +78,24 @@ public class ApartmentService {
             .residents(residents)
             .summary(summary)
             .build();
+    }
+
+    public Apartment createResident(ApartmentCreationDTO dto){
+        Building building = buildingRepository.findById(dto.getBuildingId())
+                    .orElseThrow(() -> new RuntimeException("Building not found!"));
+        Resident owner = dto.getOwnerId() != null
+                ? residentRepository.findById(dto.getOwnerId())
+                .orElseThrow(() -> new RuntimeException("Owner not found!"))
+                : null;
+
+        return apartmentRepository.save(
+                Apartment.builder()
+                        .roomNumber(dto.getRoomNumber())
+                        .floor(dto.getFloor())
+                        .area(dto.getArea())
+                        .building(building)
+                        .owner(owner)
+                        .build()
+        );
     }
 }
