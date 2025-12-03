@@ -8,4 +8,5 @@ import java.util.UUID;
 
 @Repository
 public interface IssueRepository extends JpaRepository<Issue, UUID> {
+    boolean existsByApartment_Id(UUID apartmentId);
 }

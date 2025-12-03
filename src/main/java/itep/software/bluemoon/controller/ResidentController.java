@@ -3,6 +3,7 @@ package itep.software.bluemoon.controller;
 import java.util.List;
 import java.util.UUID;
 
+import itep.software.bluemoon.model.projection.Dropdown;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CrossOrigin;
@@ -31,6 +32,17 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class ResidentController {
     private final ResidentService residentService;
+
+    @GetMapping("/dropdown")
+    public ResponseEntity<Object> searchForDropdown(@RequestParam("keyword") String keyword) {
+        List<Dropdown> data = residentService.searchForDropdown(keyword);
+
+        return ApiResponse.responseBuilder(
+                HttpStatus.OK,
+                "Get dropdown apartment successfully!",
+                data
+        );
+    }
 
     @GetMapping
     public ResponseEntity<Object> searchByAllInformation(@RequestParam(value = "keyword", required = false) String keyword, @RequestParam(value = "include_inactive", defaultValue = "false") boolean includeInactive){
