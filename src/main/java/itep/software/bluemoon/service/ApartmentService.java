@@ -7,6 +7,7 @@ import java.util.UUID;
 import itep.software.bluemoon.entity.Building;
 import itep.software.bluemoon.entity.person.Resident;
 import itep.software.bluemoon.model.DTO.ApartmentCreationDTO;
+import itep.software.bluemoon.model.mapper.EntityToDto;
 import itep.software.bluemoon.repository.*;
 import org.springframework.stereotype.Service;
 
@@ -14,7 +15,6 @@ import itep.software.bluemoon.entity.Apartment;
 import itep.software.bluemoon.model.DTO.ApartmentDetailDTO;
 import itep.software.bluemoon.model.projection.Dropdown;
 import itep.software.bluemoon.model.projection.ApartmentSummary;
-import itep.software.bluemoon.model.projection.ResidentSummary;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 
@@ -51,33 +51,7 @@ public class ApartmentService {
         Apartment apartment = apartmentRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Apartment not found!"));
 
-        ApartmentDetailDTO.ApartmentInfoDTO info = ApartmentDetailDTO.ApartmentInfoDTO.builder()
-            .roomNumber(apartment.getRoomNumber())
-            .floor(apartment.getFloor())
-            .area(apartment.getArea())
-            .buildingName(apartment.getBuilding().getName())
-            .numberOfResidents(apartment.getResidents().size())
-            .build();
-            
-        ApartmentDetailDTO.OwnerInfoDTO owner = ApartmentDetailDTO.OwnerInfoDTO.builder()
-            .id(apartment.getOwner().getId())
-            .fullName(apartment.getOwner().getFullName())
-            .phoneNumber(apartment.getOwner().getAccount().getPhone())
-            .email(apartment.getOwner().getAccount().getEmail())
-            .build();
-
-        List<ResidentSummary> residents = residentRepository.findByApartment_Id(id);
-
-        ApartmentDetailDTO.SummaryDTO summary = ApartmentDetailDTO.SummaryDTO.builder()
-            .build();
-
-        return ApartmentDetailDTO.builder()
-            .id(id)
-            .info(info)
-            .owner(owner)
-            .residents(residents)
-            .summary(summary)
-            .build();
+        return EntityToDto.apartmentToApartmentDetailDto(apartment, residentRepository);
     }
 
     public Apartment createResident(ApartmentCreationDTO dto){
