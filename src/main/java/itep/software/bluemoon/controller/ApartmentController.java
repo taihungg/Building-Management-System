@@ -80,4 +80,15 @@ public class ApartmentController {
                 null
         );
     }
+
+    @DeleteMapping
+    public ResponseEntity<Object> deleteResident(@RequestParam(value = "id", required = true) UUID id){
+        apartmentService.deleteApartment(id);
+
+        return ApiResponse.responseBuilder(
+                HttpStatus.OK,
+                "Deleted resident successfully!",
+                null
+        );
+    }
 }

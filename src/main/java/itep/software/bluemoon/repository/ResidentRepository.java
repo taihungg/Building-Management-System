@@ -69,4 +69,6 @@ public interface ResidentRepository extends JpaRepository<Resident, UUID> {
            "LEFT JOIN r.apartment a " +
            "WHERE a.id = :apartmentId")
     List<ResidentSummary> findByApartment_Id(@Param("apartmentId") UUID apartmentId);
+
+    boolean existsByApartment_Id(UUID apartmentId);
 }

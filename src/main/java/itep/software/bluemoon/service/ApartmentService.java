@@ -25,6 +25,8 @@ public class ApartmentService {
     private final ApartmentRepository apartmentRepository;
     private final ResidentRepository residentRepository;
     private final BuildingRepository buildingRepository;
+    private final BillRepository billRepository;
+    private final IssueRepository issueRepository;
 
     public List<Dropdown> searchApartmentDropdown(String keyword){
         if(keyword == null || keyword.isBlank()) {
@@ -109,5 +111,26 @@ public class ApartmentService {
         apartment.setOwner(newOwner);
 
         apartmentRepository.save(apartment);
+    }
+
+    //Only able to delete if there is no information
+    @SuppressWarnings("null")
+    public void deleteApartment(UUID id){
+        Apartment apartment = apartmentRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Apartment not found!"));
+
+        if (residentRepository.existsByApartment_Id(id)) {
+            throw new RuntimeException("Cannot be deleted: This apartment has residents!");
+        }
+
+        if (billRepository.existsByApartment_Id(id)) {
+            throw new RuntimeException("Cannot be deleted: This apartment has bills!");
+        }
+
+        if (issueRepository.existsByApartment_Id(id)) {
+            throw new RuntimeException("Cannot be  deleted: This apartment has issues!");
+        }
+
+        apartmentRepository.delete(apartment);
     }
 }
