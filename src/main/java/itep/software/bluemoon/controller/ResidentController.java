@@ -76,8 +76,8 @@ public class ResidentController {
         );
     }
 
-    @DeleteMapping("/{id}")
-    public ResponseEntity<Object> deleteResident(@PathVariable UUID id,
+    @DeleteMapping
+    public ResponseEntity<Object> deleteResident(@RequestParam(value = "id", required = true) UUID id,
                                @RequestParam(value = "hard" /* true nếu muốn vĩnh viễn */, defaultValue = "false") boolean hardDelete){
         if (hardDelete) {
             residentService.deleteResident(id); // Gọi hàm xóa vĩnh viễn
