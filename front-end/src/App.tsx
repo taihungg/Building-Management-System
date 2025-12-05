@@ -22,7 +22,7 @@ export default function App() {
     const handleToggleSidebar = () => {
       setIsSidebarOpen(prev => !prev);
     };
-
+    setIsAuthenticated(true);
     window.addEventListener('toggleSidebar', handleToggleSidebar);
     return () => window.removeEventListener('toggleSidebar', handleToggleSidebar);
   }, []);
