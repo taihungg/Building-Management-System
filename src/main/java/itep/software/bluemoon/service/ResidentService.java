@@ -1,8 +1,10 @@
 package itep.software.bluemoon.service;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
+import itep.software.bluemoon.model.projection.Dropdown;
 import org.springframework.stereotype.Service;
 
 import itep.software.bluemoon.entity.Apartment;
@@ -25,6 +27,14 @@ import lombok.RequiredArgsConstructor;
 public class ResidentService {
     private final ResidentRepository residentRepository;
     private final ApartmentRepository apartmentRepository;
+
+    public List<Dropdown> searchForDropdown(String keyword){
+        if(keyword == null || keyword.isBlank()) {
+            return new ArrayList<>();
+        }
+
+        return residentRepository.searchForDropdown(keyword.trim());
+    }
 
     public List<ResidentSummary> searchByAllInformation(String keyword, boolean includeInactive){
         if (keyword != null && !keyword.isBlank()) {
