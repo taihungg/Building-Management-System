@@ -8,3 +8,4 @@ build/
 .env.production.local
 .vscode/
 .idea/
+package-lock.json
