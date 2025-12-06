@@ -88,6 +88,7 @@ public class ResidentController {
         );
     }
 
+    // Nếu Resident chưa có account, không được truyền email, phone
     @DeleteMapping
     public ResponseEntity<Object> deleteResident(@RequestParam(value = "id", required = true) UUID id,
                                @RequestParam(value = "hard" /* true nếu muốn vĩnh viễn */, defaultValue = "false") boolean hardDelete){
