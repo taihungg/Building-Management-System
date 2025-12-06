@@ -51,7 +51,7 @@ public class ApartmentService {
         Apartment apartment = apartmentRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Apartment not found!"));
 
-        return EntityToDto.apartmentToApartmentDetailDto(apartment, residentRepository);
+        return EntityToDto.apartmentToApartmentDetailDto(apartment, residentRepository, invoiceRepository);
     }
 
     public Apartment createResident(ApartmentCreationDTO dto){

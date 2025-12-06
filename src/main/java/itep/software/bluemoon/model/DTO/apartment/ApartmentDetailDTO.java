@@ -48,8 +48,8 @@ public class ApartmentDetailDTO {
     @AllArgsConstructor
     @NoArgsConstructor
     public static class SummaryDTO {
-        private long unpaidBillsCount;
-        private long pendingIssuesCount;
-        private long vehicleCount;
+        private int unpaidInvoicesCount;
+        private int pendingIssuesCount;
+        private int vehicleCount;
     }
 }
