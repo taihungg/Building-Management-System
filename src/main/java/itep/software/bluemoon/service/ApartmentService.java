@@ -25,7 +25,7 @@ public class ApartmentService {
     private final ApartmentRepository apartmentRepository;
     private final ResidentRepository residentRepository;
     private final BuildingRepository buildingRepository;
-    private final BillRepository billRepository;
+    private final InvoiceRepository invoiceRepository;
     private final IssueRepository issueRepository;
 
     public List<Dropdown> searchApartmentDropdown(String keyword){
@@ -97,8 +97,8 @@ public class ApartmentService {
             throw new RuntimeException("Cannot be deleted: This apartment has residents!");
         }
 
-        if (billRepository.existsByApartment_Id(id)) {
-            throw new RuntimeException("Cannot be deleted: This apartment has bills!");
+        if (invoiceRepository.existsByApartment_Id(id)) {
+            throw new RuntimeException("Cannot be deleted: This apartment has invoices!");
         }
 
         if (issueRepository.existsByApartment_Id(id)) {
