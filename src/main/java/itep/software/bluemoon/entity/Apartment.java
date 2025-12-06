@@ -7,7 +7,7 @@ import java.util.UUID;
 
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 
-import itep.software.bluemoon.entity.accountant.Invoice;
+import itep.software.bluemoon.entity.accounting.Invoice;
 import itep.software.bluemoon.entity.person.Resident;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;

@@ -1,5 +1,6 @@
-package itep.software.bluemoon.entity.accountant;
+package itep.software.bluemoon.entity.accounting;
 
+import itep.software.bluemoon.enumeration.ServiceCode;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -23,13 +24,10 @@ public class ServiceType {
     )
     private UUID id;
 
-    @Column(name = "name")
-    private String name;
+    @Enumerated(EnumType.STRING)
+    @Column(name = "service_code")
+    private ServiceCode serviceCode;
 
     @Column(name = "unit")
     private String unit;
-
-    @OneToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
-    @JoinColumn(name = "service_price_id", referencedColumnName = "id")
-    private ServicePrice servicePrice;
 }

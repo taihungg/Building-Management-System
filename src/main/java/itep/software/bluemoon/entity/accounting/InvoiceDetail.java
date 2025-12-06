@@ -1,4 +1,4 @@
-package itep.software.bluemoon.entity.accountant;
+package itep.software.bluemoon.entity.accounting;
 
 import java.math.BigDecimal;
 import java.util.UUID;
@@ -29,15 +29,18 @@ public class InvoiceDetail {
     private UUID id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "invoice_id")
+    @JoinColumn(name = "invoice_id", nullable = false)
     private Invoice invoice;
 
-    @ManyToOne(fetch = FetchType.EAGER)
-    @JoinColumn(name = "service_type_id")
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "service_type_id", nullable = false)
     private ServiceType serviceType;
 
     @Column(name = "quantity")
     private BigDecimal quantity;
+
+    @Column(name = "unit_price")
+    private BigDecimal unitPrice; // giá bậc 0 hoặc trung bình
 
     @Column(name = "amount")
     private BigDecimal amount;

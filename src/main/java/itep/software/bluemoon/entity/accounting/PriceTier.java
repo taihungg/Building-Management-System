@@ -1,4 +1,4 @@
-package itep.software.bluemoon.entity.accountant;
+package itep.software.bluemoon.entity.accounting;
 
 import java.math.BigDecimal;
 import java.util.UUID;
@@ -22,15 +22,15 @@ public class PriceTier {
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
-    @ManyToOne
-    @JoinColumn(name = "service_price_id")
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "service_price_id", nullable = false)
     private ServicePrice servicePrice;
 
     @Column(name = "min_usage")
-    private int minUsage; // Bậc từ (VD: 0)
+    private int minUsage;
 
     @Column(name = "max_usage")
-    private int maxUsage; // Bậc đến (VD: 50). NULL nghĩa là vô cùng (cho bậc cuối)
+    private int maxUsage;
 
     @Column(name = "unite_price", nullable = false)
     private BigDecimal unitPrice;

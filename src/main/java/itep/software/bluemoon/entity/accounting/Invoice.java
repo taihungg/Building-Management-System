@@ -1,13 +1,13 @@
-package itep.software.bluemoon.entity.accountant;
+package itep.software.bluemoon.entity.accounting;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
 import itep.software.bluemoon.entity.Apartment;
-import itep.software.bluemoon.enumeration.BillStatus;
-import itep.software.bluemoon.enumeration.BillType;
+import itep.software.bluemoon.enumeration.InvoiceStatus;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -33,10 +33,6 @@ public class Invoice {
     )
     private UUID id;
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "type", nullable = false)
-    private BillType type;
-
     @Column(name = "month")
     private int month;
 
@@ -52,7 +48,14 @@ public class Invoice {
 
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false)
-    private BillStatus status;
+    @Builder.Default
+    private InvoiceStatus status = InvoiceStatus.UNPAID;
+
+    @Column(name = "paid_amount")
+    @Builder.Default
+    private BigDecimal paidAmount = BigDecimal.ZERO; // Số tiền đã đóng
+
+    private LocalDateTime paymentDate;
 
     @OneToMany(mappedBy = "invoice", cascade = CascadeType.ALL)
     @Builder.Default

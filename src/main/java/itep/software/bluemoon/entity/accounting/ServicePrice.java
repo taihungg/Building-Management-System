@@ -1,4 +1,4 @@
-package itep.software.bluemoon.entity.accountant;
+package itep.software.bluemoon.entity.accounting;
 
 import itep.software.bluemoon.enumeration.PriceModel;
 import jakarta.persistence.*;
@@ -28,19 +28,23 @@ public class ServicePrice {
     )
     private UUID id;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "service_type_id", nullable = false)
+    private ServiceType serviceType;
+
     @JsonFormat(pattern = "yyyy-MM-dd")
-    @Column(name = "start_date")
-    private LocalDate startDate; // Ngày bắt đầu hiệu lực (VD: 01/01/2024)
+    @Column(name = "start_date", nullable = false)
+    private LocalDate startDate;
 
     @JsonFormat(pattern = "yyyy-MM-dd")
     @Column(name = "end_date")
     private LocalDate endDate;   // Ngày kết thúc (NULL = Đang áp dụng)
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "price_model")
-    private PriceModel priceModel;
+    @Column(name = "model")
+    private PriceModel model;
 
-    @OneToMany(mappedBy = "servicePrice", cascade = CascadeType.ALL)
+    @OneToMany(mappedBy = "servicePrice", cascade = CascadeType.ALL, orphanRemoval = true)
     @OrderBy("minUsage ASC")
     private List<PriceTier> tiers;
 }
