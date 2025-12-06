@@ -1,4 +1,4 @@
-package itep.software.bluemoon.model.DTO;
+package itep.software.bluemoon.model.DTO.resident;
 
 import java.time.LocalDate;
 import java.util.UUID;

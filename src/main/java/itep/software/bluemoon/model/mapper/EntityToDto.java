@@ -2,8 +2,8 @@ package itep.software.bluemoon.model.mapper;
 
 import itep.software.bluemoon.entity.Apartment;
 import itep.software.bluemoon.entity.person.Resident;
-import itep.software.bluemoon.model.DTO.ApartmentDetailDTO;
-import itep.software.bluemoon.model.DTO.ResidentDetailDTO;
+import itep.software.bluemoon.model.DTO.apartment.ApartmentDetailDTO;
+import itep.software.bluemoon.model.DTO.resident.ResidentDetailDTO;
 import itep.software.bluemoon.model.projection.ResidentSummary;
 import itep.software.bluemoon.repository.ResidentRepository;
 

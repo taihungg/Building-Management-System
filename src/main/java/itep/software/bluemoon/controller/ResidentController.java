@@ -18,9 +18,9 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import itep.software.bluemoon.entity.person.Resident;
-import itep.software.bluemoon.model.DTO.ResidentCreationDTO;
-import itep.software.bluemoon.model.DTO.ResidentDetailDTO;
-import itep.software.bluemoon.model.DTO.ResidentUpdateDTO;
+import itep.software.bluemoon.model.DTO.resident.ResidentCreationDTO;
+import itep.software.bluemoon.model.DTO.resident.ResidentDetailDTO;
+import itep.software.bluemoon.model.DTO.resident.ResidentUpdateDTO;
 import itep.software.bluemoon.model.projection.ResidentSummary;
 import itep.software.bluemoon.response.ApiResponse;
 import itep.software.bluemoon.service.ResidentService;

@@ -6,13 +6,13 @@ import java.util.UUID;
 
 import itep.software.bluemoon.entity.Building;
 import itep.software.bluemoon.entity.person.Resident;
-import itep.software.bluemoon.model.DTO.ApartmentCreationDTO;
+import itep.software.bluemoon.model.DTO.apartment.ApartmentCreationDTO;
 import itep.software.bluemoon.model.mapper.EntityToDto;
 import itep.software.bluemoon.repository.*;
 import org.springframework.stereotype.Service;
 
 import itep.software.bluemoon.entity.Apartment;
-import itep.software.bluemoon.model.DTO.ApartmentDetailDTO;
+import itep.software.bluemoon.model.DTO.apartment.ApartmentDetailDTO;
 import itep.software.bluemoon.model.projection.Dropdown;
 import itep.software.bluemoon.model.projection.ApartmentSummary;
 import jakarta.transaction.Transactional;
