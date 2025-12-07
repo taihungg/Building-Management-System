@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
-import { Search, Plus, Edit, Trash2, MoreVertical, MapPin, Phone } from "lucide-react";
+import { Search, Plus, Edit, Trash2, MoreVertical, MapPin, Phone, UserCircle, Mail, Eye, Home, Fingerprint } from "lucide-react";
 import { Label } from "./ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
 import { Dropdown } from "./Dropdown";
@@ -46,6 +46,11 @@ export function ResidentManagement() {
   const [updateEmail, setUpdateEmail] = useState("");
   const [updatePhone, setUpdatePhone] = useState("");
   const [updateApartmentID, setUpdateApartmentID] = useState("");
+
+  // --- STATE CHO MODAL VIEW DETAIL ---
+const [selectedResident, setSelectedResident] = useState(null);
+const [isViewModalOpen, setIsViewModalOpen] = useState(false);
+const [isLoadingDetail, setIsLoadingDetail] = useState(false);
 
   useEffect(() => {
     fetchResidents();
@@ -250,6 +255,25 @@ export function ResidentManagement() {
     setUpdatePhone(resident.phoneNumber || "");
     setIsUpdateDialogOpen(true);
   };
+  const handleViewDetail = async (id) => {
+    setIsLoadingDetail(true);
+    try {
+        const response = await fetch(`http://localhost:8081/api/v1/residents/${id}`);
+        
+        if (!response.ok) {
+            throw new Error("Không thể tải thông tin chi tiết cư dân");
+        }
+
+        const res = await response.json();
+        setSelectedResident(res.data); // Lưu dữ liệu vào state
+        setIsViewModalOpen(true);      // Mở Modal
+    } catch (err) {
+        console.error(err);
+        toast.error("Lỗi tải dữ liệu", { description: err.message });
+    } finally {
+        setIsLoadingDetail(false);
+    }
+};
 
   return (
     <div className="space-y-6">
@@ -374,8 +398,10 @@ export function ResidentManagement() {
                         </button>
                       }
                       items={[
+                        { label: 'View Details', icon: Eye, onClick: () => handleViewDetail(resident.id) },
                         { label: 'Edit', icon: Edit, onClick: () => openUpdateDialog(resident) },
                         { label: 'Delete', icon: Trash2, onClick: () => openDeleteDialog(resident), danger: true },
+
                       ]}
                     />
                   </td>
@@ -640,6 +666,156 @@ export function ResidentManagement() {
           </div>
         </div>
       </Modal>
+      {/* --- MODAL VIEW RESIDENT DETAIL --- */}
+      <Modal
+    isOpen={isViewModalOpen}
+    onClose={() => setIsViewModalOpen(false)}
+>
+    {isLoadingDetail ? (
+        <div className="flex flex-col items-center justify-center py-12 text-gray-500">
+            <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600 mb-3"></div>
+            <p>Đang tải thông tin cư dân...</p>
+        </div>
+    ) : selectedResident ? (
+        <div className="flex flex-col h-full">
+            
+            {/* 1. HEADER GRADIENT: Giữ nguyên */}
+            <div className="-mx-6 -mt-6 mb-6 bg-gradient-to-r from-blue-600 to-indigo-600 p-6 text-white rounded-t-lg shadow-md relative overflow-hidden">
+                <div className="absolute top-0 right-0 p-4 opacity-10">
+                    <UserCircle className="w-32 h-32" />
+                </div>
+                <div className="relative z-10 flex items-start gap-4">
+                    <div className="w-16 h-16 rounded-full bg-white/20 backdrop-blur-sm border-2 border-white/50 flex items-center justify-center text-2xl font-bold shadow-lg">
+                        {selectedResident.fullName?.charAt(0)}
+                    </div>
+                    <div className="flex-1">
+                        <div className="flex justify-between items-start">
+                            <div>
+                                <h2 className="text-2xl font-bold">{selectedResident.fullName}</h2>
+                                <p className="text-blue-100 text-sm flex items-center gap-1 mt-1">
+                                    <MapPin className="w-4 h-4" /> 
+                                    {selectedResident.homeTown || "Chưa cập nhật quê quán"}
+                                </p>
+                            </div>
+                            <span className={`px-3 py-1 rounded-full text-xs font-bold border ${
+                                selectedResident.status === 'ACTIVE' 
+                                    ? 'bg-green-500/20 border-green-400/50 text-green-50' 
+                                    : 'bg-gray-500/20 border-gray-400/50 text-gray-200'
+                            }`}>
+                                {selectedResident.status}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {/* 2. NỘI DUNG CHÍNH (Grid 2 cột) */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 px-2">
+                
+                {/* CỘT TRÁI: Thông tin cá nhân */}
+                <div className="space-y-4">
+                    <h3 className="text-sm font-bold text-gray-500 uppercase tracking-wider border-b pb-2">
+                        Personal Information
+                    </h3>
+                    
+                    <div className="space-y-3">
+                        {/* --- MỚI THÊM: SYSTEM ID --- */}
+                        <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg border border-gray-100 group hover:border-blue-200 transition-colors">
+                            <div className="p-2 bg-slate-200 text-slate-600 rounded-md">
+                                <Fingerprint className="w-4 h-4" />
+                            </div>
+                            <div className="flex-1 overflow-hidden">
+                                <p className="text-xs text-gray-500">System ID</p>
+                                <p className="font-mono text-xs font-medium text-gray-700 truncate" title={selectedResident.id}>
+                                    {selectedResident.id}
+                                </p>
+                            </div>
+                        </div>
+
+                        {/* ID Card (CMND/CCCD) */}
+                        <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg border border-gray-100">
+                            <div className="p-2 bg-blue-100 text-blue-600 rounded-md">
+                                <span className="text-xs font-bold">ID</span>
+                            </div>
+                            <div>
+                                <p className="text-xs text-gray-500">CMND / CCCD</p>
+                                <p className="font-medium text-gray-900">{selectedResident.idCard || "N/A"}</p>
+                            </div>
+                        </div>
+
+                        {/* DOB */}
+                        <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg border border-gray-100">
+                            <div className="p-2 bg-purple-100 text-purple-600 rounded-md">
+                                <span className="text-xs font-bold">DOB</span>
+                            </div>
+                            <div>
+                                <p className="text-xs text-gray-500">Date of Birth</p>
+                                <p className="font-medium text-gray-900">{selectedResident.dob || "N/A"}</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* CỘT PHẢI: Liên lạc & Căn hộ (GIỮ NGUYÊN) */}
+                <div className="space-y-4">
+                    <h3 className="text-sm font-bold text-gray-500 uppercase tracking-wider border-b pb-2">
+                        Contact & Residence
+                    </h3>
+
+                    <div className="space-y-3">
+                        <div className="flex items-center gap-3">
+                            <Phone className="w-5 h-5 text-gray-400" />
+                            <div>
+                                <p className="text-xs text-gray-500">Phone Number</p>
+                                <p className="font-medium text-gray-900">{selectedResident.phoneNumber || "N/A"}</p>
+                            </div>
+                        </div>
+
+                        <div className="flex items-center gap-3">
+                            <Mail className="w-5 h-5 text-gray-400" />
+                            <div>
+                                <p className="text-xs text-gray-500">Email Address</p>
+                                <p className="font-medium text-gray-900 break-all">{selectedResident.email || "N/A"}</p>
+                            </div>
+                        </div>
+
+                        {/* Current Apartment */}
+                        <div className="mt-4 p-4 bg-blue-50 border border-blue-100 rounded-xl relative overflow-hidden group">
+                            <div className="absolute top-0 right-0 p-2 opacity-5 group-hover:opacity-10 transition-opacity">
+                                <Home className="w-7 h-7 text-blue-600" />
+                            </div>
+                            <p className="text-xs font-bold text-blue-600/80 uppercase tracking-wider mb-1">Current Apartment</p>
+                            <div className="flex items-baseline gap-2 relative z-10">
+                                <span className="text-sm font-semibold text-blue-400 uppercase">Room</span>
+                                <span className="text-xl font-extrabold text-blue-900 tracking-tight font-mono">
+                                    {selectedResident.roomNumber}
+                                </span>
+                            </div>                      
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {/* 3. FOOTER: Giữ nguyên */}
+            <div className="mt-8 flex justify-end pt-4 border-t gap-3">
+                <Button variant="outline" onClick={() => setIsViewModalOpen(false)} className="rounded-full px-6">
+                    Close
+                </Button>
+                <Button 
+                    onClick={() => {
+                        setIsViewModalOpen(false);
+                        openUpdateDialog(selectedResident);
+                    }} 
+                    className="bg-blue-600 hover:bg-blue-700 text-white rounded-full px-6 shadow-lg shadow-blue-500/30"
+                >
+                    <Edit className="w-4 h-4 mr-2" /> Edit Info
+                </Button>
+            </div>
+        </div>
+    ) : (
+        <div className="text-center py-10 text-gray-500">Không tìm thấy dữ liệu.</div>
+    )}
+</Modal>
     </div>
   );
 }
