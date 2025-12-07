@@ -5,13 +5,16 @@ import {
   User
 } from 'lucide-react';
 
-// Import các component UI của bạn (đường dẫn có thể khác tùy project của bạn)
-import { Modal } from './Modal'; // Component Modal tự custom
-import { Dropdown } from './Dropdown'; // Component Dropdown
+// Import các component UI của bạn
+import { Modal } from './Modal'; 
+import { Dropdown } from './Dropdown'; 
 import { Button } from "./ui/button"; 
 import { Input } from "./ui/input";   
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select"; 
 import { Label } from "./ui/label";   
+
+// 1. IMPORT SONNER
+import { Toaster, toast } from 'sonner';
 
 export function ApartmentManagement() {
   
@@ -47,12 +50,12 @@ export function ApartmentManagement() {
   const [newFloor, setNewFloor] = useState("");
   const [newArea, setNewArea] = useState("");
   const [newBuildingId, setNewBuildingId] = useState("");
-  const [newOwnerId, setNewOwnerId] = useState("none"); // Owner cho form Add
+  const [newOwnerId, setNewOwnerId] = useState("none"); 
 
   // --- 3. STATE CHO MODAL "VIEW & EDIT DETAILS" ---
   const [selectedApartment, setSelectedApartment] = useState(null);
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
-  const [editingOwnerId, setEditingOwnerId] = useState(""); // Owner cho form Edit (Tách riêng để không bị lẫn)
+  const [editingOwnerId, setEditingOwnerId] = useState(""); 
   const [isSaving, setIsSaving] = useState(false);
 
   // --- 4. DATA DEPENDENCIES (Dropdowns) ---
@@ -65,10 +68,11 @@ export function ApartmentManagement() {
   const occupancyRate = totalApartments > 0 
       ? ((occupiedApartments / totalApartments) * 100).toFixed(1) 
       : 0;
+      
   // --- STATE CHO MODAL DELETE ---
-const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
-const [apartmentToDelete, setApartmentToDelete] = useState(null); // Lưu object hoặc ID căn hộ cần xóa
-const [isDeleting, setIsDeleting] = useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [apartmentToDelete, setApartmentToDelete] = useState(null); 
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // --- API CALLS ---
 
@@ -96,6 +100,7 @@ const [isDeleting, setIsDeleting] = useState(false);
         console.error(err);
         setError(err.message);
         setApartments([]); 
+        // Không cần toast lỗi ở đây để tránh spam khi load trang
     } finally {
         setIsLoading(false);
     }
@@ -108,7 +113,7 @@ const [isDeleting, setIsDeleting] = useState(false);
         const jsonOwner = await resOwner.json();
         setPotentialOwners(jsonOwner.data || []);
 
-        const resBuild = await fetch('http://localhost:8081/api/v1/buildings/dropdown?keyword=Bluemoon');
+        const resBuild = await fetch('http://localhost:8081/api/v1/buildings/dropdown?keyword=B');
         if (resBuild.ok) {
            const jsonBuild = await resBuild.json();
            setBuildingList(jsonBuild.data || []);
@@ -121,10 +126,9 @@ const [isDeleting, setIsDeleting] = useState(false);
   // --- EFFECT ---
   useEffect(() => {
     fetchApartments();
-    fetchFormDependencies(); // Tải sẵn danh sách owner/building
+    fetchFormDependencies(); 
   }, []);
 
-  // Effect: Khi mở modal View Details, tự động set EditingOwnerId theo owner hiện tại
   useEffect(() => {
     if (selectedApartment && isViewModalOpen) {
         if (selectedApartment.owner) {
@@ -143,6 +147,7 @@ const [isDeleting, setIsDeleting] = useState(false);
     setSelectedFloor("");
     setSelectedBuildingId("");
     setTimeout(() => { fetchApartments(); }, 0);
+    toast.info("Đã đặt lại bộ lọc");
   };
 
   // Mở Modal Xem chi tiết
@@ -157,50 +162,58 @@ const [isDeleting, setIsDeleting] = useState(false);
         setIsViewModalOpen(true);
     } catch (err) {
         console.error(err);
-        alert("Lỗi: " + err.message);
+        toast.error("Không thể xem chi tiết", { description: err.message });
     }
   };
 
-  // Thêm mới căn hộ
+  // Thêm mới căn hộ (Dùng toast.promise)
   const handleCreateApartment = async () => {
+    // Validate
     if (!newRoomNumber || !newFloor || !newArea || !newBuildingId) {
-        alert("Vui lòng điền đầy đủ thông tin!");
+        toast.warning("Thiếu thông tin bắt buộc", {
+          description: "Vui lòng nhập Số phòng, Tầng, Diện tích và Tòa nhà!"
+        });
         return;
     }
 
-    const payload = {
-        roomNumber: parseInt(newRoomNumber),
-        floor: parseInt(newFloor),
-        area: parseFloat(newArea),
-        buildingId: newBuildingId,
-        ownerId: newOwnerId === "none" ? null : newOwnerId
-    };
+    const createAction = async () => {
+        const payload = {
+            roomNumber: parseInt(newRoomNumber),
+            floor: parseInt(newFloor),
+            area: parseFloat(newArea),
+            buildingId: newBuildingId,
+            ownerId: newOwnerId === "none" ? null : newOwnerId
+        };
 
-    try {
         const response = await fetch('http://localhost:8081/api/v1/apartments', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
         });
 
-        if (!response.ok) throw new Error("Không thể tạo căn hộ");
-
-        alert("Thêm thành công!");
+        const res = await response.json();
+        if (!response.ok) throw new Error(res.message || "Không thể tạo căn hộ");
+        
+        // Thành công
         setIsAddUnitOpen(false);
-        // Reset form
         setNewRoomNumber(""); setNewFloor(""); setNewArea(""); setNewOwnerId("none");
-        fetchApartments();
-    } catch (err) {
-        alert("Lỗi: " + err.message);
-    }
+        await fetchApartments();
+        return "Thêm căn hộ mới thành công!";
+    };
+
+    toast.promise(createAction(), {
+        loading: 'Đang tạo căn hộ...',
+        success: (msg) => msg,
+        error: (err) => `Lỗi: ${err.message}`
+    });
   };
 
-  // Cập nhật Owner (trong Modal View Details)
+  // Cập nhật Owner (Dùng toast.promise)
   const handleUpdateOwner = async () => {
     if (!selectedApartment) return;
-    setIsSaving(true);
+    setIsSaving(true); // Vẫn set state để disable nút bấm
 
-    try {
+    const updateAction = async () => {
         const queryParam = editingOwnerId && editingOwnerId !== "none" 
             ? `?new_owner_id=${editingOwnerId}` 
             : ``; 
@@ -210,55 +223,73 @@ const [isDeleting, setIsDeleting] = useState(false);
             headers: { 'Content-Type': 'application/json' }
         });
 
-        if (response.ok) {
-            alert("Cập nhật chủ sở hữu thành công!");
-            setIsViewModalOpen(false); // Đóng modal sau khi lưu
-            await fetchApartments();   // Reload lại danh sách bên ngoài
-        } else {
-            alert("Lỗi cập nhật chủ sở hữu");
+        if (!response.ok) throw new Error("Lỗi cập nhật chủ sở hữu");
+        
+        setIsViewModalOpen(false); 
+        await fetchApartments();   
+        return "Cập nhật chủ sở hữu thành công!";
+    };
+
+    toast.promise(updateAction(), {
+        loading: 'Đang lưu thay đổi...',
+        success: (msg) => {
+            setIsSaving(false);
+            return msg;
+        },
+        error: (err) => {
+            setIsSaving(false);
+            return `Lỗi: ${err.message}`;
         }
-    } catch (error) {
-        console.error(error);
-        alert("Có lỗi xảy ra khi kết nối server");
-    } finally {
-        setIsSaving(false);
-    }
+    });
   };
+
   const onOpenDeleteModal = (apartment) => {
     setApartmentToDelete(apartment);
     setIsDeleteModalOpen(true);
-};
+  };
+
+  // Xóa căn hộ (Dùng toast.promise)
   const confirmDelete = async () => {    
     if (!apartmentToDelete) return;
     setIsDeleting(true);
-    try {
-      // Gọi API Delete với @RequestParam: ?id=...
-      const response = await fetch(`http://localhost:8081/api/v1/apartments?id=${apartmentToDelete.id}`, {
-          method: 'DELETE',
-          headers: {
-              'Content-Type': 'application/json',
-          }
-      });
 
-      if (response.ok) {
-          alert("Đã xóa căn hộ thành công!");
-          setIsDeleteModalOpen(false); // Đóng modal
-          setApartmentToDelete(null);  // Reset state
-          await fetchApartments();     // Load lại danh sách
-      } else {
-          const errorData = await response.json();
-          alert("Lỗi xóa: " + (errorData.message || "Không xác định"));
-      }
-    } catch (error) {
-        console.error("Lỗi kết nối:", error);
-        alert("Không thể kết nối đến server.");
-    }
-};
+    const deleteAction = async () => {
+        const response = await fetch(`http://localhost:8081/api/v1/apartments?id=${apartmentToDelete.id}`, {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json' }
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.message || "Không xác định");
+        }
+
+        setIsDeleteModalOpen(false); 
+        setApartmentToDelete(null);  
+        await fetchApartments();     
+        return "Đã xóa căn hộ thành công!";
+    };
+
+    toast.promise(deleteAction(), {
+        loading: 'Đang xóa căn hộ...',
+        success: (msg) => {
+            setIsDeleting(false);
+            return msg;
+        },
+        error: (err) => {
+            setIsDeleting(false);
+            return `Xóa thất bại: ${err.message}`;
+        }
+    });
+  };
 
 
   return (
     <div className="space-y-6">
       
+      {/* 2. COMPONENT TOASTER */}
+      <Toaster position="top-right" richColors closeButton />
+
       {/* --- HEADER --- */}
       <div className="flex items-center justify-between">
         <div>
@@ -447,309 +478,301 @@ const [isDeleting, setIsDeleting] = useState(false);
                 </div>
             </div>
             <div className="flex gap-3 pt-4 border-t mt-4">
-                <Button variant="outline" onClick={() => setIsAddUnitOpen(false)} className="flex-1">Cancel</Button>
-                <Button onClick={handleCreateApartment} className="flex-1 bg-blue-600 text-white">Create Apartment</Button>
+                <Button variant="outline" onClick={() => setIsAddUnitOpen(false)} className="flex-1 rounded-ful">Cancel</Button>
+                <Button onClick={handleCreateApartment} className="flex-1 bg-blue-600 text-white rounded-ful">Create Apartment</Button>
             </div>
         </div>
       </Modal>
 
-      {/* --- MODAL 2: VIEW DETAILS & EDIT OWNER --- */}
       {/* --- MODAL 2: VIEW DETAILS & EDIT OWNER (GIAO DIỆN MỚI) --- */}
-<Modal
-    isOpen={isViewModalOpen}
-    onClose={() => setIsViewModalOpen(false)}
->
-    {selectedApartment && selectedApartment.info ? (
-        <div className="flex flex-col h-full">
-            
-            {/* 1. CUSTOM HEADER: Gradient Banner */}
-            {/* Dùng margin âm (-mx-6 -mt-6) để header tràn viền modal */}
-            <div className="-mx-6 -mt-6 mb-6 bg-gradient-to-r from-blue-600 to-indigo-700 p-6 text-white rounded-t-lg shadow-md relative overflow-hidden">
-                {/* Background Decoration (Optional) */}
-                <div className="absolute top-0 right-0 p-4 opacity-10">
-                    <Home className="w-32 h-32" />
+      <Modal
+        isOpen={isViewModalOpen}
+        onClose={() => setIsViewModalOpen(false)}
+      >
+        {selectedApartment && selectedApartment.info ? (
+            <div className="flex flex-col h-full">
+                
+                {/* 1. CUSTOM HEADER: Gradient Banner */}
+                <div className="-mx-6 -mt-6 mb-6 bg-gradient-to-r from-blue-600 to-indigo-700 p-6 text-white rounded-t-lg shadow-md relative overflow-hidden">
+                    <div className="absolute top-0 right-0 p-4 opacity-10">
+                        <Home className="w-32 h-32" />
+                    </div>
+
+                    <div className="relative z-10 flex justify-between items-start">
+                        <div>
+                            <div className="flex items-center gap-2 opacity-90 text-sm font-medium mb-1">
+                                <span className="uppercase tracking-wider">{selectedApartment.info.buildingName}</span>
+                                <span>•</span>
+                                <span>Floor {selectedApartment.info.floor}</span>
+                            </div>
+                            <h2 className="text-4xl font-extrabold tracking-tight">
+                                Room {selectedApartment.info.roomNumber}
+                            </h2>
+                        </div>
+                        
+                        <div className={`px-4 py-2 rounded-full text-sm font-bold backdrop-blur-md border border-white/20 shadow-sm ${
+                            (selectedApartment.residents && selectedApartment.residents.length > 0)
+                                ? 'bg-emerald-500/20 text-emerald-50 border-emerald-300/30' 
+                                : 'bg-white/10 text-white/80'
+                        }`}>
+                            <span className="flex items-center gap-2">
+                                <span className={`w-2 h-2 rounded-full ${(selectedApartment.residents && selectedApartment.residents.length > 0) ? 'bg-emerald-400' : 'bg-gray-400'}`}></span>
+                                {(selectedApartment.residents && selectedApartment.residents.length > 0) ? 'OCCUPIED' : 'VACANT'}
+                            </span>
+                        </div>
+                    </div>
                 </div>
 
-                <div className="relative z-10 flex justify-between items-start">
-                    <div>
-                        <div className="flex items-center gap-2 opacity-90 text-sm font-medium mb-1">
-                            <span className="uppercase tracking-wider">{selectedApartment.info.buildingName}</span>
-                            <span>•</span>
-                            <span>Floor {selectedApartment.info.floor}</span>
-                        </div>
-                        <h2 className="text-4xl font-extrabold tracking-tight">
-                            Room {selectedApartment.info.roomNumber}
-                        </h2>
-                    </div>
-                    
-                    {/* Status Badge: Glassmorphism */}
-                    <div className={`px-4 py-2 rounded-full text-sm font-bold backdrop-blur-md border border-white/20 shadow-sm ${
-                        (selectedApartment.residents && selectedApartment.residents.length > 0)
-                            ? 'bg-emerald-500/20 text-emerald-50 border-emerald-300/30' 
-                            : 'bg-white/10 text-white/80'
-                    }`}>
-                        <span className="flex items-center gap-2">
-                            <span className={`w-2 h-2 rounded-full ${(selectedApartment.residents && selectedApartment.residents.length > 0) ? 'bg-emerald-400' : 'bg-gray-400'}`}></span>
-                            {(selectedApartment.residents && selectedApartment.residents.length > 0) ? 'OCCUPIED' : 'VACANT'}
-                        </span>
-                    </div>
-                </div>
-            </div>
-
-            <div className="space-y-6 px-1">
-                {/* 2. MAIN GRID */}
-                <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
-                    
-                    {/* LEFT COL (5 phần): Info & Stats */}
-                    <div className="md:col-span-5 space-y-4">
-                        {/* Property Specs */}
-                        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 space-y-4">
-                            <h3 className="text-gray-500 text-xs font-bold uppercase tracking-wider mb-2">Specifications</h3>
-                            
-                            <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                                <div className="flex items-center gap-3">
-                                    <div className="p-2 bg-blue-100 text-blue-600 rounded-md">
-                                        <Maximize className="w-5 h-5" />
+                <div className="space-y-6 px-1">
+                    {/* 2. MAIN GRID */}
+                    <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
+                        
+                        {/* LEFT COL (5 phần): Info & Stats */}
+                        <div className="md:col-span-5 space-y-4">
+                            {/* Property Specs */}
+                            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 space-y-4">
+                                <h3 className="text-gray-500 text-xs font-bold uppercase tracking-wider mb-2">Specifications</h3>
+                                
+                                <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                                    <div className="flex items-center gap-3">
+                                        <div className="p-2 bg-blue-100 text-blue-600 rounded-md">
+                                            <Maximize className="w-5 h-5" />
+                                        </div>
+                                        <span className="text-sm text-gray-600 font-medium">Surface Area</span>
                                     </div>
-                                    <span className="text-sm text-gray-600 font-medium">Surface Area</span>
+                                    <span className="text-gray-900 font-bold">{selectedApartment.info.area?.toFixed(2)} m²</span>
                                 </div>
-                                <span className="text-gray-900 font-bold">{selectedApartment.info.area?.toFixed(2)} m²</span>
-                            </div>
 
-                            <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                                <div className="flex items-center gap-3">
-                                    <div className="p-2 bg-purple-100 text-purple-600 rounded-md">
-                                        <Users className="w-5 h-5" />
+                                <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                                    <div className="flex items-center gap-3">
+                                        <div className="p-2 bg-purple-100 text-purple-600 rounded-md">
+                                            <Users className="w-5 h-5" />
+                                        </div>
+                                        <span className="text-sm text-gray-600 font-medium">Residents</span>
                                     </div>
-                                    <span className="text-sm text-gray-600 font-medium">Residents</span>
+                                    <span className="text-gray-900 font-bold">{selectedApartment.info.numberOfResidents} People</span>
                                 </div>
-                                <span className="text-gray-900 font-bold">{selectedApartment.info.numberOfResidents} People</span>
-                            </div>
-                        </div>
-
-                        {/* Stats Cards (Colorful) */}
-                        <div className="grid grid-cols-2 gap-3">
-                            {/* Card Xe */}
-                            <div className="bg-gradient-to-br from-sky-50 to-blue-50 border border-blue-100 rounded-xl p-4 flex flex-col items-center justify-center text-center shadow-sm">
-                                <Car className="w-6 h-6 text-blue-500 mb-2" />
-                                <span className="text-3xl font-bold text-blue-700">{selectedApartment.summary?.vehicleCount || 0}</span>
-                                <span className="text-xs text-blue-600 font-medium uppercase mt-1">Vehicles</span>
                             </div>
 
-                            {/* Card Hóa đơn */}
-                            <div className={`rounded-xl p-4 flex flex-col items-center justify-center text-center shadow-sm border ${
-                                selectedApartment.summary?.unpaidBillsCount > 0 
-                                ? 'bg-gradient-to-br from-rose-50 to-red-50 border-red-100' 
-                                : 'bg-gradient-to-br from-emerald-50 to-green-50 border-green-100'
-                            }`}>
-                                {selectedApartment.summary?.unpaidBillsCount > 0 
-                                    ? <AlertCircle className="w-6 h-6 text-red-500 mb-2" />
-                                    : <FileText className="w-6 h-6 text-emerald-500 mb-2" />
-                                }
-                                <span className={`text-3xl font-bold ${selectedApartment.summary?.unpaidBillsCount > 0 ? 'text-red-700' : 'text-emerald-700'}`}>
-                                    {selectedApartment.summary?.unpaidBillsCount || 0}
-                                </span>
-                                <span className={`text-xs font-medium uppercase mt-1 ${selectedApartment.summary?.unpaidBillsCount > 0 ? 'text-red-600' : 'text-emerald-600'}`}>
-                                    Unpaid Bills
-                                </span>
-                            </div>
-                        </div>
-                    </div>
+                            {/* Stats Cards (Colorful) */}
+                            <div className="grid grid-cols-2 gap-3">
+                                {/* Card Xe */}
+                                <div className="bg-gradient-to-br from-sky-50 to-blue-50 border border-blue-100 rounded-xl p-4 flex flex-col items-center justify-center text-center shadow-sm">
+                                    <Car className="w-6 h-6 text-blue-500 mb-2" />
+                                    <span className="text-3xl font-bold text-blue-700">{selectedApartment.summary?.vehicleCount || 0}</span>
+                                    <span className="text-xs text-blue-600 font-medium uppercase mt-1">Vehicles</span>
+                                </div>
 
-                    {/* RIGHT COL (7 phần): Owner Settings */}
-                    <div className="md:col-span-7">
-                        <div className="bg-white border border-indigo-100 rounded-xl shadow-sm h-full flex flex-col overflow-hidden relative">
-                            {/* Decor stripe */}
-                            <div className="h-1.5 w-full bg-gradient-to-r from-indigo-400 to-purple-400"></div>
-                            
-                            <div className="p-5 flex flex-col h-full gap-5">
-                                <div className="flex justify-between items-center">
-                                    <h3 className="text-indigo-900 font-bold text-lg flex items-center gap-2">
-                                        <User className="w-5 h-5" /> Owner Information
-                                    </h3>
-                                    <span className="text-[10px] font-bold bg-indigo-50 text-indigo-600 px-2 py-1 rounded border border-indigo-100 uppercase tracking-wide">
-                                        Editable Mode
+                                {/* Card Hóa đơn */}
+                                <div className={`rounded-xl p-4 flex flex-col items-center justify-center text-center shadow-sm border ${
+                                    selectedApartment.summary?.unpaidBillsCount > 0 
+                                    ? 'bg-gradient-to-br from-rose-50 to-red-50 border-red-100' 
+                                    : 'bg-gradient-to-br from-emerald-50 to-green-50 border-green-100'
+                                }`}>
+                                    {selectedApartment.summary?.unpaidBillsCount > 0 
+                                        ? <AlertCircle className="w-6 h-6 text-red-500 mb-2" />
+                                        : <FileText className="w-6 h-6 text-emerald-500 mb-2" />
+                                    }
+                                    <span className={`text-3xl font-bold ${selectedApartment.summary?.unpaidBillsCount > 0 ? 'text-red-700' : 'text-emerald-700'}`}>
+                                        {selectedApartment.summary?.unpaidBillsCount || 0}
+                                    </span>
+                                    <span className={`text-xs font-medium uppercase mt-1 ${selectedApartment.summary?.unpaidBillsCount > 0 ? 'text-red-600' : 'text-emerald-600'}`}>
+                                        Unpaid Bills
                                     </span>
                                 </div>
+                            </div>
+                        </div>
 
-                                {/* Current Owner Card */}
-                                <div className="bg-slate-50 rounded-lg p-4 border border-slate-200">
-                                    <p className="text-xs font-semibold text-slate-400 uppercase mb-3">Currently Assigned To</p>
-                                    
-                                    {selectedApartment.owner ? (
-                                        <div className="flex items-center gap-4">
-                                            <div className="w-12 h-12 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold text-lg shadow-md">
-                                                {selectedApartment.owner.fullName.charAt(0)}
-                                            </div>
-                                            <div className="flex-1">
-                                                <p className="font-bold text-gray-900 text-lg leading-tight">{selectedApartment.owner.fullName}</p>
-                                                <div className="flex flex-col gap-0.5 mt-1">
-                                                    <div className="flex items-center gap-2 text-xs text-gray-500">
-                                                        <Phone className="w-3 h-3" /> {selectedApartment.owner.phoneNumber}
-                                                    </div>
-                                                    {selectedApartment.owner.email && (
+                        {/* RIGHT COL (7 phần): Owner Settings */}
+                        <div className="md:col-span-7">
+                            <div className="bg-white border border-indigo-100 rounded-xl shadow-sm h-full flex flex-col overflow-hidden relative">
+                                {/* Decor stripe */}
+                                <div className="h-1.5 w-full bg-gradient-to-r from-indigo-400 to-purple-400"></div>
+                                
+                                <div className="p-5 flex flex-col h-full gap-5">
+                                    <div className="flex justify-between items-center">
+                                        <h3 className="text-indigo-900 font-bold text-lg flex items-center gap-2">
+                                            <User className="w-5 h-5" /> Owner Information
+                                        </h3>
+                                        <span className="text-[10px] font-bold bg-indigo-50 text-indigo-600 px-2 py-1 rounded border border-indigo-100 uppercase tracking-wide">
+                                            Editable Mode
+                                        </span>
+                                    </div>
+
+                                    {/* Current Owner Card */}
+                                    <div className="bg-slate-50 rounded-lg p-4 border border-slate-200">
+                                        <p className="text-xs font-semibold text-slate-400 uppercase mb-3">Currently Assigned To</p>
+                                        
+                                        {selectedApartment.owner ? (
+                                            <div className="flex items-center gap-4">
+                                                <div className="w-12 h-12 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold text-lg shadow-md">
+                                                    {selectedApartment.owner.fullName.charAt(0)}
+                                                </div>
+                                                <div className="flex-1">
+                                                    <p className="font-bold text-gray-900 text-lg leading-tight">{selectedApartment.owner.fullName}</p>
+                                                    <div className="flex flex-col gap-0.5 mt-1">
                                                         <div className="flex items-center gap-2 text-xs text-gray-500">
-                                                            <Mail className="w-3 h-3" /> {selectedApartment.owner.email}
+                                                            <Phone className="w-3 h-3" /> {selectedApartment.owner.phoneNumber}
                                                         </div>
-                                                    )}
+                                                        {selectedApartment.owner.email && (
+                                                            <div className="flex items-center gap-2 text-xs text-gray-500">
+                                                                <Mail className="w-3 h-3" /> {selectedApartment.owner.email}
+                                                            </div>
+                                                        )}
+                                                    </div>
                                                 </div>
                                             </div>
-                                        </div>
-                                    ) : (
-                                        <div className="flex items-center gap-3 text-gray-400 italic py-2">
-                                            <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center">?</div>
-                                            <span>No owner assigned yet (Vacant)</span>
-                                        </div>
-                                    )}
-                                </div>
+                                        ) : (
+                                            <div className="flex items-center gap-3 text-gray-400 italic py-2">
+                                                <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center">?</div>
+                                                <span>No owner assigned yet (Vacant)</span>
+                                            </div>
+                                        )}
+                                    </div>
 
-                                {/* Change Owner Action */}
-                                <div className="mt-auto pt-4 border-t border-dashed border-gray-200">
-                                    <Label className="text-sm font-medium text-gray-700 mb-2 block">Change / Assign New Owner</Label>
-                                    <Select value={editingOwnerId} onValueChange={setEditingOwnerId}>
-                                        <SelectTrigger className="w-full h-11 border-indigo-200 focus:ring-indigo-500">
-                                            <SelectValue placeholder="Select Owner from List" />
-                                        </SelectTrigger>
-                                        <SelectContent position="popper" className="max-h-60 overflow-y-auto">
-                                            <SelectItem value="none" className="text-gray-500 italic">-- Remove Current Owner --</SelectItem>
-                                            {potentialOwners.map(res => (
-                                                <SelectItem key={res.id} value={res.id}>
-                                                    <div className="flex flex-col text-left py-1">
-                                                        <span className="font-medium text-gray-900">{res.fullName}</span>
-                                                        <span className="text-xs text-gray-500">{res.phoneNumber}</span>
-                                                    </div>
-                                                </SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
+                                    {/* Change Owner Action */}
+                                    <div className="mt-auto pt-4 border-t border-dashed border-gray-200">
+                                        <Label className="text-sm font-medium text-gray-700 mb-2 block">Change / Assign New Owner</Label>
+                                        <Select value={editingOwnerId} onValueChange={setEditingOwnerId}>
+                                            <SelectTrigger className="w-full h-11 border-indigo-200 focus:ring-indigo-500">
+                                                <SelectValue placeholder="Select Owner from List" />
+                                            </SelectTrigger>
+                                            <SelectContent position="popper" className="max-h-60 overflow-y-auto">
+                                                <SelectItem value="none" className="text-gray-500 italic">-- Remove Current Owner --</SelectItem>
+                                                {potentialOwners.map(res => (
+                                                    <SelectItem key={res.id} value={res.id}>
+                                                        <div className="flex flex-col text-left py-1">
+                                                            <span className="font-medium text-gray-900">{res.fullName}</span>
+                                                            <span className="text-xs text-gray-500">{res.phoneNumber}</span>
+                                                        </div>
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
                                 </div>
                             </div>
                         </div>
                     </div>
-                </div>
 
-                {/* 3. RESIDENTS LIST */}
-                <div className="pt-2">
-                    <h3 className="font-bold text-gray-900 mb-3 flex items-center gap-2 text-sm uppercase tracking-wide">
-                        <Users className="w-4 h-4 text-gray-500" /> 
-                        Residents List <span className="bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full text-xs">{selectedApartment.residents?.length || 0}</span>
-                    </h3>
-                    
-                    <div className="border border-gray-200 rounded-xl overflow-hidden shadow-sm">
-                        <div className="max-h-40 overflow-y-auto custom-scrollbar">
-                            <table className="w-full text-sm text-left">
-                                <thead className="bg-gray-50 text-gray-500 font-semibold text-xs uppercase sticky top-0 z-10">
-                                    <tr>
-                                        <th className="px-4 py-3">Full Name</th>
-                                        <th className="px-4 py-3">Phone Number</th>
-                                        <th className="px-4 py-3">Status</th>
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y divide-gray-100 bg-white">
-                                    {selectedApartment.residents && selectedApartment.residents.length > 0 ? (
-                                        selectedApartment.residents.map((res) => (
-                                            <tr key={res.id} className="hover:bg-blue-50/50 transition-colors">
-                                                <td className="px-4 py-3 font-medium text-gray-900">{res.fullName}</td>
-                                                <td className="px-4 py-3 text-gray-500 font-mono">{res.phoneNumber}</td>
-                                                <td className="px-4 py-3">
-                                                    <span className="inline-flex px-2.5 py-1 rounded-full text-[10px] font-bold bg-green-100 text-green-700 border border-green-200">
-                                                        ACTIVE RESIDENT
-                                                    </span>
+                    {/* 3. RESIDENTS LIST */}
+                    <div className="pt-2">
+                        <h3 className="font-bold text-gray-900 mb-3 flex items-center gap-2 text-sm uppercase tracking-wide">
+                            <Users className="w-4 h-4 text-gray-500" /> 
+                            Residents List <span className="bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full text-xs">{selectedApartment.residents?.length || 0}</span>
+                        </h3>
+                        
+                        <div className="border border-gray-200 rounded-xl overflow-hidden shadow-sm">
+                            <div className="max-h-40 overflow-y-auto custom-scrollbar">
+                                <table className="w-full text-sm text-left">
+                                    <thead className="bg-gray-50 text-gray-500 font-semibold text-xs uppercase sticky top-0 z-10">
+                                        <tr>
+                                            <th className="px-4 py-3">Full Name</th>
+                                            <th className="px-4 py-3">Phone Number</th>
+                                            <th className="px-4 py-3">Status</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-gray-100 bg-white">
+                                        {selectedApartment.residents && selectedApartment.residents.length > 0 ? (
+                                            selectedApartment.residents.map((res) => (
+                                                <tr key={res.id} className="hover:bg-blue-50/50 transition-colors">
+                                                    <td className="px-4 py-3 font-medium text-gray-900">{res.fullName}</td>
+                                                    <td className="px-4 py-3 text-gray-500 font-mono">{res.phoneNumber}</td>
+                                                    <td className="px-4 py-3">
+                                                        <span className="inline-flex px-2.5 py-1 rounded-full text-[10px] font-bold bg-green-100 text-green-700 border border-green-200">
+                                                            ACTIVE RESIDENT
+                                                        </span>
+                                                    </td>
+                                                </tr>
+                                            ))
+                                        ) : (
+                                            <tr>
+                                                <td colSpan={3} className="px-4 py-8 text-center text-gray-400 italic">
+                                                    <div className="flex flex-col items-center gap-2">
+                                                        <Users className="w-8 h-8 opacity-20" />
+                                                        <span>No residents currently registered.</span>
+                                                    </div>
                                                 </td>
                                             </tr>
-                                        ))
-                                    ) : (
-                                        <tr>
-                                            <td colSpan={3} className="px-4 py-8 text-center text-gray-400 italic">
-                                                <div className="flex flex-col items-center gap-2">
-                                                    <Users className="w-8 h-8 opacity-20" />
-                                                    <span>No residents currently registered.</span>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    )}
-                                </tbody>
-                            </table>
+                                        )}
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
                     </div>
-                </div>
 
-                {/* 4. FOOTER ACTIONS */}
-                <div className="flex justify-end pt-4 border-t gap-3 mt-2">
-                    <Button variant="outline" onClick={() => setIsViewModalOpen(false)} className="rounded-full px-6 border-gray-300">
-                        Cancel
-                    </Button>
-                    <Button 
-                        onClick={handleUpdateOwner} 
-                        disabled={isSaving} 
-                        className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-full px-6 shadow-lg shadow-blue-500/30 transition-all"
-                    >
-                        {isSaving ? "Saving..." : <><Save className="w-4 h-4 mr-2" /> Save Changes</>}
-                    </Button>
+                    {/* 4. FOOTER ACTIONS */}
+                    <div className="flex justify-end pt-4 border-t gap-3 mt-2">
+                        <Button variant="outline" onClick={() => setIsViewModalOpen(false)} className="rounded-full px-6 border-gray-300">
+                            Cancel
+                        </Button>
+                        <Button 
+                            onClick={handleUpdateOwner} 
+                            disabled={isSaving} 
+                            className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-full px-6 shadow-lg shadow-blue-500/30 transition-all"
+                        >
+                            {isSaving ? "Saving..." : <><Save className="w-4 h-4 mr-2" /> Save Changes</>}
+                        </Button>
+                    </div>
                 </div>
             </div>
-        </div>
-    ) : (
-        <div className="flex flex-col items-center justify-center py-16 text-gray-400">
-            <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-indigo-600 mb-4"></div>
-            <p className="font-medium animate-pulse">Loading details...</p>
-        </div>
-    )}
-</Modal>
-{/* --- MODAL 3: CONFIRM DELETE --- */}
-<Modal
-    isOpen={isDeleteModalOpen}
-    onClose={() => setIsDeleteModalOpen(false)}
-    title="Confirm Deletion"
->
-    <div className="flex flex-col items-center text-center space-y-4 p-4">
-        {/* Icon cảnh báo to, nền đỏ nhạt */}
-        <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mb-2 animate-in zoom-in duration-300">
-            <AlertCircle className="w-8 h-8 text-red-600" />
-        </div>
-
-        {/* Nội dung cảnh báo */}
-        <div>
-            <h3 className="text-xl font-bold text-gray-900">Are you sure?</h3>
-            <p className="text-gray-500 mt-2 max-w-[80%] mx-auto">
-                Do you really want to delete apartment <span className="font-bold text-gray-900">{apartmentToDelete?.label || "this unit"}</span>? 
-                <br/>
-                This process cannot be undone.
-            </p>
-        </div>
-
-        {/* Thông tin phụ (nếu có người ở thì cảnh báo thêm) */}
-        {apartmentToDelete?.residentNumber > 0 && (
-            <div className="bg-orange-50 border border-orange-200 text-orange-800 px-4 py-3 rounded-lg text-sm flex items-start gap-2 text-left w-full mt-2">
-                <AlertCircle className="w-5 h-5 shrink-0" />
-                <span>
-                    <strong>Warning:</strong> This apartment currently has {apartmentToDelete.residentNumber} resident(s). Deleting it might affect their data.
-                </span>
+        ) : (
+            <div className="flex flex-col items-center justify-center py-16 text-gray-400">
+                <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-indigo-600 mb-4"></div>
+                <p className="font-medium animate-pulse">Loading details...</p>
             </div>
         )}
+      </Modal>
 
-        {/* Nút bấm */}
-        <div className="flex gap-3 w-full mt-6">
-            <Button 
-                variant="outline" 
-                onClick={() => setIsDeleteModalOpen(false)} 
-                className="flex-1 border-gray-300 hover:bg-gray-50 text-gray-700"
-                disabled={isDeleting}
-            >
-                Cancel
-            </Button>
-            <Button 
-               onClick={confirmDelete}
-               // 👇 Dùng style trực tiếp để ép màu đỏ
-               style={{ backgroundColor: '#dc2626', color: 'white' }} 
-               
-               className="flex-1 hover:opacity-90 shadow-lg shadow-red-500/30"
-            >
-                Delete Apartment
-            </Button>
+      {/* --- MODAL 3: CONFIRM DELETE --- */}
+      <Modal
+        isOpen={isDeleteModalOpen}
+        onClose={() => setIsDeleteModalOpen(false)}
+        title="Confirm Deletion"
+      >
+        <div className="flex flex-col items-center text-center space-y-4 p-4">
+            <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mb-2 animate-in zoom-in duration-300">
+                <AlertCircle className="w-8 h-8 text-red-600" />
+            </div>
+
+            <div>
+                <h3 className="text-xl font-bold text-gray-900">Are you sure?</h3>
+                <p className="text-gray-500 mt-2 max-w-[80%] mx-auto">
+                    Do you really want to delete apartment <span className="font-bold text-gray-900">{apartmentToDelete?.label || "this unit"}</span>? 
+                    <br/>
+                    This process cannot be undone.
+                </p>
+            </div>
+
+            {apartmentToDelete?.residentNumber > 0 && (
+                <div className="bg-orange-50 border border-orange-200 text-orange-800 px-4 py-3 rounded-lg text-sm flex items-start gap-2 text-left w-full mt-2">
+                    <AlertCircle className="w-5 h-5 shrink-0" />
+                    <span>
+                        <strong>Warning:</strong> This apartment currently has {apartmentToDelete.residentNumber} resident(s). Deleting it might affect their data.
+                    </span>
+                </div>
+            )}
+
+            <div className="flex gap-3 w-full mt-6">
+                <Button 
+                    variant="outline" 
+                    onClick={() => setIsDeleteModalOpen(false)} 
+                    className="flex-1 border-gray-300 hover:bg-gray-50 text-gray-700"
+                    disabled={isDeleting}
+                >
+                    Cancel
+                </Button>
+                <Button 
+                   onClick={confirmDelete}
+                   style={{ backgroundColor: '#dc2626', color: 'white' }} 
+                   disabled={isDeleting}
+                   className="flex-1 hover:opacity-90 shadow-lg shadow-red-500/30"
+                >
+                    {isDeleting ? "Deleting..." : "Delete Apartment"}
+                </Button>
+            </div>
         </div>
-    </div>
-</Modal>
+      </Modal>
 
     </div>
   );
