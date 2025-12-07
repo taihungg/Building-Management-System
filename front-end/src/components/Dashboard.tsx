@@ -1,42 +1,9 @@
+import { useState, useEffect } from 'react'; // Thêm imports này
 import { Users, Building2, DollarSign, AlertCircle, TrendingUp, TrendingDown } from 'lucide-react';
 import { BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { MenuButton } from './MenuButton';
 
-const stats = [
-  { 
-    label: 'Total Residents', 
-    value: '342', 
-    change: '+12', 
-    trend: 'up', 
-    icon: Users,
-    bgColor: 'bg-blue-600'
-  },
-  { 
-    label: 'Occupied Units', 
-    value: '156/180', 
-    change: '87%', 
-    trend: 'up', 
-    icon: Building2,
-    bgColor: 'bg-purple-600'
-  },
-  { 
-    label: 'Monthly Revenue', 
-    value: '$89,450', 
-    change: '+8.2%', 
-    trend: 'up', 
-    icon: DollarSign,
-    bgColor: 'bg-green-600'
-  },
-  { 
-    label: 'Pending Issues', 
-    value: '23', 
-    change: '-5', 
-    trend: 'down', 
-    icon: AlertCircle,
-    bgColor: 'bg-orange-600'
-  },
-];
-
+// --- CÁC DỮ LIỆU CỐ ĐỊNH (GIỮ NGUYÊN) ---
 const revenueData = [
   { month: 'Jan', revenue: 78000, expenses: 45000 },
   { month: 'Feb', revenue: 82000, expenses: 48000 },
@@ -59,6 +26,76 @@ const serviceRequests = [
 ];
 
 export function Dashboard() {
+  // --- STATE ĐỂ LƯU DỮ LIỆU TỪ API ---
+  const [residentCount, setResidentCount] = useState(0);
+  const [apartmentStats, setApartmentStats] = useState({ occupied: 0, total: 0 });
+
+  // --- HÀM GỌI API ---
+  useEffect(() => {
+    const fetchDashboardData = async () => {
+      try {
+        // 1. Lấy tổng số cư dân
+        const resResidents = await fetch('http://localhost:8081/api/v1/residents');
+        const dataResidents = await resResidents.json();
+        if (resResidents.ok) {
+          setResidentCount(dataResidents.data.length);
+        }
+
+        // 2. Lấy thông tin căn hộ (để tính tổng và số căn đã ở)
+        const resApartments = await fetch('http://localhost:8081/api/v1/apartments');
+        const dataApartments = await resApartments.json();
+        if (resApartments.ok) {
+          const allApartments = dataApartments.data;
+          const total = allApartments.length;
+          // Đếm số căn có người ở (dựa vào residentNumber > 0 hoặc logic của bạn)
+          const occupied = allApartments.filter(apt => apt.residentNumber > 0).length;
+          
+          setApartmentStats({ total, occupied });
+        }
+
+      } catch (error) {
+        console.error("Lỗi khi tải dữ liệu Dashboard:", error);
+      }
+    };
+
+    fetchDashboardData();
+  }, []);
+
+  // --- CẤU HÌNH STATS (Đã chuyển vào trong để dùng State) ---
+  const stats = [
+    { 
+      label: 'Total Residents', 
+      value: residentCount.toString(), // Dữ liệu từ API
+      trend: 'up', 
+      icon: Users,
+      bgColor: 'bg-blue-600'
+    },
+    { 
+      label: 'Occupied Units', 
+      value: `${apartmentStats.occupied}/${apartmentStats.total}`, // Dữ liệu từ API
+      change: `${apartmentStats.total > 0 ? ((apartmentStats.occupied/apartmentStats.total)*100).toFixed(1) : 0}%`, // Tự tính %
+      trend: 'up', 
+      icon: Building2,
+      bgColor: 'bg-purple-600'
+    },
+    { 
+      label: 'Monthly Revenue', 
+      value: '$89,450', // Giữ nguyên
+      change: '+8.2%', 
+      trend: 'up', 
+      icon: DollarSign,
+      bgColor: 'bg-green-600'
+    },
+    { 
+      label: 'Pending Issues', 
+      value: '23', // Giữ nguyên
+      change: '-5', 
+      trend: 'down', 
+      icon: AlertCircle,
+      bgColor: 'bg-orange-600'
+    },
+  ];
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -100,7 +137,7 @@ export function Dashboard() {
         })}
       </div>
 
-      {/* Charts Row */}
+      {/* Charts Row (GIỮ NGUYÊN) */}
       <div className="grid grid-cols-3 gap-6">
         {/* Revenue Chart */}
         <div className="col-span-2 bg-white rounded-xl p-6 border-2 border-gray-200">
@@ -156,7 +193,7 @@ export function Dashboard() {
         </div>
       </div>
 
-      {/* Bottom Row */}
+      {/* Bottom Row (GIỮ NGUYÊN) */}
       <div className="grid grid-cols-2 gap-6">
         {/* Service Requests */}
         <div className="bg-white rounded-xl p-6 border-2 border-gray-200">
