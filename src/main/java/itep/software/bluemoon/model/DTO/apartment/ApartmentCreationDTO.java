@@ -10,8 +10,8 @@ import java.util.UUID;
 @AllArgsConstructor
 @NoArgsConstructor
 public class ApartmentCreationDTO {
-    private int roomNumber;
-    private int floor;
+    private Integer roomNumber;
+    private Integer floor;
     private Double area;
     private UUID buildingId;
     private UUID ownerId;

@@ -20,7 +20,7 @@ public class ResidentDetailDTO {
     private String idCard;
     private LocalDate dob;
     private String homeTown;
-    private int roomNumber;
+    private Integer roomNumber;
     private String email;
     private String phoneNumber;
     private ResidentStatus status;
