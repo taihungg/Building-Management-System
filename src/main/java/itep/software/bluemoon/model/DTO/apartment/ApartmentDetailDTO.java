@@ -1,4 +1,4 @@
-package itep.software.bluemoon.model.DTO;
+package itep.software.bluemoon.model.DTO.apartment;
 
 import java.util.List;
 import java.util.UUID;
@@ -48,8 +48,8 @@ public class ApartmentDetailDTO {
     @AllArgsConstructor
     @NoArgsConstructor
     public static class SummaryDTO {
-        private long unpaidBillsCount;
-        private long pendingIssuesCount;
-        private long vehicleCount;
+        private int unpaidInvoicesCount;
+        private int pendingIssuesCount;
+        private int vehicleCount;
     }
 }

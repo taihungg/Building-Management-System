@@ -4,14 +4,14 @@ import java.util.List;
 import java.util.UUID;
 
 import itep.software.bluemoon.entity.Apartment;
-import itep.software.bluemoon.model.DTO.ApartmentCreationDTO;
+import itep.software.bluemoon.model.DTO.apartment.ApartmentCreationDTO;
 import itep.software.bluemoon.model.projection.ApartmentSummary;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import itep.software.bluemoon.model.DTO.ApartmentDetailDTO;
+import itep.software.bluemoon.model.DTO.apartment.ApartmentDetailDTO;
 import itep.software.bluemoon.model.projection.Dropdown;
 import itep.software.bluemoon.response.ApiResponse;
 import itep.software.bluemoon.service.ApartmentService;

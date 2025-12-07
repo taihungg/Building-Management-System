@@ -7,6 +7,7 @@ import java.util.UUID;
 
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 
+import itep.software.bluemoon.entity.accounting.Invoice;
 import itep.software.bluemoon.entity.person.Resident;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -65,7 +66,7 @@ public class Apartment {
         fetch = FetchType.LAZY
     )
     @Builder.Default
-    private List<Bill> bills = new ArrayList<>();
+    private List<Invoice> invoices = new ArrayList<>();
 
     @OneToMany(
         mappedBy = "apartment",

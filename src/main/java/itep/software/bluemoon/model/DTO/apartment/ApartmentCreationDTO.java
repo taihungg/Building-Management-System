@@ -1,4 +1,4 @@
-package itep.software.bluemoon.model.DTO;
+package itep.software.bluemoon.model.DTO.apartment;
 
 import lombok.*;
 

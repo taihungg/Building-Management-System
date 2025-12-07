@@ -11,9 +11,9 @@ import itep.software.bluemoon.entity.Apartment;
 import itep.software.bluemoon.entity.User;
 import itep.software.bluemoon.entity.person.Resident;
 import itep.software.bluemoon.enumeration.ResidentStatus;
-import itep.software.bluemoon.model.DTO.ResidentCreationDTO;
-import itep.software.bluemoon.model.DTO.ResidentDetailDTO;
-import itep.software.bluemoon.model.DTO.ResidentUpdateDTO;
+import itep.software.bluemoon.model.DTO.resident.ResidentCreationDTO;
+import itep.software.bluemoon.model.DTO.resident.ResidentDetailDTO;
+import itep.software.bluemoon.model.DTO.resident.ResidentUpdateDTO;
 import itep.software.bluemoon.model.mapper.EntityToDto;
 import itep.software.bluemoon.model.projection.ResidentSummary;
 import itep.software.bluemoon.repository.ApartmentRepository;
@@ -78,10 +78,14 @@ public class ResidentService {
         if(dto.getDob() != null) exsistResident.setDob(dto.getDob());
         if(dto.getHomeTown() != null) exsistResident.setHomeTown(dto.getHomeTown());
 
-        User userAccount = exsistResident.getAccount();
-        if(userAccount == null) throw new RuntimeException("Resident don't have account");
-        if(dto.getPhone() != null) userAccount.setPhone(dto.getPhone());
-        if(dto.getEmail() != null) userAccount.setEmail(dto.getEmail());
+        String phone = dto.getPhone();
+        String email = dto.getEmail();
+        if(phone != null && email != null){
+            User userAccount = exsistResident.getAccount();
+            if(userAccount == null) throw new RuntimeException("Resident don't have account");
+            userAccount.setPhone(dto.getPhone());
+            userAccount.setEmail(dto.getEmail());
+        }
 
         return residentRepository.save(exsistResident);
     }
