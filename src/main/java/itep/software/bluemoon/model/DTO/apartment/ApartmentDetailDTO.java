@@ -25,11 +25,11 @@ public class ApartmentDetailDTO {
     @AllArgsConstructor
     @NoArgsConstructor
     public static class ApartmentInfoDTO {
-        private int roomNumber;
-        private int floor;
+        private Integer roomNumber;
+        private Integer floor;
         private Double area;
         private String buildingName;
-        private int numberOfResidents;
+        private Integer numberOfResidents;
     }
 
     @Data
@@ -48,8 +48,8 @@ public class ApartmentDetailDTO {
     @AllArgsConstructor
     @NoArgsConstructor
     public static class SummaryDTO {
-        private int unpaidInvoicesCount;
-        private int pendingIssuesCount;
-        private int vehicleCount;
+        private Integer unpaidInvoicesCount;
+        private Integer pendingIssuesCount;
+        private Integer vehicleCount;
     }
 }

@@ -9,6 +9,6 @@ public interface ResidentSummary {
     String getFullName();
     String getEmail();
     String getPhoneNumber();
-    int getRoomNumber();
+    Integer getRoomNumber();
     ResidentStatus getStatus();
 }

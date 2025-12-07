@@ -5,7 +5,7 @@ import java.util.UUID;
 public interface ApartmentSummary {
     UUID getId();
     String getLabel();
-    int getFloor();
+    Integer getFloor();
     Double getArea();
-    int getResidentNumber();
+    Integer getResidentNumber();
 }
