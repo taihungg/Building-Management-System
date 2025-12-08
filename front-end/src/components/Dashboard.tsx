@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react'; // Thêm imports này
 import { Users, Building2, DollarSign, AlertCircle, TrendingUp, TrendingDown } from 'lucide-react';
 import { BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import { MenuButton } from './MenuButton';
 
 // --- CÁC DỮ LIỆU CỐ ĐỊNH (GIỮ NGUYÊN) ---
 const revenueData = [
