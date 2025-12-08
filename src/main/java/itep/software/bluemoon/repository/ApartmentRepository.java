@@ -48,4 +48,7 @@ public interface ApartmentRepository extends JpaRepository<Apartment, UUID> {
         "FROM Apartment a " +
         "JOIN a.building b")
     List<ApartmentSummary> findAllSummary();
+    
+    List<Apartment> findByBuildingId(UUID buildingId);
+    List<Apartment> findByBuildingIdAndFloor(UUID buildingId, Integer floor);
 }
