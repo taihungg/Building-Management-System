@@ -1,21 +1,13 @@
 import { useState, useEffect } from 'react'; // Thêm imports này
 import { Users, Building2, DollarSign, AlertCircle, TrendingUp, TrendingDown } from 'lucide-react';
 import { BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { MenuButton } from './MenuButton';
+import React from 'react';
+import { Link } from 'react-router-dom';
 
-// --- CÁC DỮ LIỆU CỐ ĐỊNH (GIỮ NGUYÊN) ---
-const revenueData = [
-  { month: 'Jan', revenue: 78000, expenses: 45000 },
-  { month: 'Feb', revenue: 82000, expenses: 48000 },
-  { month: 'Mar', revenue: 85000, expenses: 46000 },
-  { month: 'Apr', revenue: 88000, expenses: 50000 },
-  { month: 'May', revenue: 86000, expenses: 47000 },
-  { month: 'Jun', revenue: 89450, expenses: 49000 },
-];
 
-const occupancyData = [
-  { name: 'Occupied', value: 156, color: '#2563eb' },
-  { name: 'Vacant', value: 24, color: '#e5e7eb' },
-];
+
+
 
 const serviceRequests = [
   { category: 'Maintenance', count: 45 },
@@ -28,8 +20,9 @@ export function Dashboard() {
   // --- STATE ĐỂ LƯU DỮ LIỆU TỪ API ---
   const [residentCount, setResidentCount] = useState(0);
   const [apartmentStats, setApartmentStats] = useState({ occupied: 0, total: 0 });
+  const [monthlyRevenue, setMonthlyRevenue] = useState(0);
+  const [chartData, setChartData] = useState([]); 
 
-  // --- HÀM GỌI API ---
   useEffect(() => {
     const fetchDashboardData = async () => {
       try {
@@ -46,12 +39,23 @@ export function Dashboard() {
         if (resApartments.ok) {
           const allApartments = dataApartments.data;
           const total = allApartments.length;
-          // Đếm số căn có người ở (dựa vào residentNumber > 0 hoặc logic của bạn)
           const occupied = allApartments.filter(apt => apt.residentNumber > 0).length;
           
           setApartmentStats({ total, occupied });
         }
 
+        const resInvoices =  await fetch ('http://localhost:8081/api/v1/accounting?year=2025&month=10')
+        const dataInvoices = await resInvoices.json();
+        if (resInvoices.ok){
+          const allRevenues = dataInvoices.data;
+          const monthlyPaidInvoices = allRevenues.filter(e => e.status === 'PAID');
+          const MonthlyRevenue = monthlyPaidInvoices.reduce ((total, invoice)=>{
+              const amount = invoice.totalAmount;
+              return total+amount;
+          },0)
+          setMonthlyRevenue(MonthlyRevenue);
+          setChartData(calculateMonthlyChartData(allRevenues));
+        }
       } catch (error) {
         console.error("Lỗi khi tải dữ liệu Dashboard:", error);
       }
@@ -59,7 +63,14 @@ export function Dashboard() {
 
     fetchDashboardData();
   }, []);
-
+  const formatCurrency = (amount) => {
+    // Sử dụng locale 'vi-VN' và currency 'VND'
+    return new Intl.NumberFormat('vi-VN', { 
+        style: 'currency', 
+        currency: 'VND',
+        maximumFractionDigits: 0 // Loại bỏ phần thập phân
+    }).format(amount);
+  };
   // --- CẤU HÌNH STATS (Đã chuyển vào trong để dùng State) ---
   const stats = [
     { 
@@ -79,7 +90,7 @@ export function Dashboard() {
     },
     { 
       label: 'Monthly Revenue', 
-      value: '$89,450', // Giữ nguyên
+      value: formatCurrency(monthlyRevenue),
       change: '+8.2%', 
       trend: 'up', 
       icon: DollarSign,
@@ -94,6 +105,48 @@ export function Dashboard() {
       bgColor: 'bg-orange-600'
     },
   ];
+  const occupancyData = [
+    { name: 'Occupied', value: apartmentStats.occupied, color: '#2563eb' },
+    { name: 'Vacant', value: apartmentStats.total-apartmentStats.occupied, color: '#e5e7eb' },
+  ];
+  // Giả định: bills là mảng hóa đơn của 1 năm
+
+const calculateMonthlyChartData = (bills) => {
+  const monthlyMap = new Map();
+
+  bills.forEach(bill => {
+    const monthKey = new Date(bill.paymentDate).getMonth() + 1;
+    const monthName = `Thg ${monthKey}`;
+    const amount = bill.totalAmount || 0;
+
+    const entry = monthlyMap.get(monthKey) || {
+      month: monthName,
+      phaiThu: 0,
+      thucThu: 0,
+      congNo: 0,
+    };
+
+    entry.phaiThu += amount;
+
+    if (bill.status === 'PAID') {
+      entry.thucThu += amount;
+    } 
+    monthlyMap.set(monthKey, entry);
+  });
+  
+  // Chuyển Map thành mảng, sắp xếp theo tháng và tính Công Nợ
+  const chartData = Array.from(monthlyMap.values())
+    .sort((a, b) => {
+        // Sắp xếp lại theo số tháng (từ 'Thg 1' đến 'Thg 12')
+        return parseInt(a.month.split(' ')[1]) - parseInt(b.month.split(' ')[1]);
+    })
+    .map(entry => ({
+        ...entry,
+        congNo: entry.phaiThu - entry.thucThu
+    }));
+
+  return chartData;
+};
 
   return (
     <div className="space-y-6">
@@ -104,7 +157,7 @@ export function Dashboard() {
         </div>
         <div className="text-right">
           <p className="text-sm text-gray-500">Current Period</p>
-          <p className="text-base text-gray-900">June 2024</p>
+          <p className="text-base text-gray-900">December 2025</p>
         </div>
       </div>
 
@@ -113,8 +166,11 @@ export function Dashboard() {
         {stats.map((stat) => {
           const Icon = stat.icon;
           const TrendIcon = stat.trend === 'up' ? TrendingUp : TrendingDown;
+          const isResidentStat = stat.label === 'Total Residents';
+          const isApartmnentStat = stat.label === 'Occupied Units'
+          const isBillStat  = stat.label === 'Monthly Revenue'
           
-          return (
+          const StatContent= (
             <div key={stat.label} className="bg-white rounded-xl p-6 border-2 border-gray-200">
               <div className="flex items-start justify-between">
                 <div className={`w-12 h-12 rounded-lg ${stat.bgColor} flex items-center justify-center`}>
@@ -133,31 +189,78 @@ export function Dashboard() {
               </div>
             </div>
           );
+          if (isResidentStat) {
+            return ( // Boc statcontent vao Link thi khi an vao statcontent no se chuyen den trang dang dc dinh nghia boi link
+              <Link key={stat.label} to="/residents" className="no-underline"> 
+                {StatContent}
+              </Link>
+            );
+          }
+          else if (isApartmnentStat){
+            return (
+              <Link key={stat.label} to="/apartments" className="no-underline">
+                {StatContent}
+              </Link>
+            );
+          }
+          else if (isBillStat){
+            return (
+              <Link key={stat.label} to="/bills" className="no-underline">
+                {StatContent}
+              </Link>
+            );
+          }
+
+          return StatContent
         })}
       </div>
 
       {/* Charts Row (GIỮ NGUYÊN) */}
       <div className="grid grid-cols-3 gap-6">
-        {/* Revenue Chart */}
-        <div className="col-span-2 bg-white rounded-xl p-6 border-2 border-gray-200">
-          <h3 className="text-lg text-gray-900 mb-4">Revenue & Expenses</h3>
-          <ResponsiveContainer width="100%" height={280}>
-            <LineChart data={revenueData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-              <XAxis dataKey="month" stroke="#6b7280" />
-              <YAxis stroke="#6b7280" />
-              <Tooltip 
-                contentStyle={{ 
-                  backgroundColor: 'white', 
-                  border: '2px solid #e5e7eb',
-                  borderRadius: '8px'
-                }} 
-              />
-              <Legend />
-              <Line type="monotone" dataKey="revenue" stroke="#2563eb" strokeWidth={3} dot={{ fill: '#2563eb', r: 4 }} />
-              <Line type="monotone" dataKey="expenses" stroke="#9333ea" strokeWidth={3} dot={{ fill: '#9333ea', r: 4 }} />
-            </LineChart>
-          </ResponsiveContainer>
+    {/* Revenue Chart */}
+    <div className="bg-white rounded-xl p-6 shadow-md border border-gray-200 col-span-2">
+          <h3 className="text-xl font-semibold text-gray-800 mb-4">Phân tích Doanh thu Hàng tháng</h3>
+          <div style={{ width: '100%', height: 350 }}>
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart
+                data={chartData}
+                // Điều chỉnh margin để tạo khoảng trống cho trục Y bên phải
+                margin={{ top: 20, right: 40, left: 10, bottom: 5 }} 
+              >
+                <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
+                
+                <XAxis dataKey="month" stroke="#6b7280" />
+                
+                <YAxis 
+                    stroke="#6b7280" 
+                    orientation="right" // <--- THÊM THUỘC TÍNH NÀY
+                    tickFormatter={(value) => formatCurrency(value).replace('₫', '')} 
+                />
+                
+                {/* Tooltip khi di chuột */}
+                <Tooltip 
+                    formatter={(value) => formatCurrency(value)}
+                    labelFormatter={(label) => `Tháng: ${label}`}
+                    contentStyle={{ 
+                        backgroundColor: 'white', 
+                        border: '1px solid #ccc', 
+                        borderRadius: '8px',
+                        padding: '10px'
+                    }}
+                />
+                
+                {/* Chú thích (Legend) */}
+                <Legend wrapperStyle={{ paddingTop: 20 }} />
+
+                <Bar dataKey="phaiThu" name="Phải Thu (Tổng)" fill="#8884d8" barSize={30} />
+                
+                <Bar dataKey="thucThu" name="Thực Thu (Đã Paid)" fill="#4CAF50" barSize={30} />
+
+                <Bar dataKey="congNo" name="Công Nợ (Pending + Unpaid)" fill="#FF9800" barSize={30} />
+
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
         </div>
 
         {/* Occupancy Pie Chart */}
