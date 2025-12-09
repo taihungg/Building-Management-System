@@ -2,6 +2,7 @@ package itep.software.bluemoon.service;
 
 import itep.software.bluemoon.model.DTO.issue.IssueCreateRequestDTO;
 import itep.software.bluemoon.model.DTO.issue.IssueResponseDTO;
+import itep.software.bluemoon.model.mapper.EntityToDto;
 import itep.software.bluemoon.entity.Apartment;
 import itep.software.bluemoon.entity.Issue;
 import itep.software.bluemoon.entity.person.Resident;
@@ -11,7 +12,10 @@ import itep.software.bluemoon.repository.IssueRepository;
 import itep.software.bluemoon.repository.ResidentRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import java.util.stream.Collectors;
 import java.util.UUID;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -48,7 +52,6 @@ public class IssueService {
 
         IssueStatus currentStatus = issue.getStatus();
 
-        // ❗ kiểm tra luồng trạng thái
         if (!isValidTransition(currentStatus, newStatus)) {
             throw new RuntimeException(
                 "Invalid status transition: " + currentStatus + " → " + newStatus
@@ -77,6 +80,12 @@ public class IssueService {
         };
     }
 
-
+    @Transactional(readOnly = true)
+    public List<IssueResponseDTO> getAllIssues() {
+        return issueRepository.findAll()
+                .stream()
+                .map(EntityToDto::issueToIssueResponseDto)
+                .collect(Collectors.toList());
+    }
 
 }
