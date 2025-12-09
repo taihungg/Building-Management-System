@@ -1,10 +1,13 @@
 package itep.software.bluemoon.model.mapper;
 
 import itep.software.bluemoon.entity.Apartment;
+import itep.software.bluemoon.entity.Issue;
 import itep.software.bluemoon.entity.person.Resident;
 import itep.software.bluemoon.enumeration.InvoiceStatus;
 import itep.software.bluemoon.model.DTO.apartment.ApartmentDetailDTO;
 import itep.software.bluemoon.model.DTO.resident.ResidentDetailDTO;
+import itep.software.bluemoon.model.DTO.resident.ResidentDetailDTO;
+import itep.software.bluemoon.model.DTO.issue.IssueResponseDTO;
 import itep.software.bluemoon.model.projection.ResidentSummary;
 import itep.software.bluemoon.repository.ResidentRepository;
 import itep.software.bluemoon.repository.InvoiceRepository;
@@ -62,6 +65,22 @@ public class EntityToDto {
                 .owner(owner)
                 .residents(residents)
                 .summary(summary)
+                .build();
+    }
+    
+    public static IssueResponseDTO issueToIssueResponseDto(Issue issue) {
+        if (issue == null) {
+            return null;
+        }
+        
+        return IssueResponseDTO.builder()
+                .id(issue.getId())
+                .apartmentId(issue.getApartment() != null ? issue.getApartment().getId() : null)
+                .reporterId(issue.getReporter() != null ? issue.getReporter().getId() : null)
+                .title(issue.getTitle())
+                .description(issue.getDescription())
+                .type(issue.getType())
+                .status(issue.getStatus())
                 .build();
     }
 }

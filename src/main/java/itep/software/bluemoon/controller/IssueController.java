@@ -7,7 +7,9 @@ import itep.software.bluemoon.entity.Issue;
 import itep.software.bluemoon.service.IssueService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.http.ResponseEntity; 
 import java.util.UUID;
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/issues")
@@ -40,4 +42,11 @@ public class IssueController {
     ) {
         return issueService.updateStatus(id, request.getStatus());
     }
+    
+    @GetMapping
+    public ResponseEntity<List<IssueResponseDTO>> getAllIssues() {
+        List<IssueResponseDTO> issues = issueService.getAllIssues();
+        return ResponseEntity.ok(issues);
+    }
+    
 }
