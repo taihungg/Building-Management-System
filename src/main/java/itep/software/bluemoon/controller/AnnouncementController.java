@@ -7,6 +7,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/api/announcements")
 @RequiredArgsConstructor
@@ -19,5 +21,11 @@ public class AnnouncementController {
     public AnnouncementResponseDTO createAnnouncement(
             @RequestBody AnnouncementCreateRequestDTO request) {
         return announcementService.createAnnouncement(request);
+    }
+    
+    @GetMapping
+    @ResponseStatus(HttpStatus.OK)
+    public List<AnnouncementResponseDTO> getAllAnnouncements() {
+        return announcementService.getAllAnnouncements();
     }
 }
