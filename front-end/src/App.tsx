@@ -3,8 +3,8 @@ import { Sidebar } from './components/Sidebar';
 import { Header } from './components/Header';
 import { ResidentSidebar } from './components/ResidentSidebar';
 import { ResidentHeader } from './components/ResidentHeader';
-// import { AccountingSidebar } from './components/AccountingSidebar';
-// import { AccountingHeader } from './components/AccountingHeader';
+import { AccountingSidebar } from './components/AccountingSidebar';
+import { AccountingHeader } from './components/AccountingHeader';
 import { Login } from './components/Login';
 import { Dashboard } from './components/Dashboard';
 import { ResidentManagement } from './components/ResidentManagement';
@@ -21,15 +21,15 @@ import { ResidentBills } from './components/ResidentBills';
 import { BuildingRules } from './components/BuildingRules';
 import { ResidentProfile } from './components/ResidentProfile';
 import { ResidentSettings } from './components/ResidentSettings';
-// import { AccountingDashboard } from './components/AccountingDashboard';
-// import { DebtManagement } from './components/DebtManagement';
-// import { InvoiceCreation } from './components/InvoiceCreation';
-// import { AccountingProfile } from './components/AccountingProfile';
+import { AccountingDashboard } from './components/AccountingDashboard';
+import { DebtManagement } from './components/DebtManagement';
+import { InvoiceCreation } from './components/InvoiceCreation';
+import { AccountingProfile } from './components/AccountingProfile';
 import { useEffect } from 'react';
 import { Signup } from './components/Signup';
 import { ForgotPassword } from './components/ForgotPassword';
 
-type UserRole = 'admin' | 'resident' | null; // 'accountant' temporarily disabled
+type UserRole = 'admin' | 'resident' | 'accountant' | null;
 type AuthPage = 'login' | 'signup' | 'forgot';
 
 const adminTabToPath: Record<string, string> = {
@@ -53,13 +53,13 @@ const residentTabToPath: Record<string, string> = {
   'settings': '/resident/settings',
 };
 
-// const accountingTabToPath: Record<string, string> = {
-//   'accounting-dashboard': '/accounting/dashboard',
-//   'debt-management': '/accounting/debt',
-//   'invoice-creation': '/accounting/invoice',
-//   'profile': '/accounting/profile',
-//   'settings': '/accounting/settings',
-// };
+const accountingTabToPath: Record<string, string> = {
+  'accounting-dashboard': '/accounting/dashboard',
+  'debt-management': '/accounting/debt',
+  'invoice-creation': '/accounting/invoice',
+  'profile': '/accounting/profile',
+  'settings': '/accounting/settings',
+};
 
 const adminPathToTab: Record<string, string> = Object.fromEntries(
   Object.entries(adminTabToPath).map(([tab, path]) => [path, tab])
@@ -69,9 +69,9 @@ const residentPathToTab: Record<string, string> = Object.fromEntries(
   Object.entries(residentTabToPath).map(([tab, path]) => [path, tab])
 );
 
-// const accountingPathToTab: Record<string, string> = Object.fromEntries(
-//   Object.entries(accountingTabToPath).map(([tab, path]) => [path, tab])
-// );
+const accountingPathToTab: Record<string, string> = Object.fromEntries(
+  Object.entries(accountingTabToPath).map(([tab, path]) => [path, tab])
+);
 
 export default function App() {
   const [activeTab, setActiveTab] = useState('dashboard');
@@ -123,11 +123,10 @@ export default function App() {
       } else if (userRole === 'resident') {
         const tab = residentPathToTab[path];
         if (tab) setActiveTab(tab);
-      } 
-      // else if (userRole === 'accountant') {
-      //   const tab = accountingPathToTab[path];
-      //   if (tab) setActiveTab(tab);
-      // }
+      } else if (userRole === 'accountant') {
+        const tab = accountingPathToTab[path];
+        if (tab) setActiveTab(tab);
+      }
     };
     window.addEventListener('popstate', onPopState);
     return () => window.removeEventListener('popstate', onPopState);
@@ -139,10 +138,9 @@ export default function App() {
       path = adminTabToPath[tab];
     } else if (role === 'resident') {
       path = residentTabToPath[tab];
-    } 
-    // else if (role === 'accountant') {
-    //   path = accountingTabToPath[tab];
-    // }
+    } else if (role === 'accountant') {
+      path = accountingTabToPath[tab];
+    }
     if (path) {
       window.history.pushState({}, '', path);
     }
@@ -154,14 +152,9 @@ export default function App() {
   };
 
   const handleLogin = (role: 'admin' | 'resident' | 'accountant') => {
-    // Temporarily disable accountant role
-    if (role === 'accountant') {
-      alert('Tính năng kế toán tạm thời bị vô hiệu hóa');
-      return;
-    }
     setUserRole(role);
     setIsAuthenticated(true);
-    const initialTab = role === 'resident' ? 'resident-dashboard' : 'dashboard';
+    const initialTab = role === 'resident' ? 'resident-dashboard' : role === 'accountant' ? 'accounting-dashboard' : 'dashboard';
     setActiveTab(initialTab);
     pushPathForTab(initialTab, role);
   };
@@ -218,22 +211,22 @@ export default function App() {
     }
   };
 
-  // const renderAccountingContent = () => {
-  //   switch (activeTab) {
-  //     case 'accounting-dashboard':
-  //       return <AccountingDashboard />;
-  //     case 'debt-management':
-  //       return <DebtManagement />;
-  //     case 'invoice-creation':
-  //       return <InvoiceCreation />;
-  //     case 'profile':
-  //       return <AccountingProfile />;
-  //     case 'settings':
-  //       return <Settings />;
-  //     default:
-  //       return <AccountingDashboard />;
-  //   }
-  // };
+  const renderAccountingContent = () => {
+    switch (activeTab) {
+      case 'accounting-dashboard':
+        return <AccountingDashboard />;
+      case 'debt-management':
+        return <DebtManagement />;
+      case 'invoice-creation':
+        return <InvoiceCreation />;
+      case 'profile':
+        return <AccountingProfile />;
+      case 'settings':
+        return <Settings />;
+      default:
+        return <AccountingDashboard />;
+    }
+  };
 
   if (!isAuthenticated) {
     if (authPage === 'signup') {
@@ -306,37 +299,37 @@ export default function App() {
     );
   }
 
-  // Accounting View - Temporarily disabled
-  // if (userRole === 'accountant') {
-  //   return (
-  //     <div className="flex h-screen bg-gray-50">
-  //       <AccountingSidebar 
-  //         activeTab={activeTab} 
-  //         setActiveTab={handleSetActiveTab}
-  //         isOpen={isSidebarOpen}
-  //         onClose={() => setIsSidebarOpen(false)}
-  //         onLogout={handleLogout}
-  //       />
-  //       <div className="flex-1 flex flex-col">
-  //         <AccountingHeader 
-  //           onMenuClick={() => setIsSidebarOpen(true)}
-  //           onNavigate={(page) => {
-  //             if (page === 'logout') {
-  //               handleLogout();
-  //             } else {
-  //               handleSetActiveTab(page);
-  //             }
-  //           }}
-  //         />
-  //         <main className="flex-1 overflow-y-auto pt-20">
-  //           <div className="max-w-[1680px] mx-auto p-8">
-  //             {renderAccountingContent()}
-  //           </div>
-  //         </main>
-  //       </div>
-  //     </div>
-  //   );
-  // }
+  // Accounting View
+  if (userRole === 'accountant') {
+    return (
+      <div className="flex h-screen bg-gray-50">
+        <AccountingSidebar 
+          activeTab={activeTab} 
+          setActiveTab={handleSetActiveTab}
+          isOpen={isSidebarOpen}
+          onClose={() => setIsSidebarOpen(false)}
+          onLogout={handleLogout}
+        />
+        <div className="flex-1 flex flex-col">
+          <AccountingHeader 
+            onMenuClick={() => setIsSidebarOpen(true)}
+            onNavigate={(page) => {
+              if (page === 'logout') {
+                handleLogout();
+              } else {
+                handleSetActiveTab(page);
+              }
+            }}
+          />
+          <main className="flex-1 overflow-y-auto pt-20">
+            <div className="max-w-[1680px] mx-auto p-8">
+              {renderAccountingContent()}
+            </div>
+          </main>
+        </div>
+      </div>
+    );
+  }
 
   // Admin View
   return (

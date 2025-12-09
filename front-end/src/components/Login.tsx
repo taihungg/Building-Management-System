@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
-import { Lock, Mail, Eye, EyeOff, User, Shield } from 'lucide-react'; // Calculator temporarily disabled
+import { Lock, Mail, Eye, EyeOff, User, Shield, Calculator } from 'lucide-react';
 
 interface LoginProps {
-  onLogin: (role: 'admin' | 'resident' | 'accountant') => void; // accountant temporarily disabled
+  onLogin: (role: 'admin' | 'resident' | 'accountant') => void;
   onNavigateAuth?: (page: 'login' | 'signup' | 'forgot') => void;
 }
 
@@ -11,7 +11,7 @@ export function Login({ onLogin, onNavigateAuth }: LoginProps) {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
-  const [selectedRole, setSelectedRole] = useState<'admin' | 'resident' | 'accountant' | null>(null); // accountant temporarily disabled
+  const [selectedRole, setSelectedRole] = useState<'admin' | 'resident' | 'accountant' | null>(null);
 
   // Đặt URL về /login khi đang ở trang đăng nhập nếu chưa có route khác
   useEffect(() => {
@@ -50,7 +50,7 @@ export function Login({ onLogin, onNavigateAuth }: LoginProps) {
           {/* Role Selection */}
           <div className="mb-6">
             <label className="block text-sm font-medium text-gray-700 mb-3">Chọn loại tài khoản</label>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-3 gap-3">
               <button
                 type="button"
                 onClick={() => setSelectedRole('admin')}
@@ -91,8 +91,7 @@ export function Login({ onLogin, onNavigateAuth }: LoginProps) {
                   Cư Dân
                 </span>
               </button>
-              {/* Accountant role temporarily disabled */}
-              {/* <button
+              <button
                 type="button"
                 onClick={() => setSelectedRole('accountant')}
                 style={{
@@ -111,7 +110,7 @@ export function Login({ onLogin, onNavigateAuth }: LoginProps) {
                 <span className="text-sm font-medium" style={{ color: selectedRole === 'accountant' ? 'white' : '#374151' }}>
                   Kế Toán
                 </span>
-              </button> */}
+              </button>
             </div>
           </div>
 
