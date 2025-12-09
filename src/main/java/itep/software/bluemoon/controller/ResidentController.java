@@ -2,6 +2,7 @@ package itep.software.bluemoon.controller;
 
 import java.util.List;
 import java.util.UUID;
+import jakarta.validation.Valid;
 
 import itep.software.bluemoon.model.projection.Dropdown;
 import org.springframework.http.HttpStatus;
@@ -18,12 +19,15 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import itep.software.bluemoon.entity.person.Resident;
+import itep.software.bluemoon.entity.User;
 import itep.software.bluemoon.model.DTO.resident.ResidentCreationDTO;
 import itep.software.bluemoon.model.DTO.resident.ResidentDetailDTO;
 import itep.software.bluemoon.model.DTO.resident.ResidentUpdateDTO;
+import itep.software.bluemoon.model.DTO.resident.ResidentAccountCreationDTO;
 import itep.software.bluemoon.model.projection.ResidentSummary;
 import itep.software.bluemoon.response.ApiResponse;
 import itep.software.bluemoon.service.ResidentService;
+import itep.software.bluemoon.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 
 @RestController
@@ -102,6 +106,20 @@ public class ResidentController {
                 HttpStatus.OK,
                 "Deleted resident successfully!",
                 null
+        );
+    }
+    
+    @PostMapping("/{id}/account")
+    public ResponseEntity<Object> createAccountForResident(
+            @PathVariable UUID id, 
+            @RequestBody @Valid ResidentAccountCreationDTO request) {
+        
+        ResidentDetailDTO data = residentService.createAccountForResident(id, request);
+        
+        return ApiResponse.responseBuilder(
+                HttpStatus.CREATED,
+                "Create account for resident successfully!",
+                data
         );
     }
 }
