@@ -3,6 +3,7 @@ package itep.software.bluemoon.entity.accounting;
 import java.math.BigDecimal;
 import java.util.UUID;
 
+import itep.software.bluemoon.enumeration.TierName;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -22,6 +23,10 @@ public class PriceTier {
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "name")
+    private TierName name;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "service_price_id", nullable = false)
     private ServicePrice servicePrice;
@@ -32,6 +37,6 @@ public class PriceTier {
     @Column(name = "max_usage")
     private int maxUsage;
 
-    @Column(name = "unite_price", nullable = false)
+    @Column(name = "unit_price", nullable = false)
     private BigDecimal unitPrice;
 }
