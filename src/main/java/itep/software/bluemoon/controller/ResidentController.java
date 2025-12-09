@@ -24,6 +24,7 @@ import itep.software.bluemoon.model.DTO.resident.ResidentCreationDTO;
 import itep.software.bluemoon.model.DTO.resident.ResidentDetailDTO;
 import itep.software.bluemoon.model.DTO.resident.ResidentUpdateDTO;
 import itep.software.bluemoon.model.DTO.resident.ResidentAccountCreationDTO;
+import itep.software.bluemoon.model.mapper.EntityToDto;
 import itep.software.bluemoon.model.projection.ResidentSummary;
 import itep.software.bluemoon.response.ApiResponse;
 import itep.software.bluemoon.service.ResidentService;
@@ -82,8 +83,12 @@ public class ResidentController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<Object> updateResident(@PathVariable UUID id, @RequestBody ResidentUpdateDTO request){
-        Resident data = residentService.updateResident(id, request);
+    public ResponseEntity<Object> updateResident(
+            @PathVariable UUID id,
+            @RequestBody ResidentUpdateDTO request) {
+
+        Resident resident = residentService.updateResident(id, request);
+        ResidentDetailDTO data = EntityToDto.residentToResidentDetailDto(resident);
 
         return ApiResponse.responseBuilder(
                 HttpStatus.OK,
@@ -91,6 +96,7 @@ public class ResidentController {
                 data
         );
     }
+
 
     // Nếu Resident chưa có account, không được truyền email, phone
     @DeleteMapping
