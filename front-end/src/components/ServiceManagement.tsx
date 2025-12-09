@@ -1,18 +1,10 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Search, Plus, MoreVertical, Wrench, Droplet, Zap, Wind, Shield, Trash2, Clock, Edit, Eye, CheckCircle } from 'lucide-react';
 import { SlideOut } from './SlideOut';
 import { Dropdown } from './Dropdown';
+import { toast } from 'sonner';
+import React from 'react';
 
-const services = [
-  { id: 1, unit: '304', resident: 'Emma Johnson', category: 'Plumbing', title: 'Leaking faucet in kitchen', priority: 'Medium', status: 'In Progress', date: '2024-06-28', assignedTo: 'John Smith' },
-  { id: 2, unit: '112', resident: 'Michael Chen', category: 'Electrical', title: 'Light fixture not working', priority: 'High', status: 'Open', date: '2024-06-29', assignedTo: null },
-  { id: 3, unit: '205', resident: 'Sarah Williams', category: 'HVAC', title: 'AC not cooling properly', priority: 'High', status: 'Open', date: '2024-06-29', assignedTo: null },
-  { id: 4, unit: '407', resident: 'James Rodriguez', category: 'Maintenance', title: 'Door lock replacement needed', priority: 'Low', status: 'Completed', date: '2024-06-25', assignedTo: 'Mike Johnson' },
-  { id: 5, unit: '156', resident: 'Lisa Anderson', category: 'Cleaning', title: 'Deep cleaning request', priority: 'Low', status: 'Scheduled', date: '2024-06-30', assignedTo: 'Cleaning Team' },
-  { id: 6, unit: '523', resident: 'David Park', category: 'Plumbing', title: 'Clogged drain in bathroom', priority: 'High', status: 'In Progress', date: '2024-06-29', assignedTo: 'John Smith' },
-  { id: 7, unit: '641', resident: 'Maria Garcia', category: 'Security', title: 'Intercom system issue', priority: 'Medium', status: 'Open', date: '2024-06-30', assignedTo: null },
-  { id: 8, unit: '789', resident: 'Robert Taylor', category: 'Maintenance', title: 'Paint touch-up needed', priority: 'Low', status: 'Scheduled', date: '2024-07-01', assignedTo: 'Maintenance Team' },
-];
 
 const categoryIcons = {
   Plumbing: Droplet,
@@ -26,16 +18,157 @@ const categoryIcons = {
 export function ServiceManagement() {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('All');
-  const [isNewRequestOpen, setIsNewRequestOpen] = useState(false);
+  const [isNewRequestOpen, setIsNewRequestOpen] = useState(false)
+  const [isLoading, setIsLoading] = useState(false);;
 
-  const filteredServices = services.filter(service => {
-    const matchesSearch = service.unit.includes(searchTerm) || 
-      service.resident.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      service.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      service.category.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = statusFilter === 'All' || service.status === statusFilter;
-    return matchesSearch && matchesStatus;
-  });
+  //StateChoGetAllIssue
+  const [allIssue, setAllIssue] = useState ([])
+  const [error, setError] = useState(null);
+  const [reporterName, setReporterName] = useState ('');
+  const [apartmentLabel, setApartmentLabel] = useState('');
+  
+  // State cho createIssue
+  const [updateApartmentID, setUpdateAppartmentID] = useState('');
+  const [updateTitle, setUpdateTitle] = useState ('');
+  const [updateDescription, setUpdateDescription] = useState ('');
+  const [updateType , setUpdateType] = useState ('');
+  const [updateReporterID, setUpdateReporterID] = useState ('');
+
+  // 3. Gọi API
+  const createIssueApi = async (issueData) => {
+    try {
+      const response = await fetch('http://localhost:8081/api/issues', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          
+        },
+        body: JSON.stringify(issueData),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        // Dùng errorData.message nếu server trả về cấu trúc lỗi chuẩn
+        throw new Error(errorData.message || `Lỗi: ${response.status} khi tạo yêu cầu.`);
+      }
+
+      return await response.json();
+    }
+    catch (err) {
+      throw err; 
+    }
+};
+const handleSubmit = async(e)=>{
+  e.preventDefault(); // Ngăn chặn hành vi mặc định của form
+
+    // 1. Validate cơ bản
+    if (!updateTitle || !updateDescription || !updateApartmentID) {
+        toast.warning("Thiếu thông tin", { description: "Vui lòng điền đủ Tiêu đề, Mô tả và chọn Căn hộ." });
+        return;
+    }
+
+    // 2. Định nghĩa logic Promise cho toast
+    const promise = new Promise(async (resolve, reject) => {
+        try {
+            // Lấy reporterId dựa trên logic Admin/Resident
+            const reporterId = localStorage.getItem('userId');
+
+            const dataform = {
+                apartmentId: updateApartmentID,
+                title: updateTitle,
+                description: updateDescription,
+                type: updateType,
+                reporterId: updateReporterID
+            };
+            
+            await createIssueApi(dataform); 
+
+            resolve("Đã tạo yêu cầu/sự cố thành công!");
+
+        } catch (err) {
+            reject(err);
+        }
+    });
+
+    // 5. Hiển thị toast bằng promise
+    toast.promise(promise, {
+        loading: 'Đang gửi yêu cầu...',
+        success: (message) => message, // Dùng message từ resolve
+        error: (err) => `Thất bại: ${err.message}`, // Dùng message từ reject
+    });
+  }
+
+  // Mục fetchAllIssue
+
+
+ // Hàm fetchIssues đã được sửa trong ServiceManagement.js
+
+const fetchIssues = async () => {
+  setIsLoading(true);
+  setError(null);
+  try {
+      let url = 'http://localhost:8081/api/issues';
+      const response = await fetch(url);
+      
+      if (!response.ok) {
+          throw new Error("Can't get issues list");
+      }
+      
+      const rawData = await response.json();
+      
+      // --- BƯỚC QUAN TRỌNG: GỬI CÁC YÊU CẦU CHI TIẾT ĐỒNG THỜI ---
+      const issuesWithDetailsPromise = rawData.map(async (issue) => {
+          // Logic mapping Status và Category giữ nguyên
+          const mapStatus = (status) => { /* ... */ 
+              switch (status) {
+                  case 'UNPROCESSED': return 'Unprocessed';
+                  case 'PROCESSING': return 'In Progress';
+                  case 'RESOLVED': return 'Completed'; 
+                  default: return 'Unprocessed';
+              }
+          };
+
+          const mapCategory = (type) => { /* ... */ 
+              switch (type) {
+                  case 'MAINTENANCE': return 'Maintenance'; 
+                  case 'SECURITY': return 'Security'; 
+                  case 'PLUMBING': return 'Plumbing'; 
+                  case 'ELECTRICAL': return 'Electrical';
+                  default: return 'Maintenance';
+              }
+          };
+          
+          // Trả về Issue đã được bổ sung thông tin
+          return {
+              ...issue, 
+              title: issue.title,
+              category: mapCategory(issue.type),
+              status: mapStatus(issue.status), 
+              unit: issue.roomNumber, 
+              resident: issue.reporterName, 
+              
+          };
+      });
+
+      // Đợi tất cả các Promises (lời hứa) fetch chi tiết hoàn thành
+      const transformedData = await Promise.all(issuesWithDetailsPromise);
+      
+      setAllIssue(transformedData);
+      
+  } catch (err) {
+      setError(err.message);
+  } finally {
+      setIsLoading(false);
+  }
+}
+    useEffect (()=>{
+       fetchIssues();
+    },[])
+
+
+
+
+  
 
   return (
     <div className="space-y-6">
@@ -74,9 +207,9 @@ export function ServiceManagement() {
             <div className="w-10 h-10 rounded-lg bg-orange-100 flex items-center justify-center">
               <Clock className="w-5 h-5 text-orange-600" />
             </div>
-            <p className="text-slate-500 text-sm">Open</p>
+            <p className="text-slate-500 text-sm">Unprocessed</p>
           </div>
-          <p className="text-2xl text-slate-900">{services.filter(s => s.status === 'Open').length}</p>
+          <p className="text-2xl text-slate-900">{allIssue.filter(s => s.status === 'Unprocessed').length}</p>
         </div>
 
         <div className="bg-white rounded-xl p-6 shadow-sm border border-slate-200">
@@ -86,33 +219,13 @@ export function ServiceManagement() {
             </div>
             <p className="text-slate-500 text-sm">In Progress</p>
           </div>
-          <p className="text-2xl text-slate-900">{services.filter(s => s.status === 'In Progress').length}</p>
-        </div>
-
-        <div className="bg-white rounded-xl p-6 shadow-sm border border-slate-200">
-          <div className="flex items-center gap-3 mb-2">
-            <div className="w-10 h-10 rounded-lg bg-purple-100 flex items-center justify-center">
-              <Clock className="w-5 h-5 text-purple-600" />
-            </div>
-            <p className="text-slate-500 text-sm">Scheduled</p>
-          </div>
-          <p className="text-2xl text-slate-900">{services.filter(s => s.status === 'Scheduled').length}</p>
-        </div>
-
-        <div className="bg-white rounded-xl p-6 shadow-sm border border-slate-200">
-          <div className="flex items-center gap-3 mb-2">
-            <div className="w-10 h-10 rounded-lg bg-emerald-100 flex items-center justify-center">
-              <Wrench className="w-5 h-5 text-emerald-600" />
-            </div>
-            <p className="text-slate-500 text-sm">Completed</p>
-          </div>
-          <p className="text-2xl text-slate-900">{services.filter(s => s.status === 'Completed').length}</p>
+          <p className="text-2xl text-slate-900">{allIssue.filter(s => s.status === 'In Progress').length}</p>
         </div>
       </div>
 
       {/* Status Filter Tabs */}
       <div className="flex gap-2">
-        {['All', 'Open', 'In Progress', 'Scheduled', 'Completed'].map((status) => (
+        {['In Progress', 'Unprocessed'].map((status) => (
           <button
             key={status}
             onClick={() => setStatusFilter(status)}
@@ -129,76 +242,52 @@ export function ServiceManagement() {
 
       {/* Service Requests Grid */}
       <div className="grid grid-cols-2 gap-6">
-        {filteredServices.map((service) => {
-          const Icon = categoryIcons[service.category] || Wrench;
-          
-          return (
-            <div key={service.id} className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200 hover:shadow-md transition-shadow">
-              <div className="flex items-start justify-between mb-4">
+      {allIssue.map((service) => {
+    const Icon = categoryIcons[service.category] || Wrench; 
+    
+    return (
+        <div key={service.id} className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200 hover:shadow-md transition-shadow">            
+            <div className="flex items-start justify-between mb-4">
                 <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center">
-                    <Icon className="w-6 h-6 text-white" />
-                  </div>
-                  <div>
-                    <p className="text-sm text-slate-500">{service.category}</p>
-                    <p className="text-slate-900">{service.title}</p>
-                  </div>
+                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center">
+                        <Icon className="w-6 h-6 text-white" />
+                    </div>
+                    <div>
+                        <p className="text-sm text-slate-500">{service.category}</p> 
+                        <p className="text-slate-900">{service.title}</p> 
+                    </div>
                 </div>
-                <Dropdown
-                  trigger={
-                    <button className="p-2 hover:bg-slate-100 rounded-lg transition-colors">
-                      <MoreVertical className="w-5 h-5 text-slate-400" />
-                    </button>
-                  }
-                  items={[
-                    { label: 'View Details', icon: Eye, onClick: () => {} },
-                    { label: 'Edit', icon: Edit, onClick: () => {} },
-                    { label: 'Mark Complete', icon: CheckCircle, onClick: () => {} },
-                  ]}
-                />
-              </div>
-
-              <div className="space-y-2 mb-4">
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-slate-500">Unit:</span>
-                  <span className="text-slate-900">#{service.unit}</span>
-                </div>
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-slate-500">Resident:</span>
-                  <span className="text-slate-900">{service.resident}</span>
-                </div>
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-slate-500">Date:</span>
-                  <span className="text-slate-900">{service.date}</span>
-                </div>
-                {service.assignedTo && (
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-slate-500">Assigned to:</span>
-                    <span className="text-slate-900">{service.assignedTo}</span>
-                  </div>
-                )}
-              </div>
-
-              <div className="flex items-center justify-between pt-4 border-t border-slate-200">
-                <span className={`inline-flex px-3 py-1 rounded-full text-sm ${
-                  service.priority === 'High' ? 'bg-red-50 text-red-700' :
-                  service.priority === 'Medium' ? 'bg-orange-50 text-orange-700' :
-                  'bg-slate-100 text-slate-700'
-                }`}>
-                  {service.priority} Priority
-                </span>
-                <span className={`inline-flex px-3 py-1 rounded-full text-sm ${
-                  service.status === 'Completed' ? 'bg-emerald-50 text-emerald-700' :
-                  service.status === 'In Progress' ? 'bg-blue-50 text-blue-700' :
-                  service.status === 'Scheduled' ? 'bg-purple-50 text-purple-700' :
-                  'bg-orange-50 text-orange-700'
-                }`}>
-                  {service.status}
-                </span>
-              </div>
             </div>
-          );
-        })}
+
+            <div className="space-y-2 mb-4">
+                <div className="flex items-center justify-between text-sm">
+                    <span className="text-slate-500">Unit:</span>
+                    {/* Dùng service.unit (giả lập) */}
+                    <span className="text-slate-900">#{service.unit}</span> 
+                </div>
+                <div className="flex items-center justify-between text-sm">
+                    <span className="text-slate-500">Resident:</span>
+                    {/* Dùng service.resident (giả lập) */}
+                    <span className="text-slate-900">{service.resident}</span> 
+                </div>
+              
+              
+            </div>
+
+            <div className="flex items-center justify-between pt-4 border-t border-slate-200">
+                {/* Dùng service.status (đã map) */}
+                <span className={`inline-flex px-3 py-1 rounded-full text-sm ${
+                    service.status === 'Completed' ? 'bg-emerald-50 text-emerald-700' :
+                    service.status === 'Processing' ? 'bg-blue-50 text-blue-700' :
+                    service.status === 'Unprocessed' ? 'bg-purple-50 text-red-700' :
+                    'bg-orange-50 text-orange-700' // Open/New
+                }`}>
+                    {service.status}
+                </span>
+            </div>
+        </div>
+    );
+})}
       </div>
 
       {/* New Request Slide Out */}
