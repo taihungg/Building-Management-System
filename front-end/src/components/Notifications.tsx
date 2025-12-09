@@ -94,17 +94,10 @@ export function Notifications() { // Giữ nguyên tên component là Notificati
       <div className="flex items-center justify-between">
         <div>
           {/* Tên trang phù hợp với dữ liệu Admin đã gửi */}
-          <h1 className="text-3xl text-slate-900">Lịch Sử Thông Báo Đã Gửi</h1>
+          <h1 className="text-3xl text-slate-900">Nontifications Management</h1>
           <p className="text-slate-500 mt-1">Theo dõi các thông báo đã được Ban Quản Lý gửi đi</p>
         </div>
-        {/* Nút Tạo thông báo mới (Logic cần được bổ sung) */}
-        <button 
-          className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-xl hover:shadow-lg hover:shadow-blue-500/30 transition-all"
-          onClick={() => { toast.info("Tính năng tạo thông báo mới"); }}
-        >
-          <Plus className="w-5 h-5" />
-          Tạo Thông Báo Mới
-        </button>
+       
       </div>
 
       <hr/>

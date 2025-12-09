@@ -325,9 +325,11 @@ export function Dashboard() {
       </div>
 
       {/* Bottom Row */}
-      <div className="grid grid-cols-2 gap-6">
+      <div className="flex justify-center w-full"> 
+        
         {/* Service Requests */}
-        <div className="bg-white rounded-xl p-6 border-2 border-gray-200">
+        {/* Thêm w-full hoặc w-3/4 để kiểm soát độ rộng */}
+        <div className="bg-white rounded-xl p-6 border-2 border-gray-200 w-full max-w-2xl"> 
           <h3 className="text-lg text-gray-900 mb-4">Service Requests (All Time)</h3>
           <ResponsiveContainer width="100%" height={240}>
             <BarChart data={serviceRequestsData}>
@@ -346,27 +348,7 @@ export function Dashboard() {
           </ResponsiveContainer>
         </div>
 
-        {/* Recent Activities */}
-        <div className="bg-white rounded-xl p-6 border-2 border-gray-200">
-          <h3 className="text-lg text-gray-900 mb-4">Recent Activities</h3>
-          <div className="space-y-4">
-            {[
-              { action: 'New resident moved in', unit: 'Unit 304', time: '2 hours ago', color: 'bg-blue-600' },
-              { action: 'Maintenance completed', unit: 'Unit 112', time: '4 hours ago', color: 'bg-green-600' },
-              { action: 'Bill payment received', unit: 'Unit 205', time: '5 hours ago', color: 'bg-purple-600' },
-              { action: 'Service request opened', unit: 'Unit 407', time: '6 hours ago', color: 'bg-orange-600' },
-              { action: 'Lease renewal signed', unit: 'Unit 156', time: '8 hours ago', color: 'bg-blue-600' },
-            ].map((activity, index) => (
-              <div key={index} className="flex items-start gap-3">
-                <div className={`w-2 h-2 rounded-full ${activity.color} mt-2`} />
-                <div className="flex-1">
-                  <p className="text-sm text-gray-900">{activity.action}</p>
-                  <p className="text-xs text-gray-500">{activity.unit} • {activity.time}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
+       
       </div>
     </div>
   );

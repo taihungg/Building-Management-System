@@ -288,7 +288,7 @@ export function ServiceManagement() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl text-slate-900">Service Management</h1>
+          <h1 className="text-3xl text-slate-900">Issue Management</h1>
           <p className="text-slate-500 mt-1">Track and manage all service requests</p>
         </div>
         <button 
@@ -470,23 +470,12 @@ export function ServiceManagement() {
                           <span className="text-slate-900">{service.date || 'N/A'}</span> 
                       </div>
                     
-                  </div>
-
-                  {/* Status Tag */}
-                  <div className="flex items-center justify-between pt-4 border-t border-slate-200">
-                      <span className={`inline-flex px-3 py-1 rounded-full text-sm font-medium ${statusClass}`}>
-                          {service.status}
-                      </span>
-                      <button className="text-sm text-blue-600 hover:text-blue-800 transition-colors flex items-center gap-1">
-                          <Eye className='w-4 h-4' /> View Details
-                      </button>
-                  </div>
+                  </div>                  
               </div>
           );
         })}
       </div>
 
-      {/* New Request Slide Out */}
       <SlideOut
         isOpen={isNewRequestOpen}
         onClose={() => {
@@ -498,12 +487,10 @@ export function ServiceManagement() {
         }}
         title="New Service Request"
       >
-        {/* Form Tạo Issue */}
         <form onSubmit={handleSubmit}>
           <div className="p-6 space-y-6">
             <div className="space-y-4">
               
-              {/* LOGIC TÌM KIẾM CĂN HỘ MỚI */}
               <div className="relative">
                 <label className="block text-sm text-slate-700 mb-2">Tìm kiếm và Chọn Căn hộ</label>
                 
