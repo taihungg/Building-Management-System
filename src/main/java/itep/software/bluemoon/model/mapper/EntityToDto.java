@@ -75,8 +75,10 @@ public class EntityToDto {
         
         return IssueResponseDTO.builder()
                 .id(issue.getId())
-                .apartmentId(issue.getApartment() != null ? issue.getApartment().getId() : null)
-                .reporterId(issue.getReporter() != null ? issue.getReporter().getId() : null)
+                .apartmentId(issue.getApartment().getId())
+                .roomNumber(issue.getApartment().getRoomNumber())
+                .reporterId(issue.getReporter().getId())
+                .reporterName(issue.getReporter().getFullName())
                 .title(issue.getTitle())
                 .description(issue.getDescription())
                 .type(issue.getType())
