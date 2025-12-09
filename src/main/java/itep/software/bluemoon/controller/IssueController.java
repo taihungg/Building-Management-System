@@ -27,7 +27,9 @@ public class IssueController {
         return new IssueResponseDTO(
                 issue.getId(),
                 issue.getApartment().getId(),
+                issue.getApartment().getRoomNumber(),
                 issue.getReporter().getId(),
+                issue.getReporter().getFullName(),
                 issue.getTitle(),
                 issue.getDescription(),
                 issue.getType(),

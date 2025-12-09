@@ -46,21 +46,19 @@ public class IssueService {
     }
     
     public IssueResponseDTO updateStatus(UUID issueId, IssueStatus newStatus) {
-
         Issue issue = issueRepository.findById(issueId)
             .orElseThrow(() -> new RuntimeException("Issue not found"));
-
+        
         IssueStatus currentStatus = issue.getStatus();
-
         if (!isValidTransition(currentStatus, newStatus)) {
             throw new RuntimeException(
                 "Invalid status transition: " + currentStatus + " → " + newStatus
             );
         }
-
+        
         issue.setStatus(newStatus);
         Issue saved = issueRepository.save(issue);
-
+        
         return IssueResponseDTO.builder()
             .id(saved.getId())
             .title(saved.getTitle())
@@ -68,7 +66,9 @@ public class IssueService {
             .type(saved.getType())
             .status(saved.getStatus())
             .apartmentId(saved.getApartment().getId())
+            .roomNumber(saved.getApartment().getRoomNumber())
             .reporterId(saved.getReporter().getId())
+            .reporterName(saved.getReporter().getFullName())
             .build();
     }
     
