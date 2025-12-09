@@ -3,15 +3,10 @@ import { Users, Building2, DollarSign, AlertCircle, TrendingUp, TrendingDown } f
 import { BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { MenuButton } from './MenuButton';
 import React from 'react';
-import { Link } from 'react-router-dom'; // Đảm bảo đã import Link
+import { Link } from 'react-router-dom'; 
 
 
-const serviceRequests = [
-  { category: 'Maintenance', count: 45 },
-  { category: 'Cleaning', count: 32 },
-  { category: 'Security', count: 18 },
-  { category: 'Others', count: 25 },
-];
+// Mảng serviceRequests cứng đã bị loại bỏ
 
 export function Dashboard() {
   // --- STATE ĐỂ LƯU DỮ LIỆU TỪ API ---
@@ -19,32 +14,104 @@ export function Dashboard() {
   const [apartmentStats, setApartmentStats] = useState({ occupied: 0, total: 0 });
   const [monthlyRevenue, setMonthlyRevenue] = useState(0);
   const [chartData, setChartData] = useState([]);
-  // STATE MỚI CHO ISSUES
   const [pendingIssueCount, setPendingIssueCount] = useState(0); 
+  // STATE MỚI cho Service Requests Bar Chart
+  const [serviceRequestsData, setServiceRequestsData] = useState([]); 
 
+
+  // --- HÀM TÍNH TOÁN VÀ ĐỊNH DẠNG ---
+
+  const formatCurrency = (amount) => {
+    return new Intl.NumberFormat('vi-VN', { 
+        style: 'currency', 
+        currency: 'VND',
+        maximumFractionDigits: 0
+    }).format(amount);
+  };
+  
+  const calculateServiceRequestsData = (issues) => {
+      // Mapping IssueType ENUM sang Category Label
+      const typeMap = {
+          'MAINTENANCE': 'Maintenance', 
+          'PLUMBING': 'Plumbing',
+          'ELECTRICAL': 'Electrical',
+          'HVAC': 'HVAC',
+          'CLEANING': 'Cleaning',
+          'SECURITY': 'Security',
+      };
+      
+      const categoryCounts = issues.reduce((acc, issue) => {
+          const type = issue.type; 
+          const categoryLabel = typeMap[type] || 'Others';
+
+          // Tăng count cho category tương ứng
+          acc[categoryLabel] = (acc[categoryLabel] || 0) + 1;
+          return acc;
+      }, {});
+      
+      // Chuyển Map thành mảng phù hợp cho Recharts
+      const chartData = Object.keys(categoryCounts).map(category => ({
+          category: category,
+          count: categoryCounts[category]
+      }));
+      
+      return chartData;
+  };
+
+  const calculateMonthlyChartData = (bills) => {
+    const monthlyMap = new Map();
+
+    bills.forEach(bill => {
+      const monthKey = new Date(bill.paymentDate || new Date()).getMonth() + 1; 
+      const monthName = `Thg ${monthKey}`;
+      const amount = bill.totalAmount || 0;
+
+      const entry = monthlyMap.get(monthKey) || {
+        month: monthName,
+        phaiThu: 0,
+        thucThu: 0,
+        congNo: 0,
+      };
+
+      entry.phaiThu += amount;
+
+      if (bill.status === 'PAID') {
+        entry.thucThu += amount;
+      } 
+      monthlyMap.set(monthKey, entry);
+    });
+    
+    const chartData = Array.from(monthlyMap.values())
+      .sort((a, b) => {
+          return parseInt(a.month.split(' ')[1]) - parseInt(b.month.split(' ')[1]);
+      })
+      .map(entry => ({
+          ...entry,
+          congNo: entry.phaiThu - entry.thucThu
+      }));
+
+    return chartData;
+  };
+  
+  // --- USE EFFECT FETCH DATA ---
   useEffect(() => {
     const fetchDashboardData = async () => {
       try {
-        // 1. Lấy tổng số cư dân
         const resResidents = await fetch('http://localhost:8081/api/v1/residents');
         const dataResidents = await resResidents.json();
         if (resResidents.ok) {
           setResidentCount(dataResidents.data.length);
         }
 
-        // 2. Lấy thông tin căn hộ (để tính tổng và số căn đã ở)
         const resApartments = await fetch('http://localhost:8081/api/v1/apartments');
         const dataApartments = await resApartments.json();
         if (resApartments.ok) {
           const allApartments = dataApartments.data;
           const total = allApartments.length;
-          // Giả định: residentNumber > 0 là căn hộ đã có người ở
           const occupied = allApartments.filter(apt => apt.residentNumber > 0).length;
-          
           setApartmentStats({ total, occupied });
         }
 
-        // 3. Lấy dữ liệu Hóa đơn & Doanh thu
         const resInvoices =  await fetch ('http://localhost:8081/api/v1/accounting?year=2025&month=10')
         const dataInvoices = await resInvoices.json();
         if (resInvoices.ok){
@@ -59,23 +126,22 @@ export function Dashboard() {
           setChartData(calculateMonthlyChartData(allRevenues));
         }
         
-        // 🌟 4. Lấy dữ liệu Issues (Sự cố/Yêu cầu dịch vụ) 🌟
         const resIssues =  await fetch ('http://localhost:8081/api/issues');
         const dataIssue = await resIssues.json();
         if (resIssues.ok){
-          const allIssues = dataIssue; // API GET /api/issues trả về List<IssueResponseDTO> trực tiếp
-          // Lọc các sự cố có trạng thái UNPROCESSED (đang chờ xử lý)
-          const pendingIssues = allIssues.filter(issue => issue.status === 'UNPROCESSED');
+          const allIssues = dataIssue; // API GET /api/issues trả về List<IssueResponseDTO>
           
+          // Lọc các sự cố có trạng thái UNPROCESSED
+          const pendingIssues = allIssues.filter(issue => issue.status === 'UNPROCESSED');
           setPendingIssueCount(pendingIssues.length);
           
-          // NOTE: Không cần tính lại MonthlyRevenue và ChartData từ Issues ở đây.
-          // serviceRequests (bar chart) có thể được tính từ allIssues nếu cần.
+          // TÍNH TOÁN DỮ LIỆU BAR CHART TỪ API
+          const serviceData = calculateServiceRequestsData(allIssues);
+          setServiceRequestsData(serviceData);
         }
         
       } catch (error) {
         console.error("Lỗi khi tải dữ liệu Dashboard:", error);
-        // Có thể thêm toast.error ở đây để báo lỗi cho người dùng
       }
     };
 
@@ -83,20 +149,11 @@ export function Dashboard() {
     fetchDashboardData();
   }, []);
   
-  const formatCurrency = (amount) => {
-    // Sử dụng locale 'vi-VN' và currency 'VND'
-    return new Intl.NumberFormat('vi-VN', { 
-        style: 'currency', 
-        currency: 'VND',
-        maximumFractionDigits: 0 // Loại bỏ phần thập phân
-    }).format(amount);
-  };
-  
-  // --- CẤU HÌNH STATS (Đã chuyển vào trong để dùng State) ---
+  // --- CẤU HÌNH STATS ---
   const stats = [
     { 
       label: 'Total Residents', 
-      value: residentCount.toString(), // Dữ liệu từ API
+      value: residentCount.toString(),
       trend: 'up', 
       icon: Users,
       bgColor: 'bg-blue-600',
@@ -104,8 +161,8 @@ export function Dashboard() {
     },
     { 
       label: 'Occupied Units', 
-      value: `${apartmentStats.occupied}/${apartmentStats.total}`, // Dữ liệu từ API
-      change: `${apartmentStats.total > 0 ? ((apartmentStats.occupied/apartmentStats.total)*100).toFixed(1) : 0}%`, // Tự tính %
+      value: `${apartmentStats.occupied}/${apartmentStats.total}`,
+      change: `${apartmentStats.total > 0 ? ((apartmentStats.occupied/apartmentStats.total)*100).toFixed(1) : 0}%`,
       trend: 'up', 
       icon: Building2,
       bgColor: 'bg-purple-600',
@@ -114,7 +171,7 @@ export function Dashboard() {
     { 
       label: 'Monthly Revenue', 
       value: formatCurrency(monthlyRevenue),
-      change: '+8.2%', // Dữ liệu cứng (nên lấy từ API)
+      change: '+8.2%', 
       trend: 'up', 
       icon: DollarSign,
       bgColor: 'bg-green-600',
@@ -122,12 +179,12 @@ export function Dashboard() {
     },
     { 
       label: 'Pending Issues', 
-      value: pendingIssueCount.toString(), // Dữ liệu từ API
-      change: '-5', // Dữ liệu cứng (nên lấy từ API)
+      value: pendingIssueCount.toString(),
+      change: '-5', // Dữ liệu cứng
       trend: 'down', 
       icon: AlertCircle,
       bgColor: 'bg-orange-600',
-      link: '/services' // 🌟 LINK MỚI ĐẾN TRANG SERVICE MANAGEMENT 🌟
+      link: '/services'
     },
   ];
   
@@ -136,45 +193,6 @@ export function Dashboard() {
     { name: 'Vacant', value: apartmentStats.total-apartmentStats.occupied, color: '#e5e7eb' },
   ];
   
-  // Giả định: bills là mảng hóa đơn của 1 năm
-  const calculateMonthlyChartData = (bills) => {
-    const monthlyMap = new Map();
-
-    bills.forEach(bill => {
-      // Giả định bill.paymentDate tồn tại và là ngày hợp lệ.
-      // Nếu API không trả về paymentDate mà trả về billMonth, cần điều chỉnh.
-      const monthKey = new Date(bill.paymentDate || new Date()).getMonth() + 1; 
-      const monthName = `Thg ${monthKey}`;
-      const amount = bill.totalAmount || 0;
-
-      const entry = monthlyMap.get(monthKey) || {
-        month: monthName,
-        phaiThu: 0,
-        thucThu: 0,
-        congNo: 0,
-      };
-
-      // Giả định bill.totalAmount là số tiền phải thu
-      entry.phaiThu += amount;
-
-      if (bill.status === 'PAID') {
-        entry.thucThu += amount;
-      } 
-      monthlyMap.set(monthKey, entry);
-    });
-    
-    // Chuyển Map thành mảng, sắp xếp theo tháng và tính Công Nợ
-    const chartData = Array.from(monthlyMap.values())
-      .sort((a, b) => {
-          return parseInt(a.month.split(' ')[1]) - parseInt(b.month.split(' ')[1]);
-      })
-      .map(entry => ({
-          ...entry,
-          congNo: entry.phaiThu - entry.thucThu
-      }));
-
-    return chartData;
-  };
 
   return (
     <div className="space-y-6">
@@ -201,7 +219,6 @@ export function Dashboard() {
                 <div className={`w-12 h-12 rounded-lg ${stat.bgColor} flex items-center justify-center`}>
                   <Icon className="w-6 h-6 text-white" />
                 </div>
-                {/* Trend chỉ hiển thị khi có change */}
                 {stat.change && (
                     <div className={`flex items-center gap-1 px-3 py-1 rounded-lg ${
                       stat.trend === 'up' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
@@ -218,7 +235,6 @@ export function Dashboard() {
             </div>
           );
           
-          // Sử dụng Link nếu có đường dẫn
           if (stat.link) {
             return ( 
               <Link key={stat.label} to={stat.link} className="no-underline block h-full"> 
@@ -312,9 +328,9 @@ export function Dashboard() {
       <div className="grid grid-cols-2 gap-6">
         {/* Service Requests */}
         <div className="bg-white rounded-xl p-6 border-2 border-gray-200">
-          <h3 className="text-lg text-gray-900 mb-4">Service Requests (This Month)</h3>
+          <h3 className="text-lg text-gray-900 mb-4">Service Requests (All Time)</h3>
           <ResponsiveContainer width="100%" height={240}>
-            <BarChart data={serviceRequests}>
+            <BarChart data={serviceRequestsData}>
               <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
               <XAxis dataKey="category" stroke="#6b7280" />
               <YAxis stroke="#6b7280" />
