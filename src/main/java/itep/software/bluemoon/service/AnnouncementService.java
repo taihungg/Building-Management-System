@@ -126,4 +126,25 @@ public class AnnouncementService {
 
         return residentRepository.findAllById(residentIds);
     }
+    
+    //Get all 
+    @Transactional(readOnly = true)
+    public List<AnnouncementResponseDTO> getAllAnnouncements() {
+        List<Announcement> announcements = announcementRepository.findAllByOrderByCreatedAtDesc();
+        
+        return announcements.stream()
+                .map(announcement -> AnnouncementResponseDTO.builder()
+                        .id(announcement.getId())
+                        .title(announcement.getTitle())
+                        .message(announcement.getMessage())
+                        .senderId(announcement.getSender().getId())
+                        .senderName(announcement.getSender().getFullName())
+                        .receiverIds(announcement.getReceiver().stream()
+                                .map(Resident::getId)
+                                .collect(Collectors.toList()))
+                        .receiverCount(announcement.getReceiver().size())
+                        .createdAt(announcement.getCreatedAt())
+                        .build())
+                .collect(Collectors.toList());
+    }
 }
