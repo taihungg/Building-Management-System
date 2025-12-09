@@ -30,4 +30,8 @@ public interface InvoiceRepository extends JpaRepository<Invoice, UUID> {
            "AND (:year IS NULL OR b.year = :year) " +
            "ORDER BY a.roomNumber ASC")
     List<InvoiceSummary> getInvoiceSummary(@Param("month") Integer month, @Param("year") Integer year);
+
+    boolean existsByMonthAndYearAndStatusNot(int month, int year, InvoiceStatus status);
+
+    List<Invoice> findByMonthAndYearAndStatus(int month, int year, InvoiceStatus status);
 }

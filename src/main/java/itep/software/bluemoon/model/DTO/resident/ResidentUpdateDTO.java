@@ -6,7 +6,6 @@ import lombok.Getter;
 import java.time.LocalDate;
 
 @Data
-@Getter
 public class ResidentUpdateDTO {
     private String fullName;
     private String idCard;

@@ -53,4 +53,7 @@ public class InvoiceDetail {
 
     @Column(name = "description", columnDefinition = "TEXT")
     private String description;
+
+    @Column(columnDefinition = "jsonb")
+    private String lineItems;
 }

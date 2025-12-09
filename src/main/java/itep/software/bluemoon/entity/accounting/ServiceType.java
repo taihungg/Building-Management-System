@@ -25,8 +25,8 @@ public class ServiceType {
     private UUID id;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "service_code")
-    private ServiceCode serviceCode;
+    @Column(name = "type")
+    private ServiceCode code;
 
     @Column(name = "unit")
     private String unit;

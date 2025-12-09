@@ -9,8 +9,8 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import itep.software.bluemoon.entity.Apartment;
-import itep.software.bluemoon.model.projection.Dropdown;
 import itep.software.bluemoon.model.projection.ApartmentSummary;
+import itep.software.bluemoon.model.projection.Dropdown;
 
 @Repository
 public interface ApartmentRepository extends JpaRepository<Apartment, UUID> {
@@ -48,6 +48,9 @@ public interface ApartmentRepository extends JpaRepository<Apartment, UUID> {
         "FROM Apartment a " +
         "JOIN a.building b")
     List<ApartmentSummary> findAllSummary();
+
+    @Query("SELECT DISTINCT a FROM Apartment a JOIN a.residents r")
+    List<Apartment> findApartmentsWithResidents();
     
     List<Apartment> findByBuildingId(UUID buildingId);
     List<Apartment> findByBuildingIdAndFloor(UUID buildingId, Integer floor);
