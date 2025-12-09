@@ -51,4 +51,7 @@ public interface ApartmentRepository extends JpaRepository<Apartment, UUID> {
 
     @Query("SELECT DISTINCT a FROM Apartment a JOIN a.residents r")
     List<Apartment> findApartmentsWithResidents();
+    
+    List<Apartment> findByBuildingId(UUID buildingId);
+    List<Apartment> findByBuildingIdAndFloor(UUID buildingId, Integer floor);
 }

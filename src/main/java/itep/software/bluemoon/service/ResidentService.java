@@ -3,6 +3,7 @@ package itep.software.bluemoon.service;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import java.time.LocalDate;
 
 import itep.software.bluemoon.model.projection.Dropdown;
 import org.springframework.stereotype.Service;
@@ -13,11 +14,13 @@ import itep.software.bluemoon.entity.person.Resident;
 import itep.software.bluemoon.enumeration.ResidentStatus;
 import itep.software.bluemoon.model.DTO.resident.ResidentCreationDTO;
 import itep.software.bluemoon.model.DTO.resident.ResidentDetailDTO;
+import itep.software.bluemoon.model.DTO.resident.ResidentAccountCreationDTO;
 import itep.software.bluemoon.model.DTO.resident.ResidentUpdateDTO;
 import itep.software.bluemoon.model.mapper.EntityToDto;
 import itep.software.bluemoon.model.projection.ResidentSummary;
 import itep.software.bluemoon.repository.ApartmentRepository;
 import itep.software.bluemoon.repository.ResidentRepository;
+import itep.software.bluemoon.repository.UserRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 
@@ -27,7 +30,8 @@ import lombok.RequiredArgsConstructor;
 public class ResidentService {
     private final ResidentRepository residentRepository;
     private final ApartmentRepository apartmentRepository;
-
+    private final UserRepository userRepository;
+    
     public List<Dropdown> searchForDropdown(String keyword){
         if(keyword == null || keyword.isBlank()) {
             return new ArrayList<>();
@@ -78,10 +82,14 @@ public class ResidentService {
         if(dto.getDob() != null) exsistResident.setDob(dto.getDob());
         if(dto.getHomeTown() != null) exsistResident.setHomeTown(dto.getHomeTown());
 
-        User userAccount = exsistResident.getAccount();
-        if(userAccount == null) throw new RuntimeException("Resident don't have account");
-        if(dto.getPhone() != null) userAccount.setPhone(dto.getPhone());
-        if(dto.getEmail() != null) userAccount.setEmail(dto.getEmail());
+        String phone = dto.getPhone();
+        String email = dto.getEmail();
+        if(phone != null && email != null){
+            User userAccount = exsistResident.getAccount();
+            if(userAccount == null) throw new RuntimeException("Resident don't have account");
+            userAccount.setPhone(dto.getPhone());
+            userAccount.setEmail(dto.getEmail());
+        }
 
         return residentRepository.save(exsistResident);
     }
@@ -105,5 +113,32 @@ public class ResidentService {
     @SuppressWarnings("null")
     public void deleteResident(UUID id){
         residentRepository.deleteById(id);
+    }
+    
+    //tạo tk
+    @SuppressWarnings("null")
+    public ResidentDetailDTO createAccountForResident(UUID residentId, ResidentAccountCreationDTO dto){
+        Resident resident = residentRepository.findById(residentId)
+                .orElseThrow(() -> new RuntimeException("Resident not found"));
+
+        if(resident.getAccount() != null){
+            throw new RuntimeException("Resident already has an account");
+        }
+
+        String generatedUsername = "resident_" + UUID.randomUUID().toString().substring(0, 8);
+
+        User newAccount = User.builder()
+                .username(generatedUsername)
+                .email(dto.getEmail())
+                .phone(dto.getPhone())
+                .password("12345")
+                .createDate(LocalDate.now())
+                .build();
+
+        User savedAccount = userRepository.save(newAccount);
+        resident.setAccount(savedAccount);
+        Resident savedResident = residentRepository.save(resident);
+        
+        return EntityToDto.residentToResidentDetailDto(savedResident);
     }
 }
