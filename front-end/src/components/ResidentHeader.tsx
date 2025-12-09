@@ -1,5 +1,7 @@
 import { Menu, Search, Bell } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
+import { getCurrentPeriod } from '../utils/timeUtils';
+import { useRealtime } from '../hooks/useRealtime';
 
 interface ResidentHeaderProps {
   onMenuClick: () => void;
@@ -9,6 +11,7 @@ interface ResidentHeaderProps {
 export function ResidentHeader({ onMenuClick, onNavigate }: ResidentHeaderProps) {
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const profileRef = useRef<HTMLDivElement>(null);
+  const currentTime = useRealtime(1000); // Update every second
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -26,6 +29,9 @@ export function ResidentHeader({ onMenuClick, onNavigate }: ResidentHeaderProps)
     onNavigate(page);
   };
 
+  const currentPeriod = getCurrentPeriod();
+  const formattedTime = currentTime.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+
   return (
     <header className="fixed top-0 left-0 right-0 bg-white border-b-2 border-gray-100 z-30">
       <div className="flex items-center justify-between px-6 py-4">
@@ -40,13 +46,16 @@ export function ResidentHeader({ onMenuClick, onNavigate }: ResidentHeaderProps)
           
           <button 
             onClick={() => onNavigate('resident-dashboard')}
-            className="flex items-center gap-2 hover:opacity-80 transition-opacity"
+            className="flex items-center gap-3 hover:opacity-85 transition-opacity"
           >
-            <div className="w-10 h-10 bg-gradient-to-br from-cyan-500 to-blue-500 rounded-lg flex items-center justify-center">
-              <span className="text-white text-xl">B</span>
+            <div
+              className="w-10 h-10 rounded-full flex items-center justify-center shadow-sm"
+              style={{ backgroundImage: 'linear-gradient(135deg, #22d3ee 0%, #2563eb 100%)' }}
+            >
+              <span className="text-white text-xl font-bold">B</span>
             </div>
             <div className="text-left">
-              <h1 className="text-xl text-gray-900">BuildingHub</h1>
+              <h1 className="text-xl font-semibold text-gray-900">BuildingHub</h1>
               <p className="text-xs text-gray-600">Cổng Thông Tin Cư Dân</p>
             </div>
           </button>
@@ -59,12 +68,12 @@ export function ResidentHeader({ onMenuClick, onNavigate }: ResidentHeaderProps)
             <input
               type="text"
               placeholder="Tìm kiếm thông báo, hóa đơn..."
-              className="w-full pl-12 pr-4 py-3 bg-gray-50 border-2 border-gray-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 text-gray-700 text-sm"
+              className="w-full pl-12 pr-4 py-3 bg-gray-50 border-2 border-gray-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0EA5E9] focus:border-[#0EA5E9] text-gray-700 text-sm"
             />
           </div>
         </div>
 
-        {/* Right: Notification & Profile */}
+        {/* Right: Notification, Date/Time & Profile */}
         <div className="flex items-center gap-4">
           {/* Notification Bell */}
           <button 
@@ -75,13 +84,23 @@ export function ResidentHeader({ onMenuClick, onNavigate }: ResidentHeaderProps)
             <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
           </button>
 
+          {/* Date & Time Display */}
+          <div className="text-right hidden md:block">
+            <p className="text-xs text-gray-500">Kỳ hiện tại</p>
+            <p className="text-sm font-medium text-gray-900">{currentPeriod}</p>
+            <p className="text-xs text-gray-400">{formattedTime}</p>
+          </div>
+
           {/* Profile Avatar with Dropdown */}
           <div className="relative" ref={profileRef}>
             <button 
               onClick={() => setIsProfileOpen(!isProfileOpen)}
-              className="w-10 h-10 rounded-full bg-cyan-500 flex items-center justify-center text-white hover:bg-cyan-600 transition-colors"
+              className="w-10 h-10 rounded-full flex items-center justify-center text-white font-semibold shadow-sm transition-transform hover:scale-105"
+              style={{ 
+                backgroundImage: 'linear-gradient(135deg, #22d3ee 0%, #2563eb 100%)'
+              }}
             >
-              <span className="text-sm">CD</span>
+              <span className="text-sm font-semibold">NV</span>
             </button>
 
             {/* Profile Dropdown */}

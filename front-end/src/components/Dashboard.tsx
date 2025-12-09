@@ -1,3 +1,4 @@
+import React from 'react';
 import { useState, useEffect } from 'react'; // Thêm imports này
 import { Users, Building2, DollarSign, AlertCircle, TrendingUp, TrendingDown } from 'lucide-react';
 import { BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
@@ -117,8 +118,8 @@ export function Dashboard() {
           return (
             <div key={stat.label} className="bg-white rounded-xl p-6 border-2 border-gray-200">
               <div className="flex items-start justify-between">
-                <div className={`w-12 h-12 rounded-lg ${stat.bgColor} flex items-center justify-center`}>
-                  <Icon className="w-6 h-6 text-white" />
+                <div className="w-12 h-12 rounded-lg bg-[#E0F2FE] flex items-center justify-center">
+                  <Icon className="w-6 h-6 text-[#0EA5E9]" />
                 </div>
                 <div className={`flex items-center gap-1 px-3 py-1 rounded-lg ${
                   stat.trend === 'up' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'

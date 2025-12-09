@@ -33,6 +33,7 @@ fiveDaysAgo.setDate(fiveDaysAgo.getDate() - 5);
 const oneWeekAgo = new Date();
 oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
 
+const currentYear = new Date().getFullYear();
 const initialAnnouncements: Announcement[] = [
   { 
     id: 1, 
@@ -41,7 +42,7 @@ const initialAnnouncements: Announcement[] = [
     title: 'Thông báo về việc bảo trì thang máy', 
     message: 'BQT thông báo sẽ tiến hành bảo trì thang máy từ 8h-12h ngày 15/07/2024. Quý cư dân vui lòng sử dụng thang máy khác trong thời gian này. Việc bảo trì này nhằm đảm bảo an toàn và hiệu quả hoạt động của hệ thống thang máy trong tòa nhà.', 
     time: '2 giờ trước', 
-    date: '2024-07-10',
+    date: `${currentYear}-07-10`,
     createdAt: twoHoursAgo.toISOString(),
     read: false, 
     color: 'orange' 
@@ -53,7 +54,7 @@ const initialAnnouncements: Announcement[] = [
     title: 'Thông báo về việc thu phí dịch vụ tháng 7', 
     message: 'Các khoản phí dịch vụ tháng 7 đã được tính toán và gửi đến các căn hộ. Quý cư dân vui lòng thanh toán trước ngày 05/07/2024. Các khoản phí bao gồm: tiền thuê nhà, phí quản lý, phí dịch vụ chung, điện, nước và các dịch vụ khác.', 
     time: '1 ngày trước', 
-    date: '2024-07-09',
+    date: `${currentYear}-07-09`,
     createdAt: oneDayAgo.toISOString(),
     read: false, 
     color: 'blue' 
@@ -65,7 +66,7 @@ const initialAnnouncements: Announcement[] = [
     title: 'Thông báo về nội quy sử dụng khu vực chung', 
     message: 'Nhắc nhở cư dân tuân thủ nội quy sử dụng khu vực chung và giữ gìn vệ sinh. Vui lòng không để rác tại hành lang và khu vực chung. Mọi vi phạm sẽ được xử lý theo quy định của tòa nhà.', 
     time: '3 ngày trước', 
-    date: '2024-07-07',
+    date: `${currentYear}-07-07`,
     createdAt: threeDaysAgo.toISOString(),
     read: true, 
     color: 'blue' 
@@ -77,7 +78,7 @@ const initialAnnouncements: Announcement[] = [
     title: 'Hoàn thành bảo trì hệ thống điện', 
     message: 'BQT thông báo đã hoàn thành việc bảo trì hệ thống điện của tòa nhà. Hệ thống đã hoạt động bình thường. Cảm ơn quý cư dân đã kiên nhẫn trong thời gian bảo trì.', 
     time: '5 ngày trước', 
-    date: '2024-07-05',
+    date: `${currentYear}-07-05`,
     createdAt: fiveDaysAgo.toISOString(),
     read: true, 
     color: 'emerald' 
@@ -89,7 +90,7 @@ const initialAnnouncements: Announcement[] = [
     title: 'Lịch họp cư dân tháng 7', 
     message: 'Cuộc họp cư dân tháng 7 sẽ được tổ chức vào lúc 19h00 ngày 20/07/2024 tại phòng họp tầng 1. Mời tất cả cư dân tham gia để cùng thảo luận các vấn đề liên quan đến tòa nhà.', 
     time: '1 tuần trước', 
-    date: '2024-07-03',
+    date: `${currentYear}-07-03`,
     createdAt: oneWeekAgo.toISOString(),
     read: true, 
     color: 'blue' 
