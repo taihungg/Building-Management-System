@@ -1,8 +1,8 @@
 import { useState } from 'react';
-import { Lock, Mail, Eye, EyeOff, User, Shield } from 'lucide-react';
+import { Lock, Mail, Eye, EyeOff, User, Shield, DollarSign } from 'lucide-react';
 
 interface LoginProps {
-  onLogin: (role: 'admin' | 'resident') => void;
+  onLogin: (role: 'admin' | 'resident' | 'accounting') => void;
 }
 
 export function Login({ onLogin }: LoginProps) {
@@ -10,7 +10,7 @@ export function Login({ onLogin }: LoginProps) {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
-  const [selectedRole, setSelectedRole] = useState<'admin' | 'resident' | null>(null);
+  const [selectedRole, setSelectedRole] = useState<'admin' | 'resident' | 'accounting' | null>(null);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -41,7 +41,7 @@ export function Login({ onLogin }: LoginProps) {
           {/* Role Selection */}
           <div className="mb-6">
             <label className="block text-sm text-gray-700 mb-3">Chọn loại tài khoản</label>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-3 gap-3">
               <button
                 type="button"
                 onClick={() => setSelectedRole('admin')}
@@ -65,6 +65,18 @@ export function Login({ onLogin }: LoginProps) {
               >
                 <User className="w-6 h-6" />
                 <span className="text-sm font-medium">Cư Dân</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setSelectedRole('accounting')}
+                className={`flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all ${
+                  selectedRole === 'accounting'
+                    ? 'border-cyan-500 bg-cyan-500 text-white shadow-lg'
+                    : 'border-gray-200 bg-white text-gray-700 hover:bg-gray-50'
+                }`}
+              >
+                <DollarSign className="w-6 h-6" />
+                <span className="text-sm font-medium">Kế Toán</span>
               </button>
             </div>
           </div>

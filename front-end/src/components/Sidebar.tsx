@@ -17,9 +17,9 @@ import { NavLink, useNavigate } from 'react-router-dom';
 import React from 'react'
 
 interface SidebarProps {
-  // Bỏ activeTab và setActiveTab vì Router tự lo
   isOpen: boolean;
   onClose: () => void;
+  onLogout?: () => void;
 }
 
 // 2. Thêm trường 'path' vào menuItems
@@ -40,13 +40,12 @@ const bottomItems = [
   { id: 'logout', label: 'Logout', icon: LogOut, path: null }, 
 ];
 
-export function Sidebar({ isOpen, onClose }: SidebarProps) {
+export function Sidebar({ isOpen, onClose, onLogout }: SidebarProps) {
   const navigate = useNavigate();
 
   const handleLogout = () => {
-    // Xử lý logic logout tại đây (xóa token, state...)
-    // setIsAuthenticated(false);
-    navigate('/login');
+    onLogout?.();
+    navigate('/');
   };
 
   return (

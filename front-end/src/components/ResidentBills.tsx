@@ -1,12 +1,22 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Search, Download, Clock, CheckCircle, AlertCircle, DollarSign, Receipt, Calendar, CheckCircle2 } from 'lucide-react';
 import { getBills, payBill, subscribe, exportToCSV, type Bill } from '../utils/bills';
 import { addAnnouncement } from '../utils/announcements';
 
+interface MonthlyBill {
+  period: string;
+  bills: Bill[];
+  totalAmount: number;
+  status: 'Paid' | 'Pending';
+  dueDate: string;
+  paidDate: string | null;
+  isOverdue: boolean;
+}
+
 export function ResidentBills() {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<'All' | 'Paid' | 'Pending' | 'Overdue'>('All');
-  const [selectedBill, setSelectedBill] = useState<Bill | null>(null);
+  const [selectedMonthlyBill, setSelectedMonthlyBill] = useState<MonthlyBill | null>(null);
   const [bills, setBills] = useState<Bill[]>(getBills());
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [paidBill, setPaidBill] = useState<Bill | null>(null);
@@ -18,30 +28,103 @@ export function ResidentBills() {
     return unsubscribe;
   }, []);
 
-  const filteredBills = bills.filter(bill => {
-    const matchesSearch = bill.type.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      bill.period.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = statusFilter === 'All' || bill.status === statusFilter;
+  // Group bills by period (month)
+  const monthlyBills = useMemo(() => {
+    const grouped = new Map<string, Bill[]>();
+    
+    bills.forEach(bill => {
+      if (!grouped.has(bill.period)) {
+        grouped.set(bill.period, []);
+      }
+      grouped.get(bill.period)!.push(bill);
+    });
+
+    const monthly: MonthlyBill[] = Array.from(grouped.entries()).map(([period, periodBills]) => {
+      const totalAmount = periodBills.reduce((sum, b) => sum + b.amount, 0);
+      const paidBills = periodBills.filter(b => b.status === 'Paid');
+      
+      // Chỉ có thể thanh toán cả tháng, không có thanh toán một phần
+      // Nếu tất cả đã thanh toán thì là Paid, còn lại là Pending
+      const status: 'Paid' | 'Pending' = paidBills.length === periodBills.length ? 'Paid' : 'Pending';
+
+      // Get the earliest due date for the month
+      const dueDates = periodBills.map(b => new Date(b.dueDate));
+      const earliestDueDate = new Date(Math.min(...dueDates.map(d => d.getTime())));
+      const isOverdue = status === 'Pending' && earliestDueDate < new Date();
+
+      // Get the latest paid date if all are paid
+      const paidDates = periodBills.filter(b => b.paidDate).map(b => b.paidDate!);
+      const latestPaidDate = paidDates.length > 0 ? paidDates.sort().reverse()[0] : null;
+
+      return {
+        period,
+        bills: periodBills,
+        totalAmount,
+        status,
+        dueDate: earliestDueDate.toISOString().split('T')[0],
+        paidDate: latestPaidDate,
+        isOverdue
+      };
+    });
+
+    // Sort by period (newest first)
+    return monthly.sort((a, b) => {
+      const aDate = new Date(a.period.replace('Tháng ', '').split('/').reverse().join('-'));
+      const bDate = new Date(b.period.replace('Tháng ', '').split('/').reverse().join('-'));
+      return bDate.getTime() - aDate.getTime();
+    });
+  }, [bills]);
+
+  const filteredMonthlyBills = monthlyBills.filter(monthlyBill => {
+    const matchesSearch = monthlyBill.period.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      monthlyBill.bills.some(b => b.type.toLowerCase().includes(searchTerm.toLowerCase()));
+    
+    let matchesStatus = true;
+    if (statusFilter === 'Paid') {
+      matchesStatus = monthlyBill.status === 'Paid';
+    } else if (statusFilter === 'Pending') {
+      matchesStatus = monthlyBill.status === 'Pending';
+    } else if (statusFilter === 'Overdue') {
+      matchesStatus = monthlyBill.isOverdue;
+    }
+    
     return matchesSearch && matchesStatus;
   });
 
-  const totalPaid = bills.filter(b => b.status === 'Paid').reduce((sum, b) => sum + b.amount, 0);
-  const totalPending = bills.filter(b => b.status === 'Pending').reduce((sum, b) => sum + b.amount, 0);
-  const totalOverdue = bills.filter(b => {
-    if (b.status === 'Pending') {
-      const dueDate = new Date(b.dueDate);
-      const today = new Date();
-      return dueDate < today;
-    }
-    return false;
-  }).reduce((sum, b) => sum + b.amount, 0);
+  const totalPaid = useMemo(() => {
+    return monthlyBills
+      .filter(m => m.status === 'Paid')
+      .reduce((sum, m) => sum + m.totalAmount, 0);
+  }, [monthlyBills]);
 
-  const handlePayBill = (bill: Bill) => {
+  const totalPending = useMemo(() => {
+    return monthlyBills
+      .filter(m => m.status === 'Pending')
+      .reduce((sum, m) => sum + m.totalAmount, 0);
+  }, [monthlyBills]);
+
+  const totalOverdue = useMemo(() => {
+    return monthlyBills
+      .filter(m => m.isOverdue)
+      .reduce((sum, m) => sum + m.totalAmount, 0);
+  }, [monthlyBills]);
+
+  const handlePayMonthlyBill = (monthlyBill: MonthlyBill) => {
+    // Pay all pending bills in the month
+    const pendingBills = monthlyBill.bills.filter(b => b.status === 'Pending');
+    let lastPaidBill: Bill | null = null;
+    
+    pendingBills.forEach(bill => {
     const updatedBill = payBill(bill.id);
     if (updatedBill) {
-      setPaidBill(updatedBill);
+        lastPaidBill = updatedBill;
+      }
+    });
+
+    if (lastPaidBill) {
+      setPaidBill(lastPaidBill);
       setShowSuccessModal(true);
-      setSelectedBill(null);
+      setSelectedMonthlyBill(null);
       
       // Add success announcement
       const now = new Date();
@@ -49,8 +132,8 @@ export function ResidentBills() {
       addAnnouncement({
         type: 'success',
         icon: null,
-        title: `Thanh toán thành công: ${bill.type}`,
-        message: `Bạn đã thanh toán thành công hóa đơn ${bill.type} - ${bill.period} với số tiền ${bill.amount.toLocaleString('vi-VN')} đ. Cảm ơn bạn đã thanh toán đúng hạn!`,
+        title: `Thanh toán thành công: ${monthlyBill.period}`,
+        message: `Bạn đã thanh toán thành công tất cả hóa đơn ${monthlyBill.period} với tổng số tiền ${monthlyBill.totalAmount.toLocaleString('vi-VN')} đ. Cảm ơn bạn đã thanh toán đúng hạn!`,
         time: timeAgo,
         date: now.toISOString().split('T')[0],
         read: false,
@@ -87,7 +170,7 @@ export function ResidentBills() {
           <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
           <input
             type="text"
-            placeholder="Tìm kiếm theo loại hóa đơn hoặc kỳ..."
+            placeholder="Tìm kiếm theo tháng..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="w-full pl-12 pr-4 py-3 bg-gray-50 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
@@ -105,7 +188,7 @@ export function ResidentBills() {
             <p className="text-gray-600 text-sm">Đã thanh toán</p>
           </div>
           <p className="text-2xl text-gray-900">{totalPaid.toLocaleString('vi-VN')} đ</p>
-          <p className="text-sm text-emerald-700 mt-1">{bills.filter(b => b.status === 'Paid').length} hóa đơn</p>
+          <p className="text-sm text-emerald-700 mt-1">{monthlyBills.filter(m => m.status === 'Paid').length} tháng</p>
         </div>
 
         <div className="bg-white rounded-xl p-6 border-2 border-gray-200">
@@ -116,7 +199,7 @@ export function ResidentBills() {
             <p className="text-gray-600 text-sm">Chưa thanh toán</p>
           </div>
           <p className="text-2xl text-gray-900">{totalPending.toLocaleString('vi-VN')} đ</p>
-          <p className="text-sm text-blue-700 mt-1">{bills.filter(b => b.status === 'Pending').length} hóa đơn</p>
+          <p className="text-sm text-blue-700 mt-1">{monthlyBills.filter(m => m.status === 'Pending').length} tháng</p>
         </div>
 
         <div className="bg-white rounded-xl p-6 border-2 border-gray-200">
@@ -127,14 +210,7 @@ export function ResidentBills() {
             <p className="text-gray-600 text-sm">Quá hạn</p>
           </div>
           <p className="text-2xl text-gray-900">{totalOverdue.toLocaleString('vi-VN')} đ</p>
-          <p className="text-sm text-red-700 mt-1">{bills.filter(b => {
-            if (b.status === 'Pending') {
-              const dueDate = new Date(b.dueDate);
-              const today = new Date();
-              return dueDate < today;
-            }
-            return false;
-          }).length} hóa đơn</p>
+          <p className="text-sm text-red-700 mt-1">{monthlyBills.filter(m => m.isOverdue).length} tháng</p>
         </div>
 
         <div className="bg-white rounded-xl p-6 border-2 border-gray-200">
@@ -168,79 +244,77 @@ export function ResidentBills() {
         ))}
       </div>
 
-      {/* Bills List */}
+      {/* Monthly Bills List */}
       <div className="space-y-3">
-        {filteredBills.map((bill) => {
-          const isOverdue = bill.status === 'Pending' && new Date(bill.dueDate) < new Date();
-          
+        {filteredMonthlyBills.map((monthlyBill) => {
           return (
             <div 
-              key={bill.id} 
+              key={monthlyBill.period} 
               className={`bg-white rounded-2xl p-6 border-2 transition-all hover:shadow-md ${
-                isOverdue ? 'border-red-200 bg-red-50/30' : 'border-gray-200'
+                monthlyBill.isOverdue ? 'border-red-200 bg-red-50/30' : 'border-gray-200'
               }`}
             >
               <div className="flex items-start justify-between">
                 <div className="flex-1">
                   <div className="flex items-center gap-4 mb-3">
                     <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${
-                      bill.status === 'Paid' ? 'bg-emerald-100' :
-                      isOverdue ? 'bg-red-100' : 'bg-blue-100'
+                      monthlyBill.status === 'Paid' ? 'bg-emerald-100' :
+                      monthlyBill.isOverdue ? 'bg-red-100' : 'bg-blue-100'
                     }`}>
                       <Receipt className={`w-6 h-6 ${
-                        bill.status === 'Paid' ? 'text-emerald-600' :
-                        isOverdue ? 'text-red-600' : 'text-blue-600'
+                        monthlyBill.status === 'Paid' ? 'text-emerald-600' :
+                        monthlyBill.isOverdue ? 'text-red-600' : 'text-blue-600'
                       }`} />
                     </div>
                     <div>
-                      <h3 className="text-lg font-semibold text-gray-900">{bill.type}</h3>
-                      <p className="text-sm text-gray-500">{bill.period}</p>
+                      <h3 className="text-lg font-semibold text-gray-900">Hóa đơn {monthlyBill.period}</h3>
+                      <p className="text-sm text-gray-500">{monthlyBill.bills.length} loại phí</p>
                     </div>
                   </div>
                   
                   <div className="grid grid-cols-3 gap-4 mb-4">
                     <div>
-                      <p className="text-xs text-gray-500 mb-1">Số tiền</p>
-                      <p className="text-lg font-bold text-gray-900">{bill.amount.toLocaleString('vi-VN')} đ</p>
+                      <p className="text-xs text-gray-500 mb-1">Tổng tiền</p>
+                      <p className="text-lg font-bold text-gray-900">{monthlyBill.totalAmount.toLocaleString('vi-VN')} đ</p>
                     </div>
                     <div>
                       <p className="text-xs text-gray-500 mb-1">Hạn thanh toán</p>
                       <div className="flex items-center gap-2">
                         <Calendar className="w-4 h-4 text-gray-400" />
-                        <p className="text-sm text-gray-700">{bill.dueDate}</p>
+                        <p className="text-sm text-gray-700">{monthlyBill.dueDate}</p>
                       </div>
                     </div>
                     <div>
                       <p className="text-xs text-gray-500 mb-1">Trạng thái</p>
                       <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm ${
-                        bill.status === 'Paid' ? 'bg-emerald-100 text-emerald-800' :
-                        isOverdue ? 'bg-red-100 text-red-800' :
+                        monthlyBill.status === 'Paid' ? 'bg-emerald-100 text-emerald-800' :
+                        monthlyBill.isOverdue ? 'bg-red-100 text-red-800' :
                         'bg-blue-100 text-blue-800'
                       }`}>
-                        {bill.status === 'Paid' && <CheckCircle className="w-4 h-4" />}
-                        {(bill.status === 'Pending' && !isOverdue) && <Clock className="w-4 h-4" />}
-                        {isOverdue && <AlertCircle className="w-4 h-4" />}
-                        {bill.status === 'Paid' ? 'Đã thanh toán' : 
-                         isOverdue ? 'Quá hạn' : 'Chưa thanh toán'}
+                        {monthlyBill.status === 'Paid' && <CheckCircle className="w-4 h-4" />}
+                        {(monthlyBill.status === 'Pending' && !monthlyBill.isOverdue) && <Clock className="w-4 h-4" />}
+                        {monthlyBill.isOverdue && <AlertCircle className="w-4 h-4" />}
+                        {monthlyBill.status === 'Paid' ? 'Đã thanh toán' : 
+                         monthlyBill.isOverdue ? 'Quá hạn' : 'Chưa thanh toán'}
                       </span>
                     </div>
                   </div>
 
-                  {bill.paidDate && (
-                    <p className="text-xs text-gray-500">Đã thanh toán vào: {bill.paidDate}</p>
+                  {monthlyBill.paidDate && (
+                    <p className="text-xs text-gray-500">Đã thanh toán vào: {monthlyBill.paidDate}</p>
                   )}
                 </div>
 
                 <div className="flex flex-col gap-2 ml-4">
                   <button
-                    onClick={() => setSelectedBill(bill)}
+                    onClick={() => setSelectedMonthlyBill(monthlyBill)}
                     className="px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white text-sm rounded-lg hover:shadow-lg transition-all"
                   >
                     Xem chi tiết
                   </button>
-                  {bill.status === 'Pending' && (
+                  {monthlyBill.status === 'Pending' && (
                     <button 
-                      onClick={() => handlePayBill(bill)}
+                      onClick={() => handlePayMonthlyBill(monthlyBill)}
                       className="px-4 py-2 bg-white text-blue-600 border-2 border-blue-600 text-sm rounded-lg hover:bg-blue-50 transition-colors"
                     >
                       Thanh toán
@@ -253,14 +327,14 @@ export function ResidentBills() {
         })}
       </div>
 
-      {/* Bill Details Modal */}
-      {selectedBill && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setSelectedBill(null)}>
-          <div className="bg-white rounded-2xl p-8 max-w-2xl w-full border-2 border-gray-200" onClick={(e) => e.stopPropagation()}>
+      {/* Monthly Bill Details Modal */}
+      {selectedMonthlyBill && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setSelectedMonthlyBill(null)}>
+          <div className="bg-white rounded-2xl p-8 max-w-3xl w-full border-2 border-gray-200 max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-2xl font-bold text-gray-900">Chi Tiết Hóa Đơn</h2>
+              <h2 className="text-2xl font-bold text-gray-900">Chi Tiết Hóa Đơn {selectedMonthlyBill.period}</h2>
               <button
-                onClick={() => setSelectedBill(null)}
+                onClick={() => setSelectedMonthlyBill(null)}
                 className="text-gray-400 hover:text-gray-600 transition-colors"
               >
                 ✕
@@ -269,48 +343,66 @@ export function ResidentBills() {
             
             <div className="space-y-4 mb-6">
               <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
-                <span className="text-gray-700">Loại hóa đơn:</span>
-                <span className="font-semibold text-gray-900">{selectedBill.type}</span>
-              </div>
-              <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
                 <span className="text-gray-700">Kỳ:</span>
-                <span className="font-semibold text-gray-900">{selectedBill.period}</span>
+                <span className="font-semibold text-gray-900">{selectedMonthlyBill.period}</span>
               </div>
               <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
                 <span className="text-gray-700">Hạn thanh toán:</span>
-                <span className="font-semibold text-gray-900">{selectedBill.dueDate}</span>
+                <span className="font-semibold text-gray-900">{selectedMonthlyBill.dueDate}</span>
               </div>
               
               <div className="border-t-2 border-gray-200 pt-4">
-                <h3 className="text-lg font-semibold text-gray-900 mb-3">Chi tiết các khoản phí:</h3>
+                <h3 className="text-lg font-semibold text-gray-900 mb-3">Chi tiết các loại phí:</h3>
+                <div className="space-y-3">
+                  {selectedMonthlyBill.bills.map((bill) => (
+                    <div key={bill.id} className="border-2 border-gray-200 rounded-xl p-4">
+                      <div className="flex items-center justify-between mb-3">
+                        <div>
+                          <h4 className="font-semibold text-gray-900">{bill.type}</h4>
+                          <p className="text-xs text-gray-500 mt-1">Hạn: {bill.dueDate}</p>
+                        </div>
+                        <span className={`px-3 py-1 rounded-full text-xs ${
+                          bill.status === 'Paid' ? 'bg-emerald-100 text-emerald-800' :
+                          'bg-orange-100 text-orange-800'
+                        }`}>
+                          {bill.status === 'Paid' ? 'Đã thanh toán' : 'Chưa thanh toán'}
+                        </span>
+                      </div>
                 <div className="space-y-2">
-                  {selectedBill.details.map((detail, index) => (
-                    <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                      <span className="text-gray-700">{detail.item}</span>
+                        {bill.details.map((detail, index) => (
+                          <div key={index} className="flex items-center justify-between p-2 bg-gray-50 rounded-lg">
+                            <span className="text-sm text-gray-700">{detail.item}</span>
                       <span className="font-semibold text-gray-900">{detail.amount.toLocaleString('vi-VN')} đ</span>
+                          </div>
+                        ))}
+                      </div>
+                      <div className="flex items-center justify-between p-3 bg-blue-50 rounded-lg mt-3">
+                        <span className="font-semibold text-gray-900">Tổng {bill.type}:</span>
+                        <span className="font-bold text-gray-900">{bill.amount.toLocaleString('vi-VN')} đ</span>
+                      </div>
                     </div>
                   ))}
                 </div>
                 <div className="flex items-center justify-between p-4 bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl mt-4">
-                  <span className="text-lg font-semibold text-gray-900">Tổng cộng:</span>
-                  <span className="text-xl font-bold text-gray-900">{selectedBill.amount.toLocaleString('vi-VN')} đ</span>
+                  <span className="text-lg font-semibold text-gray-900">Tổng cộng tháng:</span>
+                  <span className="text-xl font-bold text-gray-900">{selectedMonthlyBill.totalAmount.toLocaleString('vi-VN')} đ</span>
                 </div>
               </div>
             </div>
 
             <div className="flex gap-3">
               <button
-                onClick={() => setSelectedBill(null)}
+                onClick={() => setSelectedMonthlyBill(null)}
                 className="flex-1 px-6 py-3 bg-gray-200 text-gray-700 rounded-xl hover:bg-gray-300 transition-colors"
               >
                 Đóng
               </button>
-              {selectedBill.status === 'Pending' && (
+              {selectedMonthlyBill.status === 'Pending' && (
                 <button 
-                  onClick={() => handlePayBill(selectedBill)}
+                  onClick={() => handlePayMonthlyBill(selectedMonthlyBill)}
                   className="flex-1 px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl hover:shadow-lg transition-all"
                 >
-                  Thanh toán ngay
+                  Thanh toán cả tháng
                 </button>
               )}
             </div>
@@ -318,7 +410,7 @@ export function ResidentBills() {
         </div>
       )}
 
-      {filteredBills.length === 0 && (
+      {filteredMonthlyBills.length === 0 && (
         <div className="bg-white rounded-2xl p-12 border-2 border-gray-200 text-center">
           <Receipt className="w-16 h-16 text-gray-400 mx-auto mb-4" />
           <p className="text-gray-600 text-lg">Không tìm thấy hóa đơn nào</p>
@@ -345,10 +437,6 @@ export function ResidentBills() {
             
             <div className="bg-gray-50 rounded-xl p-4 mb-6">
               <div className="space-y-2">
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Loại hóa đơn:</span>
-                  <span className="font-semibold text-gray-900">{paidBill.type}</span>
-                </div>
                 <div className="flex justify-between">
                   <span className="text-gray-600">Kỳ:</span>
                   <span className="font-semibold text-gray-900">{paidBill.period}</span>

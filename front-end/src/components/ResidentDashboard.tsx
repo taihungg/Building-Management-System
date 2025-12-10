@@ -46,9 +46,50 @@ export function ResidentDashboard({ onNavigate }: ResidentDashboardProps = {}) {
     };
   }, []);
 
-  const unpaidBills = bills.filter(b => b.status !== 'Paid');
-  const totalUnpaid = unpaidBills.reduce((sum, b) => sum + b.amount, 0);
-  const recentBills = bills.slice(0, 3);
+  // Group bills by period (month)
+  const monthlyBills = useMemo(() => {
+    const grouped = new Map<string, Bill[]>();
+    
+    bills.forEach(bill => {
+      if (!grouped.has(bill.period)) {
+        grouped.set(bill.period, []);
+      }
+      grouped.get(bill.period)!.push(bill);
+    });
+
+    const monthly = Array.from(grouped.entries()).map(([period, periodBills]) => {
+      const totalAmount = periodBills.reduce((sum, b) => sum + b.amount, 0);
+      const paidBills = periodBills.filter(b => b.status === 'Paid');
+      
+      // Chỉ có thể thanh toán cả tháng, không có thanh toán một phần
+      // Nếu tất cả đã thanh toán thì là Paid, còn lại là Pending
+      const status: 'Paid' | 'Pending' = paidBills.length === periodBills.length ? 'Paid' : 'Pending';
+
+      // Get the earliest due date for the month
+      const dueDates = periodBills.map(b => new Date(b.dueDate));
+      const earliestDueDate = new Date(Math.min(...dueDates.map(d => d.getTime())));
+
+      return {
+        period,
+        bills: periodBills,
+        totalAmount,
+        status,
+        dueDate: earliestDueDate.toISOString().split('T')[0],
+        isOverdue: status === 'Pending' && earliestDueDate < new Date()
+      };
+    });
+
+    // Sort by period (newest first)
+    return monthly.sort((a, b) => {
+      const aDate = new Date(a.period.replace('Tháng ', '').split('/').reverse().join('-'));
+      const bDate = new Date(b.period.replace('Tháng ', '').split('/').reverse().join('-'));
+      return bDate.getTime() - aDate.getTime();
+    });
+  }, [bills]);
+
+  const unpaidMonthlyBills = monthlyBills.filter(m => m.status !== 'Paid');
+  const totalUnpaid = unpaidMonthlyBills.reduce((sum, m) => sum + m.totalAmount, 0);
+  const recentMonthlyBills = monthlyBills.slice(0, 3);
 
   const handleAnnouncementClick = (announcement: Announcement) => {
     setSelectedAnnouncement(announcement);
@@ -100,15 +141,15 @@ export function ResidentDashboard({ onNavigate }: ResidentDashboardProps = {}) {
               <Receipt className="w-6 h-6 text-white" />
             </div>
             <div className={`flex items-center gap-1 px-3 py-1 rounded-lg ${
-              unpaidBills.length > 0 ? 'bg-orange-100 text-orange-700' : 'bg-green-100 text-green-700'
+              unpaidMonthlyBills.length > 0 ? 'bg-orange-100 text-orange-700' : 'bg-green-100 text-green-700'
             }`}>
-              {unpaidBills.length > 0 ? <AlertCircle className="w-4 h-4" /> : <CheckCircle className="w-4 h-4" />}
-              <span className="text-sm">{unpaidBills.length} chưa thanh toán</span>
+              {unpaidMonthlyBills.length > 0 ? <AlertCircle className="w-4 h-4" /> : <CheckCircle className="w-4 h-4" />}
+              <span className="text-sm">{unpaidMonthlyBills.length} chưa thanh toán</span>
             </div>
           </div>
           <div className="mt-4">
             <p className="text-gray-500 text-sm">Hóa đơn chưa thanh toán</p>
-            <p className="text-2xl text-gray-900 mt-1">{unpaidBills.length}</p>
+            <p className="text-2xl text-gray-900 mt-1">{unpaidMonthlyBills.length}</p>
           </div>
         </div>
 
@@ -249,22 +290,24 @@ export function ResidentDashboard({ onNavigate }: ResidentDashboardProps = {}) {
             </button>
           </div>
           <div className="space-y-4">
-            {recentBills.map((bill) => (
-              <div key={bill.id} className="p-4 rounded-lg border-2 border-gray-200 bg-gray-50">
+            {recentMonthlyBills.map((monthlyBill) => (
+              <div key={monthlyBill.period} className="p-4 rounded-lg border-2 border-gray-200 bg-gray-50">
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm font-semibold text-gray-900">{bill.type}</span>
+                  <span className="text-sm font-semibold text-gray-900">Hóa đơn {monthlyBill.period}</span>
                   <span className={`px-2 py-1 rounded-full text-xs ${
-                    bill.status === 'Paid' ? 'bg-green-100 text-green-700' :
-                    bill.status === 'Pending' ? 'bg-orange-100 text-orange-700' :
-                    'bg-red-100 text-red-700'
+                    monthlyBill.status === 'Paid' ? 'bg-green-100 text-green-700' :
+                    monthlyBill.isOverdue ? 'bg-red-100 text-red-700' :
+                    'bg-orange-100 text-orange-700'
                   }`}>
-                    {bill.status === 'Paid' ? 'Đã thanh toán' : 'Chưa thanh toán'}
+                    {monthlyBill.status === 'Paid' ? 'Đã thanh toán' : 
+                     monthlyBill.isOverdue ? 'Quá hạn' : 'Chưa thanh toán'}
                   </span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-lg font-bold text-gray-900">{bill.amount.toLocaleString('vi-VN')} đ</span>
-                  <span className="text-xs text-gray-500">Hạn: {bill.dueDate}</span>
+                  <span className="text-lg font-bold text-gray-900">{monthlyBill.totalAmount.toLocaleString('vi-VN')} đ</span>
+                  <span className="text-xs text-gray-500">Hạn: {monthlyBill.dueDate}</span>
                 </div>
+                <p className="text-xs text-gray-500 mt-1">{monthlyBill.bills.length} loại phí</p>
               </div>
             ))}
           </div>

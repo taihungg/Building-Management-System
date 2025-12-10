@@ -25,11 +25,19 @@ import { BuildingRules } from './components/BuildingRules';
 import { ResidentProfile } from './components/ResidentProfile';
 import { ResidentSettings } from './components/ResidentSettings';
 
+// === Imports cho Accounting ===
+import { AccountingSidebar } from './components/AccountingSidebar';
+import { AccountingHeader } from './components/AccountingHeader';
+import { AccountingDashboard } from './components/AccountingDashboard';
+import { AccountingProfile } from './components/AccountingProfile';
+import { InvoiceCreation } from './components/InvoiceCreation';
+import { DebtManagement } from './components/DebtManagement';
+
 // === Import cho Login ===
 import { Login } from './components/Login';
 
 // Định nghĩa kiểu cho vai trò người dùng
-type UserRole = 'admin' | 'resident' | null;
+type UserRole = 'admin' | 'resident' | 'accounting' | null;
 
 // Component PrivateRoute (Giữ nguyên không sử dụng)
 const PrivateRoute = ({ children, allowedRoles }: { children: JSX.Element, allowedRoles: UserRole[] }) => {
@@ -47,31 +55,69 @@ export default function App() {
   const [userRole, setUserRole] = useState<UserRole>(null);
   
   // --- Login/Logout Handlers ---
-  const handleLogin = (role: 'admin' | 'resident') => {
+  const handleLogin = (role: 'admin' | 'resident' | 'accounting') => {
     setUserRole(role);
     setIsAuthenticated(true);
+    localStorage.setItem('userRole', role);
+    localStorage.setItem('isAuthenticated', 'true');
   };
 
   const handleLogout = () => {
     setIsAuthenticated(false);
     setUserRole(null);
+    localStorage.removeItem('userRole');
+    localStorage.removeItem('isAuthenticated');
   };
 
   // --- Sidebar Toggle Effect ---
   useEffect(() => {
-    // ===========================================================
-    // HARDCODE TÀI KHOẢN RESIDENT ĐỂ TEST (BỎ QUA MÀN HÌNH LOGIN)
-    // ===========================================================
-    setIsAuthenticated(true);
-    setUserRole('resident'); 
-    // Nếu muốn test Admin, đổi thành: setUserRole('admin');
-    
+    const storedRole = localStorage.getItem('userRole') as UserRole | null;
+    const storedAuth = localStorage.getItem('isAuthenticated') === 'true';
+    if (storedRole && storedAuth) {
+      setUserRole(storedRole);
+      setIsAuthenticated(true);
+    }
+
     const handleToggleSidebar = () => {
       setIsSidebarOpen(prev => !prev);
     };
     window.addEventListener('toggleSidebar', handleToggleSidebar);
     return () => window.removeEventListener('toggleSidebar', handleToggleSidebar);
   }, []); // [] đảm bảo logic này chỉ chạy 1 lần khi App được load
+
+  // Ensure path matches role; redirect to default if not
+  useEffect(() => {
+    if (!isAuthenticated || !userRole) return;
+    const path = window.location.pathname;
+    const allowed: Record<Exclude<UserRole, null>, { paths: string[]; fallback: string }> = {
+      admin: {
+        paths: [
+          '/dashboard', '/residents', '/apartments', '/bills', '/services',
+          '/notifications', '/recommendations', '/profile', '/settings', '/'
+        ],
+        fallback: '/dashboard'
+      },
+      resident: {
+        paths: [
+          '/resident-dashboard', '/resident-announcements', '/resident-bills',
+          '/building-rules', '/profile', '/settings', '/'
+        ],
+        fallback: '/resident-dashboard'
+      },
+      accounting: {
+        paths: [
+          '/accounting-dashboard', '/debt-management', '/invoice-creation',
+          '/profile', '/settings', '/'
+        ],
+        fallback: '/accounting-dashboard'
+      }
+    };
+    const cfg = allowed[userRole];
+    const matched = cfg.paths.some(p => path === p || path.startsWith(p + '/'));
+    if (!matched) {
+      window.history.replaceState(null, '', cfg.fallback);
+    }
+  }, [isAuthenticated, userRole]);
 
   // --- Conditional Renders ---
 
@@ -128,6 +174,17 @@ export default function App() {
     </>
   );
 
+  const accountingRoutes = (
+    <>
+      <Route path="/" element={<Navigate to="/accounting-dashboard" replace />} />
+      <Route path="/accounting-dashboard" element={<AccountingDashboard />} />
+      <Route path="/debt-management" element={<DebtManagement />} />
+      <Route path="/invoice-creation" element={<InvoiceCreation />} />
+      <Route path="/profile" element={<AccountingProfile />} />
+      <Route path="/settings" element={<Settings />} />
+    </>
+  );
+
   // Dựa vào userRole để xác định layout và routes
   let sidebarComponent, headerComponent, appRoutes;
 
@@ -160,6 +217,20 @@ export default function App() {
           />
       );
       appRoutes = residentRoutes;
+  } else if (userRole === 'accounting') {
+      sidebarComponent = (
+          <AccountingSidebar 
+              isOpen={isSidebarOpen}
+              onClose={() => setIsSidebarOpen(false)}
+              onLogout={handleLogout}
+          />
+      );
+      headerComponent = (
+          <AccountingHeader 
+              onMenuClick={() => setIsSidebarOpen(true)}
+          />
+      );
+      appRoutes = accountingRoutes;
   } else {
       // Nếu có lỗi vai trò nhưng đã đăng nhập (Không nên xảy ra với hardcode)
       return <div className="p-4 text-red-600">Lỗi: Không xác định được vai trò người dùng.</div>;

@@ -14,76 +14,59 @@ export interface Bill {
   paidDate: string | null;
   period: string;
   details: BillDetail[];
+  apartmentNumber?: string;
+  residentName?: string;
 }
 
+// Helpers to build periods/dates (fixed to tháng 11 & 10 theo yêu cầu)
+const currentYear = new Date().getFullYear();
+const currentMonth = 11; // Tháng 11
+const prevMonth = 10; // Tháng 10
+const prevYear = currentMonth === 1 ? currentYear - 1 : currentYear;
+const formatPeriod = (month: number, year: number) => `Tháng ${month}/${year}`;
+const formatDate = (year: number, month: number, day: number) =>
+  `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+
 const initialBills: Bill[] = [
+  // Tháng 11 - gộp tất cả phí thành 1 hóa đơn tháng
   { 
     id: 1, 
-    type: 'Tiền thuê nhà', 
-    amount: 15000000, 
-    dueDate: '2024-07-01', 
-    status: 'Paid', 
-    paidDate: '2024-06-28',
-    period: 'Tháng 7/2024',
+    type: 'Hóa đơn tháng', 
+    amount: 15800000, 
+    dueDate: formatDate(currentYear, currentMonth, 1), 
+    status: 'Pending', 
+    paidDate: null,
+    period: formatPeriod(currentMonth, currentYear),
     details: [
       { item: 'Tiền thuê căn hộ', amount: 12000000 },
       { item: 'Phí quản lý', amount: 2000000 },
       { item: 'Phí dịch vụ chung', amount: 1000000 },
-    ]
-  },
-  { 
-    id: 2, 
-    type: 'Phí dịch vụ', 
-    amount: 500000, 
-    dueDate: '2024-07-05', 
-    status: 'Pending', 
-    paidDate: null,
-    period: 'Tháng 7/2024',
-    details: [
       { item: 'Điện', amount: 300000 },
       { item: 'Nước', amount: 150000 },
       { item: 'Internet', amount: 50000 },
-    ]
-  },
-  { 
-    id: 3, 
-    type: 'Phí gửi xe', 
-    amount: 300000, 
-    dueDate: '2024-07-10', 
-    status: 'Pending', 
-    paidDate: null,
-    period: 'Tháng 7/2024',
-    details: [
       { item: 'Phí gửi xe máy', amount: 200000 },
       { item: 'Phí gửi xe đạp', amount: 100000 },
     ]
   },
+
+  // Tháng 10 - gộp tất cả phí thành 1 hóa đơn tháng đã thanh toán
   { 
-    id: 4, 
-    type: 'Tiền thuê nhà', 
-    amount: 15000000, 
-    dueDate: '2024-06-01', 
+    id: 2, 
+    type: 'Hóa đơn tháng', 
+    amount: 15450000, 
+    dueDate: formatDate(prevYear, prevMonth, 1), 
     status: 'Paid', 
-    paidDate: '2024-05-28',
-    period: 'Tháng 6/2024',
+    paidDate: formatDate(prevYear, prevMonth, 28),
+    period: formatPeriod(prevMonth, prevYear),
     details: [
       { item: 'Tiền thuê căn hộ', amount: 12000000 },
       { item: 'Phí quản lý', amount: 2000000 },
       { item: 'Phí dịch vụ chung', amount: 1000000 },
-    ]
-  },
-  { 
-    id: 5, 
-    type: 'Phí dịch vụ', 
-    amount: 450000, 
-    dueDate: '2024-06-05', 
-    status: 'Paid', 
-    paidDate: '2024-06-03',
-    period: 'Tháng 6/2024',
-    details: [
       { item: 'Điện', amount: 280000 },
       { item: 'Nước', amount: 120000 },
       { item: 'Internet', amount: 50000 },
+      { item: 'Phí gửi xe máy', amount: 200000 },
+      { item: 'Phí gửi xe đạp', amount: 100000 },
     ]
   },
 ];
@@ -96,6 +79,13 @@ const listeners: Array<(bills: Bill[]) => void> = [];
 
 export const getBills = (): Bill[] => {
   return billsState;
+};
+
+export const addBill = (bill: Omit<Bill, 'id'>): Bill => {
+  const newBill: Bill = { ...bill, id: Date.now() };
+  billsState = [newBill, ...billsState];
+  notifyListeners();
+  return newBill;
 };
 
 export const payBill = (id: number): Bill | null => {

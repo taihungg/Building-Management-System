@@ -1,14 +1,16 @@
-import { Menu, Search, Bell } from 'lucide-react';
+import { Menu, Search, Bell, LogOut } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 interface HeaderProps {
   onMenuClick: () => void;
-  onNavigate: (page: string) => void;
+  onLogout?: () => void;
 }
 
-export function Header({ onMenuClick, onNavigate }: HeaderProps) {
+export function Header({ onMenuClick, onLogout }: HeaderProps) {
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const profileRef = useRef<HTMLDivElement>(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -23,7 +25,12 @@ export function Header({ onMenuClick, onNavigate }: HeaderProps) {
 
   const handleProfileItemClick = (page: string) => {
     setIsProfileOpen(false);
-    onNavigate(page);
+    if (page === 'logout') {
+      onLogout?.();
+      navigate('/');
+      return;
+    }
+    navigate(`/${page}`);
   };
 
   return (
@@ -39,7 +46,7 @@ export function Header({ onMenuClick, onNavigate }: HeaderProps) {
           </button>
           
           <button 
-            onClick={() => onNavigate('dashboard')}
+            onClick={() => navigate('/dashboard')}
             className="flex items-center gap-2 hover:opacity-80 transition-opacity"
           >
             <div className="w-10 h-10 bg-gradient-to-br from-cyan-500 to-blue-500 rounded-lg flex items-center justify-center">
@@ -88,25 +95,12 @@ export function Header({ onMenuClick, onNavigate }: HeaderProps) {
                   <h3 className="text-xl text-gray-900">My Account</h3>
                 </div>
                 <div className="py-2">
-                  <button 
-                    onClick={() => handleProfileItemClick('profile')}
-                    className="w-full px-6 py-4 text-left text-gray-700 hover:bg-gray-50 transition-colors"
-                  >
-                    Profile
-                  </button>
-                  <button 
-                    onClick={() => handleProfileItemClick('settings')}
-                    className="w-full px-6 py-4 text-left text-gray-700 hover:bg-gray-50 transition-colors"
-                  >
-                    Settings
-                  </button>
+                  <button onClick={() => handleProfileItemClick('profile')} className="w-full px-6 py-4 text-left text-gray-700 hover:bg-gray-50 transition-colors">Profile</button>
+                  <button onClick={() => handleProfileItemClick('settings')} className="w-full px-6 py-4 text-left text-gray-700 hover:bg-gray-50 transition-colors">Settings</button>
                 </div>
                 <div className="border-t-2 border-gray-100">
-                  <button 
-                    onClick={() => handleProfileItemClick('logout')}
-                    className="w-full px-6 py-4 text-left text-gray-700 hover:bg-gray-50 transition-colors"
-                  >
-                    Logout
+                  <button onClick={() => handleProfileItemClick('logout')} className="w-full px-6 py-4 text-left text-red-600 hover:bg-red-50 transition-colors flex items-center gap-2">
+                    <LogOut className="w-4 h-4" /> Logout
                   </button>
                 </div>
               </div>
