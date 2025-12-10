@@ -148,7 +148,7 @@ export function ServiceManagement() {
                 category: mapCategory(issue.type),
                 status: mapStatus(rawStatus), 
                 rawStatus: rawStatus, // Lưu trạng thái ENUM gốc
-                unit: issue.roomNumber, 
+                unit: String(issue.roomNumber), 
                 resident: issue.reporterName, 
             };
         });
@@ -265,18 +265,26 @@ export function ServiceManagement() {
   }, [apartmentSearchTerm, isNewRequestOpen]); 
 
 
-  // --- LOGIC LỌC VÀ TÌM KIẾM ---
   const filteredIssues = allIssue.filter(issue => {
-    if (statusFilter !== 'All' && issue.status !== statusFilter) {
-      return false;
-    }
+    
+    // ... (Logic lọc status)
+    
+    // 2. Lọc theo Search Term
     if (searchTerm) {
       const lowerSearch = searchTerm.toLowerCase();
+      
+      // SỬA LỖI: PHẢI GÁN GIÁ TRỊ MẶC ĐỊNH LÀ CHUỖI RỖNG
+      // nếu unit, resident, hay category là null/undefined.
+      const unit = issue.unit || ''; 
+      const resident = issue.resident || '';
+      const category = issue.category || '';
+      const title = issue.title || '';
+
       return (
-        issue.unit.toLowerCase().includes(lowerSearch) ||
-        issue.resident.toLowerCase().includes(lowerSearch) ||
-        issue.category.toLowerCase().includes(lowerSearch) ||
-        issue.title.toLowerCase().includes(lowerSearch)
+        unit.toLowerCase().includes(lowerSearch) || // <- Bây giờ unit là chuỗi ('A-508' hoặc '')
+        resident.toLowerCase().includes(lowerSearch) ||
+        category.toLowerCase().includes(lowerSearch) ||
+        title.toLowerCase().includes(lowerSearch)
       );
     }
     return true;
