@@ -1,9 +1,11 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Search, Plus, MoreVertical, Wrench, Droplet, Zap, Wind, Shield, Trash2, Clock, Edit, Eye, CheckCircle, ChevronDown } from 'lucide-react';
+import { Search, Plus, MoreVertical, Wrench, Droplet, Zap, Wind, Shield, Trash2, Clock, CheckCircle } from 'lucide-react';
 import { SlideOut } from './SlideOut'; 
 import { toast } from 'sonner';
 import React from 'react';
 
+// UUID giả định để khắc phục lỗi 400 Bad Request khi gửi 'default-admin-reporter-id'
+const FALLBACK_REPORTER_UUID = '00000000-0000-0000-0000-000000000001'; 
 
 const categoryIcons = {
   Plumbing: Droplet,
@@ -12,13 +14,15 @@ const categoryIcons = {
   Maintenance: Wrench,
   Cleaning: Trash2,
   Security: Shield,
+  Complaint: Shield, // Thêm Complaint
 };
 
 // Danh sách các trạng thái ENUM Backend và UI Label tương ứng
 const STATUS_OPTIONS = [
     { enum: 'UNPROCESSED', label: 'Unprocessed' },
     { enum: 'PROCESSING', label: 'In Progress' },
-    { enum: 'RESOLVED', label: 'Completed' },
+    // ENUM PROCESSED (Backend) -> Label Processed (Frontend)
+    { enum: 'PROCESSED', label: 'Processed' }, 
 ];
 
 
@@ -36,7 +40,7 @@ export function ServiceManagement() {
   const [updateApartmentID, setUpdateAppartmentID] = useState('');
   const [updateTitle, setUpdateTitle] = useState ('');
   const [updateDescription, setUpdateDescription] = useState ('');
-  const [updateType , setUpdateType] = useState ('PLUMBING'); 
+  const [updateType , setUpdateType] = useState ('MAINTENANCE'); // Đặt giá trị mặc định khớp với option
   const [updateReporterID, setUpdateReporterID] = useState(''); 
   
   // State cho Dropdown Search Căn hộ
@@ -63,6 +67,7 @@ export function ServiceManagement() {
       });
 
       if (!response.ok) {
+        // Cố gắng đọc chi tiết lỗi JSON từ Backend
         const errorData = await response.json().catch(() => ({}));
         throw new Error(errorData.message || `Lỗi: ${response.status} khi tạo yêu cầu.`);
       }
@@ -76,7 +81,7 @@ export function ServiceManagement() {
   
   // 2. API Cập nhật Trạng thái (PATCH)
   const updateIssueStatusApi = async (issueId, newStatus) => {
-    setOpenIssueMenuId(null); // Đóng menu ngay lập tức
+    setOpenIssueMenuId(null); 
     try {
         const response = await fetch(`http://localhost:8081/api/issues/${issueId}/status`, {
             method: 'PATCH',
@@ -91,7 +96,6 @@ export function ServiceManagement() {
             throw new Error(errorData.message || `Lỗi: ${response.status} khi cập nhật trạng thái.`);
         }
         
-        // Cập nhật thành công, tải lại danh sách
         await fetchIssues(); 
 
         toast.success(`Cập nhật trạng thái thành công!`);
@@ -122,7 +126,10 @@ export function ServiceManagement() {
                 switch (status) {
                     case 'UNPROCESSED': return 'Unprocessed';
                     case 'PROCESSING': return 'In Progress';
-                    case 'RESOLVED': return 'Completed'; 
+                    // Đảm bảo cả RESOLVED và PROCESSED đều map thành Processed trên UI
+                    case 'PROCESSED': 
+                    case 'RESOLVED': // Giả định PROCESSED tương đương với RESOLVED
+                        return 'Processed'; 
                     default: return 'Unprocessed';
                 }
             };
@@ -133,11 +140,8 @@ export function ServiceManagement() {
             const mapCategory = (type) => { 
                 switch (type) {
                     case 'MAINTENANCE': return 'Maintenance'; 
-                    case 'SECURITY': return 'Security'; 
-                    case 'PLUMBING': return 'Plumbing'; 
-                    case 'ELECTRICAL': return 'Electrical';
-                    case 'HVAC': return 'HVAC';
-                    case 'CLEANING': return 'Cleaning';
+                    case 'COMPLAINT': return 'Complaint'; 
+                    // Bỏ các giá trị bị lỗi Enum trước đó
                     default: return 'Maintenance';
                 }
             };
@@ -171,9 +175,10 @@ export function ServiceManagement() {
     
     setIsApartmentDropdownLoading(true);
     try {
-      const response = await fetch(`http://localhost:8081/api/apartments/dropdown?keyword=${keyword}`);
+      const response = await fetch(`http://localhost:8081/api/v1/apartments/dropdown?keyword=${keyword}`);
       
       if (!response.ok) {
+        // Lỗi 404/Network
         throw new Error("Lỗi tìm kiếm căn hộ.");
       }
       
@@ -193,7 +198,10 @@ export function ServiceManagement() {
   const handleSubmit = async(e)=>{
     e.preventDefault(); 
 
-    const reporterId = updateReporterID || localStorage.getItem('userId') || 'default-admin-reporter-id';
+    // SỬA LỖI UUID: Dùng UUID hợp lệ thay cho chuỗi 'default-admin-reporter-id'
+    const reporterId = updateReporterID 
+        || localStorage.getItem('userId') 
+        || FALLBACK_REPORTER_UUID;
     
     if (!updateTitle || !updateDescription || !updateApartmentID || !updateType) {
         toast.warning("Thiếu thông tin", { description: "Vui lòng điền đủ Tiêu đề, Mô tả, Loại, và chọn Căn hộ." });
@@ -207,7 +215,7 @@ export function ServiceManagement() {
                 title: updateTitle,
                 description: updateDescription,
                 type: updateType,
-                reporterId: reporterId
+                reporterId: reporterId // Đã được đảm bảo là UUID hợp lệ
             };
             
             await createIssueApi(dataform); 
@@ -218,7 +226,7 @@ export function ServiceManagement() {
             setUpdateAppartmentID('');
             setUpdateTitle('');
             setUpdateDescription('');
-            setUpdateType('PLUMBING'); 
+            setUpdateType('MAINTENANCE'); // Reset về Maintenance
             setApartmentSearchTerm('');
             setSelectedApartmentLabel('');
             setIsNewRequestOpen(false); 
@@ -267,21 +275,23 @@ export function ServiceManagement() {
 
   const filteredIssues = allIssue.filter(issue => {
     
-    // ... (Logic lọc status)
+    // Lọc theo Status (Đảm bảo logic lọc đúng)
+    if (statusFilter !== 'All' && issue.status !== statusFilter) {
+      return false;
+    }
     
     // 2. Lọc theo Search Term
     if (searchTerm) {
       const lowerSearch = searchTerm.toLowerCase();
       
-      // SỬA LỖI: PHẢI GÁN GIÁ TRỊ MẶC ĐỊNH LÀ CHUỖI RỖNG
-      // nếu unit, resident, hay category là null/undefined.
+      // Khắc phục lỗi unit.toLowerCase is not a function
       const unit = issue.unit || ''; 
       const resident = issue.resident || '';
       const category = issue.category || '';
       const title = issue.title || '';
 
       return (
-        unit.toLowerCase().includes(lowerSearch) || // <- Bây giờ unit là chuỗi ('A-508' hoặc '')
+        unit.toLowerCase().includes(lowerSearch) || 
         resident.toLowerCase().includes(lowerSearch) ||
         category.toLowerCase().includes(lowerSearch) ||
         title.toLowerCase().includes(lowerSearch)
@@ -298,13 +308,7 @@ export function ServiceManagement() {
           <h1 className="text-3xl text-slate-900">Issue Management</h1>
           <p className="text-slate-500 mt-1">Track and manage all service requests</p>
         </div>
-        <button 
-          onClick={() => setIsNewRequestOpen(true)}
-          className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-xl hover:shadow-lg hover:shadow-blue-500/30 transition-all"
-        >
-          <Plus className="w-5 h-5" />
-          New Request
-        </button>
+        
       </div>
 
       <hr/>
@@ -323,9 +327,8 @@ export function ServiceManagement() {
         </div>
       </div>
 
-      {/* Stats Grid */}
+      {/* Stats Grid - SỬA 'Completed' thành 'Processed' */}
       <div className="grid grid-cols-4 gap-6">
-        {/* ... (Stats Grid giữ nguyên) ... */}
         <div className="bg-white rounded-xl p-6 shadow-sm border border-slate-200">
           <div className="flex items-center gap-3 mb-2">
             <div className="w-10 h-10 rounded-lg bg-orange-100 flex items-center justify-center">
@@ -351,9 +354,9 @@ export function ServiceManagement() {
             <div className="w-10 h-10 rounded-lg bg-emerald-100 flex items-center justify-center">
               <CheckCircle className="w-5 h-5 text-emerald-600" />
             </div>
-            <p className="text-slate-500 text-sm">Completed</p>
+            <p className="text-slate-500 text-sm">Processed</p> {/* SỬA TẠI ĐÂY */}
           </div>
-          <p className="text-2xl text-slate-900">{allIssue.filter(s => s.status === 'Completed').length}</p>
+          <p className="text-2xl text-slate-900">{allIssue.filter(s => s.status === 'Processed').length}</p> {/* SỬA TẠI ĐÂY */}
         </div>
 
         <div className="bg-white rounded-xl p-6 shadow-sm border border-slate-200">
@@ -369,9 +372,9 @@ export function ServiceManagement() {
 
       <hr/>
 
-      {/* Status Filter Tabs */}
+      {/* Status Filter Tabs - Đã đúng: ['Unprocessed', 'In Progress', 'Processed', 'All'] */}
       <div className="flex gap-2">
-        {['Unprocessed', 'In Progress', 'Completed', 'All'].map((status) => (
+        {['Unprocessed', 'In Progress', 'Processed', 'All'].map((status) => (
           <button
             key={status}
             onClick={() => setStatusFilter(status)}
@@ -398,8 +401,9 @@ export function ServiceManagement() {
         {filteredIssues.map((service) => {
           const Icon = categoryIcons[service.category] || Wrench; 
           
+          // SỬA 'Completed' thành 'Processed' trong logic hiển thị màu sắc
           const statusClass = 
-              service.status === 'Completed' ? 'bg-emerald-50 text-emerald-700' :
+              service.status === 'Processed' ? 'bg-emerald-50 text-emerald-700' :
               service.status === 'In Progress' ? 'bg-blue-50 text-blue-700' :
               service.status === 'Unprocessed' ? 'bg-orange-50 text-orange-700' :
               'bg-gray-50 text-gray-700';
@@ -407,8 +411,8 @@ export function ServiceManagement() {
           return (
               <div 
                 key={service.id} 
-                className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200 hover:shadow-md transition-shadow relative" // Thêm relative
-                onClick={() => setOpenIssueMenuId(null)} // Đóng menu nếu click ra ngoài
+                className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200 hover:shadow-md transition-shadow relative" 
+                onClick={() => setOpenIssueMenuId(null)} 
               >            
                   <div className="flex items-start justify-between mb-4">
                       <div className="flex items-center gap-3">
@@ -431,11 +435,11 @@ export function ServiceManagement() {
                           </div>
                       </div>
                       
-                      {/* Menu Thao tác (Mới) */}
+                      {/* Menu Thao tác */}
                       <div className="relative">
                           <button 
                               onClick={(e) => {
-                                e.stopPropagation(); // Ngăn chặn sự kiện lan truyền
+                                e.stopPropagation(); 
                                 setOpenIssueMenuId(service.id === openIssueMenuId ? null : service.id);
                               }}
                               className="p-1 rounded-full hover:bg-slate-100"
@@ -490,128 +494,6 @@ export function ServiceManagement() {
         })}
       </div>
 
-      <SlideOut
-        isOpen={isNewRequestOpen}
-        onClose={() => {
-            setIsNewRequestOpen(false);
-            // Reset form khi đóng
-            setUpdateAppartmentID('');
-            setApartmentSearchTerm('');
-            setSelectedApartmentLabel('');
-        }}
-        title="New Service Request"
-      >
-        <form onSubmit={handleSubmit}>
-          <div className="p-6 space-y-6">
-            <div className="space-y-4">
-              
-              <div className="relative">
-                <label className="block text-sm text-slate-700 mb-2">Tìm kiếm và Chọn Căn hộ</label>
-                
-                <input
-                  type="text"
-                  value={apartmentSearchTerm}
-                  onChange={(e) => {
-                      setApartmentSearchTerm(e.target.value);
-                      setUpdateAppartmentID('');
-                      setSelectedApartmentLabel(''); 
-                  }}
-                  placeholder="Nhập số phòng (ví dụ: A-508)"
-                  className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  required
-                />
-                
-                {/* Hiển thị Dropdown List */}
-                {apartmentDropdown.length > 0 && (
-                    <div className="absolute z-10 w-full mt-2 border border-slate-200 rounded-xl max-h-40 overflow-y-auto bg-white shadow-xl">
-                        {apartmentDropdown.map((apt) => (
-                            <div 
-                                key={apt.id}
-                                onClick={() => handleSelectApartment(apt.id, apt.label)} 
-                                className="px-4 py-2 cursor-pointer hover:bg-blue-50 transition-colors text-sm border-b border-slate-100 last:border-b-0"
-                            >
-                                {apt.label} 
-                            </div>
-                        ))}
-                    </div>
-                )}
-                
-                {/* Trạng thái đã chọn */}
-                {selectedApartmentLabel && (
-                    <p className="mt-2 text-sm text-emerald-600 flex items-center gap-2">
-                        <CheckCircle className="w-4 h-4" />
-                        Đã chọn: **{selectedApartmentLabel}**
-                    </p>
-                )}
-              </div>
-              
-              {/* Category (Type) */}
-              <div>
-                <label className="block text-sm text-slate-700 mb-2">Category</label>
-                <select 
-                  value={updateType}
-                  onChange={(e) => setUpdateType(e.target.value)}
-                  className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  required
-                >
-                  <option value="PLUMBING">Plumbing</option>
-                  <option value="ELECTRICAL">Electrical</option>
-                  <option value="HVAC">HVAC</option>
-                  <option value="MAINTENANCE">Maintenance</option>
-                  <option value="CLEANING">Cleaning</option>
-                  <option value="SECURITY">Security</option>
-                </select>
-              </div>
-
-              {/* Title */}
-              <div>
-                <label className="block text-sm text-slate-700 mb-2">Title</label>
-                <input
-                  type="text"
-                  value={updateTitle}
-                  onChange={(e) => setUpdateTitle(e.target.value)}
-                  placeholder="Brief description of the issue"
-                  className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  required
-                />
-              </div>
-
-              {/* Description */}
-              <div>
-                <label className="block text-sm text-slate-700 mb-2">Description</label>
-                <textarea
-                  rows={4}
-                  value={updateDescription}
-                  onChange={(e) => setUpdateDescription(e.target.value)}
-                  placeholder="Provide detailed information about the service request..."
-                  className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
-                  required
-                />
-              </div>
-
-            </div>
-
-            <div className="flex gap-3 pt-4 border-t border-slate-200">
-              <button
-                type="button"
-                onClick={() => setIsNewRequestOpen(false)}
-                className="flex-1 px-6 py-3 bg-slate-100 text-slate-700 rounded-xl hover:bg-slate-200 transition-colors"
-              >
-                Cancel
-              </button>
-              <button 
-                type="submit" 
-                disabled={!updateApartmentID}
-                className={`flex-1 px-6 py-3 text-white rounded-xl transition-all ${
-                     !updateApartmentID ? 'bg-gray-400 cursor-not-allowed' : 'bg-gradient-to-r from-blue-500 to-purple-600 hover:shadow-lg hover:shadow-blue-500/30'
-                }`}
-              >
-                Create Request
-              </button>
-            </div>
-          </div>
-        </form>
-      </SlideOut>
     </div>
   );
 }
