@@ -30,7 +30,7 @@ export function BillManagement() {
     setIsLoading(true);
     try {
       // 1. LOGIC XÂY DỰNG URL: Mặc định lấy theo năm
-      let url = `http://localhost:8081/api/v1/accounting?year=${selectedYear}`; 
+      let url = `http://localhost:8081/api/v1/accounting/invoices?year=${selectedYear}`; 
 
       if (selectedMonth > 0) {
         url += `&month=${selectedMonth}`;

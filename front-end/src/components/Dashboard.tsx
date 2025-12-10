@@ -112,7 +112,7 @@ export function Dashboard() {
           setApartmentStats({ total, occupied });
         }
 
-        const resInvoices =  await fetch ('http://localhost:8081/api/v1/accounting?year=2025&month=10')
+        const resInvoices =  await fetch ('http://localhost:8081/api/v1/accounting/invoices?year=2025&month=10')
         const dataInvoices = await resInvoices.json();
         if (resInvoices.ok){
           const allRevenues = dataInvoices.data;

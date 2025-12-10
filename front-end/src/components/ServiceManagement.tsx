@@ -150,7 +150,6 @@ export function ServiceManagement() {
                 rawStatus: rawStatus, // Lưu trạng thái ENUM gốc
                 unit: issue.roomNumber, 
                 resident: issue.reporterName, 
-                date: new Date(issue.createdAt || new Date()).toLocaleDateString('vi-VN'),
             };
         });
 
@@ -409,8 +408,18 @@ export function ServiceManagement() {
                               <Icon className="w-6 h-6 text-white" />
                           </div>
                           <div>
+                              {/* Hiển thị Category */}
                               <p className="text-sm text-slate-500">{service.category}</p> 
-                              <p className="text-slate-900 font-semibold">{service.title}</p> 
+                              
+                              <div className="flex items-center gap-3">
+                                  {/* Hiển thị Title */}
+                                  <p className="text-slate-900 font-semibold">{service.title}</p>
+                                  
+                                  {/* 🌟 PHẦN THÊM MỚI: HIỂN THỊ STATUS 🌟 */}
+                                  <span className={`text-xs font-medium px-2.5 py-0.5 rounded-full ${statusClass}`}>
+                                      {service.status}
+                                  </span>
+                              </div>
                           </div>
                       </div>
                       
@@ -465,10 +474,7 @@ export function ServiceManagement() {
                           <span className="text-slate-500">Resident:</span>
                           <span className="text-slate-900">{service.resident}</span> 
                       </div>
-                      <div className="flex items-center justify-between text-sm">
-                          <span className="text-slate-500">Date:</span>
-                          <span className="text-slate-900">{service.date || 'N/A'}</span> 
-                      </div>
+                     
                     
                   </div>                  
               </div>
