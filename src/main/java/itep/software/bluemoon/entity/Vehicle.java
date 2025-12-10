@@ -1,6 +1,7 @@
 package itep.software.bluemoon.entity;
 
 import itep.software.bluemoon.entity.person.Resident;
+import itep.software.bluemoon.enumeration.VehicleType;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -26,6 +27,9 @@ public class Vehicle {
 
     @Column(name = "name", nullable = false)
     private String name;
+
+    @Column(name = "type", nullable = false)
+    private VehicleType type;
 
     @Column(name = "description", columnDefinition = "TEXT")
     private String description;

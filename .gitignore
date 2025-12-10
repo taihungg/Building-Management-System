@@ -36,5 +36,4 @@ application.properties
 
 node_modules/
 .DS_Store
-front-end/package-lock.json
-front-end/package.json
+package-lock.json
