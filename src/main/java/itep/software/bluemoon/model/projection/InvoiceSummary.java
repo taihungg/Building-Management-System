@@ -11,4 +11,5 @@ public interface InvoiceSummary {
     Double getTotalAmount();
     InvoiceStatus getStatus();
     LocalDateTime getPaymentDate();
+    LocalDateTime getCreatedTime();
 }
