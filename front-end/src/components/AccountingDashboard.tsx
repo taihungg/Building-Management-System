@@ -3,54 +3,115 @@ import { DollarSign, TrendingUp, TrendingDown, Receipt, FileText, AlertCircle, C
 import { BarChart, Bar, PieChart as RechartsPieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { getBills, subscribe as subscribeBills, type Bill } from '../utils/bills';
 import { getCurrentPeriod } from '../utils/timeUtils';
+import { toast } from 'sonner';
 
 export function AccountingDashboard() {
-  const [bills, setBills] = useState<Bill[]>(getBills());
+  const [bills, setBills] = useState([]);
+  const [isLoading,setIsLoading] = useState(false);
 
-  useEffect(() => {
-    const unsubscribeBills = subscribeBills((updatedBills) => {
-      setBills(updatedBills);
-    });
-    return unsubscribeBills;
-  }, []);
+  
 
-  const getDerivedStatus = (bill: Bill): 'Paid' | 'Pending' | 'Overdue' => {
-    if (bill.status === 'Pending' && new Date(bill.dueDate) < new Date()) return 'Overdue';
-    return bill.status;
+  const [stats1, setStats1] = useState({
+    totalRevenue: 0,
+    pendingAmount: 0,
+    paidAmount: 0,
+    unpaidAmount: 0,
+    unpaidCount:0 ,
+    pendingCount:0,
+    paidCount:0
+
+  });
+
+  const fetchBills = async () => {
+    setIsLoading(true);
+    try {
+      // 1. LOGIC XÂY DỰNG URL: Mặc định lấy theo năm
+      let url = `http://localhost:8081/api/v1/accounting/invoices?year=2025`; 
+      
+      const response = await fetch(url);
+      if (!response.ok) throw new Error("Không thể tải dữ liệu hóa đơn");
+      
+      const res = await response.json();
+      const data = res.data || [];
+      
+      setBills(data);
+      calculateStats(data);
+      
+    } catch (error) {
+      console.error("Lỗi tải hóa đơn:", error);
+      toast.error("Lỗi tải dữ liệu", { description: error.message });
+      setBills([]);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const paidBills = bills.filter(b => getDerivedStatus(b) === 'Paid');
-  const pendingBills = bills.filter(b => {
-    const status = getDerivedStatus(b);
-    return status === 'Pending' || status === 'Overdue';
-  });
-  const overdueBills = bills.filter(b => getDerivedStatus(b) === 'Overdue');
 
-  const totalRevenue = paidBills.reduce((sum, b) => sum + b.amount, 0);
-  const totalPending = pendingBills.reduce((sum, b) => sum + b.amount, 0);
-  const totalOverdue = overdueBills.reduce((sum, b) => sum + b.amount, 0);
-  const totalBills = bills.length;
+useEffect(() => {
+  fetchBills();
+}, []); 
 
-  const monthlyRevenue = [
-    { month: 'Tháng 1', revenue: 78000000, paid: 72000000 },
-    { month: 'Tháng 2', revenue: 82000000, paid: 80000000 },
-    { month: 'Tháng 3', revenue: 85000000, paid: 83000000 },
-    { month: 'Tháng 4', revenue: 88000000, paid: 86000000 },
-    { month: 'Tháng 5', revenue: 86000000, paid: 84000000 },
-    { month: 'Tháng 6', revenue: 89450000, paid: 87000000 },
-  ];
+const calculateStats = (data) => {
+  const initialStats = { 
+    totalRevenue: 0, 
+    pendingAmount: 0, 
+    paidAmount: 0, 
+    unpaidAmount: 0 ,
+    unpaidCount:0 ,
+    pendingCount:0,
+    paidCount:0
 
+  };
+  
+  const calculated = data.reduce((acc, bill) => {
+    const amount = bill.totalAmount || 0; 
+    
+    acc.totalRevenue += amount;
+    
+    if (bill.status === 'PAID') {
+      acc.paidAmount += amount;
+      acc.paidCount+=1;
+    } else if (bill.status === 'PENDING') {
+      acc.pendingAmount += amount;
+      acc.pendingCount+=1;
+    } else { 
+      acc.unpaidAmount += amount;
+      acc.unpaidCount+=1;
+
+    }
+
+    return acc;
+  }, initialStats);
+
+  setStats1(calculated);
+};
+
+  
+const formatCurrency = (amount) => {
+  return new Intl.NumberFormat('vi-VN', { 
+      style: 'currency', 
+      currency: 'VND',
+      maximumFractionDigits: 0 
+  }).format(amount);
+};
+
+/*
   const billStatusData = [
     { name: 'Đã thanh toán', value: paidBills.length, color: '#10B981' },
     { name: 'Chưa thanh toán', value: pendingBills.length - overdueBills.length, color: '#F59E0B' },
     { name: 'Quá hạn', value: overdueBills.length, color: '#EF4444' },
   ];
+  */
 
   const stats = [
-    { label: 'Tổng Doanh Thu', value: totalRevenue.toLocaleString('vi-VN') + ' ₫', change: '+8.2%', trend: 'up', icon: DollarSign, bgColor: 'bg-green-100', iconColor: 'text-green-600' },
-    { label: 'Chưa Thanh Toán', value: totalPending.toLocaleString('vi-VN') + ' ₫', change: `${pendingBills.length} hóa đơn`, trend: 'down', icon: Clock, bgColor: 'bg-orange-100', iconColor: 'text-orange-600' },
-    { label: 'Quá Hạn', value: totalOverdue.toLocaleString('vi-VN') + ' ₫', change: `${overdueBills.length} hóa đơn`, trend: 'down', icon: AlertCircle, bgColor: 'bg-red-100', iconColor: 'text-red-600' },
-    { label: 'Tổng Hóa Đơn', value: totalBills.toString(), change: `${paidBills.length} đã thanh toán`, trend: 'up', icon: Receipt, bgColor: 'bg-blue-100', iconColor: 'text-blue-600' },
+    { label: 'Tổng Doanh Thu', value: formatCurrency(stats1.paidAmount), change: '+8.2%', trend: 'up', icon: DollarSign, bgColor: 'bg-green-100', iconColor: 'text-green-600',billCount: stats1.paidCount, // Thêm chỉ số số lượng hóa đơn
+      billCountLabel: 'Đã Thanh Toán' , countTextLabel: 'text-green-700' },
+    { label: 'Chưa Thanh Toán', value: formatCurrency(stats1.unpaidAmount), trend: 'down', icon: Clock, bgColor: 'bg-orange-100', iconColor: 'text-orange-600',billCount: stats1.unpaidCount, // Thêm chỉ số số lượng hóa đơn
+      billCountLabel: 'Chưa Thanh Toán',countTextLabel: 'text-yellow-700' },
+    { label: 'Đang chờ xử lý', value: formatCurrency(stats1.pendingAmount),  trend: 'down', icon: AlertCircle, bgColor: 'bg-red-100', iconColor: 'text-red-600' ,billCount: stats1.pendingCount, // Thêm chỉ số số lượng hóa đơn
+      billCountLabel: 'Đang chờ xử lý',countTextLabel: 'text-red-700' },
+    { label: 'Tổng Hóa Đơn', value: bills.length,  trend: 'up', icon: Receipt, bgColor: 'bg-blue-100', iconColor: 'text-blue-600', billCount: bills.length, // Thêm chỉ số số lượng hóa đơn
+      billCountLabel: 'Tổng số hoá đơn', countTextLabel: 'text-blue-700'  },
   ];
 
   const currentPeriod = getCurrentPeriod();
@@ -86,6 +147,9 @@ export function AccountingDashboard() {
               <div className="mt-4">
                 <p className="text-gray-500 text-sm">{stat.label}</p>
                 <p className="text-2xl text-gray-900 mt-1 font-semibold">{stat.value}</p>
+                <p className={`text-sm mt-1 ${stat.countTextLabel}`}>
+             {stat.billCount} hóa đơn 
+          </p>
               </div>
             </div>
           );
@@ -96,11 +160,11 @@ export function AccountingDashboard() {
         <div className="col-span-2 bg-white rounded-xl p-6 border-2 border-gray-200">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">Doanh Thu & Thanh Toán Theo Tháng</h3>
           <ResponsiveContainer width="100%" height={280}>
-            <BarChart data={monthlyRevenue}>
+            <BarChart /*data={monthlyRevenue}*/>
               <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
               <XAxis dataKey="month" stroke="#6b7280" />
               <YAxis stroke="#6b7280" tickFormatter={(value: number) => value >= 1000000 ? (value / 1000000).toFixed(0) + 'M' : value >= 1000 ? (value / 1000).toFixed(0) + 'K' : value.toString()} />
-              <Tooltip contentStyle={{ backgroundColor: 'white', border: '2px solid #e5e7eb', borderRadius: '8px' }} formatter={(value: number) => value.toLocaleString('vi-VN') + ' ₫'} />
+              <Tooltip contentStyle={{ backgroundColor: 'white', border: '2px solid #e5e7eb', borderRadius: '8px' }} formatter={(value: number) => formatCurrency(value)} />
               <Legend />
               <Bar dataKey="revenue" fill="#2563eb" name="Tổng doanh thu" radius={[8, 8, 0, 0]} />
               <Bar dataKey="paid" fill="#10B981" name="Đã thanh toán" radius={[8, 8, 0, 0]} />
@@ -108,18 +172,18 @@ export function AccountingDashboard() {
           </ResponsiveContainer>
         </div>
 
-        <div className="bg-white rounded-xl p-6 border-2 border-gray-200">
+       <div className="bg-white rounded-xl p-6 border-2 border-gray-200">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">Trạng Thái Hóa Đơn</h3>
           <ResponsiveContainer width="100%" height={280}>
             <RechartsPieChart>
-              <Pie data={billStatusData} cx="50%" cy="50%" innerRadius={60} outerRadius={90} paddingAngle={2} dataKey="value">
-                {billStatusData.map((entry, index) => (<Cell key={`cell-${index}`} fill={entry.color} />))}
+              <Pie data={bills} cx="50%" cy="50%" innerRadius={60} outerRadius={90} paddingAngle={2} dataKey="value">
+                {bills.map((entry, index) => (<Cell key={`cell-${index}`} fill={entry.color} />))}
               </Pie>
               <Tooltip />
             </RechartsPieChart>
           </ResponsiveContainer>
           <div className="flex flex-col gap-2 mt-4">
-            {billStatusData.map((item) => (
+            {bills.map((item) => (
               <div key={item.name} className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <div className="w-3 h-3 rounded-full" style={{ backgroundColor: item.color }} />
@@ -136,14 +200,14 @@ export function AccountingDashboard() {
         <div className="bg-white rounded-xl p-6 border-2 border-gray-200">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">Hóa Đơn Đã Thanh Toán Gần Đây</h3>
           <div className="space-y-3">
-            {paidBills.slice(0, 5).map((bill) => (
+            {bills.slice(0, 5).map((bill) => (
               <div key={bill.id} className="flex items-center justify-between p-4 rounded-lg border-2 border-gray-200 bg-green-50">
                 <div className="flex-1">
                   <p className="text-sm font-semibold text-gray-900">{bill.period}</p>
                   <p className="text-xs text-gray-500 mt-1">Đã thanh toán: {bill.paidDate}</p>
                 </div>
                 <div className="text-right">
-                  <p className="text-lg font-bold text-green-700">{bill.amount.toLocaleString('vi-VN')} ₫</p>
+                  <p className="text-lg font-bold text-green-700">{formatCurrency(bill.amount)} ₫</p>
                   <div className="flex items-center gap-1 mt-1">
                     <CheckCircle className="w-4 h-4 text-green-600" />
                     <span className="text-xs text-green-600">Đã thanh toán</span>
@@ -151,21 +215,21 @@ export function AccountingDashboard() {
                 </div>
               </div>
             ))}
-            {paidBills.length === 0 && <p className="text-center text-gray-500 py-8">Chưa có hóa đơn đã thanh toán</p>}
+            {bills.length === 0 && <p className="text-center text-gray-500 py-8">Chưa có hóa đơn đã thanh toán</p>}
           </div>
         </div>
 
         <div className="bg-white rounded-xl p-6 border-2 border-gray-200">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">Hóa Đơn Quá Hạn</h3>
           <div className="space-y-3">
-            {overdueBills.slice(0, 5).map((bill) => (
+            {bills.slice(0, 5).map((bill) => (
               <div key={bill.id} className="flex items-center justify-between p-4 rounded-lg border-2 border-red-200 bg-red-50">
                 <div className="flex-1">
                   <p className="text-sm font-semibold text-gray-900">{bill.period}</p>
                   <p className="text-xs text-red-600 mt-1">Hạn thanh toán: {bill.dueDate}</p>
                 </div>
                 <div className="text-right">
-                  <p className="text-lg font-bold text-red-700">{bill.amount.toLocaleString('vi-VN')} ₫</p>
+                  <p className="text-lg font-bold text-red-700">{formatCurrency(bill.amount)} ₫</p>
                   <div className="flex items-center gap-1 mt-1">
                     <AlertCircle className="w-4 h-4 text-red-600" />
                     <span className="text-xs text-red-600">Quá hạn</span>
@@ -173,7 +237,7 @@ export function AccountingDashboard() {
                 </div>
               </div>
             ))}
-            {overdueBills.length === 0 && <p className="text-center text-gray-500 py-8">Không có hóa đơn quá hạn</p>}
+            {bills.length === 0 && <p className="text-center text-gray-500 py-8">Không có hóa đơn quá hạn</p>}
           </div>
         </div>
       </div>

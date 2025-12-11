@@ -1,173 +1,167 @@
-import React, { useState, useEffect } from 'react';
-import { Search, Download, FileText, AlertCircle, CheckCircle, Clock, DollarSign } from 'lucide-react';
-import { getBills, subscribe as subscribeBills, type Bill } from '../utils/bills';
+import { Search, Plus, Download, Clock, CheckCircle, AlertCircle, DollarSign, Calendar } from 'lucide-react';
+import { Modal } from './Modal';
+import { Toaster, toast } from 'sonner';
+import { useState, useEffect } from 'react';
+import React from 'react';
+
 
 export function DebtManagement() {
-  const [bills, setBills] = useState<Bill[]>(getBills());
+  const currentDate = new Date();
   const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState<'All' | 'Paid' | 'Pending' | 'Overdue'>('All');
+  const [statusFilter, setStatusFilter] = useState('All');
+  const [isCreateBillOpen, setIsCreateBillOpen] = useState(false);
 
-  useEffect(() => {
-    const unsubscribeBills = subscribeBills((updatedBills) => {
-      setBills(updatedBills);
-    });
-    return unsubscribeBills;
-  }, []);
+  const [bills, setBills] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
+  
+  // Mặc định là 0 để hiển thị "Tất cả các tháng"
+  const [selectedMonth, setSelectedMonth] = useState(0); 
+  const [selectedYear, setSelectedYear] = useState(currentDate.getFullYear());
 
-  const getDerivedStatus = (bill: Bill): 'Paid' | 'Pending' | 'Overdue' => {
-    if (bill.status === 'Pending' && new Date(bill.dueDate) < new Date()) return 'Overdue';
-    return bill.status;
-  };
-
-  const filteredBills = bills.filter(bill => {
-    const derivedStatus = getDerivedStatus(bill);
-    const matchesSearch = 
-      bill.apartmentNumber?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      bill.residentName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      bill.type.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      bill.period.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus =
-      statusFilter === 'All' ||
-      (statusFilter === 'Pending' && derivedStatus === 'Pending') ||
-      (statusFilter === 'Overdue' && derivedStatus === 'Overdue') ||
-      (statusFilter === 'Paid' && derivedStatus === 'Paid');
-    
-    return matchesSearch && matchesStatus;
+  const [stats, setStats] = useState({
+    totalRevenue: 0,
+    pendingAmount: 0,
+    paidAmount: 0,
+    unpaidAmount: 0
   });
+  
 
-  const totalPaid = bills.filter(b => getDerivedStatus(b) === 'Paid').reduce((sum, b) => sum + b.amount, 0);
-  const totalPending = bills.filter(b => getDerivedStatus(b) === 'Pending').reduce((sum, b) => sum + b.amount, 0);
-  const totalOverdue = bills.filter(b => getDerivedStatus(b) === 'Overdue').reduce((sum, b) => sum + b.amount, 0);
-  const totalRevenue = totalPaid + totalPending + totalOverdue;
-  const totalDebt = totalPending + totalOverdue;
+  const fetchBills = async () => {
+    setIsLoading(true);
+    try {
+      // 1. LOGIC XÂY DỰNG URL: Mặc định lấy theo năm
+      let url = `http://localhost:8081/api/v1/accounting/invoices?year=${selectedYear}`; 
 
-  const exportReport = () => {
-    const reportData = filteredBills.map(bill => {
-      const status = getDerivedStatus(bill);
-      return {
-        'Kỳ': bill.period,
-        'Căn hộ': bill.apartmentNumber || '-',
-        'Cư dân': bill.residentName || '-',
-        'Loại': bill.type,
-        'Số tiền': bill.amount.toLocaleString('vi-VN') + ' ₫',
-        'Hạn thanh toán': bill.dueDate,
-        'Trạng thái': status === 'Paid' ? 'Đã thanh toán' : status === 'Overdue' ? 'Quá hạn' : 'Chưa thanh toán',
-        'Ngày thanh toán': bill.paidDate || '-',
-      };
-    });
-
-    const csvContent = [
-      ['BÁO CÁO CÔNG NỢ'],
-      ['Tổng công nợ: ' + totalDebt.toLocaleString('vi-VN') + ' ₫'],
-      ['Tổng đã thanh toán: ' + totalPaid.toLocaleString('vi-VN') + ' ₫'],
-      [''],
-      Object.keys(reportData[0] || {}).join(','),
-      ...reportData.map(row => Object.values(row).join(','))
-    ].join('\n');
-
-    const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
-    const url = URL.createObjectURL(blob);
-    link.setAttribute('href', url);
-    link.setAttribute('download', `BaoCaoCongNo_${new Date().toISOString().split('T')[0]}.csv`);
-    link.style.visibility = 'hidden';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
-
-  const exportPDF = () => {
-    const rows = filteredBills.map(bill => {
-      const status = getDerivedStatus(bill);
-      return `<tr>
-        <td style="padding:8px;border:1px solid #e5e7eb;">${bill.period}</td>
-        <td style="padding:8px;border:1px solid #e5e7eb;">${bill.apartmentNumber || '-'}</td>
-        <td style="padding:8px;border:1px solid #e5e7eb;">${bill.residentName || '-'}</td>
-        <td style="padding:8px;border:1px solid #e5e7eb;">${bill.type}</td>
-        <td style="padding:8px;border:1px solid #e5e7eb;text-align:right;">${bill.amount.toLocaleString('vi-VN')} ₫</td>
-        <td style="padding:8px;border:1px solid #e5e7eb;">${bill.dueDate}</td>
-        <td style="padding:8px;border:1px solid #e5e7eb;">${status === 'Paid' ? 'Đã thanh toán' : status === 'Overdue' ? 'Quá hạn' : 'Chưa thanh toán'}</td>
-        <td style="padding:8px;border:1px solid #e5e7eb;">${bill.paidDate || '-'}</td>
-      </tr>`;
-    }).join('');
-
-    const html = `
-      <html>
-        <head>
-          <title>Báo Cáo Công Nợ</title>
-          <style>
-            body { font-family: Arial, sans-serif; color: #111827; padding: 24px; }
-            h1 { margin: 0 0 12px; }
-            p { margin: 4px 0; }
-            table { width: 100%; border-collapse: collapse; margin-top: 16px; }
-            th { text-align: left; padding: 8px; border: 1px solid #e5e7eb; background: #f3f4f6; }
-          </style>
-        </head>
-        <body>
-          <h1>Báo Cáo Công Nợ</h1>
-          <p><strong>Tổng công nợ:</strong> ${totalDebt.toLocaleString('vi-VN')} ₫</p>
-          <p><strong>Tổng đã thanh toán:</strong> ${totalPaid.toLocaleString('vi-VN')} ₫</p>
-          <p><strong>Ngày xuất báo cáo:</strong> ${new Date().toLocaleDateString('vi-VN')}</p>
-          <table>
-            <thead>
-              <tr>
-                <th>Kỳ</th>
-                <th>Căn hộ</th>
-                <th>Cư dân</th>
-                <th>Loại</th>
-                <th>Số tiền</th>
-                <th>Hạn thanh toán</th>
-                <th>Trạng thái</th>
-                <th>Ngày thanh toán</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${rows}
-            </tbody>
-          </table>
-          <script>
-            window.onload = () => {
-              window.print();
-              setTimeout(() => window.close(), 300);
-            };
-          </script>
-        </body>
-      </html>
-    `;
-    const win = window.open('', '_blank', 'width=900,height=1000');
-    if (win) {
-      win.document.open();
-      win.document.write(html);
-      win.document.close();
-    } else {
-      alert('Trình duyệt chặn cửa sổ bật lên, vui lòng cho phép để in PDF.');
+      if (selectedMonth > 0) {
+        url += `&month=${selectedMonth}`;
+      }
+      
+      const response = await fetch(url);
+      if (!response.ok) throw new Error("Không thể tải dữ liệu hóa đơn");
+      
+      const res = await response.json();
+      const data = res.data || [];
+      
+      setBills(data);
+      calculateStats(data);
+      
+    } catch (error) {
+      console.error("Lỗi tải hóa đơn:", error);
+      toast.error("Lỗi tải dữ liệu", { description: error.message });
+      setBills([]);
+    } finally {
+      setIsLoading(false);
     }
   };
 
+  useEffect(() => {
+    fetchBills();
+  }, [selectedMonth, selectedYear]); 
+  
+  const calculateStats = (data) => {
+    const initialStats = { 
+      totalRevenue: 0, 
+      pendingAmount: 0, 
+      paidAmount: 0, 
+      unpaidAmount: 0 
+    };
+    
+    const calculated = data.reduce((acc, bill) => {
+      const amount = bill.totalAmount || 0; 
+      
+      acc.totalRevenue += amount;
+      
+      if (bill.status === 'PAID') {
+        acc.paidAmount += amount;
+      } else if (bill.status === 'PENDING') {
+        acc.pendingAmount += amount;
+      } else { 
+        acc.unpaidAmount += amount;
+      }
+
+      return acc;
+    }, initialStats);
+
+    setStats(calculated);
+  };
+
+  const formatCurrency = (amount) => {
+    return new Intl.NumberFormat('vi-VN', { 
+        style: 'currency', 
+        currency: 'VND',
+        maximumFractionDigits: 0 
+    }).format(amount);
+  };
+  
+  // Logic lọc client-side cho bảng
+  const filteredBills = bills.filter(bill => {
+      const matchStatus = statusFilter === 'All' || bill.status === statusFilter;
+      const term = searchTerm.toLowerCase();
+      const matchSearch = (bill.apartmentLabel && bill.apartmentLabel.toLowerCase().includes(term)); 
+      return matchStatus && matchSearch;
+  });
+  
+  // Tạo nhãn thời gian hiển thị
+  const periodLabel = selectedMonth === 0 
+    ? `Năm ${selectedYear}` 
+    : `Tháng ${selectedMonth}/${selectedYear}`;
+
+
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <Toaster position="top-right" richColors />
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl text-gray-900">Quản Lý Công Nợ</h1>
-          <p className="text-gray-600 mt-1">Theo dõi và quản lý tất cả các hóa đơn và thanh toán</p>
+          <h1 className="text-3xl text-gray-900">Bill Management</h1>
+          <p className="text-gray-600 mt-1">Track and manage all billing and payments</p>
         </div>
-        <div className="flex gap-3">
-          <button
-            onClick={exportPDF}
-            className="flex items-center gap-2 px-6 py-3 bg-white text-gray-700 border border-gray-300 rounded-xl hover:bg-indigo-100 transition-colors"
-          >
-            <Download className="w-5 h-5" />
-            Xuất khẩu
-          </button>
+        
+        {/* UI CHỌN THÁNG VÀ NĂM */}
+        <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2 px-3 py-2 bg-white border border-gray-300 rounded-xl shadow-sm">
+                <Calendar className="w-5 h-5 text-gray-500" />
+                
+                {/* Select MONTH */}
+                <select
+                    value={selectedMonth}
+                    onChange={(e) => setSelectedMonth(Number(e.target.value))}
+                    className="bg-transparent text-gray-700 font-medium focus:outline-none"
+                >
+                    <option value={0}>Tất cả các tháng</option> {/* Tùy chọn cho cả năm */}
+                    {Array.from({ length: 12 }, (_, i) => i + 1).map(month => (
+                        <option key={month} value={month}>Tháng {month}</option>
+                    ))}
+                </select>
+                
+                {/* Select YEAR */}
+                <select
+                    value={selectedYear}
+                    onChange={(e) => setSelectedYear(Number(e.target.value))}
+                    className="bg-transparent text-gray-700 font-medium focus:outline-none"
+                >
+                    {[currentDate.getFullYear() - 1, currentDate.getFullYear(), currentDate.getFullYear() + 1].map(year => (
+                        <option key={year} value={year}>Năm {year}</option>
+                    ))}
+                </select>
+            </div>
+          
+            <button 
+                onClick={() => setIsCreateBillOpen(true)}
+                className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl hover:shadow-xl transition-all"
+            >
+                <Plus className="w-5 h-5" />
+                Create Bill
+            </button>
         </div>
       </div>
-
+      
+      {/* Search Bar */}
       <div className="bg-white rounded-2xl p-6 shadow-md border border-gray-200">
         <div className="relative">
           <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
           <input
             type="text"
-            placeholder="Tìm kiếm theo đơn vị, cư dân hoặc loại hóa đơn..."
+            placeholder="Search by unit, resident, or bill type..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="w-full pl-12 pr-4 py-3 bg-gray-100 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -175,134 +169,151 @@ export function DebtManagement() {
         </div>
       </div>
 
+      {/* Stats Grid */}
       <div className="grid grid-cols-4 gap-6">
-        <div className="bg-white rounded-xl p-6 shadow-md border border-gray-200">
-          <div className="flex items-center gap-3 mb-2">
-            <div className="w-10 h-10 rounded-lg bg-emerald-500 flex items-center justify-center">
-              <CheckCircle className="w-5 h-5 text-white" />
-            </div>
-            <p className="text-gray-600 text-sm">Trả</p>
-          </div>
-          <p className="text-2xl text-gray-900">{totalPaid.toLocaleString('vi-VN')} ₫</p>
-          <p className="text-sm text-emerald-700 mt-1">{bills.filter(b => getDerivedStatus(b) === 'Paid').length} hóa đơn</p>
-        </div>
-
-        <div className="bg-white rounded-xl p-6 shadow-md border border-gray-200">
-          <div className="flex items-center gap-3 mb-2">
-            <div className="w-10 h-10 rounded-lg bg-blue-500 flex items-center justify-center">
-              <Clock className="w-5 h-5 text-white" />
-            </div>
-            <p className="text-gray-600 text-sm">Chưa giải quyết</p>
-          </div>
-          <p className="text-2xl text-gray-900">{totalPending.toLocaleString('vi-VN')} ₫</p>
-          <p className="text-sm text-blue-700 mt-1">{bills.filter(b => getDerivedStatus(b) === 'Pending').length} hóa đơn</p>
-        </div>
-
-        <div className="bg-white rounded-xl p-6 shadow-md border border-gray-200">
-          <div className="flex items-center gap-3 mb-2">
-            <div className="w-10 h-10 rounded-lg bg-rose-500 flex items-center justify-center">
-              <AlertCircle className="w-5 h-5 text-white" />
-            </div>
-            <p className="text-gray-600 text-sm">Quá hạn</p>
-          </div>
-          <p className="text-2xl text-gray-900">{totalOverdue.toLocaleString('vi-VN')} ₫</p>
-          <p className="text-sm text-rose-700 mt-1">{bills.filter(b => getDerivedStatus(b) === 'Overdue').length} hóa đơn</p>
-        </div>
-
-        <div className="bg-white rounded-xl p-6 shadow-md border border-gray-200">
-          <div className="flex items-center gap-3 mb-2">
-            <div className="w-10 h-10 rounded-lg bg-purple-500 flex items-center justify-center">
-              <DollarSign className="w-5 h-5 text-white" />
-            </div>
-            <p className="text-gray-600 text-sm">Tổng doanh thu</p>
-          </div>
-          <p className="text-2xl text-gray-900">{totalRevenue.toLocaleString('vi-VN')} ₫</p>
-          <p className="text-sm text-purple-700 mt-1">Tháng này</p>
-        </div>
       </div>
 
+      {/* Status Filter Tabs */}
       <div className="flex gap-2">
-        {['All', 'Paid', 'Pending', 'Overdue'].map((status) => (
+        {['All', 'PAID', 'PENDING', 'UNPAID'].map((status) => (
           <button
             key={status}
-            onClick={() => setStatusFilter(status as typeof statusFilter)}
+            onClick={() => setStatusFilter(status)}
             className={`px-6 py-3 rounded-xl transition-all ${
               statusFilter === status
                 ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-lg'
                 : 'bg-white text-gray-700 border border-gray-300 hover:bg-indigo-100'
             }`}
           >
-            {status === 'All' ? 'Tất cả' : 
-             status === 'Paid' ? 'Trả' :
-             status === 'Pending' ? 'Chưa giải quyết' : 'Quá hạn'}
+            {status}
           </button>
         ))}
       </div>
 
+      {/* Bills Table - SỬ DỤNG filteredBills */}
       <div className="bg-white rounded-2xl shadow-md border border-gray-200 overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead className="bg-gradient-to-r from-indigo-100 to-purple-100 border-b border-gray-200">
               <tr>
-                <th className="text-left px-6 py-4 text-sm text-gray-700">Đơn vị</th>
-                <th className="text-left px-6 py-4 text-sm text-gray-700">Người dân</th>
-                <th className="text-left px-6 py-4 text-sm text-gray-700">Loại hóa đơn</th>
-                <th className="text-left px-6 py-4 text-sm text-gray-700">Số lượng</th>
-                <th className="text-left px-6 py-4 text-sm text-gray-700">Ngày đến hạn</th>
-                <th className="text-left px-6 py-4 text-sm text-gray-700">Trạng thái</th>
-                <th className="text-left px-6 py-4 text-sm text-gray-700">Hành động</th>
+                <th className="text-left px-6 py-4 text-sm text-gray-700">Unit</th>
+                <th className="text-left px-6 py-4 text-sm text-gray-700">Payment Date</th>
+                <th className="text-left px-6 py-4 text-sm text-gray-700">Amount</th>
+                <th className="text-left px-6 py-4 text-sm text-gray-700">Status</th>
+                <th className="text-left px-6 py-4 text-sm text-gray-700">Action</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200">
-              {filteredBills.map((bill) => {
-                const status = getDerivedStatus(bill);
-                const statusText = status === 'Paid' ? 'Trả' : status === 'Pending' ? 'Chưa giải quyết' : 'Quá hạn';
-                return (
+              {isLoading ? (
+                <tr><td colSpan={5} className="text-center py-6 text-gray-500">Đang tải hóa đơn...</td></tr>
+              ) : filteredBills.length === 0 ? (
+                <tr><td colSpan={5} className="text-center py-6 text-gray-500">Không tìm thấy hóa đơn nào trong {periodLabel}.</td></tr>
+              ) : (
+                filteredBills.map((bill) => (
                   <tr key={bill.id} className="hover:bg-indigo-50 transition-colors">
                     <td className="px-6 py-4">
-                      <span className="px-3 py-1 bg-gray-200 text-gray-800 rounded-lg">#{bill.apartmentNumber || '-'}</span>
+                      <span className="px-3 py-1 bg-gray-200 text-gray-800 rounded-lg">
+                        {bill.apartmentLabel}
+                      </span>
                     </td>
-                    <td className="px-6 py-4 text-gray-900">{bill.residentName || '-'}</td>
-                    <td className="px-6 py-4 text-gray-700">{bill.type}</td>
-                    <td className="px-6 py-4"><span className="text-gray-900">{bill.amount.toLocaleString('vi-VN')} ₫</span></td>
-                    <td className="px-6 py-4 text-gray-700">{bill.dueDate}</td>
+                    <td className="px-6 py-4 text-gray-700">
+                      {bill.paymentDate ? new Date(bill.paymentDate).toLocaleDateString('vi-VN') : 'N/A'}
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className="text-gray-900">{formatCurrency(bill.totalAmount)}</span>
+                    </td>
+    
                     <td className="px-6 py-4">
                       <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm ${
-                        status === 'Paid' ? 'bg-emerald-100 text-emerald-800' :
-                        status === 'Pending' ? 'bg-blue-100 text-blue-800' :
+                        bill.status === 'PAID' ? 'bg-emerald-100 text-emerald-800' :
+                        bill.status === 'PENDING' ? 'bg-blue-100 text-blue-800' :
                         'bg-rose-100 text-rose-800'
                       }`}>
-                        {status === 'Paid' && <CheckCircle className="w-4 h-4" />}
-                        {status === 'Pending' && <Clock className="w-4 h-4" />}
-                        {status === 'Overdue' && <AlertCircle className="w-4 h-4" />}
-                        {statusText}
+                        {bill.status === 'PAID' && <CheckCircle className="w-4 h-4" />}
+                        {bill.status === 'PENDING' && <Clock className="w-4 h-4" />}
+                        {bill.status === 'UNPAID' && <AlertCircle className="w-4 h-4" />}
+                        {bill.status}
                       </span>
                     </td>
                     <td className="px-6 py-4">
-                      {status !== 'Paid' ? (
+                      {bill.status !== 'PAID' ? (
                         <button className="px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white text-sm rounded-lg hover:shadow-xl transition-all">
                           Mark Paid
                         </button>
                       ) : (
-                        <span className="text-sm text-gray-500">
-                          Đã thanh toán vào ngày {bill.paidDate ? new Date(bill.paidDate).toLocaleDateString('vi-VN') : '-'}
-                        </span>
+                        <span className="text-sm text-gray-500">Paid on {bill.paymentDate ? new Date(bill.paymentDate).toLocaleDateString('vi-VN') : 'N/A'}</span>
                       )}
                     </td>
                   </tr>
-                );
-              })}
+                ))
+              )}
             </tbody>
           </table>
-          {filteredBills.length === 0 && (
-            <div className="text-center py-12">
-              <FileText className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-              <p className="text-gray-600">Không tìm thấy hóa đơn nào</p>
-            </div>
-          )}
         </div>
       </div>
+
+      {/* Create Bill Modal */}
+      <Modal
+        isOpen={isCreateBillOpen}
+        onClose={() => setIsCreateBillOpen(false)}
+        title="Create New Bill"
+      >
+        {/* ... Modal Content ... */}
+        <div className="p-6 space-y-6">
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm text-gray-700 mb-2">Select Unit</label>
+              <select className="w-full px-4 py-3 bg-gray-100 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                <option>Unit 304 - Emma Johnson</option>
+                <option>Unit 112 - Michael Chen</option>
+                <option>Unit 205 - Sarah Williams</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm text-gray-700 mb-2">Bill Type</label>
+              <select className="w-full px-4 py-3 bg-gray-100 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                <option>Rent</option>
+                <option>Utilities</option>
+                <option>Parking</option>
+                <option>Maintenance</option>
+                <option>Other</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm text-gray-700 mb-2">Amount</label>
+              <input
+                type="number"
+                placeholder="0.00"
+                className="w-full px-4 py-3 bg-gray-100 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+            </div>
+
+          </div>
+
+          <div>
+            <label className="block text-sm text-gray-700 mb-2">Description (Optional)</label>
+            <textarea
+              rows={3}
+              placeholder="Add any additional details..."
+              className="w-full px-4 py-3 bg-gray-100 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+            />
+          </div>
+
+          <div className="flex gap-3 pt-4 border-t border-gray-200">
+            <button
+              onClick={() => setIsCreateBillOpen(false)}
+              className="flex-1 px-6 py-3 bg-gray-200 text-gray-700 rounded-xl hover:bg-gray-300 transition-colors"
+            >
+              Cancel
+            </button>
+            <button className="flex-1 px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl hover:shadow-xl transition-all">
+              Create Bill
+            </button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 }
-

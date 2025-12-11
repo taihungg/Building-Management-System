@@ -8,28 +8,28 @@ import {
   User,
   LogOut
 } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion'; // Đổi từ 'motion/react' sang 'framer-motion'
+import { motion, AnimatePresence } from 'framer-motion'; 
 import React from 'react';
-import { NavLink, useNavigate } from 'react-router-dom'; // Import NavLink và useNavigate
+import { NavLink } from 'react-router-dom'; // Chỉ cần NavLink
 
 interface ResidentSidebarProps {
-  // Loại bỏ activeTab và setActiveTab
   isOpen: boolean;
   onClose: () => void;
-  onLogout?: () => void;
+  onLogout: () => void; // Bắt buộc phải truyền prop này từ App.tsx
 }
 
+// 🛠️ ĐÃ SỬA: Thay đổi 'to' để khớp với cấu trúc /resident/path trong App.tsx
 const menuItems = [
-  // Cập nhật 'id' thành 'to' (đường dẫn)
-  { to: '/resident-dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { to: '/resident-announcements', label: 'Thông Báo', icon: Bell },
-  { to: '/resident-bills', label: 'Hóa Đơn', icon: Receipt },
-  { to: '/building-rules', label: 'Nội Quy', icon: FileText },
+  { to: '/resident/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+  { to: '/resident/announcements', label: 'Thông Báo', icon: Bell },
+  // Dùng '/invoice' vì trong App.tsx Route là /invoice
+  { to: '/resident/invoice', label: 'Hóa Đơn', icon: Receipt }, 
+  { to: '/resident/rules', label: 'Nội Quy', icon: FileText },
 ];
 
 const bottomItems = [
-  { to: '/settings', label: 'Cài Đặt', icon: Settings },
-  { to: '/profile', label: 'Hồ Sơ', icon: User },
+  { to: '/resident/settings', label: 'Cài Đặt', icon: Settings },
+  { to: '/resident/profile', label: 'Hồ Sơ', icon: User },
   // Mục logout không cần NavLink
   { id: 'logout', label: 'Đăng Xuất', icon: LogOut }, 
 ];
@@ -43,22 +43,15 @@ const getNavLinkClass = ({ isActive }: { isActive: boolean }) =>
   }`;
 
 export function ResidentSidebar({ isOpen, onClose, onLogout }: ResidentSidebarProps) {
-  const navigate = useNavigate();
+  // Loại bỏ useNavigate vì logic logout đã được xử lý bằng onLogout prop
   
-  // Logic xử lý Đăng Xuất
+  // Logic xử lý Đăng Xuất (chỉ gọi prop onLogout được truyền vào)
   const handleLogoutClick = (id: string) => {
     if (id === 'logout') {
-      onLogout?.();
-      onClose();
-      // Tùy chọn: Chuyển hướng về trang chủ sau khi đăng xuất
-      // navigate('/'); 
-      return;
+      onLogout(); // Gọi hàm logout từ AppContent
+      onClose(); // Đóng sidebar
     }
   };
-
-  // Nếu bạn đang dùng thư viện 'motion/react' và gặp lỗi, bạn có thể thử đổi sang 'framer-motion'
-  // vì 'motion/react' không phải là một thư viện chuẩn và thường được bao gồm trong 'framer-motion'.
-  // Tôi đã thay đổi import sang 'framer-motion' trong code dưới đây.
 
   return (
     <AnimatePresence>
@@ -101,7 +94,7 @@ export function ResidentSidebar({ isOpen, onClose, onLogout }: ResidentSidebarPr
                   <NavLink
                     key={item.to}
                     to={item.to}
-                    onClick={onClose} // Đóng sidebar khi click vào link
+                    onClick={onClose} 
                     className={getNavLinkClass}
                   >
                     <Icon className="w-5 h-5" />
@@ -135,11 +128,11 @@ export function ResidentSidebar({ isOpen, onClose, onLogout }: ResidentSidebarPr
                   <NavLink
                     key={item.to}
                     to={item.to}
-                    onClick={onClose} // Đóng sidebar khi click vào link
+                    onClick={onClose} 
                     className={({ isActive }) => 
                         `w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all no-underline ${
                             isActive
-                                ? 'bg-indigo-100 text-indigo-700 font-medium' // Style nhẹ hơn cho các mục phụ
+                                ? 'bg-indigo-100 text-indigo-700 font-medium'
                                 : 'text-gray-700 hover:bg-gray-100'
                         }`
                     }
