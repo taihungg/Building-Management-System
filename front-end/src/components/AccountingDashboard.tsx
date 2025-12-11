@@ -8,6 +8,7 @@ import { toast } from 'sonner';
 export function AccountingDashboard() {
   const [bills, setBills] = useState([]);
   const [isLoading,setIsLoading] = useState(false);
+  const [unPaidBills, setUnPaidBills] = useState([]);
 
   
 
@@ -95,13 +96,15 @@ const formatCurrency = (amount) => {
   }).format(amount);
 };
 
-/*
+
+//Để xly pie chart
   const billStatusData = [
-    { name: 'Đã thanh toán', value: paidBills.length, color: '#10B981' },
-    { name: 'Chưa thanh toán', value: pendingBills.length - overdueBills.length, color: '#F59E0B' },
-    { name: 'Quá hạn', value: overdueBills.length, color: '#EF4444' },
+    { name: 'Đã thanh toán', value: stats1.paidCount, color: '#10B981', amount: stats1.paidAmount },
+    { name: 'Đang chờ xử lý', value: stats1.pendingCount, color: '#F59E0B', amount: stats1.pendingAmount }, 
+    { name: 'Chưa thanh toán', value: stats1.unpaidCount, color: '#6B7280', amount: stats1.unpaidAmount }, 
   ];
-  */
+  // Lọc bỏ các mục có value = 0 để Pie Chart không bị lỗi
+  const filteredBillStatusData = billStatusData.filter(item => item.value > 0);
 
   const stats = [
     { label: 'Tổng Doanh Thu', value: formatCurrency(stats1.paidAmount), change: '+8.2%', trend: 'up', icon: DollarSign, bgColor: 'bg-green-100', iconColor: 'text-green-600',billCount: stats1.paidCount, // Thêm chỉ số số lượng hóa đơn
@@ -176,14 +179,14 @@ const formatCurrency = (amount) => {
           <h3 className="text-lg font-semibold text-gray-900 mb-4">Trạng Thái Hóa Đơn</h3>
           <ResponsiveContainer width="100%" height={280}>
             <RechartsPieChart>
-              <Pie data={bills} cx="50%" cy="50%" innerRadius={60} outerRadius={90} paddingAngle={2} dataKey="value">
-                {bills.map((entry, index) => (<Cell key={`cell-${index}`} fill={entry.color} />))}
+              <Pie data={filteredBillStatusData} cx="50%" cy="50%" innerRadius={60} outerRadius={90} paddingAngle={2} dataKey="value">
+                {filteredBillStatusData.map((entry, index) => (<Cell key={`cell-${index}`} fill={entry.color} />))}
               </Pie>
               <Tooltip />
             </RechartsPieChart>
           </ResponsiveContainer>
           <div className="flex flex-col gap-2 mt-4">
-            {bills.map((item) => (
+            {filteredBillStatusData.map((item) => (
               <div key={item.name} className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <div className="w-3 h-3 rounded-full" style={{ backgroundColor: item.color }} />
@@ -193,21 +196,21 @@ const formatCurrency = (amount) => {
               </div>
             ))}
           </div>
-        </div>
+       </div>
       </div>
 
       <div className="grid grid-cols-2 gap-6">
         <div className="bg-white rounded-xl p-6 border-2 border-gray-200">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">Hóa Đơn Đã Thanh Toán Gần Đây</h3>
           <div className="space-y-3">
-            {bills.slice(0, 5).map((bill) => (
+            {bills.filter(e=> e.status ==='PAID').slice(0, 5).map((bill) => (
               <div key={bill.id} className="flex items-center justify-between p-4 rounded-lg border-2 border-gray-200 bg-green-50">
                 <div className="flex-1">
-                  <p className="text-sm font-semibold text-gray-900">{bill.period}</p>
-                  <p className="text-xs text-gray-500 mt-1">Đã thanh toán: {bill.paidDate}</p>
+                  <p className="text-sm font-semibold text-gray-900"> Phòng {bill.apartmentLabel}</p>
+                  <p className="text-xs text-gray-500 mt-1">Đã thanh toán: {bill.paymentDate}</p>
                 </div>
                 <div className="text-right">
-                  <p className="text-lg font-bold text-green-700">{formatCurrency(bill.amount)} ₫</p>
+                  <p className="text-lg font-bold text-green-700">{formatCurrency(bill.totalAmount)} ₫</p>
                   <div className="flex items-center gap-1 mt-1">
                     <CheckCircle className="w-4 h-4 text-green-600" />
                     <span className="text-xs text-green-600">Đã thanh toán</span>
@@ -220,19 +223,19 @@ const formatCurrency = (amount) => {
         </div>
 
         <div className="bg-white rounded-xl p-6 border-2 border-gray-200">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Hóa Đơn Quá Hạn</h3>
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">Hóa Đơn Chưa Thanh Toán</h3>
           <div className="space-y-3">
-            {bills.slice(0, 5).map((bill) => (
+            {bills.filter(e=> e.status === 'UNPAID').slice(0, 5).map((bill) => (
               <div key={bill.id} className="flex items-center justify-between p-4 rounded-lg border-2 border-red-200 bg-red-50">
                 <div className="flex-1">
-                  <p className="text-sm font-semibold text-gray-900">{bill.period}</p>
+                  <p className="text-sm font-semibold text-gray-900"> Phòng {bill.apartmentLabel}</p>
                   <p className="text-xs text-red-600 mt-1">Hạn thanh toán: {bill.dueDate}</p>
                 </div>
                 <div className="text-right">
-                  <p className="text-lg font-bold text-red-700">{formatCurrency(bill.amount)} ₫</p>
+                  <p className="text-lg font-bold text-red-700">{formatCurrency(bill.totalAmount)} ₫</p>
                   <div className="flex items-center gap-1 mt-1">
                     <AlertCircle className="w-4 h-4 text-red-600" />
-                    <span className="text-xs text-red-600">Quá hạn</span>
+                    <span className="text-xs text-red-600">Chưa thanh toán</span>
                   </div>
                 </div>
               </div>
