@@ -60,4 +60,12 @@ public class Invoice {
     @OneToMany(mappedBy = "invoice", cascade = CascadeType.ALL)
     @Builder.Default
     private List<InvoiceDetail> details = new ArrayList<>();
+    
+    @Column(name = "created_time")
+    private LocalDateTime createdTime;
+
+    @PrePersist
+    protected void onCreate() {
+        createdTime = LocalDateTime.now();
+    }
 }

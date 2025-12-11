@@ -22,7 +22,8 @@ public interface InvoiceRepository extends JpaRepository<Invoice, UUID> {
            "CONCAT('P.', a.roomNumber) AS apartmentLabel, " + 
            "b.totalAmount AS totalAmount, " + 
            "b.status AS status, " +
-           "b.paymentDate AS paymentDate " +
+           "b.paymentDate AS paymentDate, " +
+           "b.createdTime AS createdTime " + 
            "FROM Invoice b " +
            "LEFT JOIN b.apartment a " +
            "WHERE " +
