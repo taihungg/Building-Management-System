@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react';
-import { Lock, Mail, Eye, EyeOff, User, Shield, Calculator } from 'lucide-react';
-
+// 🛠️ ĐÃ THÊM icon Building2 cho Cơ Quan Chức Năng (Authority)
+import { Lock, Mail, Eye, EyeOff, User, Shield, Calculator, Building2 } from 'lucide-react'; 
+import React from 'react';
 interface LoginProps {
-  onLogin: (role: 'admin' | 'resident' | 'accountant') => void;
+  // 🛠️ ĐÃ CẬP NHẬT TYPE VỚI VAI TRÒ MỚI: 'authority'
+  onLogin: (role: 'admin' | 'resident' | 'accountant' | 'authority') => void;
   onNavigateAuth?: (page: 'login' | 'signup' | 'forgot') => void;
 }
 
@@ -11,7 +13,8 @@ export function Login({ onLogin, onNavigateAuth }: LoginProps) {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
-  const [selectedRole, setSelectedRole] = useState<'admin' | 'resident' | 'accountant' | null>(null);
+  // 🛠️ ĐÃ CẬP NHẬT TYPE VỚI VAI TRÒ MỚI: 'authority'
+  const [selectedRole, setSelectedRole] = useState<'admin' | 'resident' | 'accountant' | 'authority' | null>(null);
 
   // Đặt URL về /login khi đang ở trang đăng nhập nếu chưa có route khác
   useEffect(() => {
@@ -47,10 +50,11 @@ export function Login({ onLogin, onNavigateAuth }: LoginProps) {
             <p className="text-gray-600 text-sm">Vui lòng đăng nhập vào tài khoản của bạn</p>
           </div>
 
-          {/* Role Selection */}
+          {/* Role Selection - 🛠️ ĐÃ CẬP NHẬT LƯỚI 2x2 CHO 4 VAI TRÒ */}
           <div className="mb-6">
             <label className="block text-sm font-medium text-gray-700 mb-3">Chọn loại tài khoản</label>
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-2 gap-3">
+              {/* ADMIN */}
               <button
                 type="button"
                 onClick={() => setSelectedRole('admin')}
@@ -71,6 +75,7 @@ export function Login({ onLogin, onNavigateAuth }: LoginProps) {
                   Quản Trị Viên
                 </span>
               </button>
+              {/* RESIDENT */}
               <button
                 type="button"
                 onClick={() => setSelectedRole('resident')}
@@ -91,6 +96,7 @@ export function Login({ onLogin, onNavigateAuth }: LoginProps) {
                   Cư Dân
                 </span>
               </button>
+              {/* ACCOUNTANT */}
               <button
                 type="button"
                 onClick={() => setSelectedRole('accountant')}
@@ -109,6 +115,28 @@ export function Login({ onLogin, onNavigateAuth }: LoginProps) {
                 />
                 <span className="text-sm font-medium" style={{ color: selectedRole === 'accountant' ? 'white' : '#374151' }}>
                   Kế Toán
+                </span>
+              </button>
+              
+              {/* 🛠️ AUTHORITY (MỚI) */}
+              <button
+                type="button"
+                onClick={() => setSelectedRole('authority')}
+                style={{
+                  backgroundColor: selectedRole === 'authority' ? '#21C2E3' : 'white',
+                  borderColor: selectedRole === 'authority' ? '#21C2E3' : '#E5E7EB',
+                  color: selectedRole === 'authority' ? 'white' : '#374151',
+                }}
+                className={`flex flex-col items-center gap-3 p-4 rounded-xl border-2 transition-all duration-200 ${
+                  selectedRole === 'authority' ? 'shadow-md' : ''
+                }`}
+              >
+                <Building2 
+                  className="w-6 h-6" 
+                  style={{ color: selectedRole === 'authority' ? 'white' : '#4B5563' }}
+                />
+                <span className="text-sm font-medium" style={{ color: selectedRole === 'authority' ? 'white' : '#374151' }}>
+                  Cơ Quan Chức Năng
                 </span>
               </button>
             </div>

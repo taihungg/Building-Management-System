@@ -2,24 +2,36 @@ import React, { useState, useEffect } from 'react';
 import { Users, Bell, AlertCircle, CheckCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import { getAnnouncements, subscribe as subscribeAnnouncements, type Announcement } from '../utils/announcements';
 
 export function AuthorityDashboard() {
   const navigate = useNavigate();
-  const [announcements, setAnnouncements] = useState<Announcement[]>([]);
+  const [announcements, setAnnouncements] = useState([]);
+  const [residents, setResidents] = useState([]);
+  const [error, setError] = useState ();
 
   useEffect(() => {
-    // Lọc chỉ các thông báo type "lost_item" (báo mất đồ)
-    const filtered = getAnnouncements().filter(ann => ann.type === 'lost_item');
-    setAnnouncements(filtered);
+      fetchResidents();
+    }, []);
 
-    const unsubscribe = subscribeAnnouncements((updated) => {
-      const filtered = updated.filter(ann => ann.type === 'lost_item');
-      setAnnouncements(filtered);
-    });
+    
 
-    return unsubscribe;
-  }, []);
+  const fetchResidents = async () => {
+    try {
+      let url = 'http://localhost:8081/api/v1/residents';
+
+      const response = await fetch(url);
+      if (!response.ok) {
+        throw new Error("Can't get residents");
+      }
+      const res = await response.json();
+      setResidents(res.data);
+    }
+    catch (err) {
+      setError(err.message);
+      // Không cần toast lỗi ở đây nếu muốn hiển thị lỗi tĩnh trên UI, 
+      // nhưng nếu muốn có thể dùng toast.error("Lỗi tải dữ liệu");
+    }
+  }
 
   // Dữ liệu mẫu cho biểu đồ thông báo mất đồ
   // Trong thực tế, cần thêm trường status vào Announcement interface
@@ -60,7 +72,7 @@ export function AuthorityDashboard() {
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div 
-          onClick={() => navigate('/authority-residents')}
+          onClick={() => navigate('/authority/residents')}
           className="bg-white rounded-2xl p-6 border-2 border-gray-200 hover:border-blue-500 cursor-pointer transition-all shadow-sm hover:shadow-md"
         >
           <div className="flex items-center justify-between">
@@ -75,7 +87,7 @@ export function AuthorityDashboard() {
         </div>
 
         <div 
-          onClick={() => navigate('/authority-announcements')}
+          onClick={() => navigate('/authority/announcements')}
           className="bg-white rounded-2xl p-6 border-2 border-gray-200 hover:border-blue-500 cursor-pointer transition-all shadow-sm hover:shadow-md"
         >
           <div className="flex items-center justify-between">
@@ -97,7 +109,7 @@ export function AuthorityDashboard() {
             <CheckCircle className="w-5 h-5 text-blue-600" />
             <h2 className="text-xl font-semibold text-gray-900">Tổng số cư dân</h2>
           </div>
-          <p className="text-3xl font-bold text-gray-900">{totalResidents}</p>
+          <p className="text-3xl font-bold text-gray-900">{residents.length}</p>
         </div>
         <div className="bg-white rounded-2xl p-6 border-2 border-gray-200">
           <div className="flex items-center gap-3 mb-4">

@@ -1,5 +1,4 @@
 import { useState, useEffect, useCallback } from 'react';
-// Sửa lỗi: Import useNavigate từ react-router-dom
 import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate } from 'react-router-dom'; 
 import React from 'react';
 
@@ -35,17 +34,24 @@ import { DebtManagement } from './components/DebtManagement';
 import { InvoiceCreation } from './components/InvoiceCreation';
 import { AccountingProfile } from './components/AccountingProfile';
 
-// Auth Components
-import { Login } from './components/Login';
-import { Signup } from './components/Signup';
-import { ForgotPassword } from './components/ForgotPassword';
+// Authority Components (Components bạn cung cấp)
+import { AuthoritySidebar } from './components/AuthoritySidebar';
+import { AuthorityHeader } from './components/AuthorityHeader';
+import { AuthorityDashboard } from './components/AuthorityDashboard';
+import { AuthorityResidentManagement } from './components/AuthorityResidentManagement';
+import { AuthorityAnnouncements } from './components/AuthorityAnnouncements';
+import { AuthorityProfile } from './components/AuthorityProfile';
+
+// ✅ ĐÃ SỬA: Import Login từ thư mục components
+import { Login } from './components/Login'; 
 
 
 // === Định nghĩa kiểu và Maps ===
-type UserRole = 'admin' | 'resident' | 'accountant' | null;
+// ✅ Thêm 'authority'
+type UserRole = 'admin' | 'resident' | 'accountant' | 'authority' | null; 
 type AuthPage = 'login' | 'signup' | 'forgot';
 
-// Map: Tên Tab -> Đường dẫn URL
+// Map: Tên Tab -> Đường dẫn URL 
 const adminTabToPath: Record<string, string> = {
   'dashboard': '/admin/dashboard',
   'residents': '/admin/residents',
@@ -75,7 +81,16 @@ const accountingTabToPath: Record<string, string> = {
   'settings': '/accounting/settings',
 };
 
-// Map: Đường dẫn URL -> Tên Tab
+// ✅ MAPS CHO VAI TRÒ AUTHORITY
+const authorityTabToPath: Record<string, string> = {
+  'authority-dashboard': '/authority/dashboard',
+  'authority-residents': '/authority/residents',
+  'authority-announcements': '/authority/announcements',
+  'profile': '/authority/profile',
+  'settings': '/authority/settings',
+};
+
+// Map: Đường dẫn URL -> Tên Tab 
 const adminPathToTab: Record<string, string> = Object.fromEntries(
   Object.entries(adminTabToPath).map(([tab, path]) => [path, tab])
 );
@@ -84,6 +99,10 @@ const residentPathToTab: Record<string, string> = Object.fromEntries(
 );
 const accountingPathToTab: Record<string, string> = Object.fromEntries(
   Object.entries(accountingTabToPath).map(([tab, path]) => [path, tab])
+);
+// ✅ PATHS CHO VAI TRÒ AUTHORITY
+const authorityPathToTab: Record<string, string> = Object.fromEntries(
+  Object.entries(authorityTabToPath).map(([tab, path]) => [path, tab])
 );
 
 
@@ -108,7 +127,7 @@ const MainLayout = ({ sidebar, header, routes }: { sidebar: JSX.Element, header:
     </div>
 );
 
-// Admin Routes
+// Admin Routes (Giữ nguyên)
 const adminRoutes = (
     <>
         <Route path="/" element={<Navigate to="dashboard" replace />} />
@@ -124,7 +143,7 @@ const adminRoutes = (
     </>
 );
 
-// Resident Routes
+// Resident Routes (Giữ nguyên)
 const residentRoutes = (
     <>
         <Route path="/" element={<Navigate to="dashboard" replace />} />
@@ -137,7 +156,7 @@ const residentRoutes = (
     </>
 );
 
-// Accounting Routes
+// Accounting Routes (Giữ nguyên)
 const accountingRoutes = (
     <>
         <Route path="/" element={<Navigate to="dashboard" replace />} />
@@ -149,26 +168,35 @@ const accountingRoutes = (
     </>
 );
 
+// ✅ AUTHORITY Routes
+const authorityRoutes = (
+    <>
+        <Route path="/" element={<Navigate to="dashboard" replace />} />
+        <Route path="/dashboard" element={<AuthorityDashboard />} />
+        <Route path="/residents" element={<AuthorityResidentManagement />} />
+        <Route path="/announcements" element={<AuthorityAnnouncements />} />
+        <Route path="/profile" element={<AuthorityProfile />} />
+        <Route path="/settings" element={<Settings />} /> {/* Dùng Settings chung */}
+    </>
+);
+
 
 // =================================================================
-// APP CONTENT: SỬ DỤNG HOOKS ĐIỀU HƯỚNG
+// APP CONTENT
 // =================================================================
 
 function AppContent() {
-    // SỬ DỤNG HOOK useNavigate TẠI ĐÂY để kích hoạt React Router
     const navigate = useNavigate(); 
     
     // States
     const [activeTab, setActiveTab] = useState('dashboard'); 
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     const [isAuthenticated, setIsAuthenticated] = useState(false);
-    const [userRole, setUserRole] = useState<UserRole>(null);
+    const [userRole, setUserRole] = useState<UserRole>(null); 
     const [authPage, setAuthPage] = useState<AuthPage>('login');
 
     
-    // --- Điều hướng: Thay thế window.history.pushState bằng navigate ---
-    
-    // Hàm đẩy URL mới khi click vào tab (SỬA ĐỔI)
+    // Hàm đẩy URL mới khi click vào tab
     const pushPathForTab = useCallback((tab: string, role: UserRole) => {
         let path: string | undefined;
         if (role === 'admin') {
@@ -177,10 +205,12 @@ function AppContent() {
             path = residentTabToPath[tab];
         } else if (role === 'accountant') {
             path = accountingTabToPath[tab];
+        } else if (role === 'authority') { // ✅ authority
+            path = authorityTabToPath[tab];
         }
         
         if (path && path !== window.location.pathname) {
-            navigate(path); // Dùng navigate để đảm bảo Routes render lại
+            navigate(path); 
         }
     }, [navigate]); 
 
@@ -190,7 +220,8 @@ function AppContent() {
         pushPathForTab(tab, userRole);
     }, [userRole, pushPathForTab]);
 
-    const handleLogin = (role: 'admin' | 'resident' | 'accountant') => {
+    // Hàm xử lý Login
+    const handleLogin = (role: UserRole) => {
         setUserRole(role);
         setIsAuthenticated(true);
         
@@ -203,13 +234,15 @@ function AppContent() {
         } else if (role === 'accountant') {
             initialTab = 'accounting-dashboard';
             initialPath = accountingTabToPath[initialTab];
-        } else {
+        } else if (role === 'authority') { // ✅ authority
+            initialTab = 'authority-dashboard';
+            initialPath = authorityTabToPath[initialTab];
+        } else { // admin
             initialTab = 'dashboard';
             initialPath = adminTabToPath[initialTab];
         }
 
         setActiveTab(initialTab);
-        // Dùng navigate với replace: true để xóa trang login khỏi lịch sử
         navigate(initialPath, { replace: true });
     };
 
@@ -222,30 +255,18 @@ function AppContent() {
     };
     
 
-    // === useEffects ===
-
-    // 1. Toggle Sidebar Listener (Giữ nguyên)
-    useEffect(() => {
-        const handleToggleSidebar = () => {
-            setIsSidebarOpen(prev => !prev);
-        };
-        window.addEventListener('toggleSidebar', handleToggleSidebar);
-        return () => window.removeEventListener('toggleSidebar', handleToggleSidebar);
-    }, []);
-
-
-    // 2. Sync tab and auth page with browser history (Đã tối ưu hóa)
+    // 2. Sync tab and auth page with browser history
     useEffect(() => {
         const syncStateFromPath = () => {
             const path = window.location.pathname;
             
             // --- Xử lý trang Auth ---
             if (!isAuthenticated) {
+                // ... (Auth page logic) ...
                 if (path === '/signup') setAuthPage('signup');
                 else if (path === '/forgot') setAuthPage('forgot');
                 else if (path !== '/login' && path !== '/') {
                     setAuthPage('login');
-                    // navigate thay thế window.history.replaceState
                     navigate('/login', { replace: true }); 
                 } else {
                     setAuthPage('login');
@@ -270,23 +291,22 @@ function AppContent() {
                 tab = accountingPathToTab[path];
                 base = '/accounting';
                 defaultTab = 'accounting-dashboard';
+            } else if (userRole === 'authority') { // ✅ authority
+                tab = authorityPathToTab[path];
+                base = '/authority';
+                defaultTab = 'authority-dashboard';
             }
             
             if (tab) {
                 setActiveTab(tab);
             } 
-            // Nếu URL nằm trong khu vực vai trò nhưng không khớp tab nào (ví dụ: /admin/abc),
-            // chuyển activeTab về default (dashboard) để sidebar không bị lỗi highlight
             else if (base && path.startsWith(base)) {
                 setActiveTab(defaultTab);
             }
         };
 
-        // Bắt sự kiện back/forward của trình duyệt (Popstate)
         const handlePopState = () => syncStateFromPath();
         window.addEventListener('popstate', handlePopState);
-        
-        // Chạy lần đầu khi component mount/role change
         syncStateFromPath();
 
         return () => window.removeEventListener('popstate', handlePopState);
@@ -296,8 +316,11 @@ function AppContent() {
 
     // --- Conditional Renders ---
 
-    // 1. CHƯA ĐĂNG NHẬP (Authentication Routes)
     if (!isAuthenticated) {
+        // Placeholder components
+        const Signup = () => <div className="p-8">Signup Page Placeholder</div>;
+        const ForgotPassword = () => <div className="p-8">Forgot Password Page Placeholder</div>;
+
         if (authPage === 'signup') {
             return (
                 <Signup
@@ -314,7 +337,8 @@ function AppContent() {
                 />
             );
         }
-
+        
+        // SỬ DỤNG COMPONENT LOGIN ĐÃ IMPORT
         return (
             <Login 
                 onLogin={handleLogin} 
@@ -327,7 +351,7 @@ function AppContent() {
         );
     }
 
-    // 2. ĐÃ ĐĂNG NHẬP (Main Application Router)
+    // --- ĐÃ ĐĂNG NHẬP (Main Application Router) ---
     
     let sidebarComponent, headerComponent, appRoutes, baseUrl;
 
@@ -387,9 +411,27 @@ function AppContent() {
         );
         appRoutes = accountingRoutes;
         baseUrl = '/accounting/*';
+
+    } else if (userRole === 'authority') { // ✅ VAI TRÒ AUTHORITY
+        sidebarComponent = (
+            <AuthoritySidebar 
+                activeTab={activeTab} 
+                setActiveTab={handleSetActiveTab} 
+                isOpen={isSidebarOpen}
+                onClose={() => setIsSidebarOpen(false)}
+                onLogout={handleLogout} 
+            />
+        );
+        headerComponent = (
+            <AuthorityHeader 
+              onMenuClick={() => setIsSidebarOpen(true)}
+              onLogout={handleLogout}
+            />
+        );
+        appRoutes = authorityRoutes;
+        baseUrl = '/authority/*';
         
     } else {
-        // Fallback an toàn nếu role bị mất
         return <Navigate to="/login" replace />;
     }
 
@@ -397,7 +439,6 @@ function AppContent() {
     // Router cho người dùng đã đăng nhập
     return (
         <Routes>
-            {/* 1. Tuyến chính cho vai trò hiện tại (VD: /admin/...) */}
             <Route path={baseUrl} element={
                 <MainLayout 
                     sidebar={sidebarComponent} 
@@ -406,15 +447,10 @@ function AppContent() {
                 />
             } />
             
-            {/* 2. Tuyến cho các trang Auth (Redirect ngược lại dashboard nếu đã đăng nhập) */}
             <Route path="/login" element={<Navigate to={`/${userRole}/dashboard`} replace />} />
             <Route path="/signup" element={<Navigate to={`/${userRole}/dashboard`} replace />} />
             <Route path="/forgot" element={<Navigate to={`/${userRole}/dashboard`} replace />} />
-
-            {/* 3. Tuyến redirect cơ bản / -> dashboard của vai trò */}
             <Route path="/" element={<Navigate to={`/${userRole}/dashboard`} replace />} />
-            
-            {/* 4. Fallback 404 */}
             <Route path="*" element={<div className="p-4 text-3xl text-red-600">404 Not Found</div>} />
 
         </Routes>
@@ -422,9 +458,6 @@ function AppContent() {
 }
 
 
-// =================================================================
-// COMPONENT GỐC: CHỈ CÓ NHIỆM VỤ BỌC Router
-// =================================================================
 export default function App() {
     return (
         <Router>

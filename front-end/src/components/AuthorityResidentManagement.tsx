@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
-import { Search, Plus, Edit, Trash2, MoreVertical, MapPin, Phone, UserCircle, Mail, Eye, Home, Fingerprint, Globe, Building2, Clock, AlertCircle } from "lucide-react";
+import { Search, Plus, Edit, Trash2, MoreVertical, MapPin,ShieldCheck,HomeIcon,Contact, Phone, UserCircle, Mail, Eye, Home, Fingerprint, Globe, Building2, Clock, AlertCircle } from "lucide-react";
 import { Label } from "./ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
 import { Dropdown } from "./Dropdown";
@@ -279,69 +279,129 @@ export function AuthorityResidentManagement() {
 
       {isViewModalOpen && selectedResident && (
         <Modal
-          isOpen={isViewModalOpen}
-          onClose={() => {
-            setIsViewModalOpen(false);
-            setSelectedResident(null);
-          }}
-          title="Chi Tiết Cư Dân"
-        >
-          {isLoadingDetail ? (
-            <div className="p-8 text-center">Đang tải...</div>
-          ) : (
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
+        isOpen={isViewModalOpen}
+        onClose={() => {
+          setIsViewModalOpen(false);
+          setSelectedResident(null);
+        }}
+        title="Chi Tiết Cư Dân" // Giữ nguyên title ở đây
+      >
+        {isLoadingDetail ? (
+          <div className="flex justify-center items-center h-48">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+            <p className="ml-3 text-gray-500">Đang tải chi tiết cư dân...</p>
+          </div>
+        ) : (
+          <div className="px-4 py-3 sm:px-6 space-y-6">
+            
+            {/* -------------------- 1. Thông tin Cá nhân -------------------- */}
+            <div className="border-b pb-4 border-gray-100">
+              <h4 className="flex items-center text-lg font-semibold text-blue-700 mb-3">
+                <UserCircle className="w-5 h-5 mr-2 text-blue-500" />
+                Thông tin Cá nhân
+              </h4>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-5">
+                
+                {/* Họ và Tên */}
                 <div>
-                  <Label className="text-gray-600">Họ và Tên</Label>
-                  <p className="text-gray-900 font-medium">{selectedResident.fullName || '-'}</p>
+                  <Label className="text-xs font-medium uppercase text-gray-500 tracking-wider">Họ và Tên</Label>
+                  <p className="text-base text-gray-800 font-semibold mt-1">{selectedResident.fullName || 'Chưa cung cấp'}</p>
                 </div>
+                
+                {/* CMND/CCCD */}
                 <div>
-                  <Label className="text-gray-600">CMND/CCCD</Label>
-                  <p className="text-gray-900 font-medium">{selectedResident.idCard || '-'}</p>
+                  <Label className="text-xs font-medium uppercase text-gray-500 tracking-wider">CMND/CCCD</Label>
+                  <p className="text-base text-gray-800 font-semibold mt-1">{selectedResident.idCard || 'Chưa cung cấp'}</p>
                 </div>
+                
+                {/* Ngày Sinh */}
                 <div>
-                  <Label className="text-gray-600">Ngày Sinh</Label>
-                  <p className="text-gray-900 font-medium">{selectedResident.dob || '-'}</p>
+                  <Label className="text-xs font-medium uppercase text-gray-500 tracking-wider">Ngày Sinh</Label>
+                  <p className="text-base text-gray-800 mt-1">{selectedResident.dob || 'Chưa cung cấp'}</p>
                 </div>
+                
+                {/* Quê Quán */}
                 <div>
-                  <Label className="text-gray-600">Quê Quán</Label>
-                  <p className="text-gray-900 font-medium">{selectedResident.homeTown || '-'}</p>
+                  <Label className="text-xs font-medium uppercase text-gray-500 tracking-wider">Quê Quán</Label>
+                  <p className="text-base text-gray-800 mt-1">{selectedResident.homeTown || 'Chưa cung cấp'}</p>
                 </div>
+                
+              </div>
+            </div>
+      
+            {/* -------------------- 2. Thông tin Liên hệ & Cư trú -------------------- */}
+            <div className="border-b pb-4 border-gray-100">
+              <h4 className="flex items-center text-lg font-semibold text-blue-700 mb-3">
+                <Contact className="w-5 h-5 mr-2 text-blue-500" />
+                Thông tin Liên hệ
+              </h4>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-5">
+      
+                {/* Số Phòng */}
                 <div>
-                  <Label className="text-gray-600">Số Phòng</Label>
-                  <p className="text-gray-900 font-medium">{selectedResident.roomNumber || '-'}</p>
+                  <Label className="text-xs font-medium uppercase text-gray-500 tracking-wider">Số Phòng</Label>
+                  <p className="text-base text-gray-800 font-semibold mt-1 flex items-center">
+                      <HomeIcon className='w-4 h-4 mr-2 text-orange-500'/>
+                      {selectedResident.roomNumber || 'Chưa xác định'}
+                  </p>
                 </div>
+                
+                {/* Số Điện Thoại */}
                 <div>
-                  <Label className="text-gray-600">Số Điện Thoại</Label>
-                  <p className="text-gray-900 font-medium">{selectedResident.phoneNumber || '-'}</p>
+                  <Label className="text-xs font-medium uppercase text-gray-500 tracking-wider">Số Điện Thoại</Label>
+                  <p className="text-base text-gray-800 mt-1">{selectedResident.phoneNumber || 'Chưa cung cấp'}</p>
                 </div>
+                
+                {/* Email */}
                 <div>
-                  <Label className="text-gray-600">Email</Label>
-                  <p className="text-gray-900 font-medium">{selectedResident.email || '-'}</p>
-                </div>
-                <div>
-                  <Label className="text-gray-600">Trạng Thái</Label>
-                  <p className="text-gray-900 font-medium">{selectedResident.status || '-'}</p>
-                </div>
-                <div>
-                  <Label className="text-gray-600">Tình Trạng Cư Trú</Label>
-                  <div className="mt-2">
-                    {selectedResident && (() => {
-                      const residenceType = getResidenceType(selectedResident);
-                      const Icon = getResidenceTypeIcon(residenceType);
-                      return (
-                        <span className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium border ${getResidenceTypeColor(residenceType)}`}>
-                          <Icon className="w-4 h-4" />
-                          {getResidenceTypeLabel(residenceType)}
-                        </span>
-                      );
-                    })()}
-                  </div>
+                  <Label className="text-xs font-medium uppercase text-gray-500 tracking-wider">Email</Label>
+                  <p className="text-base text-blue-600 hover:underline mt-1">{selectedResident.email || 'Chưa cung cấp'}</p>
                 </div>
               </div>
             </div>
-          )}
-        </Modal>
+            
+            {/* -------------------- 3. Trạng thái Cư trú -------------------- */}
+            <div>
+              <h4 className="flex items-center text-lg font-semibold text-blue-700 mb-3">
+                <ShieldCheck className="w-5 h-5 mr-2 text-blue-500" />
+                Trạng Thái Hệ thống
+              </h4>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-5">
+                  
+                  {/* Trạng Thái Hệ thống */}
+                  <div>
+                    <Label className="text-xs font-medium uppercase text-gray-500 tracking-wider">Trạng Thái (Active/Inactive)</Label>
+                    <div className='mt-2'>
+                      <span className={`inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium ${
+                          selectedResident.status === 'Active' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                      }`}>
+                          {selectedResident.status || 'Chưa xác định'}
+                      </span>
+                    </div>
+                  </div>
+      
+                  {/* Tình Trạng Cư Trú (Owner/Tenant/Temp) */}
+                  <div>
+                    <Label className="text-xs font-medium uppercase text-gray-500 tracking-wider">Tình Trạng Cư Trú</Label>
+                    <div className="mt-2">
+                      {selectedResident && (() => {
+                        const residenceType = getResidenceType(selectedResident);
+                        const Icon = getResidenceTypeIcon(residenceType);
+                        return (
+                          <span className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium border ${getResidenceTypeColor(residenceType)}`}>
+                            <Icon className="w-4 h-4" />
+                            {getResidenceTypeLabel(residenceType)}
+                          </span>
+                        );
+                      })()}
+                    </div>
+                  </div>
+              </div>
+            </div>
+      
+          </div>
+        )}
+      </Modal>
       )}
     </div>
   );
