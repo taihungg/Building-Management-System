@@ -12,7 +12,6 @@ import { ApartmentManagement } from './components/ApartmentManagement';
 import { BillManagement } from './components/BillManagement';
 import { ServiceManagement } from './components/ServiceManagement';
 import { Notifications } from './components/Notifications';
-import { Recommendations } from './components/Recommendations';
 import { Profile } from './components/Profile';
 import { Settings } from './components/Settings';
 
@@ -59,7 +58,6 @@ const adminTabToPath: Record<string, string> = {
   'bills': '/admin/bills',
   'services': '/admin/services',
   'notifications': '/admin/notifications',
-  'recommendations': '/admin/recommendations',
   'profile': '/admin/profile',
   'settings': '/admin/settings',
 };
@@ -137,7 +135,6 @@ const adminRoutes = (
         <Route path="/bills" element={<BillManagement />} />
         <Route path="/services" element={<ServiceManagement />} />
         <Route path="/notifications" element={<Notifications />} />
-        <Route path="/recommendations" element={<Recommendations />} />
         <Route path="/profile" element={<Profile />} />
         <Route path="/settings" element={<Settings />} />
     </>

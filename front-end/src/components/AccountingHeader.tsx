@@ -1,5 +1,5 @@
 import React from 'react';
-import { Menu, Search } from 'lucide-react';
+import { Menu, Search, Clock } from 'lucide-react'; // Import Clock icon
 import { useState, useRef, useEffect } from 'react';
 import { getCurrentPeriod } from '../utils/timeUtils';
 import { useRealtime } from '../hooks/useRealtime';
@@ -12,7 +12,9 @@ interface AccountingHeaderProps {
 export function AccountingHeader({ onMenuClick, onNavigate }: AccountingHeaderProps) {
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const profileRef = useRef<HTMLDivElement>(null);
-  const currentTime = useRealtime(1000);
+  
+  // Lấy thời gian thực từ hook
+  const currentTime = useRealtime(1000); 
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -31,7 +33,11 @@ export function AccountingHeader({ onMenuClick, onNavigate }: AccountingHeaderPr
   };
 
   const currentPeriod = getCurrentPeriod();
-  const formattedTime = currentTime.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+  
+  // Định dạng thời gian và ngày tháng
+  const formattedTime = currentTime.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  const formattedDate = currentTime.toLocaleDateString('vi-VN', { weekday: 'short', month: 'short', day: 'numeric' });
+  // Thay đổi: Dùng full date/time format
 
   return (
     <header className="fixed top-0 left-0 right-0 bg-white border-b-2 border-gray-100 z-30">
@@ -66,33 +72,43 @@ export function AccountingHeader({ onMenuClick, onNavigate }: AccountingHeaderPr
           </div>
         </div>
 
-        <div className="flex items-center gap-4">
-          <div className="text-right hidden md:block">
-            <p className="text-xs text-gray-500">Kỳ hiện tại</p>
-            <p className="text-sm font-medium text-gray-900">{currentPeriod}</p>
-            <p className="text-xs text-gray-400">{formattedTime}</p>
+        <div className="flex items-center gap-6">
+          
+          {/* Vùng hiển thị Kỳ hiện tại và Thời gian thực (Đã làm đẹp) */}
+          <div className="hidden sm:flex items-center gap-3 bg-gray-50 p-2.5 rounded-xl border border-gray-200">
+             <Clock className="w-5 h-5 text-blue-600 flex-shrink-0" />
+             <div className="text-sm">
+                <p className="font-semibold text-gray-800 leading-tight">
+                    {formattedTime}
+                </p>
+                <p className="text-xs text-gray-500 leading-tight">
+                    {currentPeriod} ({formattedDate})
+                </p>
+             </div>
           </div>
-
+          {/* --- End: Vùng hiển thị Thời gian --- */}
+          
           <div className="relative" ref={profileRef}>
             <button 
               onClick={() => setIsProfileOpen(!isProfileOpen)}
-              className="w-10 h-10 rounded-full flex items-center justify-center text-white font-semibold shadow-sm transition-transform hover:scale-105"
+              className="w-10 h-10 rounded-full flex items-center justify-center text-white font-semibold shadow-md transition-transform hover:scale-105"
               style={{ backgroundImage: 'linear-gradient(135deg, #22d3ee 0%, #2563eb 100%)' }}
             >
               <span className="text-sm font-semibold">KT</span>
             </button>
 
             {isProfileOpen && (
-              <div className="absolute right-0 mt-2 w-64 bg-white rounded-2xl shadow-lg border-2 border-gray-100 overflow-hidden">
-                <div className="p-6 border-b-2 border-gray-100">
-                  <h3 className="text-xl text-gray-900">Tài Khoản Kế Toán</h3>
+              <div className="absolute right-0 mt-2 w-64 bg-white rounded-2xl shadow-xl border border-gray-200 overflow-hidden z-50">
+                <div className="p-4 border-b border-gray-100">
+                  <h3 className="text-lg font-semibold text-gray-900">Tài Khoản Kế Toán</h3>
+                  <p className="text-sm text-gray-500">accounting@hub.vn</p>
                 </div>
-                <div className="py-2">
-                  <button onClick={() => handleProfileItemClick('profile')} className="w-full px-6 py-4 text-left text-gray-700 hover:bg-gray-50 transition-colors">Hồ Sơ</button>
-                  <button onClick={() => handleProfileItemClick('settings')} className="w-full px-6 py-4 text-left text-gray-700 hover:bg-gray-50 transition-colors">Cài Đặt</button>
+                <div className="py-1">
+                  <button onClick={() => handleProfileItemClick('profile')} className="w-full px-4 py-3 text-left text-gray-700 hover:bg-gray-50 transition-colors">Hồ Sơ</button>
+                  <button onClick={() => handleProfileItemClick('settings')} className="w-full px-4 py-3 text-left text-gray-700 hover:bg-gray-50 transition-colors">Cài Đặt</button>
                 </div>
-                <div className="border-t-2 border-gray-100">
-                  <button onClick={() => handleProfileItemClick('logout')} className="w-full px-6 py-4 text-left text-gray-700 hover:bg-gray-50 transition-colors">Đăng Xuất</button>
+                <div className="border-t border-gray-100">
+                  <button onClick={() => handleProfileItemClick('logout')} className="w-full px-4 py-3 text-left text-red-600 hover:bg-red-50 transition-colors font-medium">Đăng Xuất</button>
                 </div>
               </div>
             )}
@@ -102,4 +118,3 @@ export function AccountingHeader({ onMenuClick, onNavigate }: AccountingHeaderPr
     </header>
   );
 }
-

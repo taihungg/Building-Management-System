@@ -201,10 +201,7 @@ export function Dashboard() {
           <h1 className="text-3xl text-gray-900">Dashboard</h1>
           <p className="text-gray-600 mt-1">Welcome back! Here's what's happening today.</p>
         </div>
-        <div className="text-right">
-          <p className="text-sm text-gray-500">Current Period</p>
-          <p className="text-base text-gray-900">December 2025</p>
-        </div>
+        
       </div>
 
       {/* Stats Grid */}

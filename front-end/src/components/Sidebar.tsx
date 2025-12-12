@@ -31,7 +31,6 @@ const menuItems = [
   { id: 'bills', label: 'Bills', icon: Receipt, path: '/admin/bills' },
   { id: 'services', label: 'Services', icon: Wrench, path: '/admin/services' },
   { id: 'notifications', label: 'Notifications', icon: Bell, path: '/admin/notifications' },
-  { id: 'recommendations', label: 'Recommendations', icon: Lightbulb, path: '/admin/recommendations' },
 ];
 
 const bottomItems = [

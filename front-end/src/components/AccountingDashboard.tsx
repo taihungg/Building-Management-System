@@ -196,10 +196,6 @@ export function AccountingDashboard() {
           <h1 className="text-3xl font-bold text-gray-900 mb-2">Dashboard Kế Toán</h1>
           <p className="text-gray-600">Tổng quan tài chính và quản lý hóa đơn (Năm {new Date().getFullYear()})</p>
         </div>
-        <div className="text-right">
-          <p className="text-sm text-gray-500">Kỳ hiện tại</p>
-          <p className="text-base font-semibold text-gray-900">{currentPeriod}</p>
-        </div>
       </div>
 
       {/* --- PHẦN 1: THẺ TÓM TẮT THỐNG KÊ --- */}
