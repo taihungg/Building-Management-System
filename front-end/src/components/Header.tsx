@@ -1,5 +1,6 @@
 import { Menu, Search, Bell, Clock } from 'lucide-react'; // Import icon Clock
 import { useState, useRef, useEffect } from 'react';
+import React from 'react';
 
 interface HeaderProps {
   onMenuClick: () => void;

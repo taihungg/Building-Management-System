@@ -4,7 +4,7 @@ import { Lock, Mail, Eye, EyeOff, User, Shield, Calculator, Building2 } from 'lu
 import React from 'react';
 interface LoginProps {
   // 🛠️ ĐÃ CẬP NHẬT TYPE VỚI VAI TRÒ MỚI: 'authority'
-  onLogin: (role: 'admin' | 'resident' | 'accountant' | 'authority') => void;
+  onLogin: (role: 'admin' | 'resident' | 'accounting' | 'authority') => void;
   onNavigateAuth?: (page: 'login' | 'signup' | 'forgot') => void;
 }
 
@@ -14,7 +14,7 @@ export function Login({ onLogin, onNavigateAuth }: LoginProps) {
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
   // 🛠️ ĐÃ CẬP NHẬT TYPE VỚI VAI TRÒ MỚI: 'authority'
-  const [selectedRole, setSelectedRole] = useState<'admin' | 'resident' | 'accountant' | 'authority' | null>(null);
+  const [selectedRole, setSelectedRole] = useState<'admin' | 'resident' | 'accounting' | 'authority' | null>(null);
 
   // Đặt URL về /login khi đang ở trang đăng nhập nếu chưa có route khác
   useEffect(() => {
@@ -96,24 +96,24 @@ export function Login({ onLogin, onNavigateAuth }: LoginProps) {
                   Cư Dân
                 </span>
               </button>
-              {/* ACCOUNTANT */}
+              {/* accounting */}
               <button
                 type="button"
-                onClick={() => setSelectedRole('accountant')}
+                onClick={() => setSelectedRole('accounting')}
                 style={{
-                  backgroundColor: selectedRole === 'accountant' ? '#21C2E3' : 'white',
-                  borderColor: selectedRole === 'accountant' ? '#21C2E3' : '#E5E7EB',
-                  color: selectedRole === 'accountant' ? 'white' : '#374151',
+                  backgroundColor: selectedRole === 'accounting' ? '#21C2E3' : 'white',
+                  borderColor: selectedRole === 'accounting' ? '#21C2E3' : '#E5E7EB',
+                  color: selectedRole === 'accounting' ? 'white' : '#374151',
                 }}
                 className={`flex flex-col items-center gap-3 p-4 rounded-xl border-2 transition-all duration-200 ${
-                  selectedRole === 'accountant' ? 'shadow-md' : ''
+                  selectedRole === 'accounting' ? 'shadow-md' : ''
                 }`}
               >
                 <Calculator 
                   className="w-6 h-6" 
-                  style={{ color: selectedRole === 'accountant' ? 'white' : '#4B5563' }}
+                  style={{ color: selectedRole === 'accounting' ? 'white' : '#4B5563' }}
                 />
-                <span className="text-sm font-medium" style={{ color: selectedRole === 'accountant' ? 'white' : '#374151' }}>
+                <span className="text-sm font-medium" style={{ color: selectedRole === 'accounting' ? 'white' : '#374151' }}>
                   Kế Toán
                 </span>
               </button>

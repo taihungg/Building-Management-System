@@ -47,7 +47,7 @@ import { Login } from './components/Login';
 
 // === Định nghĩa kiểu và Maps ===
 // ✅ Thêm 'authority'
-type UserRole = 'admin' | 'resident' | 'accountant' | 'authority' | null; 
+type UserRole = 'admin' | 'resident' | 'accounting' | 'authority' | null; 
 type AuthPage = 'login' | 'signup' | 'forgot';
 
 // Map: Tên Tab -> Đường dẫn URL 
@@ -140,7 +140,6 @@ const adminRoutes = (
     </>
 );
 
-// Resident Routes (Giữ nguyên)
 const residentRoutes = (
     <>
         <Route path="/" element={<Navigate to="dashboard" replace />} />
@@ -153,7 +152,6 @@ const residentRoutes = (
     </>
 );
 
-// Accounting Routes (Giữ nguyên)
 const accountingRoutes = (
     <>
         <Route path="/" element={<Navigate to="dashboard" replace />} />
@@ -165,7 +163,6 @@ const accountingRoutes = (
     </>
 );
 
-// ✅ AUTHORITY Routes
 const authorityRoutes = (
     <>
         <Route path="/" element={<Navigate to="dashboard" replace />} />
@@ -200,7 +197,7 @@ function AppContent() {
             path = adminTabToPath[tab];
         } else if (role === 'resident') {
             path = residentTabToPath[tab];
-        } else if (role === 'accountant') {
+        } else if (role === 'accounting') {
             path = accountingTabToPath[tab];
         } else if (role === 'authority') { // ✅ authority
             path = authorityTabToPath[tab];
@@ -228,7 +225,7 @@ function AppContent() {
         if (role === 'resident') {
             initialTab = 'resident-dashboard';
             initialPath = residentTabToPath[initialTab];
-        } else if (role === 'accountant') {
+        } else if (role === 'accounting') {
             initialTab = 'accounting-dashboard';
             initialPath = accountingTabToPath[initialTab];
         } else if (role === 'authority') { // ✅ authority
@@ -284,7 +281,7 @@ function AppContent() {
                 tab = residentPathToTab[path];
                 base = '/resident';
                 defaultTab = 'resident-dashboard';
-            } else if (userRole === 'accountant') {
+            } else if (userRole === 'accounting') {
                 tab = accountingPathToTab[path];
                 base = '/accounting';
                 defaultTab = 'accounting-dashboard';
@@ -390,7 +387,7 @@ function AppContent() {
         appRoutes = residentRoutes;
         baseUrl = '/resident/*';
         
-    } else if (userRole === 'accountant') {
+    } else if (userRole === 'accounting') {
         sidebarComponent = (
             <AccountingSidebar 
                 activeTab={activeTab} 
@@ -409,7 +406,7 @@ function AppContent() {
         appRoutes = accountingRoutes;
         baseUrl = '/accounting/*';
 
-    } else if (userRole === 'authority') { // ✅ VAI TRÒ AUTHORITY
+    } else if (userRole === 'authority') { 
         sidebarComponent = (
             <AuthoritySidebar 
                 activeTab={activeTab} 
