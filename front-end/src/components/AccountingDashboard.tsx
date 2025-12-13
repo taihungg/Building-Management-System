@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { DollarSign, TrendingUp, TrendingDown, Receipt, FileText, AlertCircle, CheckCircle, Clock } from 'lucide-react';
+import { DollarSign, TrendingUp, TrendingDown, Receipt, FileText, AlertCircle, CheckCircle, Clock, AlertTriangle } from 'lucide-react';
 import { BarChart, Bar, PieChart as RechartsPieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { getBills, subscribe as subscribeBills, type Bill } from '../utils/bills'; // Đảm bảo type Bill đã được export nếu có
 import { getCurrentPeriod } from '../utils/timeUtils';
@@ -295,50 +295,123 @@ export function AccountingDashboard() {
 
       {/* --- PHẦN 3: DANH SÁCH HÓA ĐƠN GẦN ĐÂY --- */}
       <div className="grid grid-cols-2 gap-6">
-        <div className="bg-white rounded-xl p-6 border border-gray-200 shadow-sm">
-          <h3 className="text-lg font-bold text-gray-900 mb-4">Hóa Đơn Đã Thanh Toán Gần Đây</h3>
-          <div className="space-y-3">
-            {isLoading ? <div className="p-8 text-center text-gray-500">Đang tải...</div> : 
-             bills.filter(e=> e.status ==='PAID').slice(0, 5).map((bill: any) => (
-              <div key={bill.id} className="flex items-center justify-between p-4 rounded-lg border border-green-200 bg-green-50">
-                <div className="flex-1">
-                  <p className="text-sm font-semibold text-gray-900"> Phòng {bill.apartmentLabel}</p>
-                  <p className="text-xs text-gray-500 mt-1">Ngày TT: {bill.paymentDate ? new Date(bill.paymentDate).toLocaleDateString('vi-VN') : 'N/A'}</p>
-                </div>
-                <div className="text-right">
-                  <p className="text-lg font-bold text-green-700">{formatCurrency(bill.totalAmount)}</p>
-                  <div className="flex items-center gap-1 mt-1">
-                    <CheckCircle className="w-4 h-4 text-green-600" />
-                    <span className="text-xs text-green-600">Đã thanh toán</span>
+        <div 
+      className="
+          bg-white 
+          rounded-xl 
+          p-6 
+          border 
+          border-gray-200 
+          shadow-lg /* 🔥 Đã thêm: Shadow lớn cho card chính */
+          transition-all 
+          hover:shadow-xl /* Hiệu ứng nổi bật khi hover */
+          hover:border-blue-300 /* Thêm viền màu xanh khi hover */
+      "
+  >
+      <h3 className="text-xl font-extrabold text-gray-900 mb-4 flex items-center gap-3">
+          {/* Thêm icon để tăng tính trực quan */}
+          <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6 text-green-600" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+          </svg>
+          Hóa Đơn Đã Thanh Toán Gần Đây
+      </h3>
+      <div className="space-y-4"> {/* Tăng khoảng cách giữa các item con */}
+          {isLoading ? (
+              <div className="p-8 text-center text-gray-500">Đang tải...</div>
+          ) : (
+              bills.filter(e=> e.status ==='PAID').slice(0, 5).map((bill: any) => (
+                
+                <div 
+                  key={bill.id} 
+                  className="
+                      flex 
+                      items-center 
+                      justify-between 
+                      p-4 
+                      rounded-lg 
+                      border border-green-300 /* Tăng độ đậm viền */
+                      bg-green-50
+                      shadow-md /* 🔥 Đã thêm: Shadow vừa cho từng item */
+                      hover:shadow-lg /* Item nổi hơn khi hover */
+                      transition-shadow 
+                      cursor-pointer
+                  "
+                >
+                  <div className="flex-1">
+                    <p className="text-base font-bold text-green-800"> Phòng {bill.apartmentLabel}</p> {/* Tăng độ đậm */}
+                    <p className="text-xs text-gray-500 mt-1">Ngày TT: {bill.paymentDate ? new Date(bill.paymentDate).toLocaleDateString('vi-VN') : 'N/A'}</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-xl font-extrabold text-green-700">{formatCurrency(bill.totalAmount)}</p> {/* Tăng cỡ chữ và độ đậm */}
+                    <div className="flex items-center gap-1 mt-1 justify-end">
+                      <CheckCircle className="w-4 h-4 text-green-600" />
+                      <span className="text-sm font-medium text-green-600">Đã thanh toán</span>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
-            {!isLoading && bills.filter(e=> e.status ==='PAID').length === 0 && <p className="text-center text-gray-500 py-8">Chưa có hóa đơn đã thanh toán</p>}
-          </div>
+              ))
+          )}
+          {!isLoading && bills.filter(e=> e.status ==='PAID').length === 0 && <p className="text-center text-gray-500 py-8">Chưa có hóa đơn đã thanh toán</p>}
+      </div>
         </div>
 
-        <div className="bg-white rounded-xl p-6 border border-gray-200 shadow-sm">
-          <h3 className="text-lg font-bold text-gray-900 mb-4">Hóa Đơn Chưa Thanh Toán</h3>
-          <div className="space-y-3">
-            {isLoading ? <div className="p-8 text-center text-gray-500">Đang tải...</div> :
-            bills.filter(e=> e.status === 'UNPAID').slice(0, 5).map((bill: any) => (
-              <div key={bill.id} className="flex items-center justify-between p-4 rounded-lg border border-red-300 bg-red-50">
-                <div className="flex-1">
-                  <p className="text-sm font-semibold text-gray-900"> Phòng {bill.apartmentLabel}</p>
-                  <p className="text-xs text-red-600 mt-1">Hạn TT: {bill.dueDate ? new Date(bill.dueDate).toLocaleDateString('vi-VN') : 'N/A'}</p>
+        <div 
+    className="
+        bg-white 
+        rounded-xl 
+        p-6 
+        border 
+        border-gray-200 
+        shadow-lg /* 🔥 Đã thêm: Shadow lớn cho card chính */
+        transition-all 
+        hover:shadow-xl /* Hiệu ứng nổi bật khi hover */
+        hover:border-red-300 /* Viền đỏ khi hover */
+    "
+>
+    <h3 className="text-xl font-extrabold text-gray-900 mb-4 flex items-center gap-3">
+        {/* Thêm icon cảnh báo cho trực quan */}
+        <AlertTriangle className="w-6 h-6 text-red-600" /> 
+        Hóa Đơn Chưa Thanh Toán
+    </h3>
+    <div className="space-y-4"> {/* Tăng khoảng cách giữa các item con */}
+        {isLoading ? (
+            <div className="p-8 text-center text-gray-500">Đang tải...</div>
+        ) : (
+            bills.filter(e => e.status === 'UNPAID').slice(0, 5).map((bill: any) => (
+                <div 
+                    key={bill.id} 
+                    className="
+                        flex 
+                        items-center 
+                        justify-between 
+                        p-4 
+                        rounded-lg 
+                        border border-red-400 /* Tăng độ đậm viền đỏ */
+                        bg-red-50
+                        shadow-md /* 🔥 Đã thêm: Shadow vừa cho từng item */
+                        hover:shadow-lg /* Item nổi hơn khi hover */
+                        transition-shadow 
+                        cursor-pointer
+                    "
+                >
+                    <div className="flex-1">
+                        <p className="text-base font-bold text-red-800"> Phòng {bill.apartmentLabel}</p> {/* Màu đỏ đậm cho số phòng */}
+                        <p className="text-xs text-red-600 mt-1">
+                            Hạn TT: {bill.dueDate ? new Date(bill.dueDate).toLocaleDateString('vi-VN') : 'N/A'}
+                        </p>
+                    </div>
+                    <div className="text-right">
+                        <p className="text-xl font-extrabold text-red-700">{formatCurrency(bill.totalAmount)}</p> {/* Tăng cỡ chữ và độ đậm */}
+                        <div className="flex items-center gap-1 mt-1 justify-end">
+                            <AlertCircle className="w-4 h-4 text-red-600" />
+                            <span className="text-sm font-medium text-red-600">Chưa thanh toán</span>
+                        </div>
+                    </div>
                 </div>
-                <div className="text-right">
-                  <p className="text-lg font-bold text-red-700">{formatCurrency(bill.totalAmount)}</p>
-                  <div className="flex items-center gap-1 mt-1">
-                    <AlertCircle className="w-4 h-4 text-red-600" />
-                    <span className="text-xs text-red-600">Chưa thanh toán</span>
-                  </div>
-                </div>
-              </div>
-            ))}
-            {!isLoading && bills.filter(e=> e.status === 'UNPAID').length === 0 && <p className="text-center text-gray-500 py-8">Không có hóa đơn chưa thanh toán</p>}
-          </div>
+            ))
+        )}
+        {!isLoading && bills.filter(e => e.status === 'UNPAID').length === 0 && <p className="text-center text-gray-500 py-8">Không có hóa đơn chưa thanh toán</p>}
+    </div>
         </div>
       </div>
     </div>

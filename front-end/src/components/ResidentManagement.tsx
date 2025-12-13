@@ -1,14 +1,13 @@
 import { useState, useEffect } from "react";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
-import { Search, Plus, Edit, Trash2, MoreVertical, MapPin, Phone, UserCircle, Mail, Eye, Home, Fingerprint } from "lucide-react";
+import { Search, Plus, Edit, Trash2, MoreVertical, MapPin, Phone, UserCircle, Mail, Eye, Home, Fingerprint, Globe } from "lucide-react"; // Đã thêm Globe
 import { Label } from "./ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
 import { Dropdown } from "./Dropdown";
 import { Modal } from "./Modal";
 import React from 'react';
 
-// 1. IMPORT THƯ VIỆN TOAST (SONNER)
 import { Toaster, toast } from 'sonner';
 
 export function ResidentManagement() {
@@ -20,7 +19,7 @@ export function ResidentManagement() {
   const [newName, setNewName] = useState("");
   const [newIDCard, setnewIDCard] = useState("");
   const [newDOB, setNewDOB] = useState("");
-  const [newHomeTown, setNewHomeTown] = useState("");
+  const [newHomeTown, setNewHomeTown] = useState(""); 
   const [newAppartmentID, setNewAppartmentID] = useState("");
 
   // Tao state cho apartment
@@ -34,23 +33,19 @@ export function ResidentManagement() {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [residentToDelete, setResidentToDelete] = useState(null);
 
-  //State xu ly cho viec update
-  const [residentToUpdate, setResidentToUpdate] = useState(null)
-  const [isUpdateDialogOpen, setIsUpdateDialogOpen] = useState(false);
-  
-  // Các state riêng cho form update
+  // Các state riêng cho form update (Dùng cho View/Edit Modal)
   const [updateName, setUpdateName] = useState("");
   const [updateIDCard, setUpdateIDCard] = useState("");
   const [updateDOB, setUpdateDOB] = useState("");
-  const [updateHomeTown, setUpdateHomeTown] = useState("");
+  const [updateHomeTown, setUpdateHomeTown] = useState(""); // Đã có
   const [updateEmail, setUpdateEmail] = useState("");
   const [updatePhone, setUpdatePhone] = useState("");
-  const [updateApartmentID, setUpdateApartmentID] = useState("");
 
-  // --- STATE CHO MODAL VIEW DETAIL ---
-const [selectedResident, setSelectedResident] = useState(null);
-const [isViewModalOpen, setIsViewModalOpen] = useState(false);
-const [isLoadingDetail, setIsLoadingDetail] = useState(false);
+  // --- STATE CHO MODAL VIEW/EDIT DETAIL ---
+  const [selectedResident, setSelectedResident] = useState(null);
+  const [isViewModalOpen, setIsViewModalOpen] = useState(false);
+  const [isLoadingDetail, setIsLoadingDetail] = useState(false);
+  const [isEditMode, setIsEditMode] = useState(false); 
 
   useEffect(() => {
     fetchResidents();
@@ -69,8 +64,6 @@ const [isLoadingDetail, setIsLoadingDetail] = useState(false);
     }
     catch (err) {
       setError(err.message);
-      // Không cần toast lỗi ở đây nếu muốn hiển thị lỗi tĩnh trên UI, 
-      // nhưng nếu muốn có thể dùng toast.error("Lỗi tải dữ liệu");
     }
   }
 
@@ -99,7 +92,6 @@ const [isLoadingDetail, setIsLoadingDetail] = useState(false);
         body: JSON.stringify(dataToCreate),
       });
       if (!response.ok) {
-        // Cố gắng đọc message lỗi từ server trả về nếu có
         const errorData = await response.json().catch(() => ({}));
         throw new Error(errorData.message || "Can't create residents");
       }
@@ -111,13 +103,11 @@ const [isLoadingDetail, setIsLoadingDetail] = useState(false);
   }
 
   const handleSubmit = async () => {
-    // Validate cơ bản trước khi gửi
     if (!newName || !newIDCard) {
       toast.warning("Thiếu thông tin", { description: "Vui lòng nhập tên và CMND/CCCD" });
       return;
     }
 
-    // Hiển thị toast loading
     const promise = new Promise(async (resolve, reject) => {
       try {
         const dataform = {
@@ -143,7 +133,6 @@ const [isLoadingDetail, setIsLoadingDetail] = useState(false);
       }
     });
 
-    // 2. DÙNG TOAST PROMISE (Tự động hiện Loading -> Thành công/Thất bại)
     toast.promise(promise, {
       loading: 'Đang tạo cư dân...',
       success: (data) => `${data}`,
@@ -163,7 +152,6 @@ const [isLoadingDetail, setIsLoadingDetail] = useState(false);
         setApartmentList(res.data || []);
       }
       catch (err) {
-        // Lỗi này không cần hiện toast vì nó chạy ngầm khi gõ
         console.error(err.message);
         setApartmentList([]);
       }
@@ -177,7 +165,6 @@ const [isLoadingDetail, setIsLoadingDetail] = useState(false);
   };
 
   const handleDelete = async (residentID, isHardDelete) => {
-    // Tạo promise cho toast
     const deleteAction = async () => {
       let baseUrl = `http://localhost:8081/api/v1/residents`;
       let url = `${baseUrl}?id=${residentID}`;
@@ -198,7 +185,6 @@ const [isLoadingDetail, setIsLoadingDetail] = useState(false);
       setResidentToDelete(null);
     };
 
-    // Gọi Toast
     toast.promise(deleteAction(), {
       loading: 'Đang xóa cư dân...',
       success: 'Đã xóa cư dân thành công!',
@@ -207,19 +193,19 @@ const [isLoadingDetail, setIsLoadingDetail] = useState(false);
   }
 
   const handleUpdate = async () => {
-    if (!residentToUpdate) return;
+    if (!selectedResident) return;
     
     const updateAction = async () => {
       const dataToUpdate = {
         fullName: updateName,
         idCard: updateIDCard,
         dob: updateDOB,
-        homeTown: updateHomeTown,
+        homeTown: updateHomeTown, 
         email: updateEmail,
         phoneNumber: updatePhone,
       }
       
-      let url = `http://localhost:8081/api/v1/residents/${residentToUpdate.id}`;
+      let url = `http://localhost:8081/api/v1/residents/${selectedResident.id}`;
       const response = await fetch(url, {
         method: "PUT",
         headers: {
@@ -232,12 +218,16 @@ const [isLoadingDetail, setIsLoadingDetail] = useState(false);
       if (!response.ok) {
         throw new Error(res.message || "Không thể cập nhật cư dân");
       }
+      
+      // Tải lại bảng và chi tiết
       await fetchResidents();
-      setIsUpdateDialogOpen(false);
-      setResidentToUpdate(null);
+      const detailResponse = await fetch(`http://localhost:8081/api/v1/residents/${selectedResident.id}`);
+      const detailRes = await detailResponse.json();
+      
+      setSelectedResident(detailRes.data); 
+      setIsEditMode(false); 
     };
 
-    // Gọi Toast Update
     toast.promise(updateAction(), {
       loading: 'Đang cập nhật...',
       success: 'Cập nhật thông tin thành công!',
@@ -245,18 +235,10 @@ const [isLoadingDetail, setIsLoadingDetail] = useState(false);
     });
   }
 
-  const openUpdateDialog = (resident) => {
-    setResidentToUpdate(resident);
-    setUpdateName(resident.fullName);
-    setUpdateIDCard(resident.idCard || "");
-    setUpdateDOB(resident.dob || "");
-    setUpdateHomeTown(resident.homeTown || "");
-    setUpdateEmail(resident.email || "");
-    setUpdatePhone(resident.phoneNumber || "");
-    setIsUpdateDialogOpen(true);
-  };
+  // Hàm tải chi tiết và mở ở chế độ VIEW
   const handleViewDetail = async (id) => {
     setIsLoadingDetail(true);
+    setIsEditMode(false); 
     try {
         const response = await fetch(`http://localhost:8081/api/v1/residents/${id}`);
         
@@ -265,19 +247,65 @@ const [isLoadingDetail, setIsLoadingDetail] = useState(false);
         }
 
         const res = await response.json();
-        setSelectedResident(res.data); // Lưu dữ liệu vào state
+        const residentData = res.data;
+
+        // Chuẩn bị dữ liệu đầy đủ cho Form Edit
+        setSelectedResident(residentData); 
+        setUpdateName(residentData.fullName);
+        setUpdateIDCard(residentData.idCard || ""); 
+        setUpdateDOB(residentData.dob || "");
+        setUpdateHomeTown(residentData.homeTown || ""); 
+        setUpdateEmail(residentData.email || "");
+        setUpdatePhone(residentData.phoneNumber || "");
+        
         setIsViewModalOpen(true);      // Mở Modal
     } catch (err) {
         console.error(err);
         toast.error("Lỗi tải dữ liệu", { description: err.message });
+        setIsViewModalOpen(false);
     } finally {
         setIsLoadingDetail(false);
     }
-};
+  };
+
+  // Hàm tải chi tiết và mở ở chế độ EDIT
+  const handleOpenEdit = async (resident) => {
+    setSelectedResident(resident);
+    setIsViewModalOpen(true);
+    setIsEditMode(true);
+    setIsLoadingDetail(true); 
+
+    try {
+        const response = await fetch(`http://localhost:8081/api/v1/residents/${resident.id}`);
+        
+        if (!response.ok) {
+            throw new Error("Không thể tải thông tin chi tiết cư dân để chỉnh sửa");
+        }
+
+        const res = await response.json();
+        const residentData = res.data;
+
+        // Cập nhật state với DỮ LIỆU ĐẦY ĐỦ từ API chi tiết
+        setSelectedResident(residentData); 
+        setUpdateName(residentData.fullName);
+        setUpdateIDCard(residentData.idCard || ""); 
+        setUpdateDOB(residentData.dob || "");
+        setUpdateHomeTown(residentData.homeTown || ""); 
+        setUpdateEmail(residentData.email || "");
+        setUpdatePhone(residentData.phoneNumber || "");
+        
+    } catch (err) {
+        console.error(err);
+        toast.error("Lỗi tải dữ liệu", { description: err.message });
+        setIsViewModalOpen(false); 
+    } finally {
+        setIsLoadingDetail(false); 
+    }
+  }
+
 
   return (
     <div className="space-y-6">
-      {/* 3. COMPONENT HIỂN THỊ TOAST (Đặt ở đâu cũng được, thường là đầu trang) */}
       <Toaster position="top-right" richColors closeButton />
 
       {error && (
@@ -399,7 +427,7 @@ const [isLoadingDetail, setIsLoadingDetail] = useState(false);
                       }
                       items={[
                         { label: 'View Details', icon: Eye, onClick: () => handleViewDetail(resident.id) },
-                        { label: 'Edit', icon: Edit, onClick: () => openUpdateDialog(resident) },
+                        { label: 'Edit', icon: Edit, onClick: () => handleOpenEdit(resident) },
                         { label: 'Delete', icon: Trash2, onClick: () => openDeleteDialog(resident), danger: true },
 
                       ]}
@@ -522,103 +550,6 @@ const [isLoadingDetail, setIsLoadingDetail] = useState(false);
         </div>
       </Modal>
 
-      {/* Update Resident Modal */}
-      <Modal
-        isOpen={isUpdateDialogOpen}
-        onClose={() => setIsUpdateDialogOpen(false)}
-        title="Update Resident"
-        size="lg"
-      >
-        <div className="p-6 space-y-4">
-          <div>
-            <Label htmlFor="updateName">Full Name</Label>
-            <Input
-              id="updateName"
-              type="text"
-              placeholder="Enter full name"
-              value={updateName}
-              onChange={(e) => setUpdateName(e.target.value)}
-              className="mt-1"
-            />
-          </div>
-
-          <div>
-            <Label htmlFor="updateIDCard">ID Card</Label>
-            <Input
-              id="updateIDCard"
-              type="text"
-              placeholder="Enter ID card number"
-              value={updateIDCard}
-              onChange={(e) => setUpdateIDCard(e.target.value)}
-              className="mt-1"
-            />
-          </div>
-
-          <div>
-            <Label htmlFor="updateDOB">Date of Birth</Label>
-            <Input
-              id="updateDOB"
-              type="date"
-              value={updateDOB}
-              onChange={(e) => setUpdateDOB(e.target.value)}
-              className="mt-1"
-            />
-          </div>
-
-          <div>
-            <Label htmlFor="updateHomeTown">Home Town</Label>
-            <Input
-              id="updateHomeTown"
-              type="text"
-              placeholder="Enter home town"
-              value={updateHomeTown}
-              onChange={(e) => setUpdateHomeTown(e.target.value)}
-              className="mt-1"
-            />
-          </div>
-
-          <div>
-            <Label htmlFor="updateEmail">Email</Label>
-            <Input
-              id="updateEmail"
-              type="email"
-              placeholder="Enter email"
-              value={updateEmail}
-              onChange={(e) => setUpdateEmail(e.target.value)}
-              className="mt-1"
-            />
-          </div>
-
-          <div>
-            <Label htmlFor="updatePhone">Phone Number</Label>
-            <Input
-              id="updatePhone"
-              type="tel"
-              placeholder="Enter phone number"
-              value={updatePhone}
-              onChange={(e) => setUpdatePhone(e.target.value)}
-              className="mt-1"
-            />
-          </div>
-
-          <div className="flex gap-3 pt-4 border-t mt-6">
-            <Button
-              variant="outline"
-              onClick={() => setIsUpdateDialogOpen(false)}
-              className="flex-1"
-            >
-              Cancel
-            </Button>
-            <Button
-              onClick={handleUpdate}
-              className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
-            >
-              Update Resident
-            </Button>
-          </div>
-        </div>
-      </Modal>
-
       {/* Delete Resident Modal */}
       <Modal
         isOpen={isDeleteDialogOpen}
@@ -666,10 +597,15 @@ const [isLoadingDetail, setIsLoadingDetail] = useState(false);
           </div>
         </div>
       </Modal>
-      {/* --- MODAL VIEW RESIDENT DETAIL --- */}
+      
+      {/* --- MODAL VIEW/EDIT RESIDENT DETAIL --- */}
       <Modal
     isOpen={isViewModalOpen}
-    onClose={() => setIsViewModalOpen(false)}
+    onClose={() => {
+        setIsViewModalOpen(false);
+        setIsEditMode(false); // Reset mode khi đóng
+    }}
+    title={isEditMode ? "Edit Resident Information" : "Resident Details"}
 >
     {isLoadingDetail ? (
         <div className="flex flex-col items-center justify-center py-12 text-gray-500">
@@ -679,7 +615,7 @@ const [isLoadingDetail, setIsLoadingDetail] = useState(false);
     ) : selectedResident ? (
         <div className="flex flex-col h-full">
             
-            {/* 1. HEADER GRADIENT: Giữ nguyên */}
+            {/* 1. HEADER GRADIENT */}
             <div className="-mx-6 -mt-6 mb-6 bg-gradient-to-r from-blue-600 to-indigo-600 p-6 text-white rounded-t-lg shadow-md relative overflow-hidden">
                 <div className="absolute top-0 right-0 p-4 opacity-10">
                     <UserCircle className="w-32 h-32" />
@@ -691,10 +627,11 @@ const [isLoadingDetail, setIsLoadingDetail] = useState(false);
                     <div className="flex-1">
                         <div className="flex justify-between items-start">
                             <div>
-                                <h2 className="text-2xl font-bold">{selectedResident.fullName}</h2>
+                                <h2 className="text-2xl font-bold">{isEditMode ? updateName : selectedResident.fullName}</h2>
                                 <p className="text-blue-100 text-sm flex items-center gap-1 mt-1">
+                                    {/* Hiển thị Home Town ngay trên Header */}
                                     <MapPin className="w-4 h-4" /> 
-                                    {selectedResident.homeTown || "Chưa cập nhật quê quán"}
+                                    {isEditMode ? updateHomeTown : (selectedResident.homeTown || "Chưa cập nhật quê quán")}
                                 </p>
                             </div>
                             <span className={`px-3 py-1 rounded-full text-xs font-bold border ${
@@ -709,107 +646,184 @@ const [isLoadingDetail, setIsLoadingDetail] = useState(false);
                 </div>
             </div>
 
-            {/* 2. NỘI DUNG CHÍNH (Grid 2 cột) */}
+            {/* 2. NỘI DUNG CHÍNH (Conditional Rendering) */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 px-2">
                 
-                {/* CỘT TRÁI: Thông tin cá nhân */}
-                <div className="space-y-4">
-                    <h3 className="text-sm font-bold text-gray-500 uppercase tracking-wider border-b pb-2">
-                        Personal Information
-                    </h3>
-                    
-                    <div className="space-y-3">
-                        {/* --- MỚI THÊM: SYSTEM ID --- */}
-                        <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg border border-gray-100 group hover:border-blue-200 transition-colors">
-                            <div className="p-2 bg-slate-200 text-slate-600 rounded-md">
-                                <Fingerprint className="w-4 h-4" />
-                            </div>
-                            <div className="flex-1 overflow-hidden">
-                                <p className="text-xs text-gray-500">System ID</p>
-                                <p className="font-mono text-xs font-medium text-gray-700 truncate" title={selectedResident.id}>
-                                    {selectedResident.id}
-                                </p>
-                            </div>
-                        </div>
-
-                        {/* ID Card (CMND/CCCD) */}
-                        <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg border border-gray-100">
-                            <div className="p-2 bg-blue-100 text-blue-600 rounded-md">
-                                <span className="text-xs font-bold">ID</span>
-                            </div>
-                            <div>
-                                <p className="text-xs text-gray-500">CMND / CCCD</p>
-                                <p className="font-medium text-gray-900">{selectedResident.idCard || "N/A"}</p>
+                {isEditMode ? (
+                    /* --- CHẾ ĐỘ CHỈNH SỬA (EDIT MODE) --- */
+                    <>
+                        {/* CỘT TRÁI: Form Cá nhân */}
+                        <div className="space-y-4">
+                            <h3 className="text-sm font-bold text-gray-500 uppercase tracking-wider border-b pb-2">
+                                Personal Information
+                            </h3>
+                            <div className="space-y-3">
+                                <div><Label htmlFor="updateName">Full Name</Label>
+                                <Input id="updateName" type="text" value={updateName} onChange={(e) => setUpdateName(e.target.value)} className="mt-1"/></div>
+                                
+                                <div><Label htmlFor="updateIDCard">ID Card</Label>
+                                <Input id="updateIDCard" type="text" value={updateIDCard} onChange={(e) => setUpdateIDCard(e.target.value)} className="mt-1"/></div>
+                                
+                                <div><Label htmlFor="updateDOB">Date of Birth</Label>
+                                <Input id="updateDOB" type="date" value={updateDOB} onChange={(e) => setUpdateDOB(e.target.value)} className="mt-1"/></div>
+                                
+                                <div><Label htmlFor="updateHomeTown">Home Town</Label>
+                                <Input id="updateHomeTown" type="text" value={updateHomeTown} onChange={(e) => setUpdateHomeTown(e.target.value)} className="mt-1"/></div>
                             </div>
                         </div>
 
-                        {/* DOB */}
-                        <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg border border-gray-100">
-                            <div className="p-2 bg-purple-100 text-purple-600 rounded-md">
-                                <span className="text-xs font-bold">DOB</span>
-                            </div>
-                            <div>
-                                <p className="text-xs text-gray-500">Date of Birth</p>
-                                <p className="font-medium text-gray-900">{selectedResident.dob || "N/A"}</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                {/* CỘT PHẢI: Liên lạc & Căn hộ (GIỮ NGUYÊN) */}
-                <div className="space-y-4">
-                    <h3 className="text-sm font-bold text-gray-500 uppercase tracking-wider border-b pb-2">
-                        Contact & Residence
-                    </h3>
-
-                    <div className="space-y-3">
-                        <div className="flex items-center gap-3">
-                            <Phone className="w-5 h-5 text-gray-400" />
-                            <div>
-                                <p className="text-xs text-gray-500">Phone Number</p>
-                                <p className="font-medium text-gray-900">{selectedResident.phoneNumber || "N/A"}</p>
+                        {/* CỘT PHẢI: Form Liên lạc */}
+                        <div className="space-y-4">
+                            <h3 className="text-sm font-bold text-gray-500 uppercase tracking-wider border-b pb-2">
+                                Contact Information
+                            </h3>
+                            <div className="space-y-3">
+                                <div><Label htmlFor="updatePhone">Phone Number</Label>
+                                <Input id="updatePhone" type="tel" value={updatePhone} onChange={(e) => setUpdatePhone(e.target.value)} className="mt-1"/></div>
+                                
+                                <div><Label htmlFor="updateEmail">Email</Label>
+                                <Input id="updateEmail" type="email" value={updateEmail} onChange={(e) => setUpdateEmail(e.target.value)} className="mt-1"/></div>
+                                
+                                {/* Apartment (Read Only) */}
+                                <div className="mt-4 p-4 bg-gray-100 border border-gray-200 rounded-xl">
+                                    <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Apartment (Read Only)</p>
+                                    <div className="flex items-baseline gap-2">
+                                        <span className="text-sm font-semibold text-gray-400 uppercase">Room</span>
+                                        <span className="text-xl font-extrabold text-gray-900 tracking-tight font-mono">
+                                            {selectedResident.roomNumber}
+                                        </span>
+                                    </div>
+                                </div>
                             </div>
                         </div>
-
-                        <div className="flex items-center gap-3">
-                            <Mail className="w-5 h-5 text-gray-400" />
-                            <div>
-                                <p className="text-xs text-gray-500">Email Address</p>
-                                <p className="font-medium text-gray-900 break-all">{selectedResident.email || "N/A"}</p>
+                    </>
+                ) : (
+                    /* --- CHẾ ĐỘ XEM (VIEW MODE) --- */
+                    <>
+                        {/* CỘT TRÁI: Thông tin cá nhân */}
+                        <div className="space-y-4">
+                            <h3 className="text-sm font-bold text-gray-500 uppercase tracking-wider border-b pb-2">
+                                Personal Information
+                            </h3>
+                            <div className="space-y-3">
+                                {/* SYSTEM ID */}
+                                <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg border border-gray-100 group hover:border-blue-200 transition-colors">
+                                    <div className="p-2 bg-slate-200 text-slate-600 rounded-md">
+                                        <Fingerprint className="w-4 h-4" />
+                                    </div>
+                                    <div className="flex-1 overflow-hidden">
+                                        <p className="text-xs text-gray-500">System ID</p>
+                                        <p className="font-mono text-xs font-medium text-gray-700 truncate" title={selectedResident.id}>
+                                            {selectedResident.id}
+                                        </p>
+                                    </div>
+                                </div>
+                                {/* ID Card (CMND/CCCD) */}
+                                <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg border border-gray-100">
+                                    <div className="p-2 bg-blue-100 text-blue-600 rounded-md">
+                                        <span className="text-xs font-bold">ID</span>
+                                    </div>
+                                    <div>
+                                        <p className="text-xs text-gray-500">CMND / CCCD</p>
+                                        <p className="font-medium text-gray-900">{selectedResident.idCard || "N/A"}</p>
+                                    </div>
+                                </div>
+                                {/* DOB */}
+                                <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg border border-gray-100">
+                                    <div className="p-2 bg-purple-100 text-purple-600 rounded-md">
+                                        <span className="text-xs font-bold">DOB</span>
+                                    </div>
+                                    <div>
+                                        <p className="text-xs text-gray-500">Date of Birth</p>
+                                        <p className="font-medium text-gray-900">{selectedResident.dob || "N/A"}</p>
+                                    </div>
+                                </div>
+                                 {/* HOME TOWN - ĐÃ THÊM MỚI */}
+                                <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg border border-gray-100">
+                                    <div className="p-2 bg-pink-100 text-pink-600 rounded-md">
+                                        <Globe className="w-4 h-4" />
+                                    </div>
+                                    <div>
+                                        <p className="text-xs text-gray-500">Home Town</p>
+                                        <p className="font-medium text-gray-900">{selectedResident.homeTown || "N/A"}</p>
+                                    </div>
+                                </div>
                             </div>
                         </div>
 
-                        {/* Current Apartment */}
-                        <div className="mt-4 p-4 bg-blue-50 border border-blue-100 rounded-xl relative overflow-hidden group">
-                            <div className="absolute top-0 right-0 p-2 opacity-5 group-hover:opacity-10 transition-opacity">
-                                <Home className="w-7 h-7 text-blue-600" />
+                        {/* CỘT PHẢI: Liên lạc & Căn hộ */}
+                        <div className="space-y-4">
+                            <h3 className="text-sm font-bold text-gray-500 uppercase tracking-wider border-b pb-2">
+                                Contact & Residence
+                            </h3>
+                            <div className="space-y-3">
+                                <div className="flex items-center gap-3">
+                                    <Phone className="w-5 h-5 text-gray-400" />
+                                    <div>
+                                        <p className="text-xs text-gray-500">Phone Number</p>
+                                        <p className="font-medium text-gray-900">{selectedResident.phoneNumber || "N/A"}</p>
+                                    </div>
+                                </div>
+                                <div className="flex items-center gap-3">
+                                    <Mail className="w-5 h-5 text-gray-400" />
+                                    <div>
+                                        <p className="text-xs text-gray-500">Email Address</p>
+                                        <p className="font-medium text-gray-900 break-all">{selectedResident.email || "N/A"}</p>
+                                    </div>
+                                </div>
+                                {/* Current Apartment */}
+                                <div className="mt-4 p-4 bg-blue-50 border border-blue-100 rounded-xl relative overflow-hidden group">
+                                    <div className="absolute top-0 right-0 p-2 opacity-5 group-hover:opacity-10 transition-opacity">
+                                        <Home className="w-7 h-7 text-blue-600" />
+                                    </div>
+                                    <p className="text-xs font-bold text-blue-600/80 uppercase tracking-wider mb-1">Current Apartment</p>
+                                    <div className="flex items-baseline gap-2 relative z-10">
+                                        <span className="text-sm font-semibold text-blue-400 uppercase">Room</span>
+                                        <span className="text-xl font-extrabold text-blue-900 tracking-tight font-mono">
+                                            {selectedResident.roomNumber}
+                                        </span>
+                                    </div>                      
+                                </div>
                             </div>
-                            <p className="text-xs font-bold text-blue-600/80 uppercase tracking-wider mb-1">Current Apartment</p>
-                            <div className="flex items-baseline gap-2 relative z-10">
-                                <span className="text-sm font-semibold text-blue-400 uppercase">Room</span>
-                                <span className="text-xl font-extrabold text-blue-900 tracking-tight font-mono">
-                                    {selectedResident.roomNumber}
-                                </span>
-                            </div>                      
                         </div>
-                    </div>
-                </div>
+                    </>
+                )}
             </div>
 
-            {/* 3. FOOTER: Giữ nguyên */}
+            {/* 3. FOOTER (Conditional Buttons) */}
             <div className="mt-8 flex justify-end pt-4 border-t gap-3">
-                <Button variant="outline" onClick={() => setIsViewModalOpen(false)} className="rounded-full px-6">
-                    Close
-                </Button>
-                <Button 
-                    onClick={() => {
-                        setIsViewModalOpen(false);
-                        openUpdateDialog(selectedResident);
-                    }} 
-                    className="bg-blue-600 hover:bg-blue-700 text-white rounded-full px-6 shadow-lg shadow-blue-500/30"
-                >
-                    <Edit className="w-4 h-4 mr-2" /> Edit Info
-                </Button>
+                
+                {isEditMode ? (
+                    <>
+                        <Button 
+                            variant="outline" 
+                            onClick={() => {
+                                setIsEditMode(false); // Quay lại chế độ xem
+                            }} 
+                            className="rounded-full px-6"
+                        >
+                            Cancel Edit
+                        </Button>
+                        <Button 
+                            onClick={handleUpdate} 
+                            className="bg-green-600 hover:bg-green-700 text-white rounded-full px-6 shadow-lg shadow-green-500/30"
+                        >
+                            <Edit className="w-4 h-4 mr-2" /> Save Changes
+                        </Button>
+                    </>
+                ) : (
+                    <>
+                        <Button variant="outline" onClick={() => setIsViewModalOpen(false)} className="rounded-full px-6">
+                            Close
+                        </Button>
+                        <Button 
+                            onClick={() => handleOpenEdit(selectedResident)} // Gọi lại handleOpenEdit để đảm bảo chuyển mode chuẩn
+                            className="bg-blue-600 hover:bg-blue-700 text-white rounded-full px-6 shadow-lg shadow-blue-500/30"
+                        >
+                            <Edit className="w-4 h-4 mr-2" /> Edit Info
+                        </Button>
+                    </>
+                )}
             </div>
         </div>
     ) : (

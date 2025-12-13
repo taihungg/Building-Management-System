@@ -29,7 +29,7 @@ const menuItems = [
   { id: 'residents', label: 'Residents', icon: Users, path: '/admin/residents' },
   { id: 'apartments', label: 'Apartments', icon: Building2, path: '/admin/apartments' },
   { id: 'bills', label: 'Bills', icon: Receipt, path: '/admin/bills' },
-  { id: 'services', label: 'Services', icon: Wrench, path: '/admin/services' },
+  { id: 'services', label: 'Issues', icon: Wrench, path: '/admin/services' },
   { id: 'notifications', label: 'Notifications', icon: Bell, path: '/admin/notifications' },
 ];
 

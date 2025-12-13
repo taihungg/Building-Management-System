@@ -2,7 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { 
   Search, Plus, MoreVertical, Home, Maximize, Edit, Trash2, Eye, X, 
   Users, Car, FileText, AlertCircle, Save, Phone, Mail, 
-  User
+  User,
+  UserCircle,
+  MapPin
 } from 'lucide-react';
 
 // Import các component UI của bạn
@@ -434,55 +436,177 @@ export function ApartmentManagement() {
 
       {/* --- MODAL 1: ADD NEW UNIT --- */}
       <Modal
-        isOpen={isAddUnitOpen}
-        onClose={() => setIsAddUnitOpen(false)}
-        title="Add New Unit"
-        size="lg"
-      >
-        <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-                <div className="col-span-2">
-                    <Label className="mb-2 block">Building <span className="text-red-500">*</span></Label>
-                    <Select value={newBuildingId} onValueChange={setNewBuildingId}>
-                        <SelectTrigger><SelectValue placeholder="Select Building" /></SelectTrigger>
-                        <SelectContent>
-                            {buildingList.map(b => (
-                                <SelectItem key={b.id} value={b.id}>{b.label}</SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
-                </div>
-                <div>
-                    <Label className="mb-2 block">Room Number <span className="text-red-500">*</span></Label>
-                    <Input type="number" placeholder="e.g. 101" value={newRoomNumber} onChange={(e) => setNewRoomNumber(e.target.value)} />
-                </div>
-                <div>
-                    <Label className="mb-2 block">Floor <span className="text-red-500">*</span></Label>
-                    <Input type="number" placeholder="e.g. 1" value={newFloor} onChange={(e) => setNewFloor(e.target.value)} />
-                </div>
-                <div>
-                    <Label className="mb-2 block">Area (m²) <span className="text-red-500">*</span></Label>
-                    <Input type="number" placeholder="e.g. 85.5" step="0.1" value={newArea} onChange={(e) => setNewArea(e.target.value)} />
-                </div>
-                <div>
-                    <Label className="mb-2 block">Owner (Optional)</Label>
-                    <Select value={newOwnerId} onValueChange={setNewOwnerId}>
-                        <SelectTrigger><SelectValue placeholder="Select Owner" /></SelectTrigger>
-                        <SelectContent position="popper" className="max-h-60 overflow-y-auto w-[--radix-select-trigger-width]">                  
-                            <SelectItem value="none">-- No Owner Yet --</SelectItem>
-                            {potentialOwners.map(res => (
-                                <SelectItem key={res.id} value={res.id}>{res.fullName} {res.phoneNumber ? `(${res.phoneNumber})` : ''}</SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
+    isOpen={isAddUnitOpen}
+    onClose={() => setIsAddUnitOpen(false)}
+    title="Thêm Đơn Vị Căn Hộ Mới"
+    size="lg" // Giữ nguyên kích thước lớn (lg) để có không gian
+>
+    <div className="p-2">
+        {/* Tiêu đề phụ và Mô tả */}
+        <div className="mb-6 text-center">
+            <p className="text-gray-500 text-sm">Điền thông tin chi tiết về căn hộ mới.</p>
+        </div>
+
+        <div className="space-y-6">
+            {/* PHẦN 1: THÔNG TIN CĂN HỘ (Chia 3 cột) */}
+            <div className="p-5 bg-gray-50 border border-gray-200 rounded-xl shadow-inner">
+                <h3 className="text-lg font-semibold text-blue-700 mb-4 flex items-center gap-2">
+                    <MapPin className="w-5 h-5" /> Chi Tiết Vị Trí
+                </h3>
+                <div className="grid grid-cols-3 gap-4">
+                    
+                    {/* Building */}
+                    <div className="col-span-3">
+                        <Label className="mb-2 block font-medium text-gray-700">Tòa Nhà <span className="text-red-500">*</span></Label>
+                        <Select value={newBuildingId} onValueChange={setNewBuildingId}>
+                            <SelectTrigger className="h-10 border-blue-300 focus:ring-2 focus:ring-blue-500">
+                                <SelectValue placeholder="Chọn Tòa Nhà" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {buildingList.map(b => (
+                                    <SelectItem key={b.id} value={b.id}>{b.label}</SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </div>
+                    
+                    {/* Room Number */}
+                    <div>
+                        <Label className="mb-2 block font-medium text-gray-700">Số Phòng <span className="text-red-500">*</span></Label>
+                        <Input 
+                            type="text" // Đổi sang text vì số phòng có thể là B101
+                            placeholder="e.g. 101 / A205" 
+                            value={newRoomNumber} 
+                            onChange={(e) => setNewRoomNumber(e.target.value)} 
+                            className="h-10 focus:border-blue-500"
+                        />
+                    </div>
+                    
+                    {/* Floor */}
+                    <div>
+                        <Label className="mb-2 block font-medium text-gray-700">Tầng <span className="text-red-500">*</span></Label>
+                        <Input 
+                            type="number" 
+                            placeholder="e.g. 1" 
+                            value={newFloor} 
+                            onChange={(e) => setNewFloor(e.target.value)} 
+                            className="h-10 focus:border-blue-500"
+                        />
+                    </div>
+                    
+                    {/* Area */}
+                    <div>
+                        <Label className="mb-2 block font-medium text-gray-700">Diện Tích (m²) <span className="text-red-500">*</span></Label>
+                        <Input 
+                            type="number" 
+                            placeholder="e.g. 85.5" 
+                            step="0.1" 
+                            value={newArea} 
+                            onChange={(e) => setNewArea(e.target.value)} 
+                            className="h-10 focus:border-blue-500"
+                        />
+                    </div>
                 </div>
             </div>
-            <div className="flex gap-3 pt-4 border-t mt-4">
-                <Button variant="outline" onClick={() => setIsAddUnitOpen(false)} className="flex-1 rounded-ful">Cancel</Button>
-                <Button onClick={handleCreateApartment} className="flex-1 bg-blue-600 text-white rounded-ful">Create Apartment</Button>
+
+            {/* PHẦN 2: THÔNG TIN CHỦ SỞ HỮU */}
+            <div className="p-5 bg-white border border-gray-200 rounded-xl shadow-md">
+                <h3 className="text-lg font-semibold text-purple-700 mb-4 flex items-center gap-2">
+                    <UserCircle className="w-5 h-5" /> Chủ Sở Hữu (Tùy Chọn)
+                </h3>
+                
+                <div className="col-span-2">
+    <Label className="mb-2 block font-medium text-gray-700">Chọn Chủ Sở Hữu</Label>
+
+    {/* --- BẮT ĐẦU SELECT HTML THUẦN ĐÃ ĐƯỢC TÙY CHỈNH --- */}
+    <div className="relative w-full">
+        <select
+            value={newOwnerId}
+            onChange={(e) => setNewOwnerId(e.target.value)}
+            className="
+                appearance-none /* Loại bỏ giao diện mặc định */
+                bg-white 
+                border border-purple-300 /* Viền màu tím nổi bật */
+                text-gray-700 
+                py-2 
+                pl-4 
+                pr-8 /* Khoảng đệm cho icon */
+                rounded-lg 
+                shadow-sm 
+                font-medium 
+                w-full /* Chiếm toàn bộ chiều rộng */
+                h-10 
+                hover:border-purple-400 
+                focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500
+                transition-all
+                cursor-pointer
+            "
+        >
+            {/* Tùy chọn mặc định */}
+            <option value="none" className="font-semibold text-gray-500">
+                -- Chưa Có Chủ Sở Hữu --
+            </option>
+
+            {/* Tạo các tùy chọn từ danh sách potentialOwners */}
+            {potentialOwners.map(res => (
+                <option key={res.id} value={res.id}>
+                    {/* Kết hợp Tên và Số điện thoại */}
+                    {res.fullName} {res.phoneNumber ? `(${res.phoneNumber})` : ''}
+                </option>
+            ))}
+        </select>
+
+        {/* Icon mũi tên tùy chỉnh (Thay thế mũi tên mặc định) */}
+        <div className="
+            pointer-events-none 
+            absolute 
+            inset-y-0 
+            right-0 
+            flex 
+            items-center 
+            px-2 
+            text-gray-500
+        ">
+            <svg 
+                className="w-4 h-4" 
+                xmlns="http://www.w3.org/2000/svg" 
+                viewBox="0 0 20 20" 
+                fill="currentColor"
+            >
+                <path 
+                    fillRule="evenodd" 
+                    d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" 
+                    clipRule="evenodd" 
+                />
+            </svg>
+        </div>
+    </div>
+    
+    <p className="text-xs text-gray-500 mt-2">
+        Nếu chủ sở hữu chưa có trong danh sách cư dân, hãy thêm họ trước.
+    </p>
+</div>
+            </div>
+
+            {/* FOOTER BUTTONS */}
+            <div className="flex gap-3 pt-6 border-t mt-6">
+                <Button 
+                    variant="outline" 
+                    onClick={() => setIsAddUnitOpen(false)} 
+                    className="flex-1 h-11 border-gray-300 hover:bg-gray-100 transition-all"
+                >
+                    Hủy Bỏ
+                </Button>
+                <Button 
+                    onClick={handleCreateApartment} 
+                    className="flex-1 h-11 bg-blue-600 hover:bg-blue-700 text-white font-semibold shadow-lg shadow-blue-500/30 transition-all"
+                >
+                    Tạo Căn Hộ
+                </Button>
             </div>
         </div>
-      </Modal>
+    </div>
+</Modal>
 
       {/* --- MODAL 2: VIEW DETAILS & EDIT OWNER (GIAO DIỆN MỚI) --- */}
       <Modal

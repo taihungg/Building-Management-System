@@ -40,13 +40,10 @@ import { AuthorityDashboard } from './components/AuthorityDashboard';
 import { AuthorityResidentManagement } from './components/AuthorityResidentManagement';
 import { AuthorityAnnouncements } from './components/AuthorityAnnouncements';
 import { AuthorityProfile } from './components/AuthorityProfile';
-
-// ✅ ĐÃ SỬA: Import Login từ thư mục components
 import { Login } from './components/Login'; 
 
 
 // === Định nghĩa kiểu và Maps ===
-// ✅ Thêm 'authority'
 type UserRole = 'admin' | 'resident' | 'accounting' | 'authority' | null; 
 type AuthPage = 'login' | 'signup' | 'forgot';
 
