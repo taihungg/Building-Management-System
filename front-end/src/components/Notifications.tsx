@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Plus, Bell, AlertCircle, Info, Wrench, Users, Clock } from 'lucide-react';
+import { Plus, Bell, AlertCircle, Info, Users, Clock, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import React from 'react';
 
@@ -13,14 +13,22 @@ const typeIcons = {
     ALERT: AlertCircle,
 };
 
+// --- MOCK Button Component (Giả lập cấu trúc Button nếu không dùng thư viện UI) ---
+const Button = ({ children, onClick, className }) => (
+    <button onClick={onClick} className={`px-4 py-2 rounded-lg font-medium transition-colors ${className}`}>
+        {children}
+    </button>
+);
+// --- END MOCK Button ---
 
-export function Notifications() { // Giữ nguyên tên component là Notifications theo yêu cầu
+
+export function Notifications() { // Giữ nguyên tên component là Notifications
   // State
   const [announcements, setAnnouncements] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
   
-  // State giả lập để giữ lại cấu trúc cũ (Không cần thiết cho Sent History nhưng giữ để code không lỗi)
+  // State giả lập (giữ lại theo code gốc)
   const [readAnnouncementIds, setReadAnnouncementIds] = useState(new Set()); 
 
 
@@ -40,7 +48,6 @@ export function Notifications() { // Giữ nguyên tên component là Notificati
         
         // --- CHUYỂN ĐỔI DỮ LIỆU SENT ANNOUNCEMENTS ---
         const transformedData = rawData.map(announcement => {
-            // Mặc định là General và icon Bell
             const type = 'GENERAL'; 
             const Icon = typeIcons[type];
             const color = typeColors[type];
@@ -59,7 +66,7 @@ export function Notifications() { // Giữ nguyên tên component là Notificati
                 receiverCount: announcement.receiverCount,
                 
                 // Giả lập trạng thái đã đọc/loại thông báo
-                read: true, // Mặc định là đã gửi
+                read: true, 
                 type: type, 
                 icon: Icon,
                 color: color,
@@ -88,21 +95,38 @@ export function Notifications() { // Giữ nguyên tên component là Notificati
   const avgReceivers = totalSentAnnouncements > 0 
                        ? Math.round(totalReceivers / totalSentAnnouncements) 
                        : 0;
+                       
+  // --- Handler tạm thời cho nút Tạo TB ---
+  const handleCreateNotificationClick = () => {
+      console.log("Nút 'Tạo Thông Báo Mới' đã được nhấn!");
+      toast.info("Chức năng tạo thông báo sẽ được thêm sau.");
+  };
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          {/* Tên trang phù hợp với dữ liệu Admin đã gửi */}
-          <h1 className="text-3xl text-slate-900">Nontifications Management</h1>
+          {/* Tên trang đã dịch */}
+          <h1 className="text-3xl text-slate-900">Quản Lý Thông Báo</h1>
           <p className="text-slate-500 mt-1">Theo dõi các thông báo đã được Ban Quản Lý gửi đi</p>
         </div>
        
+        {/* NÚT TẠO THÔNG BÁO MỚI */}
+        <Button 
+            onClick={handleCreateNotificationClick}
+            className="bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-500/50"
+        >
+            <span className="flex items-center"> 
+                <Plus className="w-4 h-4 mr-2" /> 
+                Tạo Thông Báo Mới
+            </span>
+            
+        </Button>
       </div>
 
       <hr/>
 
-      {/* Stats GRID MỚI */}
+      {/* Stats GRID ĐÃ DỊCH */}
       <div className="grid grid-cols-3 gap-6">
         {/* Tổng số thông báo đã gửi */}
         <div className="bg-white rounded-xl p-6 shadow-sm border border-slate-200">
@@ -132,7 +156,7 @@ export function Notifications() { // Giữ nguyên tên component là Notificati
             <div className="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center">
               <Info className="w-5 h-5 text-blue-600" />
             </div>
-            <p className="text-slate-500 text-sm">Người nhận TB</p>
+            <p className="text-slate-500 text-sm">Người nhận Trung bình</p>
           </div>
           <p className="text-2xl text-slate-900">{avgReceivers}</p>
         </div>
@@ -142,7 +166,7 @@ export function Notifications() { // Giữ nguyên tên component là Notificati
       
       {/* Notifications List (Hiển thị Lịch sử) */}
       <div className="space-y-3">
-        {isLoading && <p className="text-center py-5 text-blue-500">Đang tải lịch sử thông báo...</p>}
+        {isLoading && <p className="text-center py-5 text-blue-500 flex items-center justify-center"><Loader2 className="w-5 h-5 animate-spin mr-2" /> Đang tải lịch sử thông báo...</p>}
         {error && <p className="text-center py-5 text-red-500">Lỗi: {error}</p>}
         
         {!isLoading && announcements.length > 0 ? announcements.map((announcement) => {

@@ -25,18 +25,20 @@ interface SidebarProps {
 
 // 2. Thêm tiền tố /admin vào tất cả các path (Nếu Sidebar này là của Admin)
 const menuItems = [
-  { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, path: '/admin/dashboard' },
-  { id: 'residents', label: 'Residents', icon: Users, path: '/admin/residents' },
-  { id: 'apartments', label: 'Apartments', icon: Building2, path: '/admin/apartments' },
-  { id: 'bills', label: 'Bills', icon: Receipt, path: '/admin/bills' },
-  { id: 'services', label: 'Issues', icon: Wrench, path: '/admin/services' },
-  { id: 'notifications', label: 'Notifications', icon: Bell, path: '/admin/notifications' },
+  // Đã Dịch
+  { id: 'dashboard', label: 'Bảng Điều Khiển', icon: LayoutDashboard, path: '/admin/dashboard' },
+  { id: 'residents', label: 'Cư Dân', icon: Users, path: '/admin/residents' },
+  { id: 'apartments', label: 'Căn Hộ', icon: Building2, path: '/admin/apartments' },
+  { id: 'bills', label: 'Hóa Đơn', icon: Receipt, path: '/admin/bills' },
+  { id: 'services', label: 'Sự Cố/Yêu Cầu', icon: Wrench, path: '/admin/services' },
+  { id: 'notifications', label: 'Thông Báo', icon: Bell, path: '/admin/notifications' },
 ];
 
 const bottomItems = [
-  { id: 'settings', label: 'Settings', icon: Settings, path: '/admin/settings' },
-  { id: 'profile', label: 'Profile', icon: User, path: '/admin/profile' },
-  { id: 'logout', label: 'Logout', icon: LogOut, path: null }, 
+  // Đã Dịch
+  { id: 'settings', label: 'Cài Đặt', icon: Settings, path: '/admin/settings' },
+  { id: 'profile', label: 'Hồ Sơ', icon: User, path: '/admin/profile' },
+  { id: 'logout', label: 'Đăng Xuất', icon: LogOut, path: null }, 
 ];
 
 // Hàm này không cần logic logout, chỉ cần gọi prop được truyền từ AppContent
@@ -48,7 +50,7 @@ export function Sidebar({ isOpen, onClose, onLogout }: SidebarProps) {
       <AnimatePresence>
         {isOpen && (
           <>
-            {/* Backdrop (Nền tối) */}
+            {/* Backdrop (Lớp nền) */}
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 0.3 }}
@@ -57,7 +59,7 @@ export function Sidebar({ isOpen, onClose, onLogout }: SidebarProps) {
               className="fixed inset-0 bg-black z-40"
             />
 
-            {/* Sidebar Container */}
+            {/* Sidebar Container (Khung Sidebar) */}
             <motion.aside
               initial={{ x: '-100%' }}
               animate={{ x: 0 }}
@@ -65,7 +67,7 @@ export function Sidebar({ isOpen, onClose, onLogout }: SidebarProps) {
               transition={{ type: 'spring', damping: 30, stiffness: 300 }}
               className="fixed left-0 top-0 bottom-0 w-64 bg-white border-r-2 border-gray-200 flex flex-col z-50 shadow-2xl"
             >
-              {/* Header */}
+              {/* Tiêu đề */}
               <div className="p-6 border-b-2 border-gray-100 flex items-center justify-between">
                 <h1 className="text-xl font-bold text-cyan-600">BuildingHub</h1>
                 <button 
@@ -76,7 +78,7 @@ export function Sidebar({ isOpen, onClose, onLogout }: SidebarProps) {
                 </button>
               </div>
 
-              {/* Menu Items */}
+              {/* Danh Mục Menu */}
               <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
                 {menuItems.map((item) => {
                   const Icon = item.icon;
@@ -101,7 +103,7 @@ export function Sidebar({ isOpen, onClose, onLogout }: SidebarProps) {
                 })}
               </nav>
 
-              {/* Bottom Items */}
+              {/* Danh Mục Dưới Cùng */}
               <div className="p-4 border-t-2 border-gray-100 space-y-1">
                 {bottomItems.map((item) => {
                   const Icon = item.icon;

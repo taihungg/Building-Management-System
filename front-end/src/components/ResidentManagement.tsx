@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
-import { Search, Plus, Edit, Trash2, MoreVertical, MapPin, Phone, UserCircle, Mail, Eye, Home, Fingerprint, Globe } from "lucide-react"; // Đã thêm Globe
+import { Search, Plus, Edit, Trash2, MoreVertical, MapPin, Phone, UserCircle, Mail, Eye, Home, Fingerprint, Globe, Users } from "lucide-react"; // Đã thêm Globe
 import { Label } from "./ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
 import { Dropdown } from "./Dropdown";
@@ -46,6 +46,10 @@ export function ResidentManagement() {
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
   const [isLoadingDetail, setIsLoadingDetail] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false); 
+
+  const [createAccount, setCreateAccount] = useState(false);
+  const [newEmail, setNewEmail] = useState('');
+  const [newPhone, setNewPhone] = useState('');
 
   useEffect(() => {
     fetchResidents();
@@ -234,6 +238,17 @@ export function ResidentManagement() {
       error: (err) => `Cập nhật thất bại: ${err.message}`
     });
   }
+  
+  // 🔥 Hàm xử lý khi nhấn nút Tạo Tài khoản (Chưa có logic backend)
+  const handleCreateAccount = () => {
+    if (!selectedResident || !selectedResident.id) return;
+    
+    // Logic giả định
+    toast.info("Đang xử lý tạo tài khoản...", {
+        description: `Tài khoản sẽ được tạo cho cư dân: ${selectedResident.fullName}. Cần tích hợp API backend.`,
+    });
+    // Thêm logic API call tại đây
+  };
 
   // Hàm tải chi tiết và mở ở chế độ VIEW
   const handleViewDetail = async (id) => {
@@ -310,13 +325,13 @@ export function ResidentManagement() {
 
       {error && (
         <div className="bg-red-50 border-2 border-red-200 text-red-700 px-4 py-3 rounded-lg">
-          <p className="font-medium">Error: {error.message || error}</p>
+          <p className="font-medium">Lỗi: {error.message || error}</p>
         </div>
       )}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl text-gray-900">Resident Management</h1>
-          <p className="text-gray-600 mt-1">Manage all residents and their information</p>
+          <h1 className="text-3xl text-gray-900">Quản lý Cư Dân</h1>
+          <p className="text-gray-600 mt-1">Quản lý tất cả cư dân và thông tin của họ</p>
         </div>
         <Button
           onClick={() => {
@@ -324,7 +339,7 @@ export function ResidentManagement() {
           }}
           className="flex items-center gap-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:shadow-xl transition-all">
           <Plus className="w-5 h-5" />
-          Add Resident
+          Thêm Cư Dân
         </Button>
       </div>
 
@@ -334,7 +349,7 @@ export function ResidentManagement() {
           <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
           <input
             type="text"
-            placeholder="Search by name, room number, phone, or email..."
+            placeholder="Tìm kiếm theo tên, số phòng, điện thoại hoặc email..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="w-full pl-12 pr-4 py-3 bg-gray-50 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600"
@@ -345,19 +360,19 @@ export function ResidentManagement() {
       {/* Stats */}
       <div className="grid grid-cols-4 gap-4">
         <div className="bg-white rounded-lg p-4 border-2 border-gray-200">
-          <p className="text-gray-500 text-sm">Total Residents</p>
+          <p className="text-gray-500 text-sm">Tổng số Cư Dân</p>
           <p className="text-2xl text-gray-900 mt-1">{residents.length}</p>
         </div>
         <div className="bg-white rounded-lg p-4 border-2 border-gray-200">
-          <p className="text-gray-500 text-sm">Filtered Results</p>
+          <p className="text-gray-500 text-sm">Kết quả Lọc</p>
           <p className="text-2xl text-gray-900 mt-1">{filteredResidents.length}</p>
         </div>
         <div className="bg-white rounded-lg p-4 border-2 border-gray-200">
-          <p className="text-gray-500 text-sm">With Email</p>
+          <p className="text-gray-500 text-sm">Có Email</p>
           <p className="text-2xl text-green-600 mt-1">{residents.filter(r => r.email).length}</p>
         </div>
         <div className="bg-white rounded-lg p-4 border-2 border-gray-200">
-          <p className="text-gray-500 text-sm">With Phone</p>
+          <p className="text-gray-500 text-sm">Có SĐT</p>
           <p className="text-2xl text-orange-600 mt-1">{residents.filter(r => r.phoneNumber).length}</p>
         </div>
       </div>
@@ -368,11 +383,11 @@ export function ResidentManagement() {
           <table className="w-full">
             <thead className="bg-blue-600 border-b-2 border-blue-700">
               <tr>
-                <th className="text-left px-6 py-4 text-sm text-white">Resident</th>
-                <th className="text-left px-6 py-4 text-sm text-white">Room Number</th>
-                <th className="text-left px-6 py-4 text-sm text-white">Contact</th>
-                <th className="text-left px-6 py-4 text-sm text-white">Status</th>
-                <th className="text-left px-6 py-4 text-sm text-white">Actions</th>
+                <th className="text-left px-6 py-4 text-sm text-white">Cư Dân</th>
+                <th className="text-left px-6 py-4 text-sm text-white">Số Phòng</th>
+                <th className="text-left px-6 py-4 text-sm text-white">Liên Hệ</th>
+                <th className="text-left px-6 py-4 text-sm text-white">Trạng Thái</th>
+                <th className="text-left px-6 py-4 text-sm text-white">Hành Động</th>
               </tr>
             </thead>
             <tbody className="divide-y-2 divide-gray-200">
@@ -385,7 +400,7 @@ export function ResidentManagement() {
                       </div>
                       <div>
                         <p className="text-gray-900 text-sm font-medium">{resident.fullName || 'N/A'}</p>
-                        <p className="text-xs text-gray-500">{resident.email || 'No email'}</p>
+                        <p className="text-xs text-gray-500">{resident.email || 'Chưa có email'}</p>
                       </div>
                     </div>
                   </td>
@@ -415,7 +430,7 @@ export function ResidentManagement() {
                           ? 'bg-gray-100 text-gray-700'
                           : 'bg-orange-100 text-orange-700'
                       }`}>
-                      {resident.status || 'N/A'}
+                      {resident.status === 'ACTIVE' ? 'Đang ở' : resident.status === 'INACTIVE' ? 'Không ở' : 'N/A'}
                     </span>
                   </td>
                   <td className="px-6 py-4">
@@ -426,9 +441,9 @@ export function ResidentManagement() {
                         </button>
                       }
                       items={[
-                        { label: 'View Details', icon: Eye, onClick: () => handleViewDetail(resident.id) },
-                        { label: 'Edit', icon: Edit, onClick: () => handleOpenEdit(resident) },
-                        { label: 'Delete', icon: Trash2, onClick: () => openDeleteDialog(resident), danger: true },
+                        { label: 'Xem Chi Tiết', icon: Eye, onClick: () => handleViewDetail(resident.id) },
+                        { label: 'Chỉnh Sửa', icon: Edit, onClick: () => handleOpenEdit(resident) },
+                        { label: 'Xóa', icon: Trash2, onClick: () => openDeleteDialog(resident), danger: true },
 
                       ]}
                     />
@@ -442,38 +457,39 @@ export function ResidentManagement() {
 
       {/* Add Resident Modal */}
       <Modal
-        isOpen={isAddDialogOpen}
-        onClose={() => setIsAddDialogOpen(false)}
-        title="Add New Resident"
-        size="lg"
-      >
-        <div className="p-6 space-y-4">
-          <div>
-            <Label htmlFor="newName">Full Name</Label>
+    isOpen={isAddDialogOpen}
+    onClose={() => setIsAddDialogOpen(false)}
+    title="Thêm Cư Dân Mới"
+    size="lg"
+>
+    <div className="p-6 space-y-4">
+        {/* --- CÁC TRƯỜNG THÔNG TIN CƠ BẢN --- */}
+        <div>
+            <Label htmlFor="newName">Họ và Tên</Label>
             <Input
               id="newName"
               type="text"
-              placeholder="Enter full name"
+              placeholder="Nhập họ tên đầy đủ"
               value={newName}
               onChange={(e) => setNewName(e.target.value)}
               className="mt-1"
             />
-          </div>
-
-          <div>
-            <Label htmlFor="newIDCard">ID Card</Label>
+        </div>
+        
+        <div>
+            <Label htmlFor="newIDCard">CMND / CCCD</Label>
             <Input
               id="newIDCard"
               type="text"
-              placeholder="Enter ID card number"
+              placeholder="Nhập số CMND/CCCD"
               value={newIDCard}
               onChange={(e) => setnewIDCard(e.target.value)}
               className="mt-1"
             />
-          </div>
+        </div>
 
-          <div>
-            <Label htmlFor="newDOB">Date of Birth</Label>
+        <div>
+            <Label htmlFor="newDOB">Ngày Sinh</Label>
             <Input
               id="newDOB"
               type="date"
@@ -481,88 +497,151 @@ export function ResidentManagement() {
               onChange={(e) => setNewDOB(e.target.value)}
               className="mt-1"
             />
-          </div>
+        </div>
 
-          <div>
-            <Label htmlFor="newHomeTown">Home Town</Label>
+        <div>
+            <Label htmlFor="newHomeTown">Quê Quán</Label>
             <Input
               id="newHomeTown"
               type="text"
-              placeholder="Enter home town"
+              placeholder="Nhập quê quán"
               value={newHomeTown}
               onChange={(e) => setNewHomeTown(e.target.value)}
               className="mt-1"
             />
-          </div>
+        </div>
 
-          <div>
-            <Label htmlFor="newApartmentID">Apartment</Label>
+        {/* --- TRƯỜNG CHỌN APARTMENT --- */}
+        <div>
+            <Label htmlFor="newApartmentID">Căn Hộ</Label>
             <div className="mt-1 space-y-2">
               <Input
                 id="apartmentSearch"
                 type="text"
-                placeholder="Search apartment by room number..."
+                placeholder="Tìm kiếm căn hộ bằng số phòng..."
                 value={apartmentKeyword}
                 onChange={(e) => setApartmentKeyword(e.target.value)}
                 className="w-full"
               />
-              <Select value={newAppartmentID} onValueChange={setNewAppartmentID}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select apartment" />
-                </SelectTrigger>
-                <SelectContent>
-                  {apartmentList && Array.isArray(apartmentList) && apartmentList.length > 0 ? (
-                    apartmentList.map((apt) => (
-                      <SelectItem key={apt.id} value={String(apt.id)}>
-                        {apt.label}
-                      </SelectItem>
-                    ))
-                  ) : (
-                    <div className="px-2 py-1.5 text-sm text-gray-500">
-                      {apartmentKeyword ? "No apartments found" : "Type to search..."}
-                    </div>
-                  )}
-                </SelectContent>
-              </Select>
+              
+              <select 
+                id="newApartmentSelect"
+                value={newAppartmentID} 
+                onChange={(e) => setNewAppartmentID(e.target.value)}
+                className="w-full p-2 border border-gray-300 rounded-lg bg-white mt-1"
+              >
+                <option value="" disabled>Chọn căn hộ</option>
+                {apartmentList && Array.isArray(apartmentList) && apartmentList.length > 0 ? (
+                  apartmentList.map((apt) => (
+                    <option key={apt.id} value={String(apt.id)}>
+                      {apt.label}
+                    </option>
+                  ))
+                ) : (
+                    <option value="" disabled>
+                        {apartmentKeyword ? "Không tìm thấy căn hộ" : "Nhập để tìm kiếm..."}
+                    </option>
+                )}
+              </select>
+              
               {newAppartmentID && apartmentList && apartmentList.find(apt => String(apt.id) === newAppartmentID) && (
                 <p className="text-sm text-green-600 mt-1">
-                  Selected: {apartmentList.find(apt => String(apt.id) === newAppartmentID)?.label || 'N/A'}
+                  Đã chọn: {apartmentList.find(apt => String(apt.id) === newAppartmentID)?.label || 'N/A'}
                 </p>
               )}
             </div>
-          </div>
+        </div>
+        {/* --- KẾT THÚC TRƯỜNG CHỌN APARTMENT ĐÃ SỬA --- */}
 
-          <div className="flex gap-3 pt-4 border-t mt-6">
+
+        <div className="pt-4 border-t mt-6">
+            {/* --- CHECKBOX (TICKBOX) TẠO TÀI KHOẢN --- */}
+            <div className="flex items-center space-x-2">
+                <input 
+                    type="checkbox"
+                    id="createAccount" 
+                    checked={createAccount}
+                    onChange={(e) => setCreateAccount(e.target.checked)}
+                    className="h-4 w-4 text-blue-600 border-gray-300 rounded"
+                />
+                <Label 
+                    htmlFor="createAccount"
+                    className="text-base font-medium text-slate-700 cursor-pointer"
+                >
+                    Tạo tài khoản (Cổng cư dân)
+                </Label>
+            </div>
+        </div>
+
+        {/* --- CÁC TRƯỜNG NHẬP CÓ ĐIỀU KIỆN (EMAIL & PHONE) --- */}
+        {createAccount && (
+            <div className="space-y-4 pt-2">
+                <div className="text-sm font-semibold text-blue-600 border-b pb-2 mb-2">
+                    Thông tin Tài khoản
+                </div>
+                
+                {/* Email Field */}
+                <div>
+                    <Label htmlFor="newEmail">Email</Label>
+                    <Input
+                      id="newEmail"
+                      type="email"
+                      placeholder="Nhập email (dùng để đăng nhập)"
+                      value={newEmail}
+                      onChange={(e) => setNewEmail(e.target.value)}
+                      required={createAccount}
+                      className="mt-1"
+                    />
+                </div>
+
+                {/* Phone Field */}
+                <div>
+                    <Label htmlFor="newPhone">Số Điện Thoại (SĐT)</Label>
+                    <Input
+                      id="newPhone"
+                      type="tel"
+                      placeholder="Nhập số điện thoại"
+                      value={newPhone}
+                      onChange={(e) => setNewPhone(e.target.value)}
+                      required={createAccount}
+                      className="mt-1"
+                    />
+                </div>
+            </div>
+        )}
+
+        {/* --- NÚT SUBMIT --- */}
+        <div className="flex gap-3 pt-4 border-t mt-6">
             <Button
               variant="outline"
               onClick={() => setIsAddDialogOpen(false)}
               className="flex-1"
             >
-              Cancel
+              Hủy
             </Button>
             <Button
               onClick={handleSubmit}
               className="flex-1 bg-blue-600 hover:bg-blue-700"
             >
-              Add Resident
+              Thêm Cư Dân
             </Button>
-          </div>
         </div>
+    </div>
       </Modal>
 
       {/* Delete Resident Modal */}
       <Modal
         isOpen={isDeleteDialogOpen}
         onClose={() => setIsDeleteDialogOpen(false)}
-        title="Delete Resident"
+        title="Xóa Cư Dân"
         size="md"
       >
         <div className="p-6">
           <p className="text-gray-700 mb-4">
-            Are you sure you want to delete <strong>{residentToDelete?.fullName || 'this resident'}</strong>?
+            Bạn có chắc chắn muốn xóa <strong>{residentToDelete?.fullName || 'cư dân này'}</strong> không?
           </p>
           <p className="text-sm text-gray-500 mb-6">
-            This action cannot be undone. Choose soft delete (default) or hard delete.
+            Hành động này không thể hoàn tác. Chọn xóa mềm (mặc định) hoặc xóa cứng.
           </p>
           <div className="flex gap-3 pt-4 border-t">
             <Button
@@ -570,7 +649,7 @@ export function ResidentManagement() {
               onClick={() => setIsDeleteDialogOpen(false)}
               className="flex-1"
             >
-              Cancel
+              Hủy
             </Button>
             <Button
               variant="outline"
@@ -581,7 +660,7 @@ export function ResidentManagement() {
               }}
               className="flex-1"
             >
-              Soft Delete
+              Xóa Mềm (Soft Delete)
             </Button>
             <Button
               onClick={() => {
@@ -592,20 +671,20 @@ export function ResidentManagement() {
               className="flex-1 text-white"
               style={{ backgroundColor: '#dc2626' }}
             >
-              Hard Delete
+              Xóa Cứng (Hard Delete)
             </Button>
           </div>
         </div>
       </Modal>
       
-      {/* --- MODAL VIEW/EDIT RESIDENT DETAIL --- */}
+      {/* --- MODAL VIEW/EDIT RESIDENT DETAIL (ĐÃ DỊCH) --- */}
       <Modal
     isOpen={isViewModalOpen}
     onClose={() => {
         setIsViewModalOpen(false);
         setIsEditMode(false); // Reset mode khi đóng
     }}
-    title={isEditMode ? "Edit Resident Information" : "Resident Details"}
+    title={isEditMode ? "Chỉnh Sửa Thông Tin Cư Dân" : "Chi Tiết Cư Dân"}
 >
     {isLoadingDetail ? (
         <div className="flex flex-col items-center justify-center py-12 text-gray-500">
@@ -639,7 +718,7 @@ export function ResidentManagement() {
                                     ? 'bg-green-500/20 border-green-400/50 text-green-50' 
                                     : 'bg-gray-500/20 border-gray-400/50 text-gray-200'
                             }`}>
-                                {selectedResident.status}
+                                {selectedResident.status === 'ACTIVE' ? 'Đang ở' : 'Không ở'}
                             </span>
                         </div>
                     </div>
@@ -650,24 +729,24 @@ export function ResidentManagement() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 px-2">
                 
                 {isEditMode ? (
-                    /* --- CHẾ ĐỘ CHỈNH SỬA (EDIT MODE) --- */
+                    /* --- CHẾ ĐỘ CHỈNH SỬA (EDIT MODE) - ĐÃ DỊCH --- */
                     <>
                         {/* CỘT TRÁI: Form Cá nhân */}
                         <div className="space-y-4">
                             <h3 className="text-sm font-bold text-gray-500 uppercase tracking-wider border-b pb-2">
-                                Personal Information
+                                Thông Tin Cá Nhân
                             </h3>
                             <div className="space-y-3">
-                                <div><Label htmlFor="updateName">Full Name</Label>
+                                <div><Label htmlFor="updateName">Họ và Tên</Label>
                                 <Input id="updateName" type="text" value={updateName} onChange={(e) => setUpdateName(e.target.value)} className="mt-1"/></div>
                                 
-                                <div><Label htmlFor="updateIDCard">ID Card</Label>
+                                <div><Label htmlFor="updateIDCard">CMND / CCCD</Label>
                                 <Input id="updateIDCard" type="text" value={updateIDCard} onChange={(e) => setUpdateIDCard(e.target.value)} className="mt-1"/></div>
                                 
-                                <div><Label htmlFor="updateDOB">Date of Birth</Label>
+                                <div><Label htmlFor="updateDOB">Ngày Sinh</Label>
                                 <Input id="updateDOB" type="date" value={updateDOB} onChange={(e) => setUpdateDOB(e.target.value)} className="mt-1"/></div>
                                 
-                                <div><Label htmlFor="updateHomeTown">Home Town</Label>
+                                <div><Label htmlFor="updateHomeTown">Quê Quán</Label>
                                 <Input id="updateHomeTown" type="text" value={updateHomeTown} onChange={(e) => setUpdateHomeTown(e.target.value)} className="mt-1"/></div>
                             </div>
                         </div>
@@ -675,10 +754,10 @@ export function ResidentManagement() {
                         {/* CỘT PHẢI: Form Liên lạc */}
                         <div className="space-y-4">
                             <h3 className="text-sm font-bold text-gray-500 uppercase tracking-wider border-b pb-2">
-                                Contact Information
+                                Thông Tin Liên Hệ
                             </h3>
                             <div className="space-y-3">
-                                <div><Label htmlFor="updatePhone">Phone Number</Label>
+                                <div><Label htmlFor="updatePhone">Số Điện Thoại</Label>
                                 <Input id="updatePhone" type="tel" value={updatePhone} onChange={(e) => setUpdatePhone(e.target.value)} className="mt-1"/></div>
                                 
                                 <div><Label htmlFor="updateEmail">Email</Label>
@@ -686,9 +765,9 @@ export function ResidentManagement() {
                                 
                                 {/* Apartment (Read Only) */}
                                 <div className="mt-4 p-4 bg-gray-100 border border-gray-200 rounded-xl">
-                                    <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Apartment (Read Only)</p>
+                                    <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Căn Hộ (Chỉ Xem)</p>
                                     <div className="flex items-baseline gap-2">
-                                        <span className="text-sm font-semibold text-gray-400 uppercase">Room</span>
+                                        <span className="text-sm font-semibold text-gray-400 uppercase">Phòng</span>
                                         <span className="text-xl font-extrabold text-gray-900 tracking-tight font-mono">
                                             {selectedResident.roomNumber}
                                         </span>
@@ -698,12 +777,12 @@ export function ResidentManagement() {
                         </div>
                     </>
                 ) : (
-                    /* --- CHẾ ĐỘ XEM (VIEW MODE) --- */
+                    /* --- CHẾ ĐỘ XEM (VIEW MODE) - ĐÃ DỊCH --- */
                     <>
                         {/* CỘT TRÁI: Thông tin cá nhân */}
                         <div className="space-y-4">
                             <h3 className="text-sm font-bold text-gray-500 uppercase tracking-wider border-b pb-2">
-                                Personal Information
+                                Thông Tin Cá Nhân
                             </h3>
                             <div className="space-y-3">
                                 {/* SYSTEM ID */}
@@ -712,12 +791,12 @@ export function ResidentManagement() {
                                         <Fingerprint className="w-4 h-4" />
                                     </div>
                                     <div className="flex-1 overflow-hidden">
-                                        <p className="text-xs text-gray-500">System ID</p>
+                                        <p className="text-xs text-gray-500">ID Hệ Thống</p>
                                         <p className="font-mono text-xs font-medium text-gray-700 truncate" title={selectedResident.id}>
                                             {selectedResident.id}
                                         </p>
                                     </div>
-                                </div>
+                                </div> 
                                 {/* ID Card (CMND/CCCD) */}
                                 <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg border border-gray-100">
                                     <div className="p-2 bg-blue-100 text-blue-600 rounded-md">
@@ -734,17 +813,17 @@ export function ResidentManagement() {
                                         <span className="text-xs font-bold">DOB</span>
                                     </div>
                                     <div>
-                                        <p className="text-xs text-gray-500">Date of Birth</p>
+                                        <p className="text-xs text-gray-500">Ngày Sinh</p>
                                         <p className="font-medium text-gray-900">{selectedResident.dob || "N/A"}</p>
                                     </div>
                                 </div>
-                                 {/* HOME TOWN - ĐÃ THÊM MỚI */}
+                                 {/* HOME TOWN */}
                                 <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg border border-gray-100">
                                     <div className="p-2 bg-pink-100 text-pink-600 rounded-md">
                                         <Globe className="w-4 h-4" />
                                     </div>
                                     <div>
-                                        <p className="text-xs text-gray-500">Home Town</p>
+                                        <p className="text-xs text-gray-500">Quê Quán</p>
                                         <p className="font-medium text-gray-900">{selectedResident.homeTown || "N/A"}</p>
                                     </div>
                                 </div>
@@ -754,20 +833,20 @@ export function ResidentManagement() {
                         {/* CỘT PHẢI: Liên lạc & Căn hộ */}
                         <div className="space-y-4">
                             <h3 className="text-sm font-bold text-gray-500 uppercase tracking-wider border-b pb-2">
-                                Contact & Residence
+                                Liên Hệ & Cư Trú
                             </h3>
                             <div className="space-y-3">
                                 <div className="flex items-center gap-3">
                                     <Phone className="w-5 h-5 text-gray-400" />
                                     <div>
-                                        <p className="text-xs text-gray-500">Phone Number</p>
+                                        <p className="text-xs text-gray-500">Số Điện Thoại</p>
                                         <p className="font-medium text-gray-900">{selectedResident.phoneNumber || "N/A"}</p>
                                     </div>
                                 </div>
                                 <div className="flex items-center gap-3">
                                     <Mail className="w-5 h-5 text-gray-400" />
                                     <div>
-                                        <p className="text-xs text-gray-500">Email Address</p>
+                                        <p className="text-xs text-gray-500">Địa Chỉ Email</p>
                                         <p className="font-medium text-gray-900 break-all">{selectedResident.email || "N/A"}</p>
                                     </div>
                                 </div>
@@ -776,9 +855,9 @@ export function ResidentManagement() {
                                     <div className="absolute top-0 right-0 p-2 opacity-5 group-hover:opacity-10 transition-opacity">
                                         <Home className="w-7 h-7 text-blue-600" />
                                     </div>
-                                    <p className="text-xs font-bold text-blue-600/80 uppercase tracking-wider mb-1">Current Apartment</p>
+                                    <p className="text-xs font-bold text-blue-600/80 uppercase tracking-wider mb-1">Căn Hộ Hiện Tại</p>
                                     <div className="flex items-baseline gap-2 relative z-10">
-                                        <span className="text-sm font-semibold text-blue-400 uppercase">Room</span>
+                                        <span className="text-sm font-semibold text-blue-400 uppercase">Phòng</span>
                                         <span className="text-xl font-extrabold text-blue-900 tracking-tight font-mono">
                                             {selectedResident.roomNumber}
                                         </span>
@@ -790,7 +869,7 @@ export function ResidentManagement() {
                 )}
             </div>
 
-            {/* 3. FOOTER (Conditional Buttons) */}
+            {/* 3. FOOTER (Conditional Buttons) - ĐÃ DỊCH VÀ THÊM NÚT TẠO TK */}
             <div className="mt-8 flex justify-end pt-4 border-t gap-3">
                 
                 {isEditMode ? (
@@ -802,25 +881,34 @@ export function ResidentManagement() {
                             }} 
                             className="rounded-full px-6"
                         >
-                            Cancel Edit
+                            Hủy Chỉnh Sửa
                         </Button>
                         <Button 
                             onClick={handleUpdate} 
                             className="bg-green-600 hover:bg-green-700 text-white rounded-full px-6 shadow-lg shadow-green-500/30"
                         >
-                            <Edit className="w-4 h-4 mr-2" /> Save Changes
+                            <Edit className="w-4 h-4 mr-2" /> Lưu Thay Đổi
                         </Button>
                     </>
                 ) : (
                     <>
                         <Button variant="outline" onClick={() => setIsViewModalOpen(false)} className="rounded-full px-6">
-                            Close
+                            Đóng
                         </Button>
+                        
+                        {/* 🔥 NÚT CREATE ACCOUNT (TẠO TÀI KHOẢN) */}
                         <Button 
-                            onClick={() => handleOpenEdit(selectedResident)} // Gọi lại handleOpenEdit để đảm bảo chuyển mode chuẩn
+                            onClick={handleCreateAccount} 
+                            className="bg-orange-500 hover:bg-orange-600 text-black rounded-full px-6 shadow-lg shadow-orange-500/30"
+                        >
+                            <Users className="w-4 h-4 mr-2" /> Tạo tài khoản
+                        </Button>
+                        
+                        <Button 
+                            onClick={() => handleOpenEdit(selectedResident)} 
                             className="bg-blue-600 hover:bg-blue-700 text-white rounded-full px-6 shadow-lg shadow-blue-500/30"
                         >
-                            <Edit className="w-4 h-4 mr-2" /> Edit Info
+                            <Edit className="w-4 h-4 mr-2" /> Chỉnh Sửa
                         </Button>
                     </>
                 )}
@@ -829,7 +917,7 @@ export function ResidentManagement() {
     ) : (
         <div className="text-center py-10 text-gray-500">Không tìm thấy dữ liệu.</div>
     )}
-</Modal>
+      </Modal>
     </div>
   );
 }

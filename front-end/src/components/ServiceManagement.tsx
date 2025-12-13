@@ -17,18 +17,18 @@ const categoryIcons = {
   Complaint: Shield, // Thêm Complaint
 };
 
-// Danh sách các trạng thái ENUM Backend và UI Label tương ứng
+// Danh sách các trạng thái ENUM Backend và UI Label tương ứng (ĐÃ DỊCH)
 const STATUS_OPTIONS = [
-    { enum: 'UNPROCESSED', label: 'Unprocessed' },
-    { enum: 'PROCESSING', label: 'In Progress' },
+    { enum: 'UNPROCESSED', label: 'Chưa Xử Lý' },
+    { enum: 'PROCESSING', label: 'Đang Xử Lý' },
     // ENUM PROCESSED (Backend) -> Label Processed (Frontend)
-    { enum: 'PROCESSED', label: 'Processed' }, 
+    { enum: 'PROCESSED', label: 'Đã Xử Lý' }, 
 ];
 
 
 export function ServiceManagement() {
   const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState('Unprocessed');
+  const [statusFilter, setStatusFilter] = useState('Chưa Xử Lý'); // Cập nhật filter mặc định theo tiếng Việt
   const [isNewRequestOpen, setIsNewRequestOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   
@@ -121,28 +121,27 @@ export function ServiceManagement() {
         
         const transformedData = rawData.map((issue) => {
             
-            // Hàm chuyển đổi status từ ENUM sang UI Label
+            // Hàm chuyển đổi status từ ENUM sang UI Label (ĐÃ DỊCH)
             const mapStatus = (status) => { 
                 switch (status) {
-                    case 'UNPROCESSED': return 'Unprocessed';
-                    case 'PROCESSING': return 'In Progress';
-                    // Đảm bảo cả RESOLVED và PROCESSED đều map thành Processed trên UI
+                    case 'UNPROCESSED': return 'Chưa Xử Lý';
+                    case 'PROCESSING': return 'Đang Xử Lý';
+                    // Đảm bảo cả RESOLVED và PROCESSED đều map thành Đã Xử Lý trên UI
                     case 'PROCESSED': 
                     case 'RESOLVED': // Giả định PROCESSED tương đương với RESOLVED
-                        return 'Processed'; 
-                    default: return 'Unprocessed';
+                        return 'Đã Xử Lý'; 
+                    default: return 'Chưa Xử Lý';
                 }
             };
             // Lấy ENUM status gốc
             const rawStatus = issue.status; 
 
-            // Hàm map Type sang Category
+            // Hàm map Type sang Category (ĐÃ DỊCH)
             const mapCategory = (type) => { 
                 switch (type) {
-                    case 'MAINTENANCE': return 'Maintenance'; 
-                    case 'COMPLAINT': return 'Complaint'; 
-                    // Bỏ các giá trị bị lỗi Enum trước đó
-                    default: return 'Maintenance';
+                    case 'MAINTENANCE': return 'Bảo Trì'; 
+                    case 'COMPLAINT': return 'Khiếu Nại'; 
+                    default: return 'Bảo Trì';
                 }
             };
             
@@ -273,10 +272,21 @@ export function ServiceManagement() {
   }, [apartmentSearchTerm, isNewRequestOpen]); 
 
 
+  // Chuyển đổi trạng thái filter từ tiếng Việt sang UI Label tiếng Anh (để so sánh với Issue data)
+  const mapFilterToStatusLabel = (filter) => {
+      switch(filter) {
+          case 'Chưa Xử Lý': return 'Chưa Xử Lý';
+          case 'Đang Xử Lý': return 'Đang Xử Lý';
+          case 'Đã Xử Lý': return 'Đã Xử Lý';
+          default: return 'All';
+      }
+  }
+
   const filteredIssues = allIssue.filter(issue => {
+    const statusLabel = mapFilterToStatusLabel(statusFilter);
     
-    // Lọc theo Status (Đảm bảo logic lọc đúng)
-    if (statusFilter !== 'All' && issue.status !== statusFilter) {
+    // Lọc theo Status 
+    if (statusLabel !== 'All' && issue.status !== statusLabel) {
       return false;
     }
     
@@ -284,7 +294,6 @@ export function ServiceManagement() {
     if (searchTerm) {
       const lowerSearch = searchTerm.toLowerCase();
       
-      // Khắc phục lỗi unit.toLowerCase is not a function
       const unit = issue.unit || ''; 
       const resident = issue.resident || '';
       const category = issue.category || '';
@@ -305,10 +314,16 @@ export function ServiceManagement() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl text-slate-900">Issue Management</h1>
-          <p className="text-slate-500 mt-1">Track and manage all service requests</p>
+          <h1 className="text-3xl text-slate-900">Quản Lý Yêu Cầu Dịch Vụ & Sự Cố</h1>
+          <p className="text-slate-500 mt-1">Theo dõi và quản lý tất cả các yêu cầu dịch vụ và sự cố</p>
         </div>
-        
+        <button 
+          onClick={() => setIsNewRequestOpen(true)}
+          className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl hover:shadow-xl transition-all"
+        >
+          <Plus className="w-5 h-5" />
+          Tạo Yêu Cầu Mới
+        </button>
       </div>
 
       <hr/>
@@ -319,7 +334,7 @@ export function ServiceManagement() {
           <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400" />
           <input
             type="text"
-            placeholder="Search by unit, resident, or service type..."
+            placeholder="Tìm kiếm theo số phòng, cư dân, hoặc loại dịch vụ..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="w-full pl-12 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -327,16 +342,16 @@ export function ServiceManagement() {
         </div>
       </div>
 
-      {/* Stats Grid - SỬA 'Completed' thành 'Processed' */}
+      {/* Stats Grid - ĐÃ DỊCH */}
       <div className="grid grid-cols-4 gap-6">
         <div className="bg-white rounded-xl p-6 shadow-sm border border-slate-200">
           <div className="flex items-center gap-3 mb-2">
             <div className="w-10 h-10 rounded-lg bg-orange-100 flex items-center justify-center">
               <Clock className="w-5 h-5 text-orange-600" />
             </div>
-            <p className="text-slate-500 text-sm">Unprocessed</p>
+            <p className="text-slate-500 text-sm">Chưa Xử Lý</p>
           </div>
-          <p className="text-2xl text-slate-900">{allIssue.filter(s => s.status === 'Unprocessed').length}</p>
+          <p className="text-2xl text-slate-900">{allIssue.filter(s => s.status === 'Chưa Xử Lý').length}</p>
         </div>
 
         <div className="bg-white rounded-xl p-6 shadow-sm border border-slate-200">
@@ -344,9 +359,9 @@ export function ServiceManagement() {
             <div className="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center">
               <Wrench className="w-5 h-5 text-blue-600" />
             </div>
-            <p className="text-slate-500 text-sm">In Progress</p>
+            <p className="text-slate-500 text-sm">Đang Xử Lý</p>
           </div>
-          <p className="text-2xl text-slate-900">{allIssue.filter(s => s.status === 'In Progress').length}</p>
+          <p className="text-2xl text-slate-900">{allIssue.filter(s => s.status === 'Đang Xử Lý').length}</p>
         </div>
         
         <div className="bg-white rounded-xl p-6 shadow-sm border border-slate-200">
@@ -354,9 +369,9 @@ export function ServiceManagement() {
             <div className="w-10 h-10 rounded-lg bg-emerald-100 flex items-center justify-center">
               <CheckCircle className="w-5 h-5 text-emerald-600" />
             </div>
-            <p className="text-slate-500 text-sm">Processed</p> {/* SỬA TẠI ĐÂY */}
+            <p className="text-slate-500 text-sm">Đã Xử Lý</p> 
           </div>
-          <p className="text-2xl text-slate-900">{allIssue.filter(s => s.status === 'Processed').length}</p> {/* SỬA TẠI ĐÂY */}
+          <p className="text-2xl text-slate-900">{allIssue.filter(s => s.status === 'Đã Xử Lý').length}</p> 
         </div>
 
         <div className="bg-white rounded-xl p-6 shadow-sm border border-slate-200">
@@ -364,7 +379,7 @@ export function ServiceManagement() {
             <div className="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center">
               <Wrench className="w-5 h-5 text-gray-600" />
             </div>
-            <p className="text-slate-500 text-sm">Total Issues</p>
+            <p className="text-slate-500 text-sm">Tổng Yêu Cầu</p>
           </div>
           <p className="text-2xl text-slate-900">{allIssue.length}</p>
         </div>
@@ -372,9 +387,9 @@ export function ServiceManagement() {
 
       <hr/>
 
-      {/* Status Filter Tabs - Đã đúng: ['Unprocessed', 'In Progress', 'Processed', 'All'] */}
+      {/* Status Filter Tabs - ĐÃ DỊCH */}
       <div className="flex gap-2">
-        {['Unprocessed', 'In Progress', 'Processed', 'All'].map((status) => (
+        {['Chưa Xử Lý', 'Đang Xử Lý', 'Đã Xử Lý', 'All'].map((status) => (
           <button
             key={status}
             onClick={() => setStatusFilter(status)}
@@ -384,7 +399,7 @@ export function ServiceManagement() {
                 : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'
             }`}
           >
-            {status}
+            {status === 'All' ? 'Tất Cả' : status}
           </button>
         ))}
       </div>
@@ -401,11 +416,11 @@ export function ServiceManagement() {
         {filteredIssues.map((service) => {
           const Icon = categoryIcons[service.category] || Wrench; 
           
-          // SỬA 'Completed' thành 'Processed' trong logic hiển thị màu sắc
+          // Lấy status đã dịch từ issue.status
           const statusClass = 
-              service.status === 'Processed' ? 'bg-emerald-50 text-emerald-700' :
-              service.status === 'In Progress' ? 'bg-blue-50 text-blue-700' :
-              service.status === 'Unprocessed' ? 'bg-orange-50 text-orange-700' :
+              service.status === 'Đã Xử Lý' ? 'bg-emerald-50 text-emerald-700' :
+              service.status === 'Đang Xử Lý' ? 'bg-blue-50 text-blue-700' :
+              service.status === 'Chưa Xử Lý' ? 'bg-orange-50 text-orange-700' :
               'bg-gray-50 text-gray-700';
           
           return (
@@ -427,7 +442,7 @@ export function ServiceManagement() {
                                   {/* Hiển thị Title */}
                                   <p className="text-slate-900 font-semibold">{service.title}</p>
                                   
-                                  {/* 🌟 PHẦN THÊM MỚI: HIỂN THỊ STATUS 🌟 */}
+                                  {/* Hiển thị STATUS */}
                                   <span className={`text-xs font-medium px-2.5 py-0.5 rounded-full ${statusClass}`}>
                                       {service.status}
                                   </span>
@@ -447,16 +462,17 @@ export function ServiceManagement() {
                             <MoreVertical className="w-5 h-5 text-slate-400 cursor-pointer hover:text-slate-600" />
                           </button>
 
-                          {/* Dropdown Menu */}
+                          {/* Dropdown Menu - ĐÃ DỊCH */}
                           {openIssueMenuId === service.id && (
                               <div className="absolute right-0 mt-2 w-48 bg-white border border-slate-200 rounded-lg shadow-xl z-20 overflow-hidden">
-                                  <div className="py-1 px-3 text-xs text-slate-500 border-b">Change Status</div>
+                                  <div className="py-1 px-3 text-xs text-slate-500 border-b">Thay Đổi Trạng Thái</div>
                                   {STATUS_OPTIONS.map(option => (
                                       <button 
                                           key={option.enum}
                                           onClick={(e) => {
                                               e.stopPropagation();
-                                              if (service.rawStatus !== option.enum) {
+                                              // So sánh với ENUM gốc
+                                              if (service.rawStatus !== option.enum) { 
                                                   updateIssueStatusApi(service.id, option.enum);
                                               }
                                               setOpenIssueMenuId(null);
@@ -479,11 +495,11 @@ export function ServiceManagement() {
 
                   <div className="space-y-2 mb-4">
                       <div className="flex items-center justify-between text-sm">
-                          <span className="text-slate-500">Unit:</span>
+                          <span className="text-slate-500">Phòng:</span>
                           <span className="text-slate-900 font-medium">#{service.unit}</span> 
                       </div>
                       <div className="flex items-center justify-between text-sm">
-                          <span className="text-slate-500">Resident:</span>
+                          <span className="text-slate-500">Người Báo Cáo:</span>
                           <span className="text-slate-900">{service.resident}</span> 
                       </div>
                      
@@ -493,6 +509,131 @@ export function ServiceManagement() {
           );
         })}
       </div>
+
+      {/* SlideOut - Form Tạo Yêu Cầu Mới - ĐÃ DỊCH */}
+      <SlideOut
+        isOpen={isNewRequestOpen}
+        onClose={() => setIsNewRequestOpen(false)}
+        title="Tạo Yêu Cầu Dịch Vụ / Sự Cố Mới"
+      >
+        <form onSubmit={handleSubmit} className="p-6 h-full flex flex-col">
+            <div className="space-y-6 flex-grow">
+                {/* Chọn Căn Hộ */}
+                <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Chọn Căn Hộ <span className="text-red-500">*</span></label>
+                    <div className="relative">
+                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                        <input
+                            type="text"
+                            placeholder="Nhập số phòng hoặc tên cư dân"
+                            value={apartmentSearchTerm}
+                            onChange={(e) => {
+                                setApartmentSearchTerm(e.target.value);
+                                setUpdateAppartmentID(''); // Xóa ID khi tìm kiếm mới
+                                setSelectedApartmentLabel('');
+                            }}
+                            className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                            required
+                        />
+                        {/* Hiển thị tên căn hộ đã chọn */}
+                        {selectedApartmentLabel && (
+                            <div className="absolute right-0 top-0 mt-3 mr-3 text-xs font-semibold text-blue-600">
+                                Đã Chọn: {selectedApartmentLabel}
+                            </div>
+                        )}
+                        
+                        {/* Dropdown Kết Quả */}
+                        {apartmentDropdown.length > 0 && apartmentSearchTerm.length > 0 && (
+                            <ul className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-40 overflow-y-auto">
+                                {apartmentDropdown.map(apt => (
+                                    <li 
+                                        key={apt.id} 
+                                        onClick={() => handleSelectApartment(apt.id, apt.label)}
+                                        className="px-4 py-3 hover:bg-blue-50 cursor-pointer transition-colors text-sm border-b border-gray-100"
+                                    >
+                                        <div className="font-semibold text-gray-900">{apt.label}</div>
+                                        <div className="text-xs text-gray-500">Chủ sở hữu: {apt.ownerName || 'Chưa rõ'}</div>
+                                    </li>
+                                ))}
+                            </ul>
+                        )}
+
+                        {isApartmentDropdownLoading && apartmentSearchTerm.length > 0 && (
+                            <p className="absolute z-10 w-full mt-1 px-4 py-2 bg-white border border-gray-300 rounded-lg shadow-lg text-sm text-center text-gray-500">
+                                Đang tìm kiếm...
+                            </p>
+                        )}
+
+                        {/* Thông báo lỗi nếu chưa chọn căn hộ */}
+                        {!updateApartmentID && apartmentSearchTerm.length > 0 && apartmentDropdown.length === 0 && !isApartmentDropdownLoading && (
+                            <p className="absolute z-10 w-full mt-1 px-4 py-2 bg-white border border-red-300 rounded-lg shadow-lg text-sm text-red-600">
+                                Không tìm thấy căn hộ nào phù hợp.
+                            </p>
+                        )}
+                    </div>
+                </div>
+
+                {/* Tiêu đề */}
+                <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Tiêu Đề Yêu Cầu <span className="text-red-500">*</span></label>
+                    <input
+                        type="text"
+                        placeholder="Ví dụ: Rò rỉ nước ở phòng tắm"
+                        value={updateTitle}
+                        onChange={(e) => setUpdateTitle(e.target.value)}
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                        required
+                    />
+                </div>
+                
+                {/* Loại Yêu Cầu */}
+                <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Loại Yêu Cầu <span className="text-red-500">*</span></label>
+                    <select
+                        value={updateType}
+                        onChange={(e) => setUpdateType(e.target.value)}
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 bg-white"
+                        required
+                    >
+                        <option value="MAINTENANCE">Bảo Trì</option>
+                        <option value="COMPLAINT">Khiếu Nại</option>
+                        {/* Các loại khác có thể thêm vào đây nếu backend hỗ trợ */}
+                    </select>
+                </div>
+
+                {/* Mô tả */}
+                <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Mô Tả Chi Tiết <span className="text-red-500">*</span></label>
+                    <textarea
+                        rows={5}
+                        placeholder="Cung cấp chi tiết vấn đề: vị trí, mức độ nghiêm trọng..."
+                        value={updateDescription}
+                        onChange={(e) => setUpdateDescription(e.target.value)}
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 resize-none"
+                        required
+                    />
+                </div>
+
+            </div>
+
+            {/* Footer Buttons */}
+            <div className="flex gap-3 pt-6 border-t mt-auto">
+                <button
+                    type="button"
+                    onClick={() => setIsNewRequestOpen(false)}
+                    className="flex-1 px-6 py-3 bg-gray-200 text-gray-700 rounded-xl hover:bg-gray-300 transition-colors font-medium"
+                >
+                    Hủy Bỏ
+                </button>
+                <button 
+                    type="submit"
+                    className="flex-1 px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl hover:shadow-xl transition-all font-semibold"
+                >
+                    Gửi Yêu Cầu
+                </button>
+            </div>
+        </form>
+      </SlideOut>
 
     </div>
   );

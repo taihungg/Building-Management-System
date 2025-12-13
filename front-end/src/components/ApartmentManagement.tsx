@@ -295,15 +295,15 @@ export function ApartmentManagement() {
       {/* --- HEADER --- */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl text-gray-900">Apartment Management</h1>
-          <p className="text-gray-600 mt-1">Manage all apartment units and their details</p>
+          <h1 className="text-3xl text-gray-900">Quản Lý Căn Hộ</h1>
+          <p className="text-gray-600 mt-1">Quản lý tất cả các đơn vị căn hộ và chi tiết của chúng</p>
         </div>
         <Button 
           onClick={() => setIsAddUnitOpen(true)}
           className="flex items-center gap-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:shadow-xl transition-all rounded-full px-6"
         >
           <Plus className="w-5 h-5" />
-          Add Unit
+          Thêm Đơn Vị
         </Button>
       </div>
 
@@ -311,19 +311,19 @@ export function ApartmentManagement() {
       <div className="bg-white rounded-2xl p-6 shadow-md border border-gray-200">
         <div className="flex flex-col md:flex-row gap-4 items-end">
             <div className="flex-1 w-full group">
-                  <Label className="mb-2 block text-xs font-semibold text-gray-500 uppercase tracking-wider">Search Room</Label>
+                  <Label className="mb-2 block text-xs font-semibold text-gray-500 uppercase tracking-wider">Tìm Kiếm Phòng</Label>
                   <Input
-                      placeholder="Type room number..."
+                      placeholder="Nhập số phòng..."
                       value={keyword}
                       onChange={(e) => setKeyword(e.target.value)}
                       className="!pl-4 py-6 bg-gray-50 border-transparent focus:bg-white focus:border-blue-500 rounded-xl"
                   />
             </div>
               <div className="w-full md:w-40 group">
-                  <Label className="mb-2 block text-xs font-semibold text-gray-500 uppercase tracking-wider">Floor Level</Label>
+                  <Label className="mb-2 block text-xs font-semibold text-gray-500 uppercase tracking-wider">Tầng</Label>
                   <Input
                       type="number"
-                      placeholder="All"
+                      placeholder="Tất cả"
                       value={selectedFloor}
                       onChange={(e) => setSelectedFloor(e.target.value)}
                       className="!pl-4 py-6 bg-gray-50 border-transparent focus:bg-white focus:border-blue-500 rounded-xl"
@@ -331,7 +331,7 @@ export function ApartmentManagement() {
               </div>
             <div className="flex gap-2">
                 <Button onClick={fetchApartments} className="bg-blue-600 hover:bg-blue-700 text-white rounded-full px-6">
-                    <Search className="w-4 h-4 mr-2" /> Find
+                    <Search className="w-4 h-4 mr-2" /> Tìm
                 </Button>
                 <Button variant="outline" className="rounded-full w-10 h-10 p-0 flex items-center justify-center border-gray-300" onClick={handleResetFilter}>
                     <X className="w-4 h-4" />
@@ -343,11 +343,11 @@ export function ApartmentManagement() {
       {/* --- STATS --- */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <div className="bg-white rounded-xl p-4 shadow-md border border-gray-200">
-          <p className="text-gray-600 text-sm">Found Results</p>
+          <p className="text-gray-600 text-sm">Kết Quả Tìm Thấy</p>
           <p className="text-2xl text-gray-900 mt-1">{apartments.length}</p>
         </div>
         <div className="bg-white rounded-xl p-4 shadow-md border border-gray-200">
-          <p className="text-gray-600 text-sm">Occupancy Rate</p>
+          <p className="text-gray-600 text-sm">Tỷ Lệ Lấp Đầy</p>
           <div className="flex items-end gap-2 mt-1">
             <p className="text-2xl font-bold text-emerald-600">{occupancyRate}%</p>
             <p className="text-xs text-gray-500 mb-1">({occupiedApartments}/{totalApartments})</p>
@@ -361,13 +361,13 @@ export function ApartmentManagement() {
       {/* --- ERROR MESSAGE --- */}
       {error && (
         <div className="bg-red-50 text-red-600 p-4 rounded-lg border border-red-200">
-            Error: {error}
+            Lỗi: {error}
         </div>
       )}
 
       {/* --- GRID CĂN HỘ --- */}
       {isLoading ? (
-          <div className="text-center py-10 text-gray-500">Loading apartments...</div>
+          <div className="text-center py-10 text-gray-500">Đang tải danh sách căn hộ...</div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {apartments.length > 0 ? (
@@ -382,7 +382,7 @@ export function ApartmentManagement() {
                             </div>
                             <div>
                                 <h3 className="text-gray-900 font-bold text-lg">{apt.label}</h3>
-                                <p className="text-sm text-gray-600">Floor {apt.floor}</p>
+                                <p className="text-sm text-gray-600">Tầng {apt.floor}</p>
                             </div>
                         </div>
                         
@@ -393,8 +393,8 @@ export function ApartmentManagement() {
                                 </button>
                             }
                             items={[
-                                { label: 'View / Edit Owner', icon: Eye, onClick: () => handleViewDetail(apt.id) },
-                                { label: 'Delete', icon: Trash2, onClick: () => onOpenDeleteModal(apt), danger: true },
+                                { label: 'Xem / Sửa Chủ Sở Hữu', icon: Eye, onClick: () => handleViewDetail(apt.id) },
+                                { label: 'Xóa', icon: Trash2, onClick: () => onOpenDeleteModal(apt), danger: true },
                             ]}
                         />
                         </div>
@@ -406,20 +406,20 @@ export function ApartmentManagement() {
                             </div>
                             <div className="flex items-center gap-2 text-gray-700">
                                 <Users className="w-4 h-4 text-gray-500" />
-                                <span className="text-sm">{apt.residentNumber || 0} Person</span>
+                                <span className="text-sm">{apt.residentNumber || 0} Người</span>
                             </div>
                         </div>
 
                         <div className="flex items-center justify-between pt-4 border-t border-gray-200">
                             <div>
-                                <p className="text-sm text-gray-600">Building</p>
+                                <p className="text-sm text-gray-600">Tòa Nhà</p>
                                 <p className="text-gray-600 font-medium">{apt.buildingName || 'BlueMoon Tower'}</p>
                             </div>
                             <div className="text-right">
                                 <span className={`inline-flex px-3 py-1 rounded-full text-xs font-bold ${
                                     (apt.residentNumber && apt.residentNumber > 0) ? 'bg-emerald-100 text-emerald-800' : 'bg-gray-200 text-gray-800'
                                 }`}>
-                                    {(apt.residentNumber && apt.residentNumber > 0) ? 'OCCUPIED' : 'VACANT'}
+                                    {(apt.residentNumber && apt.residentNumber > 0) ? 'ĐÃ CÓ NGƯỜI' : 'CÒN TRỐNG'}
                                 </span>
                             </div>
                         </div>
@@ -428,13 +428,13 @@ export function ApartmentManagement() {
                 })
             ) : (
                 <div className="col-span-full text-center py-10 text-gray-500 bg-gray-50 rounded-xl border border-dashed border-gray-300">
-                    No apartments found matching your criteria.
+                    Không tìm thấy căn hộ nào phù hợp với tiêu chí của bạn.
                 </div>
             )}
         </div>
       )}
 
-      {/* --- MODAL 1: ADD NEW UNIT --- */}
+      {/* --- MODAL 1: ADD NEW UNIT (ĐÃ DỊCH) --- */}
       <Modal
     isOpen={isAddUnitOpen}
     onClose={() => setIsAddUnitOpen(false)}
@@ -475,7 +475,7 @@ export function ApartmentManagement() {
                         <Label className="mb-2 block font-medium text-gray-700">Số Phòng <span className="text-red-500">*</span></Label>
                         <Input 
                             type="text" // Đổi sang text vì số phòng có thể là B101
-                            placeholder="e.g. 101 / A205" 
+                            placeholder="Ví dụ: 101 / A205" 
                             value={newRoomNumber} 
                             onChange={(e) => setNewRoomNumber(e.target.value)} 
                             className="h-10 focus:border-blue-500"
@@ -487,7 +487,7 @@ export function ApartmentManagement() {
                         <Label className="mb-2 block font-medium text-gray-700">Tầng <span className="text-red-500">*</span></Label>
                         <Input 
                             type="number" 
-                            placeholder="e.g. 1" 
+                            placeholder="Ví dụ: 1" 
                             value={newFloor} 
                             onChange={(e) => setNewFloor(e.target.value)} 
                             className="h-10 focus:border-blue-500"
@@ -499,7 +499,7 @@ export function ApartmentManagement() {
                         <Label className="mb-2 block font-medium text-gray-700">Diện Tích (m²) <span className="text-red-500">*</span></Label>
                         <Input 
                             type="number" 
-                            placeholder="e.g. 85.5" 
+                            placeholder="Ví dụ: 85.5" 
                             step="0.1" 
                             value={newArea} 
                             onChange={(e) => setNewArea(e.target.value)} 
@@ -608,10 +608,11 @@ export function ApartmentManagement() {
     </div>
 </Modal>
 
-      {/* --- MODAL 2: VIEW DETAILS & EDIT OWNER (GIAO DIỆN MỚI) --- */}
+      {/* --- MODAL 2: VIEW DETAILS & EDIT OWNER (ĐÃ DỊCH) --- */}
       <Modal
         isOpen={isViewModalOpen}
         onClose={() => setIsViewModalOpen(false)}
+        title="Chi Tiết & Quản Lý Chủ Sở Hữu Căn Hộ"
       >
         {selectedApartment && selectedApartment.info ? (
             <div className="flex flex-col h-full">
@@ -627,10 +628,10 @@ export function ApartmentManagement() {
                             <div className="flex items-center gap-2 opacity-90 text-sm font-medium mb-1">
                                 <span className="uppercase tracking-wider">{selectedApartment.info.buildingName}</span>
                                 <span>•</span>
-                                <span>Floor {selectedApartment.info.floor}</span>
+                                <span>Tầng {selectedApartment.info.floor}</span>
                             </div>
                             <h2 className="text-4xl font-extrabold tracking-tight">
-                                Room {selectedApartment.info.roomNumber}
+                                Phòng {selectedApartment.info.roomNumber}
                             </h2>
                         </div>
                         
@@ -641,7 +642,7 @@ export function ApartmentManagement() {
                         }`}>
                             <span className="flex items-center gap-2">
                                 <span className={`w-2 h-2 rounded-full ${(selectedApartment.residents && selectedApartment.residents.length > 0) ? 'bg-emerald-400' : 'bg-gray-400'}`}></span>
-                                {(selectedApartment.residents && selectedApartment.residents.length > 0) ? 'OCCUPIED' : 'VACANT'}
+                                {(selectedApartment.residents && selectedApartment.residents.length > 0) ? 'ĐÃ CÓ NGƯỜI' : 'CÒN TRỐNG'}
                             </span>
                         </div>
                     </div>
@@ -655,14 +656,14 @@ export function ApartmentManagement() {
                         <div className="md:col-span-5 space-y-4">
                             {/* Property Specs */}
                             <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 space-y-4">
-                                <h3 className="text-gray-500 text-xs font-bold uppercase tracking-wider mb-2">Specifications</h3>
+                                <h3 className="text-gray-500 text-xs font-bold uppercase tracking-wider mb-2">Thông Số Kỹ Thuật</h3>
                                 
                                 <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                                     <div className="flex items-center gap-3">
                                         <div className="p-2 bg-blue-100 text-blue-600 rounded-md">
                                             <Maximize className="w-5 h-5" />
                                         </div>
-                                        <span className="text-sm text-gray-600 font-medium">Surface Area</span>
+                                        <span className="text-sm text-gray-600 font-medium">Diện Tích</span>
                                     </div>
                                     <span className="text-gray-900 font-bold">{selectedApartment.info.area?.toFixed(2)} m²</span>
                                 </div>
@@ -672,9 +673,9 @@ export function ApartmentManagement() {
                                         <div className="p-2 bg-purple-100 text-purple-600 rounded-md">
                                             <Users className="w-5 h-5" />
                                         </div>
-                                        <span className="text-sm text-gray-600 font-medium">Residents</span>
+                                        <span className="text-sm text-gray-600 font-medium">Số Lượng Cư Dân</span>
                                     </div>
-                                    <span className="text-gray-900 font-bold">{selectedApartment.info.numberOfResidents} People</span>
+                                    <span className="text-gray-900 font-bold">{selectedApartment.info.numberOfResidents} Người</span>
                                 </div>
                             </div>
 
@@ -684,7 +685,7 @@ export function ApartmentManagement() {
                                 <div className="bg-gradient-to-br from-sky-50 to-blue-50 border border-blue-100 rounded-xl p-4 flex flex-col items-center justify-center text-center shadow-sm">
                                     <Car className="w-6 h-6 text-blue-500 mb-2" />
                                     <span className="text-3xl font-bold text-blue-700">{selectedApartment.summary?.vehicleCount || 0}</span>
-                                    <span className="text-xs text-blue-600 font-medium uppercase mt-1">Vehicles</span>
+                                    <span className="text-xs text-blue-600 font-medium uppercase mt-1">Phương Tiện</span>
                                 </div>
 
                                 {/* Card Hóa đơn */}
@@ -701,7 +702,7 @@ export function ApartmentManagement() {
                                         {selectedApartment.summary?.unpaidBillsCount || 0}
                                     </span>
                                     <span className={`text-xs font-medium uppercase mt-1 ${selectedApartment.summary?.unpaidBillsCount > 0 ? 'text-red-600' : 'text-emerald-600'}`}>
-                                        Unpaid Bills
+                                        Hóa Đơn Chưa Thanh Toán
                                     </span>
                                 </div>
                             </div>
@@ -716,16 +717,16 @@ export function ApartmentManagement() {
                                 <div className="p-5 flex flex-col h-full gap-5">
                                     <div className="flex justify-between items-center">
                                         <h3 className="text-indigo-900 font-bold text-lg flex items-center gap-2">
-                                            <User className="w-5 h-5" /> Owner Information
+                                            <User className="w-5 h-5" /> Thông Tin Chủ Sở Hữu
                                         </h3>
                                         <span className="text-[10px] font-bold bg-indigo-50 text-indigo-600 px-2 py-1 rounded border border-indigo-100 uppercase tracking-wide">
-                                            Editable Mode
+                                            Chế Độ Chỉnh Sửa
                                         </span>
                                     </div>
 
                                     {/* Current Owner Card */}
                                     <div className="bg-slate-50 rounded-lg p-4 border border-slate-200">
-                                        <p className="text-xs font-semibold text-slate-400 uppercase mb-3">Currently Assigned To</p>
+                                        <p className="text-xs font-semibold text-slate-400 uppercase mb-3">Hiện Đang Giao Cho</p>
                                         
                                         {selectedApartment.owner ? (
                                             <div className="flex items-center gap-4">
@@ -749,20 +750,20 @@ export function ApartmentManagement() {
                                         ) : (
                                             <div className="flex items-center gap-3 text-gray-400 italic py-2">
                                                 <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center">?</div>
-                                                <span>No owner assigned yet (Vacant)</span>
+                                                <span>Chưa có chủ sở hữu được chỉ định (Trống)</span>
                                             </div>
                                         )}
                                     </div>
 
                                     {/* Change Owner Action */}
                                     <div className="mt-auto pt-4 border-t border-dashed border-gray-200">
-                                        <Label className="text-sm font-medium text-gray-700 mb-2 block">Change / Assign New Owner</Label>
+                                        <Label className="text-sm font-medium text-gray-700 mb-2 block">Thay Đổi / Chỉ Định Chủ Sở Hữu Mới</Label>
                                         <Select value={editingOwnerId} onValueChange={setEditingOwnerId}>
                                             <SelectTrigger className="w-full h-11 border-indigo-200 focus:ring-indigo-500">
-                                                <SelectValue placeholder="Select Owner from List" />
+                                                <SelectValue placeholder="Chọn Chủ Sở Hữu từ Danh Sách" />
                                             </SelectTrigger>
                                             <SelectContent position="popper" className="max-h-60 overflow-y-auto">
-                                                <SelectItem value="none" className="text-gray-500 italic">-- Remove Current Owner --</SelectItem>
+                                                <SelectItem value="none" className="text-gray-500 italic">-- Gỡ Chủ Sở Hữu Hiện Tại --</SelectItem>
                                                 {potentialOwners.map(res => (
                                                     <SelectItem key={res.id} value={res.id}>
                                                         <div className="flex flex-col text-left py-1">
@@ -783,7 +784,7 @@ export function ApartmentManagement() {
                     <div className="pt-2">
                         <h3 className="font-bold text-gray-900 mb-3 flex items-center gap-2 text-sm uppercase tracking-wide">
                             <Users className="w-4 h-4 text-gray-500" /> 
-                            Residents List <span className="bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full text-xs">{selectedApartment.residents?.length || 0}</span>
+                            Danh Sách Cư Dân <span className="bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full text-xs">{selectedApartment.residents?.length || 0}</span>
                         </h3>
                         
                         <div className="border border-gray-200 rounded-xl overflow-hidden shadow-sm">
@@ -791,9 +792,9 @@ export function ApartmentManagement() {
                                 <table className="w-full text-sm text-left">
                                     <thead className="bg-gray-50 text-gray-500 font-semibold text-xs uppercase sticky top-0 z-10">
                                         <tr>
-                                            <th className="px-4 py-3">Full Name</th>
-                                            <th className="px-4 py-3">Phone Number</th>
-                                            <th className="px-4 py-3">Status</th>
+                                            <th className="px-4 py-3">Họ và Tên</th>
+                                            <th className="px-4 py-3">Số Điện Thoại</th>
+                                            <th className="px-4 py-3">Trạng Thái</th>
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-gray-100 bg-white">
@@ -804,7 +805,7 @@ export function ApartmentManagement() {
                                                     <td className="px-4 py-3 text-gray-500 font-mono">{res.phoneNumber}</td>
                                                     <td className="px-4 py-3">
                                                         <span className="inline-flex px-2.5 py-1 rounded-full text-[10px] font-bold bg-green-100 text-green-700 border border-green-200">
-                                                            ACTIVE RESIDENT
+                                                            ĐANG CƯ TRÚ
                                                         </span>
                                                     </td>
                                                 </tr>
@@ -814,7 +815,7 @@ export function ApartmentManagement() {
                                                 <td colSpan={3} className="px-4 py-8 text-center text-gray-400 italic">
                                                     <div className="flex flex-col items-center gap-2">
                                                         <Users className="w-8 h-8 opacity-20" />
-                                                        <span>No residents currently registered.</span>
+                                                        <span>Hiện tại không có cư dân nào được đăng ký.</span>
                                                     </div>
                                                 </td>
                                             </tr>
@@ -828,14 +829,14 @@ export function ApartmentManagement() {
                     {/* 4. FOOTER ACTIONS */}
                     <div className="flex justify-end pt-4 border-t gap-3 mt-2">
                         <Button variant="outline" onClick={() => setIsViewModalOpen(false)} className="rounded-full px-6 border-gray-300">
-                            Cancel
+                            Hủy Bỏ
                         </Button>
                         <Button 
                             onClick={handleUpdateOwner} 
                             disabled={isSaving} 
                             className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-full px-6 shadow-lg shadow-blue-500/30 transition-all"
                         >
-                            {isSaving ? "Saving..." : <><Save className="w-4 h-4 mr-2" /> Save Changes</>}
+                            {isSaving ? "Đang Lưu..." : <><Save className="w-4 h-4 mr-2" /> Lưu Thay Đổi</>}
                         </Button>
                     </div>
                 </div>
@@ -843,16 +844,16 @@ export function ApartmentManagement() {
         ) : (
             <div className="flex flex-col items-center justify-center py-16 text-gray-400">
                 <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-indigo-600 mb-4"></div>
-                <p className="font-medium animate-pulse">Loading details...</p>
+                <p className="font-medium animate-pulse">Đang tải chi tiết...</p>
             </div>
         )}
       </Modal>
 
-      {/* --- MODAL 3: CONFIRM DELETE --- */}
+      {/* --- MODAL 3: CONFIRM DELETE (ĐÃ DỊCH) --- */}
       <Modal
         isOpen={isDeleteModalOpen}
         onClose={() => setIsDeleteModalOpen(false)}
-        title="Confirm Deletion"
+        title="Xác Nhận Xóa"
       >
         <div className="flex flex-col items-center text-center space-y-4 p-4">
             <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mb-2 animate-in zoom-in duration-300">
@@ -860,11 +861,11 @@ export function ApartmentManagement() {
             </div>
 
             <div>
-                <h3 className="text-xl font-bold text-gray-900">Are you sure?</h3>
+                <h3 className="text-xl font-bold text-gray-900">Bạn có chắc chắn không?</h3>
                 <p className="text-gray-500 mt-2 max-w-[80%] mx-auto">
-                    Do you really want to delete apartment <span className="font-bold text-gray-900">{apartmentToDelete?.label || "this unit"}</span>? 
+                    Bạn có thực sự muốn xóa căn hộ <span className="font-bold text-gray-900">{apartmentToDelete?.label || "đơn vị này"}</span> không? 
                     <br/>
-                    This process cannot be undone.
+                    Quá trình này không thể hoàn tác.
                 </p>
             </div>
 
@@ -872,7 +873,7 @@ export function ApartmentManagement() {
                 <div className="bg-orange-50 border border-orange-200 text-orange-800 px-4 py-3 rounded-lg text-sm flex items-start gap-2 text-left w-full mt-2">
                     <AlertCircle className="w-5 h-5 shrink-0" />
                     <span>
-                        <strong>Warning:</strong> This apartment currently has {apartmentToDelete.residentNumber} resident(s). Deleting it might affect their data.
+                        <strong>Cảnh báo:</strong> Căn hộ này hiện đang có {apartmentToDelete.residentNumber} cư dân. Việc xóa có thể ảnh hưởng đến dữ liệu của họ.
                     </span>
                 </div>
             )}
@@ -884,7 +885,7 @@ export function ApartmentManagement() {
                     className="flex-1 border-gray-300 hover:bg-gray-50 text-gray-700"
                     disabled={isDeleting}
                 >
-                    Cancel
+                    Hủy Bỏ
                 </Button>
                 <Button 
                    onClick={confirmDelete}
@@ -892,7 +893,7 @@ export function ApartmentManagement() {
                    disabled={isDeleting}
                    className="flex-1 hover:opacity-90 shadow-lg shadow-red-500/30"
                 >
-                    {isDeleting ? "Deleting..." : "Delete Apartment"}
+                    {isDeleting ? "Đang Xóa..." : "Xóa Căn Hộ"}
                 </Button>
             </div>
         </div>

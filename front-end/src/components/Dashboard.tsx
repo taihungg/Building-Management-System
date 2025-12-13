@@ -43,7 +43,7 @@ export function Dashboard() {
   };
   
   const calculateServiceRequestsData = (issues: Issue[]) => {
-      // Mapping IssueType ENUM sang Category Label
+      // Mapping IssueType ENUM sang Category Label (Tiếng Việt)
       const typeMap: { [key: string]: string } = {
           'MAINTENANCE': 'Bảo trì', 
           'PLUMBING': 'Ống nước',
@@ -123,7 +123,7 @@ export function Dashboard() {
     return chartData;
   };
   
-  // --- USE EFFECT FETCH DATA ---
+  // --- USE EFFECT FETCH DATA (Giữ nguyên) ---
   useEffect(() => {
     const fetchDashboardData = async () => {
       try {
@@ -183,7 +183,7 @@ export function Dashboard() {
     fetchDashboardData();
   }, []);
   
-  // --- CẤU HÌNH STATS ---
+  // --- CẤU HÌNH STATS (Đã dịch sang Tiếng Việt) ---
   const occupancyRate = apartmentStats.total > 0 ? ((apartmentStats.occupied/apartmentStats.total)*100).toFixed(1) : 0;
   
   const stats = [
@@ -194,7 +194,7 @@ export function Dashboard() {
       icon: Users,
       bgColor: 'bg-blue-600',
       link: '/admin/residents',
-      description: 'Hiện đang sinh sống'
+      description: 'Hiện đang sinh sống' // Dịch
     },
     { 
       label: 'Đơn Vị Đang ở', 
@@ -204,7 +204,7 @@ export function Dashboard() {
       icon: Building2,
       bgColor: 'bg-purple-600',
       link: '/admin/apartments',
-      description: 'Tỷ lệ Lấp đầy'
+      description: 'Tỷ lệ Lấp đầy' // Dịch
     },
     { 
       label: `Doanh thu Thg ${new Date().getMonth() + 1}`, 
@@ -214,26 +214,27 @@ export function Dashboard() {
       icon: DollarSign,
       bgColor: 'bg-green-600',
       link: '/admin/bills',
-      description: 'Tổng tiền đã thanh toán'
+      description: 'Tổng tiền đã thanh toán' // Dịch
     },
     { 
       label: 'Yêu cầu chờ Xử lý', 
       value: pendingIssueCount.toString(),
-      change: '15', // Dữ liệu cứng
+      change: '15', // Dữ liệu cứng (giữ nguyên)
       trend: 'down', 
       icon: AlertCircle,
       bgColor: 'bg-orange-600',
       link: '/admin/services',
-      description: 'Chưa được phân công'
+      description: 'Chưa được phân công' // Dịch
     },
   ];
   
+  // Dữ liệu Tỷ lệ Lấp đầy (Đã dịch tên)
   const occupancyData = [
-    { name: 'Đã Lấp đầy', value: apartmentStats.occupied, color: OCCUPANCY_COLORS[0] },
-    { name: 'Trống', value: apartmentStats.total - apartmentStats.occupied, color: OCCUPANCY_COLORS[1] },
+    { name: 'Đã Lấp đầy', value: apartmentStats.occupied, color: OCCUPANCY_COLORS[0] }, // Dịch
+    { name: 'Trống', value: apartmentStats.total - apartmentStats.occupied, color: OCCUPANCY_COLORS[1] }, // Dịch
   ];
   
-  // Custom Tooltip cho Revenue Chart
+  // Custom Tooltip cho Revenue Chart (Đã dịch nhãn)
   const CustomRevenueTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
       return (
@@ -241,7 +242,12 @@ export function Dashboard() {
           <p className="font-semibold text-gray-800 mb-2">{label}</p>
           {payload.map((p: any, index: number) => (
             <p key={index} style={{ color: p.color }} className="mb-1">
-              {p.name}: <span className="font-bold">{formatCurrency(p.value)}</span>
+              {/* Dịch nhãn cột */}
+              {p.name === 'phaiThu' && 'Phải Thu'}
+              {p.name === 'thucThu' && 'Thực Thu (Đã Paid)'}
+              {p.name === 'congNo' && 'Công Nợ'}
+              {p.name !== 'phaiThu' && p.name !== 'thucThu' && p.name !== 'congNo' && p.name}: {/* Giữ lại nếu là nhãn khác */}
+              <span className="font-bold">{formatCurrency(p.value)}</span>
             </p>
           ))}
         </div>
@@ -255,18 +261,18 @@ export function Dashboard() {
     // Thêm padding và background cho toàn bộ trang
     <div className="p-4 sm:p-6 lg:p-8 space-y-8 bg-gray-50 min-h-screen"> 
       
-      {/* --- HEADER KHU VỰC CHÍNH --- */}
+      {/* --- HEADER KHU VỰC CHÍNH (Đã dịch) --- */}
       <div className="flex items-center justify-between border-b pb-4 border-gray-200">
         <div className="flex items-center">
             <LayoutDashboard className="w-8 h-8 mr-3 text-gray-700" />
             <div>
-              <h1 className="text-3xl font-extrabold text-gray-900">Dashboard Quản lý Tòa nhà</h1>
+              <h1 className="text-3xl font-extrabold text-gray-900">Bảng Điều Khiển Quản Lý Tòa Nhà</h1>
               <p className="text-gray-500 mt-1">Tổng quan về hoạt động và tài chính.</p>
             </div>
         </div>
       </div>
 
-      {/* --- STATS GRID --- */}
+      {/* --- STATS GRID (Giữ nguyên cấu trúc, nhãn đã dịch ở trên) --- */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         {stats.map((stat) => {
           const Icon = stat.icon;
@@ -308,9 +314,9 @@ export function Dashboard() {
 
       {/* --- CHARTS ROW --- */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Revenue Chart */}
+        {/* Revenue Chart (Đã dịch tiêu đề và chú thích) */}
         <div className="bg-white rounded-xl p-6 shadow-md border border-gray-200 col-span-2">
-              <h3 className="text-xl font-bold text-gray-900 mb-6">Phân tích Doanh thu Hàng năm</h3>
+              <h3 className="text-xl font-bold text-gray-900 mb-6">Phân Tích Dòng Tiền (Thu/Chi Phí)</h3> {/* Dịch tiêu đề */}
               <div style={{ width: '100%', height: 350 }}>
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart
@@ -334,20 +340,21 @@ export function Dashboard() {
                     
                     <Legend wrapperStyle={{ paddingTop: 10 }} iconType="circle" />
 
-                    <Bar dataKey="phaiThu" name="Phải Thu" fill="#8884d8" barSize={30} radius={[4, 4, 0, 0]} />
+                    {/* Dịch nhãn cột */}
+                    <Bar dataKey="phaiThu" name="Tổng Phải Thu" fill="#8884d8" barSize={30} radius={[4, 4, 0, 0]} />
                     
-                    <Bar dataKey="thucThu" name="Thực Thu (Đã Paid)" fill="#4CAF50" barSize={30} radius={[4, 4, 0, 0]} />
+                    <Bar dataKey="thucThu" name="Tổng Thực Thu" fill="#4CAF50" barSize={30} radius={[4, 4, 0, 0]} />
 
-                    <Bar dataKey="congNo" name="Công Nợ (Unpaid và Pending)" fill="#FF9800" barSize={30} radius={[4, 4, 0, 0]} />
+                    <Bar dataKey="congNo" name="Tổng Công Nợ Phát Sinh" fill="#FF9800" barSize={30} radius={[4, 4, 0, 0]} />
 
                   </BarChart>
                 </ResponsiveContainer>
               </div>
             </div>
 
-            {/* Occupancy Pie Chart */}
+            {/* Occupancy Pie Chart (Đã dịch tiêu đề và nhãn) */}
             <div className="bg-white rounded-xl p-6 shadow-md border border-gray-200">
-              <h3 className="text-xl font-bold text-gray-900 mb-6">Tỷ lệ Lấp đầy Căn hộ</h3>
+              <h3 className="text-xl font-bold text-gray-900 mb-6">Tỷ Lệ Lấp Đầy Căn Hộ</h3> {/* Dịch tiêu đề */}
               <ResponsiveContainer width="100%" height={280}>
                 <PieChart>
                   <Pie
@@ -366,7 +373,7 @@ export function Dashboard() {
                       <Cell key={`cell-${index}`} fill={entry.color} />
                     ))}
                   </Pie>
-                  <Tooltip formatter={(value: number, name: string) => [value, name]} />
+                  <Tooltip formatter={(value: number, name: string) => [`${value} căn hộ`, name]} /> {/* Dịch Tooltip */}
                 </PieChart>
               </ResponsiveContainer>
               <div className="flex justify-center gap-8 mt-4 pt-4 border-t border-gray-100">
@@ -383,11 +390,11 @@ export function Dashboard() {
             </div>
       </div>
 
-      {/* Bottom Row: Service Requests */}
+      {/* Bottom Row: Service Requests (Đã dịch tiêu đề và Tooltip) */}
       <div className="flex justify-center w-full"> 
         
         <div className="bg-white rounded-xl p-6 shadow-md border border-gray-200 w-full max-w-4xl"> {/* Tăng max-width để trông cân đối hơn */}
-          <h3 className="text-xl font-bold text-gray-900 mb-6">Phân tích Yêu cầu Dịch vụ (Tổng)</h3>
+          <h3 className="text-xl font-bold text-gray-900 mb-6">Phân Tích Yêu Cầu Dịch Vụ (Theo Loại)</h3> {/* Dịch tiêu đề */}
           <ResponsiveContainer width="100%" height={280}>
             <BarChart data={serviceRequestsData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" vertical={false} />
@@ -400,7 +407,7 @@ export function Dashboard() {
                   borderRadius: '8px',
                   padding: '10px'
                 }} 
-                formatter={(value: number, name: string) => [`${value} yêu cầu`, name]}
+                formatter={(value: number, name: string) => [`${value} yêu cầu`, 'Loại yêu cầu']} // Dịch Tooltip
               />
               <Bar dataKey="count" fill="#2563eb" radius={[8, 8, 0, 0]} barSize={40} />
             </BarChart>

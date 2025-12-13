@@ -112,8 +112,8 @@ export function BillManagement() {
       <Toaster position="top-right" richColors />
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl text-gray-900">Bill Management</h1>
-          <p className="text-gray-600 mt-1">Track and manage all billing and payments</p>
+          <h1 className="text-3xl text-gray-900">Quản Lý Hóa Đơn</h1>
+          <p className="text-gray-600 mt-1">Theo dõi và quản lý tất cả các hóa đơn và thanh toán</p>
         </div>
         
         {/* UI CHỌN THÁNG VÀ NĂM */}
@@ -150,7 +150,7 @@ export function BillManagement() {
                 className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl hover:shadow-xl transition-all"
             >
                 <Plus className="w-5 h-5" />
-                Create Bill
+                Tạo Hóa Đơn
             </button>
         </div>
       </div>
@@ -161,7 +161,7 @@ export function BillManagement() {
           <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
           <input
             type="text"
-            placeholder="Search by unit, resident, or bill type..."
+            placeholder="Tìm kiếm theo số phòng, cư dân, hoặc loại hóa đơn..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="w-full pl-12 pr-4 py-3 bg-gray-100 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -177,10 +177,10 @@ export function BillManagement() {
             <div className="w-10 h-10 rounded-lg bg-emerald-500 flex items-center justify-center">
               <CheckCircle className="w-5 h-5 text-white" />
             </div>
-            <p className="text-gray-600 text-sm">Paid</p>
+            <p className="text-gray-600 text-sm">Đã Thanh Toán</p>
           </div>
           <p className="text-2xl text-gray-900">{ formatCurrency(stats.paidAmount) }</p>
-          <p className="text-sm text-emerald-700 mt-1">{bills.filter(b => b.status === 'PAID').length} bills</p>
+          <p className="text-sm text-emerald-700 mt-1">{bills.filter(b => b.status === 'PAID').length} hóa đơn</p>
         </div>
 
         {/* PENDING */}
@@ -189,10 +189,10 @@ export function BillManagement() {
             <div className="w-10 h-10 rounded-lg bg-blue-500 flex items-center justify-center">
               <Clock className="w-5 h-5 text-white" />
             </div>
-            <p className="text-gray-600 text-sm">Pending</p>
+            <p className="text-gray-600 text-sm">Đang Chờ</p>
           </div>
           <p className="text-2xl text-gray-900">{formatCurrency(stats.pendingAmount)}</p>
-          <p className="text-sm text-blue-700 mt-1">{bills.filter(b => b.status === 'PENDING').length} bills</p>
+          <p className="text-sm text-blue-700 mt-1">{bills.filter(b => b.status === 'PENDING').length} hóa đơn</p>
         </div>
 
         {/* UNPAID / OVERDUE */}
@@ -201,10 +201,10 @@ export function BillManagement() {
             <div className="w-10 h-10 rounded-lg bg-rose-500 flex items-center justify-center">
               <AlertCircle className="w-5 h-5 text-white" />
             </div>
-            <p className="text-gray-600 text-sm">Unpaid</p>
+            <p className="text-gray-600 text-sm">Chưa Thanh Toán</p>
           </div>
           <p className="text-2xl text-gray-900">{formatCurrency(stats.unpaidAmount)}</p>
-          <p className="text-sm text-rose-700 mt-1">{bills.filter(b => b.status === 'UNPAID').length} bills</p>
+          <p className="text-sm text-rose-700 mt-1">{bills.filter(b => b.status === 'UNPAID').length} hóa đơn</p>
         </div>
 
         {/* TOTAL REVENUE */}
@@ -213,10 +213,10 @@ export function BillManagement() {
             <div className="w-10 h-10 rounded-lg bg-purple-500 flex items-center justify-center">
               <DollarSign className="w-5 h-5 text-white" />
             </div>
-            <p className="text-gray-600 text-sm">Total Bills Value</p>
+            <p className="text-gray-600 text-sm">Tổng Giá Trị Hóa Đơn</p>
           </div>
           <p className="text-2xl text-gray-900">{formatCurrency(stats.totalRevenue)}</p>
-          <p className="text-sm text-purple-700 mt-1">Total {bills.length} bills</p>
+          <p className="text-sm text-purple-700 mt-1">Tổng {bills.length} hóa đơn</p>
         </div>
       </div>
 
@@ -232,7 +232,8 @@ export function BillManagement() {
                 : 'bg-white text-gray-700 border border-gray-300 hover:bg-indigo-100'
             }`}
           >
-            {status}
+            {/* Dịch các nhãn trạng thái */}
+            {status === 'All' ? 'Tất Cả' : status === 'PAID' ? 'Đã Thanh Toán' : status === 'PENDING' ? 'Đang Chờ' : 'Chưa Thanh Toán'}
           </button>
         ))}
       </div>
@@ -243,11 +244,11 @@ export function BillManagement() {
           <table className="w-full">
             <thead className="bg-gradient-to-r from-indigo-100 to-purple-100 border-b border-gray-200">
               <tr>
-                <th className="text-left px-6 py-4 text-sm text-gray-700">Unit</th>
-                <th className="text-left px-6 py-4 text-sm text-gray-700">Payment Date</th>
-                <th className="text-left px-6 py-4 text-sm text-gray-700">Amount</th>
-                <th className="text-left px-6 py-4 text-sm text-gray-700">Status</th>
-                <th className="text-left px-6 py-4 text-sm text-gray-700">Action</th>
+                <th className="text-left px-6 py-4 text-sm text-gray-700">Đơn Vị</th>
+                <th className="text-left px-6 py-4 text-sm text-gray-700">Ngày Thanh Toán</th>
+                <th className="text-left px-6 py-4 text-sm text-gray-700">Số Tiền</th>
+                <th className="text-left px-6 py-4 text-sm text-gray-700">Trạng Thái</th>
+                <th className="text-left px-6 py-4 text-sm text-gray-700">Hành Động</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200">
@@ -264,7 +265,7 @@ export function BillManagement() {
                       </span>
                     </td>
                     <td className="px-6 py-4 text-gray-700">
-                      {bill.paymentDate ? new Date(bill.paymentDate).toLocaleDateString('vi-VN') : 'N/A'}
+                      {bill.paymentDate ? new Date(bill.paymentDate).toLocaleDateString('vi-VN') : 'Chưa có'}
                     </td>
                     <td className="px-6 py-4">
                       <span className="text-gray-900">{formatCurrency(bill.totalAmount)}</span>
@@ -279,16 +280,23 @@ export function BillManagement() {
                         {bill.status === 'PAID' && <CheckCircle className="w-4 h-4" />}
                         {bill.status === 'PENDING' && <Clock className="w-4 h-4" />}
                         {bill.status === 'UNPAID' && <AlertCircle className="w-4 h-4" />}
-                        {bill.status}
+                        {/* Dịch Trạng Thái */}
+                        {bill.status === 'PAID' ? 'Đã Thanh Toán' : bill.status === 'PENDING' ? 'Đang Chờ' : 'Chưa Thanh Toán'}
                       </span>
                     </td>
                     <td className="px-6 py-4">
-                      {bill.status !== 'PAID' ? (
-                        <button className="px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white text-sm rounded-lg hover:shadow-xl transition-all">
-                          Mark Paid
-                        </button>
+                      {bill.status === 'PAID' ? (
+                          // 1. Nếu đã thanh toán: Hiển thị ngày thanh toán
+                          <span className="text-sm text-gray-500 font-medium whitespace-nowrap">
+                              Hoàn thành: {bill.paymentDate ? new Date(bill.paymentDate).toLocaleDateString('vi-VN') : 'N/A'}
+                          </span>
                       ) : (
-                        <span className="text-sm text-gray-500">Paid on {bill.paymentDate ? new Date(bill.paymentDate).toLocaleDateString('vi-VN') : 'N/A'}</span>
+                          // 2. Nếu chưa thanh toán (UNPAID/PENDING): Hiển thị chú thích đơn giản
+                          <span className={`text-sm font-medium whitespace-nowrap 
+                              ${bill.status === 'UNPAID' ? 'text-red-600' : 'text-yellow-600'}`
+                          }>
+                              {bill.status === 'UNPAID' ? 'Cần thanh toán' : 'Đang chờ xử lý'}
+                          </span>
                       )}
                     </td>
                   </tr>
@@ -303,33 +311,32 @@ export function BillManagement() {
       <Modal
         isOpen={isCreateBillOpen}
         onClose={() => setIsCreateBillOpen(false)}
-        title="Create New Bill"
+        title="Tạo Hóa Đơn Mới"
       >
-        {/* ... Modal Content ... */}
         <div className="p-6 space-y-6">
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm text-gray-700 mb-2">Select Unit</label>
+              <label className="block text-sm text-gray-700 mb-2">Chọn Đơn Vị</label>
               <select className="w-full px-4 py-3 bg-gray-100 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                <option>Unit 304 - Emma Johnson</option>
-                <option>Unit 112 - Michael Chen</option>
-                <option>Unit 205 - Sarah Williams</option>
+                <option>Phòng 304 - Emma Johnson</option>
+                <option>Phòng 112 - Michael Chen</option>
+                <option>Phòng 205 - Sarah Williams</option>
               </select>
             </div>
 
             <div>
-              <label className="block text-sm text-gray-700 mb-2">Bill Type</label>
+              <label className="block text-sm text-gray-700 mb-2">Loại Hóa Đơn</label>
               <select className="w-full px-4 py-3 bg-gray-100 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                <option>Rent</option>
-                <option>Utilities</option>
-                <option>Parking</option>
-                <option>Maintenance</option>
-                <option>Other</option>
+                <option>Tiền Thuê</option>
+                <option>Tiền Tiện Ích</option>
+                <option>Phí Đậu Xe</option>
+                <option>Phí Bảo Trì</option>
+                <option>Khác</option>
               </select>
             </div>
 
             <div>
-              <label className="block text-sm text-gray-700 mb-2">Amount</label>
+              <label className="block text-sm text-gray-700 mb-2">Số Tiền</label>
               <input
                 type="number"
                 placeholder="0.00"
@@ -340,10 +347,10 @@ export function BillManagement() {
           </div>
 
           <div>
-            <label className="block text-sm text-gray-700 mb-2">Description (Optional)</label>
+            <label className="block text-sm text-gray-700 mb-2">Mô Tả (Tùy chọn)</label>
             <textarea
               rows={3}
-              placeholder="Add any additional details..."
+              placeholder="Thêm bất kỳ chi tiết bổ sung nào..."
               className="w-full px-4 py-3 bg-gray-100 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
             />
           </div>
@@ -353,10 +360,10 @@ export function BillManagement() {
               onClick={() => setIsCreateBillOpen(false)}
               className="flex-1 px-6 py-3 bg-gray-200 text-gray-700 rounded-xl hover:bg-gray-300 transition-colors"
             >
-              Cancel
+              Hủy Bỏ
             </button>
             <button className="flex-1 px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl hover:shadow-xl transition-all">
-              Create Bill
+              Tạo Hóa Đơn
             </button>
           </div>
         </div>
