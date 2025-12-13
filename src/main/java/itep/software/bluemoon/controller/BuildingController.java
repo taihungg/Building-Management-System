@@ -12,7 +12,6 @@ import java.util.List;
 
 @RestController
 @RequestMapping("api/v1/buildings")
-@CrossOrigin(origins = "*")
 @RequiredArgsConstructor
 public class BuildingController {
     private final BuildingService buildingService;
