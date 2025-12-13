@@ -226,24 +226,7 @@ export function Login({ onLogin, onNavigateAuth }: LoginProps) {
             </button>
           </form>
 
-          {/* Sign Up Link */}
-          <div className="mt-6 text-center">
-            <p className="text-sm text-gray-600">
-              Chưa có tài khoản?{' '}
-              <button 
-                className="transition-colors font-medium"
-                style={{ color: '#21C2E3' }}
-                onMouseEnter={(e) => e.currentTarget.style.color = '#15A9CA'}
-                onMouseLeave={(e) => e.currentTarget.style.color = '#21C2E3'}
-              onClick={() => {
-                onNavigateAuth?.('signup');
-                window.history.pushState({}, '', '/signup');
-              }}
-              >
-                Đăng ký ngay
-              </button>
-            </p>
-          </div>
+          
         </div>
       </div>
     </div>
