@@ -1,107 +1,210 @@
-import { Bell, AlertCircle, CheckCircle, Info, DollarSign, Wrench, Users, Calendar } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Plus, Bell, AlertCircle, Info, Users, Clock, Loader2 } from 'lucide-react';
+import { toast } from 'sonner';
+import React from 'react';
 
-const notifications = [
-  { id: 1, type: 'alert', icon: AlertCircle, title: 'Overdue Payment', message: 'Unit 523 has an overdue payment of $2,050', time: '10 minutes ago', read: false, color: 'orange' },
-  { id: 2, type: 'success', icon: CheckCircle, title: 'Service Completed', message: 'Maintenance request for Unit 407 has been completed', time: '1 hour ago', read: false, color: 'emerald' },
-  { id: 3, type: 'info', icon: Info, title: 'New Resident', message: 'Emma Johnson has moved into Unit 304', time: '2 hours ago', read: false, color: 'blue' },
-  { id: 4, type: 'alert', icon: Wrench, title: 'Urgent Service Request', message: 'High priority HVAC issue reported in Unit 205', time: '3 hours ago', read: true, color: 'orange' },
-  { id: 5, type: 'success', icon: DollarSign, title: 'Payment Received', message: 'Rent payment received from Unit 112 ($2,200)', time: '5 hours ago', read: true, color: 'emerald' },
-  { id: 6, type: 'info', icon: Users, title: 'Lease Renewal', message: 'Lease renewal signed for Unit 156', time: '8 hours ago', read: true, color: 'blue' },
-  { id: 7, type: 'alert', icon: AlertCircle, title: 'Maintenance Needed', message: 'Annual inspection due for Units 100-120', time: '1 day ago', read: true, color: 'orange' },
-  { id: 8, type: 'info', icon: Calendar, title: 'Scheduled Maintenance', message: 'Building HVAC maintenance scheduled for next week', time: '1 day ago', read: true, color: 'blue' },
-  { id: 9, type: 'success', icon: CheckCircle, title: 'Occupancy Milestone', message: 'Building reached 87% occupancy rate', time: '2 days ago', read: true, color: 'emerald' },
-  { id: 10, type: 'info', icon: Bell, title: 'System Update', message: 'New features added to the management system', time: '2 days ago', read: true, color: 'blue' },
-];
+// Định nghĩa các biểu tượng và màu sắc (chủ yếu dùng cho giao diện Admin Sent History)
+const typeColors = {
+  GENERAL: 'blue',
+  ALERT: 'orange',
+};
+const typeIcons = {
+    GENERAL: Bell,
+    ALERT: AlertCircle,
+};
 
-export function Notifications() {
-  const unreadCount = notifications.filter(n => !n.read).length;
+// --- MOCK Button Component (Giả lập cấu trúc Button nếu không dùng thư viện UI) ---
+const Button = ({ children, onClick, className }) => (
+    <button onClick={onClick} className={`px-4 py-2 rounded-lg font-medium transition-colors ${className}`}>
+        {children}
+    </button>
+);
+// --- END MOCK Button ---
+
+
+export function Notifications() { // Giữ nguyên tên component là Notifications
+  // State
+  const [announcements, setAnnouncements] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState(null);
+  
+  // State giả lập (giữ lại theo code gốc)
+  const [readAnnouncementIds, setReadAnnouncementIds] = useState(new Set()); 
+
+
+  // --- HÀM GỌI API ---
+  const fetchAnnouncements = async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+        // API GET /api/announcements
+        const response = await fetch('http://localhost:8081/api/announcements'); 
+        
+        if (!response.ok) {
+            throw new Error("Không thể lấy danh sách thông báo đã gửi.");
+        }
+        
+        const rawData = await response.json();
+        
+        // --- CHUYỂN ĐỔI DỮ LIỆU SENT ANNOUNCEMENTS ---
+        const transformedData = rawData.map(announcement => {
+            const type = 'GENERAL'; 
+            const Icon = typeIcons[type];
+            const color = typeColors[type];
+            
+            // Format thời gian hiển thị
+            const dateTime = new Date(announcement.createdAt);
+            const timeFormatted = dateTime.toLocaleDateString('vi-VN') + ' ' + dateTime.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+
+            return {
+                id: announcement.id,
+                title: announcement.title,
+                message: announcement.message, 
+                
+                // THÔNG TIN BỔ SUNG TỪ API
+                sender: announcement.senderName,
+                receiverCount: announcement.receiverCount,
+                
+                // Giả lập trạng thái đã đọc/loại thông báo
+                read: true, 
+                type: type, 
+                icon: Icon,
+                color: color,
+                time: timeFormatted,
+            };
+        });
+
+        setAnnouncements(transformedData);
+        
+    } catch (err) {
+        setError(err.message);
+        toast.error("Lỗi tải lịch sử thông báo", { description: err.message });
+    } finally {
+        setIsLoading(false);
+    }
+  };
+
+  // --- HOOK TẢI DỮ LIỆU ---
+  useEffect(() => {
+    fetchAnnouncements();
+  }, []); 
+
+  // Tính toán Stats
+  const totalSentAnnouncements = announcements.length;
+  const totalReceivers = announcements.reduce((sum, ann) => sum + ann.receiverCount, 0);
+  const avgReceivers = totalSentAnnouncements > 0 
+                       ? Math.round(totalReceivers / totalSentAnnouncements) 
+                       : 0;
+                       
+  // --- Handler tạm thời cho nút Tạo TB ---
+  const handleCreateNotificationClick = () => {
+      console.log("Nút 'Tạo Thông Báo Mới' đã được nhấn!");
+      toast.info("Chức năng tạo thông báo sẽ được thêm sau.");
+  };
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl text-slate-900">Notifications</h1>
-          <p className="text-slate-500 mt-1">Stay updated with important events and alerts</p>
+          {/* Tên trang đã dịch */}
+          <h1 className="text-3xl text-slate-900">Quản Lý Thông Báo</h1>
+          <p className="text-slate-500 mt-1">Theo dõi các thông báo đã được Ban Quản Lý gửi đi</p>
         </div>
-        <div className="flex items-center gap-3">
-          <div className="px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-xl">
-            {unreadCount} Unread
-          </div>
-          <button className="px-6 py-3 bg-white text-slate-700 border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors">
-            Mark All as Read
-          </button>
-        </div>
+       
+        {/* NÚT TẠO THÔNG BÁO MỚI */}
+        <Button 
+            onClick={handleCreateNotificationClick}
+            className="bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-500/50"
+        >
+            <span className="flex items-center"> 
+                <Plus className="w-4 h-4 mr-2" /> 
+                Tạo Thông Báo Mới
+            </span>
+            
+        </Button>
       </div>
 
-      {/* Stats */}
+      <hr/>
+
+      {/* Stats GRID ĐÃ DỊCH */}
       <div className="grid grid-cols-3 gap-6">
+        {/* Tổng số thông báo đã gửi */}
         <div className="bg-white rounded-xl p-6 shadow-sm border border-slate-200">
           <div className="flex items-center gap-3 mb-2">
-            <div className="w-10 h-10 rounded-lg bg-orange-100 flex items-center justify-center">
-              <AlertCircle className="w-5 h-5 text-orange-600" />
+            <div className="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center">
+              <Bell className="w-5 h-5 text-blue-600" />
             </div>
-            <p className="text-slate-500 text-sm">Alerts</p>
+            <p className="text-slate-500 text-sm">Tổng số TB đã gửi</p>
           </div>
-          <p className="text-2xl text-slate-900">{notifications.filter(n => n.type === 'alert').length}</p>
+          <p className="text-2xl text-slate-900">{totalSentAnnouncements}</p>
         </div>
 
+        {/* Tổng số người nhận */}
         <div className="bg-white rounded-xl p-6 shadow-sm border border-slate-200">
           <div className="flex items-center gap-3 mb-2">
-            <div className="w-10 h-10 rounded-lg bg-emerald-100 flex items-center justify-center">
-              <CheckCircle className="w-5 h-5 text-emerald-600" />
+            <div className="w-10 h-10 rounded-lg bg-purple-100 flex items-center justify-center">
+              <Users className="w-5 h-5 text-purple-600" />
             </div>
-            <p className="text-slate-500 text-sm">Success</p>
+            <p className="text-slate-500 text-sm">Tổng số người nhận</p>
           </div>
-          <p className="text-2xl text-slate-900">{notifications.filter(n => n.type === 'success').length}</p>
+          <p className="text-2xl text-slate-900">{totalReceivers}</p>
         </div>
 
+        {/* Người nhận trung bình */}
         <div className="bg-white rounded-xl p-6 shadow-sm border border-slate-200">
           <div className="flex items-center gap-3 mb-2">
             <div className="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center">
               <Info className="w-5 h-5 text-blue-600" />
             </div>
-            <p className="text-slate-500 text-sm">Information</p>
+            <p className="text-slate-500 text-sm">Người nhận Trung bình</p>
           </div>
-          <p className="text-2xl text-slate-900">{notifications.filter(n => n.type === 'info').length}</p>
+          <p className="text-2xl text-slate-900">{avgReceivers}</p>
         </div>
       </div>
 
-      {/* Notifications List */}
+      <hr/>
+      
+      {/* Notifications List (Hiển thị Lịch sử) */}
       <div className="space-y-3">
-        {notifications.map((notification) => {
-          const Icon = notification.icon;
+        {isLoading && <p className="text-center py-5 text-blue-500 flex items-center justify-center"><Loader2 className="w-5 h-5 animate-spin mr-2" /> Đang tải lịch sử thông báo...</p>}
+        {error && <p className="text-center py-5 text-red-500">Lỗi: {error}</p>}
+        
+        {!isLoading && announcements.length > 0 ? announcements.map((announcement) => {
+          const Icon = announcement.icon; 
           
           return (
             <div 
-              key={notification.id} 
-              className={`bg-white rounded-2xl p-6 shadow-sm border transition-all hover:shadow-md ${
-                notification.read ? 'border-slate-200' : 'border-blue-200 bg-blue-50/30'
-              }`}
+              key={announcement.id} 
+              className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200 transition-all hover:shadow-md"
             >
               <div className="flex items-start gap-4">
-                <div className={`w-12 h-12 rounded-xl bg-gradient-to-br flex items-center justify-center flex-shrink-0 ${
-                  notification.color === 'orange' ? 'from-orange-400 to-orange-600' :
-                  notification.color === 'emerald' ? 'from-emerald-400 to-emerald-600' :
-                  'from-blue-400 to-blue-600'
-                }`}>
+                {/* Icon và màu xanh cho Sent Announcement */}
+                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center flex-shrink-0">
                   <Icon className="w-6 h-6 text-white" />
                 </div>
                 
                 <div className="flex-1 min-w-0">
                   <div className="flex items-start justify-between gap-4 mb-1">
-                    <h3 className="text-slate-900">{notification.title}</h3>
-                    <span className="text-sm text-slate-500 whitespace-nowrap">{notification.time}</span>
+                    <h3 className="text-slate-900 font-semibold">{announcement.title}</h3>
+                    {/* Thời gian gửi */}
+                    <span className="text-sm text-slate-500 whitespace-nowrap flex items-center gap-1">
+                        <Clock className="w-4 h-4" /> {announcement.time}
+                    </span>
                   </div>
-                  <p className="text-slate-600">{notification.message}</p>
+                  <p className="text-slate-600 mb-2">{announcement.message}</p>
+                  
+                  {/* THÔNG TIN BỔ SUNG */}
+                  <div className="pt-2 border-t border-slate-100 text-xs text-slate-500 flex justify-between">
+                    <span>Gửi bởi: <span className="text-slate-700 font-medium">{announcement.sender}</span></span>
+                    <span>Đã gửi đến: <span className="text-slate-700 font-medium">{announcement.receiverCount} cư dân</span></span>
+                  </div>
                 </div>
-
-                {!notification.read && (
-                  <div className="w-2 h-2 rounded-full bg-blue-500 flex-shrink-0 mt-2" />
-                )}
               </div>
             </div>
           );
-        })}
+        }) : (
+            !isLoading && <p className="text-center py-10 text-slate-500">Chưa có thông báo nào được gửi.</p>
+        )}
       </div>
     </div>
   );

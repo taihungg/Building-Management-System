@@ -28,6 +28,7 @@ public class Vehicle {
     @Column(name = "name", nullable = false)
     private String name;
 
+    @Transient
     @Column(name = "type", nullable = false)
     private VehicleType type;
 

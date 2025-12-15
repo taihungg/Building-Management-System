@@ -1,16 +1,27 @@
-import { useState } from 'react';
-import { Lock, Mail, Eye, EyeOff, User, Shield } from 'lucide-react';
-
+import { useState, useEffect } from 'react';
+// 🛠️ ĐÃ THÊM icon Building2 cho Cơ Quan Chức Năng (Authority)
+import { Lock, Mail, Eye, EyeOff, User, Shield, Calculator, Building2 } from 'lucide-react'; 
+import React from 'react';
 interface LoginProps {
-  onLogin: (role: 'admin' | 'resident') => void;
+  // 🛠️ ĐÃ CẬP NHẬT TYPE VỚI VAI TRÒ MỚI: 'authority'
+  onLogin: (role: 'admin' | 'resident' | 'accounting' | 'authority') => void;
+  onNavigateAuth?: (page: 'login' | 'signup' | 'forgot') => void;
 }
 
-export function Login({ onLogin }: LoginProps) {
+export function Login({ onLogin, onNavigateAuth }: LoginProps) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
-  const [selectedRole, setSelectedRole] = useState<'admin' | 'resident' | null>(null);
+  // 🛠️ ĐÃ CẬP NHẬT TYPE VỚI VAI TRÒ MỚI: 'authority'
+  const [selectedRole, setSelectedRole] = useState<'admin' | 'resident' | 'accounting' | 'authority' | null>(null);
+
+  // Đặt URL về /login khi đang ở trang đăng nhập nếu chưa có route khác
+  useEffect(() => {
+    if (window.location.pathname !== '/login' && window.location.pathname !== '/signup' && window.location.pathname !== '/forgot') {
+      window.history.replaceState({}, '', '/login');
+    }
+  }, []);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -23,48 +34,110 @@ export function Login({ onLogin }: LoginProps) {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-cyan-50 via-blue-50 to-purple-50 flex items-center justify-center p-4">
+    <div className="min-h-screen flex flex-col items-center justify-center p-4" style={{ backgroundColor: '#F0F9FF' }}>
       <div className="w-full max-w-md">
-        {/* Logo and Title */}
+        {/* Logo/Brand - Outside card */}
         <div className="text-center mb-8">
-          <h1 className="text-4xl text-cyan-500 mb-2">BuildingHub</h1>
-          <p className="text-gray-600">Apartment Management System</p>
+          <h1 className="text-4xl font-bold mb-2" style={{ color: '#21C2E3' }}>BuildingHub</h1>
+          <p className="text-gray-500 text-sm">Apartment Management System</p>
         </div>
 
         {/* Login Card */}
-        <div className="bg-white rounded-2xl border-2 border-gray-100 p-8 shadow-lg">
+        <div className="bg-white rounded-2xl p-8 shadow-lg">
+          {/* Welcome Section */}
           <div className="mb-6">
-            <h2 className="text-2xl text-gray-900 mb-1">Chào Mừng Trở Lại</h2>
+            <h2 className="text-2xl font-semibold text-gray-900 mb-1">Chào Mừng Trở Lại</h2>
             <p className="text-gray-600 text-sm">Vui lòng đăng nhập vào tài khoản của bạn</p>
           </div>
 
-          {/* Role Selection */}
+          {/* Role Selection - 🛠️ ĐÃ CẬP NHẬT LƯỚI 2x2 CHO 4 VAI TRÒ */}
           <div className="mb-6">
-            <label className="block text-sm text-gray-700 mb-3">Chọn loại tài khoản</label>
+            <label className="block text-sm font-medium text-gray-700 mb-3">Chọn loại tài khoản</label>
             <div className="grid grid-cols-2 gap-3">
+              {/* ADMIN */}
               <button
                 type="button"
                 onClick={() => setSelectedRole('admin')}
-                className={`flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all ${
-                  selectedRole === 'admin'
-                    ? 'border-cyan-500 bg-cyan-500 text-white shadow-lg'
-                    : 'border-gray-200 bg-white text-gray-700 hover:bg-gray-50'
+                style={{
+                  backgroundColor: selectedRole === 'admin' ? '#21C2E3' : 'white',
+                  borderColor: selectedRole === 'admin' ? '#21C2E3' : '#E5E7EB',
+                  color: selectedRole === 'admin' ? 'white' : '#374151',
+                }}
+                className={`flex flex-col items-center gap-3 p-4 rounded-xl border-2 transition-all duration-200 ${
+                  selectedRole === 'admin' ? 'shadow-md' : ''
                 }`}
               >
-                <Shield className="w-6 h-6" />
-                <span className="text-sm font-medium">Quản Trị Viên</span>
+                <Shield 
+                  className="w-6 h-6" 
+                  style={{ color: selectedRole === 'admin' ? 'white' : '#4B5563' }}
+                />
+                <span className="text-sm font-medium" style={{ color: selectedRole === 'admin' ? 'white' : '#374151' }}>
+                  Quản Trị Viên
+                </span>
               </button>
+              {/* RESIDENT */}
               <button
                 type="button"
                 onClick={() => setSelectedRole('resident')}
-                className={`flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all ${
-                  selectedRole === 'resident'
-                    ? 'border-cyan-500 bg-cyan-500 text-white shadow-lg'
-                    : 'border-gray-200 bg-white text-gray-700 hover:bg-gray-50'
+                style={{
+                  backgroundColor: selectedRole === 'resident' ? '#21C2E3' : 'white',
+                  borderColor: selectedRole === 'resident' ? '#21C2E3' : '#E5E7EB',
+                  color: selectedRole === 'resident' ? 'white' : '#374151',
+                }}
+                className={`flex flex-col items-center gap-3 p-4 rounded-xl border-2 transition-all duration-200 ${
+                  selectedRole === 'resident' ? 'shadow-md' : ''
                 }`}
               >
-                <User className="w-6 h-6" />
-                <span className="text-sm font-medium">Cư Dân</span>
+                <User 
+                  className="w-6 h-6" 
+                  style={{ color: selectedRole === 'resident' ? 'white' : '#4B5563' }}
+                />
+                <span className="text-sm font-medium" style={{ color: selectedRole === 'resident' ? 'white' : '#374151' }}>
+                  Cư Dân
+                </span>
+              </button>
+              {/* accounting */}
+              <button
+                type="button"
+                onClick={() => setSelectedRole('accounting')}
+                style={{
+                  backgroundColor: selectedRole === 'accounting' ? '#21C2E3' : 'white',
+                  borderColor: selectedRole === 'accounting' ? '#21C2E3' : '#E5E7EB',
+                  color: selectedRole === 'accounting' ? 'white' : '#374151',
+                }}
+                className={`flex flex-col items-center gap-3 p-4 rounded-xl border-2 transition-all duration-200 ${
+                  selectedRole === 'accounting' ? 'shadow-md' : ''
+                }`}
+              >
+                <Calculator 
+                  className="w-6 h-6" 
+                  style={{ color: selectedRole === 'accounting' ? 'white' : '#4B5563' }}
+                />
+                <span className="text-sm font-medium" style={{ color: selectedRole === 'accounting' ? 'white' : '#374151' }}>
+                  Kế Toán
+                </span>
+              </button>
+              
+              {/* 🛠️ AUTHORITY (MỚI) */}
+              <button
+                type="button"
+                onClick={() => setSelectedRole('authority')}
+                style={{
+                  backgroundColor: selectedRole === 'authority' ? '#21C2E3' : 'white',
+                  borderColor: selectedRole === 'authority' ? '#21C2E3' : '#E5E7EB',
+                  color: selectedRole === 'authority' ? 'white' : '#374151',
+                }}
+                className={`flex flex-col items-center gap-3 p-4 rounded-xl border-2 transition-all duration-200 ${
+                  selectedRole === 'authority' ? 'shadow-md' : ''
+                }`}
+              >
+                <Building2 
+                  className="w-6 h-6" 
+                  style={{ color: selectedRole === 'authority' ? 'white' : '#4B5563' }}
+                />
+                <span className="text-sm font-medium" style={{ color: selectedRole === 'authority' ? 'white' : '#374151' }}>
+                  Cơ Quan Chức Năng
+                </span>
               </button>
             </div>
           </div>
@@ -72,7 +145,7 @@ export function Login({ onLogin }: LoginProps) {
           <form onSubmit={handleSubmit} className="space-y-5">
             {/* Email Input */}
             <div>
-              <label htmlFor="email" className="block text-sm text-gray-700 mb-2">
+              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
                 Địa chỉ Email
               </label>
               <div className="relative">
@@ -83,7 +156,7 @@ export function Login({ onLogin }: LoginProps) {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="Nhập email của bạn"
-                  className="w-full pl-12 pr-4 py-3 bg-gray-50 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 text-gray-700"
+                  className="w-full pl-12 pr-4 py-3 bg-gray-50 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#21C2E3] focus:border-[#21C2E3] text-gray-700 placeholder-gray-400"
                   required
                 />
               </div>
@@ -91,7 +164,7 @@ export function Login({ onLogin }: LoginProps) {
 
             {/* Password Input */}
             <div>
-              <label htmlFor="password" className="block text-sm text-gray-700 mb-2">
+              <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
                 Mật khẩu
               </label>
               <div className="relative">
@@ -102,13 +175,13 @@ export function Login({ onLogin }: LoginProps) {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="Nhập mật khẩu của bạn"
-                  className="w-full pl-12 pr-12 py-3 bg-gray-50 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 text-gray-700"
+                  className="w-full pl-12 pr-12 py-3 bg-gray-50 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#21C2E3] focus:border-[#21C2E3] text-gray-700 placeholder-gray-400"
                   required
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
                 >
                   {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                 </button>
@@ -122,13 +195,20 @@ export function Login({ onLogin }: LoginProps) {
                   type="checkbox"
                   checked={rememberMe}
                   onChange={(e) => setRememberMe(e.target.checked)}
-                  className="w-4 h-4 rounded border-2 border-gray-300 text-cyan-500 focus:ring-2 focus:ring-cyan-500"
+                  className="w-4 h-4 rounded border-2 border-gray-300 text-[#21C2E3] focus:ring-2 focus:ring-[#21C2E3] cursor-pointer"
                 />
                 <span className="text-sm text-gray-700">Ghi nhớ đăng nhập</span>
               </label>
               <button
                 type="button"
-                className="text-sm text-cyan-500 hover:text-cyan-600 transition-colors"
+                className="text-sm transition-colors font-medium"
+                style={{ color: '#21C2E3' }}
+                onMouseEnter={(e) => e.currentTarget.style.color = '#15A9CA'}
+                onMouseLeave={(e) => e.currentTarget.style.color = '#21C2E3'}
+                onClick={() => {
+                  onNavigateAuth?.('forgot');
+                  window.history.pushState({}, '', '/forgot');
+                }}
               >
                 Quên mật khẩu?
               </button>
@@ -137,26 +217,16 @@ export function Login({ onLogin }: LoginProps) {
             {/* Login Button */}
             <button
               type="submit"
-              className="w-full py-3 bg-cyan-500 text-white rounded-lg hover:bg-cyan-600 transition-all"
+              className="w-full py-3 text-white rounded-lg transition-all font-medium shadow-md"
+              style={{ backgroundColor: '#21C2E3' }}
+              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#15A9CA'}
+              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#21C2E3'}
             >
               Đăng Nhập
             </button>
           </form>
 
-          {/* Sign Up Link */}
-          <div className="mt-6 text-center">
-            <p className="text-sm text-gray-600">
-              Chưa có tài khoản?{' '}
-              <button className="text-cyan-500 hover:text-cyan-600 transition-colors">
-                Đăng ký ngay
-              </button>
-            </p>
-          </div>
-        </div>
-
-        {/* Footer */}
-        <div className="mt-6 text-center text-sm text-gray-500">
-          © 2024 BuildingHub. All rights reserved.
+          
         </div>
       </div>
     </div>
