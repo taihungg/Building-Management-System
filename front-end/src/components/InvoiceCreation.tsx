@@ -1,327 +1,567 @@
-import React, { useState, useEffect } from 'react';
-import { Send, AlertCircle, CheckCircle, Clock, CheckCircle2 } from 'lucide-react';
-import { addAnnouncement } from '../utils/announcements';
+import React, { useState, useRef, useMemo } from 'react';
+import { Upload, FileSpreadsheet, CheckCircle2, X, Save, Receipt, AlertCircle, Loader2, Download, FileText, Home, Zap, Droplet, Clock } from 'lucide-react';
 import { toast } from 'sonner';
+import * as XLSX from 'xlsx';
 
-// Khai báo type Bill cần thiết
-interface Bill { 
-    id: string;
-    status: 'PENDING' | 'PAID' | string; // Giả định status từ API
-    dueDate: string; // Ngày đến hạn
-    period: string;
-    amount: number;
-    apartmentNumber?: string;
-    residentName?: string;
-    type?: string;
+// Interface cho dữ liệu từ Excel
+interface UsageData {
+  apartmentNumber: string;
+  residentName?: string;
+  electricity?: number;
+  water?: number;
+  otherServices?: number;
+  [key: string]: any; // Cho phép các cột khác
 }
 
 export function InvoiceCreation() {
-  const [bills, setBills] = useState<Bill[]>([]); 
-  const [selectedBill, setSelectedBill] = useState<Bill | null>(null);
-  const [isReminderModalOpen, setIsReminderModalOpen] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
+  // State cho upload Excel
+  const [uploadedFile, setUploadedFile] = useState<File | null>(null);
+  const [uploadedData, setUploadedData] = useState<UsageData[]>([]);
+  const [isUploading, setIsUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // State cho Data Preview Table
+  const [tableData, setTableData] = useState<any[]>([]);
+  const [isDataLoaded, setIsDataLoaded] = useState<boolean>(false);
+
+  // State cho Save action
+  const [isSaving, setIsSaving] = useState(false);
+  const [isSaved, setIsSaved] = useState(false);
   
-  // STATE CHO LOGIC GỌI API BACKEND
-  const [inputMonth, setInputMonth] = useState<number>(new Date().getMonth() + 1);
-  const [inputYear, setInputYear] = useState<number>(new Date().getFullYear());
-  const [isGenerating, setIsGenerating] = useState(false);
-  const [generationResult, setGenerationResult] = useState<{ status: 'success' | 'error' | null, message: string }>({ status: null, message: '' });
+  // State cho Custom Toast Notification
+  const [showToast, setShowToast] = useState(false);
 
 
-  // 1. HÀM TẢI LẠI DANH SÁCH HÓA ĐƠN TỪ API
-  const fetchBills = async () => {
-    setIsLoading(true);
-    try {
-      // Logic tải bills thực tế: mặc định lấy theo năm hiện tại
-      let url = `http://localhost:8081/api/v1/accounting/invoices?year=${new Date().getFullYear()}`; 
-      
-      const response = await fetch(url);
-      if (!response.ok) throw new Error("Không thể tải dữ liệu hóa đơn");
-      
-      const res = await response.json();
-      const data: Bill[] = res.data || [];
-      
-      setBills(data);
-      
-    } catch (error) {
-      console.error("Lỗi tải hóa đơn:", error);
-      const errorMessage = error instanceof Error ? error.message : "Đã xảy ra lỗi không xác định.";
-      toast.error("Lỗi tải dữ liệu", { description: errorMessage });
-      setBills([]);
-    } finally {
-      setIsLoading(false);
+  // Hàm trigger file input khi click vào button
+  const handleUploadClick = () => {
+    if (fileInputRef.current && !isUploading) {
+      fileInputRef.current.click();
     }
   };
 
-  // Gọi API tải bills khi component mount
-  useEffect(() => {
-   fetchBills();
-  }, []);
+  // Hàm xử lý upload Excel
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
 
-  // 2. LOGIC TẠO HÓA ĐƠN HÀNG LOẠT (Gọi API Backend)
-  const handleGenerateInvoices = async () => {
-    if (inputMonth < 1 || inputMonth > 12 || inputYear < 2020) {
-        setGenerationResult({ status: 'error', message: 'Vui lòng nhập Tháng/Năm hợp lệ.' });
-        return;
+    // Kiểm tra định dạng file
+    if (!file.name.match(/\.(xlsx|xls)$/i)) {
+      toast.error("Định dạng file không hợp lệ", { description: "Vui lòng chọn file Excel (.xlsx hoặc .xls)" });
+      return;
     }
-      
-    if (isGenerating) return;
-    setIsGenerating(true);
-    setGenerationResult({ status: null, message: '' });
 
-    const url = `http://localhost:8081/api/v1/accounting/invoices/generation?month=${inputMonth}&year=${inputYear}`;
+    setIsUploading(true);
+    setUploadedFile(file);
 
     try {
-        const response = await fetch(url, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                // Thêm Authorization header nếu cần
-            },
-        });
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        try {
+          const data = new Uint8Array(e.target?.result as ArrayBuffer);
+          const workbook = XLSX.read(data, { type: 'array' });
+          
+          // Lấy sheet đầu tiên
+          const firstSheetName = workbook.SheetNames[0];
+          const worksheet = workbook.Sheets[firstSheetName];
+          
+          // Chuyển đổi sang JSON
+          const jsonData = XLSX.utils.sheet_to_json<UsageData>(worksheet);
+          
+          if (jsonData.length === 0) {
+            toast.error("File Excel trống", { description: "Vui lòng kiểm tra lại file của bạn" });
+            setUploadedFile(null);
+            setTableData([]);
+            setIsDataLoaded(false);
+            return;
+          }
 
-        const res = await response.json();
-
-        if (response.ok && res.statusCode === 200) { 
-            setGenerationResult({ 
-                status: 'success', 
-                message: res.message || `Đã tạo thành công ${res.data || '?'} hóa đơn nháp cho tháng ${inputMonth}/${inputYear}.`
-            });
-            toast.success("Tạo hóa đơn thành công", { description: res.message });
-            // Tải lại danh sách bills sau khi tạo
-            fetchBills(); 
-        } else {
-            setGenerationResult({ 
-                status: 'error', 
-                message: res.message || 'Lỗi không xác định khi tạo hóa đơn. Vui lòng kiểm tra console.'
-            });
-            toast.error("Lỗi tạo hóa đơn", { description: res.message || 'Vui lòng kiểm tra lại trạng thái hóa đơn của tháng này.' });
+          // Set data for preview table
+          setTableData(jsonData);
+          setIsDataLoaded(true);
+          
+          // Keep uploadedData for backward compatibility
+          setUploadedData(jsonData);
+          setIsSaved(false);
+          toast.success("Upload thành công", { description: `Đã tải lên ${jsonData.length} dòng dữ liệu` });
+        } catch (error) {
+          console.error("Lỗi đọc file Excel:", error);
+          toast.error("Lỗi đọc file", { description: "Không thể đọc file Excel. Vui lòng kiểm tra lại định dạng." });
+          setUploadedFile(null);
+          setTableData([]);
+          setIsDataLoaded(false);
+        } finally {
+          setIsUploading(false);
         }
+      };
+
+      reader.onerror = () => {
+        toast.error("Lỗi đọc file", { description: "Không thể đọc file. Vui lòng thử lại." });
+        setIsUploading(false);
+        setUploadedFile(null);
+        setTableData([]);
+        setIsDataLoaded(false);
+      };
+
+      reader.readAsArrayBuffer(file);
     } catch (error) {
-        console.error("Lỗi gọi API:", error);
-        setGenerationResult({ status: 'error', message: 'Không thể kết nối đến máy chủ hoặc lỗi mạng.' });
-        toast.error("Lỗi kết nối", { description: 'Không thể gọi API tạo hóa đơn.' });
-    } finally {
-        setIsGenerating(false);
+      console.error("Lỗi upload file:", error);
+      toast.error("Lỗi upload", { description: "Đã xảy ra lỗi khi upload file." });
+      setIsUploading(false);
+      setUploadedFile(null);
+      setTableData([]);
+      setIsDataLoaded(false);
     }
   };
-  // ------------------------------------
 
-  // ❌ ĐÃ XÓA checkOverdue (vì bạn không muốn logic Overdue trên FE)
-  
-  // Lọc chỉ dựa vào trạng thái cứng PENDING từ API
-  const pendingBills = bills.filter(b => b.status ==='PENDING');
-  
+  // Hàm xuất dữ liệu (Export Data / Download Template)
+  const handleDownloadTemplate = () => {
+    // Kiểm tra nếu có dữ liệu trong table, export dữ liệu thực tế
+    if (tableData && tableData.length > 0) {
+      try {
+        // Tạo worksheet từ dữ liệu hiện tại
+        const worksheet = XLSX.utils.json_to_sheet(tableData);
+        
+        // Tạo workbook và thêm worksheet
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, 'Dữ liệu sử dụng');
+        
+        // Xuất file Excel
+        XLSX.writeFile(workbook, 'Du_lieu_su_dung_export.xlsx');
+        
+        toast.success("Đã xuất dữ liệu", { description: "File Du_lieu_su_dung_export.xlsx đã được tải xuống" });
+      } catch (error) {
+        console.error("Lỗi xuất dữ liệu:", error);
+        toast.error("Lỗi xuất dữ liệu", { description: "Không thể xuất file. Vui lòng thử lại." });
+      }
+      return;
+    }
 
-  const handleSendReminder = (bill: Bill) => {
-    setSelectedBill(bill);
-    setIsReminderModalOpen(true);
+    // Nếu không có dữ liệu, tải template mẫu (fallback)
+    const headers = [
+      'STT',
+      'Số phòng',
+      'Tên tòa nhà',
+      'Tháng',
+      'Năm',
+      'Chỉ số điện cũ',
+      'Chỉ số điện mới',
+      'Chỉ số nước cũ',
+      'Chỉ số nước mới',
+      'Ghi chú'
+    ];
+
+    // Tạo dữ liệu mẫu (3 dòng ví dụ)
+    const sampleData = [
+      ['1', '101', 'Tòa A', '12', '2024', '100', '150', '50', '75', ''],
+      ['2', '102', 'Tòa A', '12', '2024', '200', '250', '100', '125', ''],
+      ['3', '201', 'Tòa B', '12', '2024', '150', '200', '80', '100', '']
+    ];
+
+    // Kết hợp headers và data
+    const csvContent = [
+      headers.join(','),
+      ...sampleData.map(row => row.join(','))
+    ].join('\n');
+
+    // Tạo Blob với BOM để Excel hiển thị tiếng Việt đúng
+    const BOM = '\uFEFF';
+    const blob = new Blob([BOM + csvContent], { type: 'text/csv;charset=utf-8;' });
+
+    // Tạo link download
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', 'template_mau.csv');
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+
+    toast.success("Đã tải mẫu data", { description: "File template_mau.csv đã được tải xuống" });
   };
-  
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('vi-VN', { 
-        style: 'currency', 
-        currency: 'VND',
-        maximumFractionDigits: 0 
+
+  // Hàm lưu dữ liệu (Mock Save Logic)
+  const handleSave = async () => {
+    if (!isDataLoaded || tableData.length === 0) {
+      toast.error("Vui lòng upload file trước", { description: "Chưa có dữ liệu để lưu" });
+      return;
+    }
+
+    if (isSaved) {
+      toast.info("Dữ liệu đã được lưu", { description: "Dữ liệu này đã được lưu trước đó" });
+      return;
+    }
+
+    setIsSaving(true);
+    
+    try {
+      // Mock save - Log to console to simulate API call
+      console.log('Saving data to Database:', tableData);
+
+      // Simulate API call delay
+      await new Promise(resolve => setTimeout(resolve, 800));
+
+      setIsSaved(true);
+      // Show custom toast notification
+      setShowToast(true);
+      setTimeout(() => {
+        setShowToast(false);
+      }, 3000);
+    } catch (error) {
+      console.error("Lỗi lưu dữ liệu:", error);
+      toast.error("Lỗi lưu dữ liệu", { description: "Không thể lưu dữ liệu. Vui lòng thử lại." });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+
+  // Lấy tên các cột từ dữ liệu
+  const getColumns = (): string[] => {
+    if (uploadedData.length === 0) return [];
+    return Object.keys(uploadedData[0]);
+  };
+
+  const formatCurrency = (amount: number | undefined) => {
+    if (amount === undefined || amount === null) return '-';
+    return new Intl.NumberFormat('vi-VN', {
+      style: 'currency',
+      currency: 'VND',
+      maximumFractionDigits: 0
     }).format(amount);
   };
 
-  const confirmSendReminder = () => {
-    if (!selectedBill) return;
+  // Calculate summary statistics from tableData
+  const summaryStats = useMemo(() => {
+    if (tableData.length === 0) {
+      return {
+        totalRooms: 0,
+        totalElectricity: 0,
+        totalWater: 0,
+        status: 'Chờ duyệt'
+      };
+    }
 
-    // ❌ Xóa logic isOverdue, chỉ dùng thông báo 'Nhắc nhở thanh toán'
-    
-    const apartmentInfo = selectedBill.apartmentNumber ? `Căn hộ ${selectedBill.apartmentNumber}` : '';
-    const residentInfo = selectedBill.residentName ? ` - ${selectedBill.residentName}` : '';
-    const fullInfo = apartmentInfo + residentInfo;
-    
-    const reminderType = 'info'; // Luôn là info
-    const reminderTitle = `Nhắc nhở thanh toán: ${selectedBill.period}${fullInfo ? ` (${fullInfo})` : ''}`;
-    const reminderMessage = `${fullInfo ? `Kính gửi cư dân ${fullInfo}.\n\n` : ''}Nhắc nhở thanh toán hóa đơn ${selectedBill.period}. Số tiền: ${formatCurrency(selectedBill.amount)}. Hạn thanh toán: ${selectedBill.dueDate}.`;
+    // Calculate total rooms (unique apartment numbers or row count)
+    const totalRooms = new Set(
+      tableData.map(row => {
+        // Try different possible column names for apartment/room
+        return row['Số phòng'] || row['Phòng'] || row['Căn hộ'] || row['apartmentNumber'] || row['roomNumber'] || '';
+      }).filter(Boolean)
+    ).size || tableData.length;
 
-    addAnnouncement({
-      type: reminderType,
-      icon: null,
-      title: reminderTitle,
-      message: reminderMessage,
-      read: false,
-      color: 'blue', // Mặc định màu xanh/blue cho nhắc nhở
+    // Calculate total electricity consumption
+    // Try multiple approaches: direct consumption column or calculate from new - old
+    let totalElectricity = 0;
+    tableData.forEach(row => {
+      // First, try to find a direct consumption column
+      const directConsumption = row['Điện tiêu thụ'] || row['Điện'] || row['Tiêu thụ điện'] || 
+                                 row['electricityConsumption'] || row['electricityUsed'] || 0;
+      
+      if (directConsumption && !isNaN(Number(directConsumption))) {
+        totalElectricity += Number(directConsumption);
+      } else {
+        // If no direct column, calculate from new - old
+        const electricityNew = row['Chỉ số điện mới'] || row['Điện mới'] || row['Điện cuối'] ||
+                               row['electricityNew'] || row['electricity'] || 0;
+        const electricityOld = row['Chỉ số điện cũ'] || row['Điện cũ'] || row['Điện đầu'] ||
+                               row['electricityOld'] || 0;
+        const consumption = Number(electricityNew) - Number(electricityOld);
+        if (!isNaN(consumption) && consumption >= 0) {
+          totalElectricity += consumption;
+        }
+      }
     });
 
-    alert(`Đã gửi thông báo nhắc nợ thành công${fullInfo ? ` cho ${fullInfo}` : ''}!`);
-    setIsReminderModalOpen(false);
-    setSelectedBill(null);
-  };
+    // Calculate total water consumption
+    // Look for columns like 'Chỉ số nước mới', 'Nước mới', 'waterNew', etc.
+    // and subtract 'Chỉ số nước cũ', 'Nước cũ', 'waterOld', etc.
+    let totalWater = 0;
+    tableData.forEach(row => {
+      const waterNew = row['Chỉ số nước mới'] || row['Nước mới'] || row['waterNew'] || row['water'] || 0;
+      const waterOld = row['Chỉ số nước cũ'] || row['Nước cũ'] || row['waterOld'] || row['waterOld'] || 0;
+      const consumption = Number(waterNew) - Number(waterOld);
+      if (!isNaN(consumption) && consumption > 0) {
+        totalWater += consumption;
+      }
+    });
+
+    return {
+      totalRooms,
+      totalElectricity,
+      totalWater,
+      status: isSaved ? 'Đã lưu' : 'Chờ lưu'
+    };
+  }, [tableData, isSaved]);
 
   return (
     <div className="space-y-6">
+      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Tạo Hóa Đơn Hàng Loạt</h1>
-          <p className="text-gray-600">Tự động tạo hóa đơn nháp (PENDING) cho toàn bộ căn hộ trong tháng/năm đã chọn.</p>
+          <h1 className="text-3xl font-bold text-gray-900">Dữ liệu sử dụng</h1>
         </div>
-        
-        <div className="flex gap-3 items-end">
-          {/* Input cho Tháng */}
-          <div className="flex flex-col">
-            <label className="text-sm text-gray-600 mb-1">Tháng</label>
-            <input
-              type="number"
-              min="1"
-              max="12"
-              value={inputMonth}
-              onChange={(e) => setInputMonth(parseInt(e.target.value) || 1)}
-              className="w-20 px-3 py-2 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500"
-            />
-          </div>
-          
-          {/* Input cho Năm */}
-          <div className="flex flex-col">
-            <label className="text-sm text-gray-600 mb-1">Năm</label>
-            <input
-              type="number"
-              min="2020"
-              value={inputYear}
-              onChange={(e) => setInputYear(parseInt(e.target.value) || new Date().getFullYear())}
-              className="w-24 px-3 py-2 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500"
-            />
-          </div>
+      </div>
 
-          {/* Nút Gọi API */}
-          <button
-            onClick={handleGenerateInvoices}
-            disabled={isGenerating}
-            className={`flex items-center gap-2 px-6 py-3 text-white rounded-xl transition-all ${isGenerating 
-                ? 'bg-gray-400 cursor-not-allowed' 
-                : 'bg-gradient-to-r from-indigo-600 to-purple-600 hover:shadow-lg'}`}
-          >
-            {isGenerating ? (
-                <>
-                    <Clock className="w-5 h-5 animate-spin" />
-                    Đang Tạo...
-                </>
-            ) : (
-                <>
-                    <Send className="w-5 h-5" />
-                    Tạo Hóa Đơn
-                </>
+      {/* Summary Statistics Section */}
+      <div className="grid grid-cols-4 gap-4">
+        {/* Card 1: Tổng số phòng - Blue theme */}
+        <div className="rounded-xl p-4 shadow-sm" style={{ backgroundColor: '#eff6ff', border: '2px solid #bfdbfe' }}>
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-xs font-medium tracking-wide" style={{ color: '#1d4ed8' }}>Tổng số phòng</p>
+            <Home className="w-5 h-5" style={{ color: '#1d4ed8' }} />
+          </div>
+          <p className="text-2xl font-bold" style={{ color: '#1d4ed8' }}>
+            {summaryStats.totalRooms > 0 ? summaryStats.totalRooms : '-'}
+          </p>
+        </div>
+
+        {/* Card 2: Tổng điện tiêu thụ - Amber theme */}
+        <div className="rounded-xl p-4 shadow-sm" style={{ backgroundColor: '#fffbeb', border: '2px solid #fde68a' }}>
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-xs font-medium tracking-wide" style={{ color: '#b45309' }}>Tổng điện tiêu thụ</p>
+            <Zap className="w-5 h-5" style={{ color: '#b45309' }} />
+          </div>
+          <p className="text-2xl font-bold" style={{ color: '#b45309' }}>
+            {summaryStats.totalElectricity > 0 ? summaryStats.totalElectricity.toLocaleString('vi-VN') : '-'}
+          </p>
+        </div>
+
+        {/* Card 3: Tổng nước tiêu thụ - Cyan theme */}
+        <div className="rounded-xl p-4 shadow-sm" style={{ backgroundColor: '#ecfeff', border: '2px solid #a5f3fc' }}>
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-xs font-medium tracking-wide" style={{ color: '#0e7490' }}>Tổng nước tiêu thụ</p>
+            <Droplet className="w-5 h-5" style={{ color: '#0e7490' }} />
+          </div>
+          <p className="text-2xl font-bold" style={{ color: '#0e7490' }}>
+            {summaryStats.totalWater > 0 ? summaryStats.totalWater.toLocaleString('vi-VN') : '-'}
+          </p>
+        </div>
+
+        {/* Card 4: Trạng thái - Emerald theme */}
+        <div className="rounded-xl p-4 shadow-sm" style={{ backgroundColor: '#ecfdf5', border: '2px solid #a7f3d0' }}>
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-xs font-medium tracking-wide" style={{ color: '#047857' }}>Trạng thái</p>
+            <Clock className="w-5 h-5" style={{ color: '#047857' }} />
+          </div>
+          <p className="text-2xl font-bold" style={{ color: '#047857' }}>
+            {summaryStats.status}
+          </p>
+        </div>
+      </div>
+
+      {/* Card chính - Upload và Actions */}
+      <div className="bg-white rounded-xl p-6 border border-gray-200 shadow-md">
+        {/* Header with Action Buttons */}
+        <div className="flex items-center justify-between mb-6">
+          {/* Left: Title */}
+          <div className="flex items-center gap-3">
+            <h2 className="text-xl font-semibold text-gray-900">Quản lý dữ liệu sử dụng</h2>
+            {isSaved && (
+              <span className="px-4 py-2 bg-green-100 text-green-700 rounded-full text-sm font-semibold flex items-center gap-2 shadow-sm">
+                <CheckCircle2 className="w-4 h-4" />
+                Đã lưu
+              </span>
             )}
-          </button>
+          </div>
+
+          {/* Right: Action Buttons */}
+          <div className="flex items-center gap-3">
+            {/* Hidden file input - Completely hidden */}
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".xlsx,.xls"
+              onChange={handleFileUpload}
+              className="hidden"
+              style={{ display: 'none' }}
+              disabled={isUploading}
+            />
+
+            {/* Xuất Excel Button */}
+            <button
+              onClick={handleDownloadTemplate}
+              className="h-10 flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all active:scale-95 border border-gray-300 text-gray-700 bg-white hover:bg-gray-50"
+            >
+              <Download className="w-4 h-4" />
+              <span>Xuất excel</span>
+            </button>
+
+            {/* Upload Excel Button - Primary */}
+            <button
+              onClick={handleUploadClick}
+              disabled={isUploading}
+              className={`h-10 flex items-center gap-2.5 px-6 rounded-lg font-bold transition-all shadow-sm active:scale-95 ${
+                isUploading
+                  ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                  : 'bg-purple-600 text-white hover:bg-purple-700 hover:shadow-md'
+              }`}
+            >
+              {isUploading ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <span>Đang tải...</span>
+                </>
+              ) : (
+                <>
+                  <Upload className="w-4 h-4" />
+                  <span>Upload excel</span>
+                </>
+              )}
+            </button>
+
+            {/* Lưu Button - Save Action */}
+            <button
+              onClick={handleSave}
+              disabled={!isDataLoaded || isUploading || isSaved}
+              className={`h-10 flex items-center gap-2.5 px-6 py-2 rounded-lg font-medium transition-all shadow-sm active:scale-95 ${
+                !isDataLoaded || isUploading || isSaved
+                  ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                  : 'bg-blue-600 text-white hover:bg-blue-700'
+              }`}
+            >
+              {isSaving ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <span>Đang lưu...</span>
+                </>
+              ) : isSaved ? (
+                <>
+                  <CheckCircle2 className="w-4 h-4" />
+                  <span>Đã lưu</span>
+                </>
+              ) : (
+                <>
+                  <Save className="w-4 h-4" />
+                  <span>Lưu</span>
+                </>
+              )}
+            </button>
+          </div>
         </div>
+
+        {/* Data Preview Table Section - Only render when data exists */}
+        {tableData.length > 0 && (
+          <div className="mt-6 bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden animate-fade-slide-up">
+            <div 
+              className="overflow-x-auto overflow-y-auto max-h-[500px]"
+              style={{
+                scrollbarWidth: 'thin',
+                scrollbarColor: '#cbd5e1 transparent'
+              }}
+            >
+              <style>{`
+                div::-webkit-scrollbar {
+                  width: 8px;
+                  height: 8px;
+                }
+                div::-webkit-scrollbar-track {
+                  background: transparent;
+                }
+                div::-webkit-scrollbar-thumb {
+                  background-color: #cbd5e1;
+                  border-radius: 9999px;
+                }
+                div::-webkit-scrollbar-thumb:hover {
+                  background-color: #9ca3af;
+                }
+              `}</style>
+              <table className="w-full border-collapse">
+                <thead className="bg-slate-100 sticky top-0 z-10">
+                  <tr>
+                    {Object.keys(tableData[0]).map((col, idx) => (
+                      <th
+                        key={idx}
+                        className="px-4 py-3 text-left text-xs font-semibold text-gray-700 tracking-wider border-b border-gray-200 bg-slate-100"
+                      >
+                        {col}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {tableData.map((row, rowIdx) => (
+                    <tr key={rowIdx} className="hover:bg-blue-50 cursor-pointer transition-colors duration-200">
+                      {Object.keys(tableData[0]).map((col, colIdx) => {
+                        const value = row[col];
+                        const isNumber = typeof value === 'number';
+                        const colLower = col.toLowerCase();
+                        const isCurrencyField = colLower.includes('amount') || 
+                                                colLower.includes('tiền') || 
+                                                colLower.includes('cost') || 
+                                                colLower.includes('price');
+                        return (
+                          <td
+                            key={colIdx}
+                            className="px-4 py-3 text-sm text-gray-900 border-b border-gray-100"
+                          >
+                            {isNumber && isCurrencyField ? formatCurrency(value) : value}
+                          </td>
+                        );
+                      })}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
       </div>
 
-      {/* HIỂN THỊ KẾT QUẢ GỌI API */}
-      {generationResult.status && (
-        <div className={`p-4 rounded-xl border-2 ${generationResult.status === 'success' ? 'border-green-300 bg-green-50 text-green-800' : 'border-red-300 bg-red-50 text-red-800'}`}>
-          <div className="flex items-center gap-2">
-            {generationResult.status === 'success' ? <CheckCircle2 className="w-5 h-5" /> : <AlertCircle className="w-5 h-5" />}
-            <p className="font-semibold">{generationResult.message}</p>
-          </div>
+      {/* Custom Toast Notification */}
+      {showToast && (
+        <div
+          className="fixed top-4 right-4 z-50 bg-white shadow-lg rounded-lg border-l-4 border-green-500 p-4 flex items-center gap-3 min-w-[300px]"
+          style={{
+            animation: 'slideInRight 0.3s ease-out, fadeOut 0.3s ease-in 2.7s forwards'
+          }}
+        >
+          <CheckCircle2 className="w-5 h-5 text-green-500 flex-shrink-0" />
+          <p className="text-sm font-medium text-gray-900">Lưu dữ liệu sử dụng thành công!</p>
         </div>
       )}
 
-
-      <div className="bg-white rounded-2xl p-6 border-2 border-gray-200">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xl font-semibold text-gray-900">Hóa Đơn Chưa Thanh Toán (PENDING)</h2>
-          {isLoading ? (
-             <span className="px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-sm font-semibold">
-                Đang tải...
-            </span>
-          ) : (
-             <span className="px-3 py-1 bg-orange-100 text-orange-700 rounded-full text-sm font-semibold">
-                {pendingBills.length} hóa đơn
-            </span>
-          )}
-        </div>
-        <div className="space-y-3">
-          {pendingBills.map((bill) => {
-            // ✅ Đã xóa logic Overdue, chỉ sử dụng màu cam/orange cho PENDING
-            const statusColor = 'border-orange-200 bg-orange-50';
-            const tagColor = 'bg-orange-100 text-orange-700';
-            
-            return (
-              <div key={bill.id} className={`p-4 rounded-xl border-2 ${statusColor}`}>
-                <div className="flex items-center justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-3 mb-2">
-                      <h3 className="text-lg font-semibold text-gray-900">{bill.period}</h3>
-                      <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold ${tagColor}`}>
-                        Chưa thanh toán
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-4 mb-2">
-                      <p className="text-sm text-gray-600"><span className="font-medium">Căn hộ:</span> {bill.apartmentNumber || '-'}</p>
-                      <p className="text-sm text-gray-600"><span className="font-medium">Cư dân:</span> {bill.residentName || '-'}</p>
-                    </div>
-                    <p className="text-sm text-gray-600 mb-1">Loại: {bill.type}</p>
-                    <p className="text-sm text-gray-600 mb-1">Hạn thanh toán: {bill.dueDate}</p>
-                    <p className="text-lg font-bold text-gray-900">{formatCurrency(bill.amount)}</p>
-                  </div>
-                  <button onClick={() => handleSendReminder(bill)} className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg hover:shadow-lg transition-all">
-                    <Send className="w-4 h-4" />
-                    Gửi Nhắc Nợ
-                  </button>
-                </div>
-              </div>
-            );
-          })}
-          {pendingBills.length === 0 && !isLoading && (
-            <div className="text-center py-8">
-              <CheckCircle className="w-16 h-16 text-green-400 mx-auto mb-4" />
-              <p className="text-gray-600">Hiện tại không có hóa đơn chưa thanh toán (PENDING)</p>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* MODAL REMINDER */}
-      {isReminderModalOpen && selectedBill && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setIsReminderModalOpen(false)}>
-          <div className="bg-white rounded-2xl p-8 max-w-md w-full border-2 border-gray-200" onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-2xl font-bold text-gray-900">Gửi Thông Báo Nhắc Nợ</h2>
-              <button onClick={() => setIsReminderModalOpen(false)} className="p-2 hover:bg-gray-100 rounded-lg transition-colors">✕</button>
-            </div>
-
-            <div className="space-y-4 mb-6">
-              <div className="p-4 bg-gray-50 rounded-xl">
-                <p className="text-sm text-gray-600 mb-1">Căn hộ</p>
-                <p className="text-lg font-semibold text-gray-900">{selectedBill.apartmentNumber || '-'}</p>
-              </div>
-              <div className="p-4 bg-gray-50 rounded-xl">
-                <p className="text-sm text-gray-600 mb-1">Cư dân</p>
-                <p className="text-lg font-semibold text-gray-900">{selectedBill.residentName || '-'}</p>
-              </div>
-              <div className="p-4 bg-gray-50 rounded-xl">
-                <p className="text-sm text-gray-600 mb-1">Kỳ hóa đơn</p>
-                <p className="text-lg font-semibold text-gray-900">{selectedBill.period}</p>
-              </div>
-              <div className="p-4 bg-gray-50 rounded-xl">
-                <p className="text-sm text-gray-600 mb-1">Số tiền</p>
-                <p className="text-lg font-semibold text-gray-900">{formatCurrency(selectedBill.amount)}</p>
-              </div>
-              <div className="p-4 bg-gray-50 rounded-xl">
-                <p className="text-sm text-gray-600 mb-1">Hạn thanh toán</p>
-                <p className="text-lg font-semibold text-gray-900">{selectedBill.dueDate}</p>
-              </div>
-              {/* ❌ Đã xóa cảnh báo Quá hạn trong Modal */}
-            </div>
-
-            <div className="flex gap-3">
-              <button onClick={confirmSendReminder} className="flex-1 px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl hover:shadow-lg transition-all">
-                <div className="flex items-center justify-center gap-2">
-                  <Send className="w-5 h-5" />
-                  Gửi Thông Báo
-                </div>
-              </button>
-              <button onClick={() => setIsReminderModalOpen(false)} className="flex-1 px-6 py-3 bg-gray-200 text-gray-700 rounded-xl hover:bg-gray-300 transition-colors">
-                Hủy
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Toast Animation Styles */}
+      <style>{`
+        @keyframes slideInRight {
+          from {
+            transform: translateX(100%);
+            opacity: 0;
+          }
+          to {
+            transform: translateX(0);
+            opacity: 1;
+          }
+        }
+        
+        @keyframes fadeOut {
+          from {
+            opacity: 1;
+            transform: translateX(0);
+          }
+          to {
+            opacity: 0;
+            transform: translateX(100%);
+          }
+        }
+        
+        @keyframes fadeSlideUp {
+          from {
+            opacity: 0;
+            transform: translateY(20px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+        
+        .animate-fade-slide-up {
+          animation: fadeSlideUp 0.5s ease-out;
+        }
+      `}</style>
     </div>
   );
 }

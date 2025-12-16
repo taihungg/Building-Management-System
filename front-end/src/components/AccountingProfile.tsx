@@ -8,9 +8,9 @@ export function AccountingProfile() {
     lastName: 'Thị B',
     email: 'ketoan@buildinghub.com',
     phone: '0909876543',
-    address: 'Phòng Kế Toán, Tòa nhà BuildingHub',
-    position: 'Kế Toán Trưởng',
-    department: 'Phòng Kế Toán',
+    address: 'Phòng kế toán, Tòa nhà BuildingHub',
+    position: 'Kế toán trưởng',
+    department: 'Phòng kế toán',
     joinDate: '2023-03-01',
     bio: 'Kế toán viên chuyên nghiệp với nhiều năm kinh nghiệm trong quản lý tài chính và công nợ.',
   });
@@ -23,7 +23,7 @@ export function AccountingProfile() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Hồ Sơ Kế Toán</h1>
+          <h1 className="text-3xl font-bold text-gray-900">Hồ sơ kế toán</h1>
           <p className="text-gray-600 mt-1">Quản lý thông tin cá nhân của bạn</p>
         </div>
         {!isEditing ? (

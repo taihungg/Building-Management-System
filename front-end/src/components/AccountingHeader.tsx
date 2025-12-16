@@ -56,7 +56,7 @@ export function AccountingHeader({ onMenuClick, onNavigate }: AccountingHeaderPr
             </div>
             <div className="text-left">
               <h1 className="text-xl font-semibold text-gray-900">BuildingHub</h1>
-              <p className="text-xs text-gray-600">Phòng Kế Toán</p>
+              <p className="text-xs text-gray-600">Phòng kế toán</p>
             </div>
           </button>
         </div>
@@ -74,19 +74,20 @@ export function AccountingHeader({ onMenuClick, onNavigate }: AccountingHeaderPr
 
         <div className="flex items-center gap-6">
           
-          {/* Vùng hiển thị Kỳ hiện tại và Thời gian thực (Đã làm đẹp) */}
-          <div className="hidden sm:flex items-center gap-3 bg-gray-50 p-2.5 rounded-xl border border-gray-200">
-             <Clock className="w-5 h-5 text-blue-600 flex-shrink-0" />
-             <div className="text-sm">
-                <p className="font-semibold text-gray-800 leading-tight">
+          {/* Digital Badge: Clock Display */}
+          <div className="hidden sm:flex items-center gap-3 bg-slate-100 px-6 py-2 rounded-full">
+             <Clock className="w-4 h-4 text-gray-600 flex-shrink-0" />
+             <div className="flex items-center gap-2">
+                <span className="font-mono font-semibold text-gray-800">
                     {formattedTime}
-                </p>
-                <p className="text-xs text-gray-500 leading-tight">
+                </span>
+                <span className="text-gray-400">|</span>
+                <span className="text-sm text-gray-600">
                     {currentPeriod} ({formattedDate})
-                </p>
+                </span>
              </div>
           </div>
-          {/* --- End: Vùng hiển thị Thời gian --- */}
+          {/* --- End: Digital Badge Clock --- */}
           
           <div className="relative" ref={profileRef}>
             <button 
@@ -100,15 +101,15 @@ export function AccountingHeader({ onMenuClick, onNavigate }: AccountingHeaderPr
             {isProfileOpen && (
               <div className="absolute right-0 mt-2 w-64 bg-white rounded-2xl shadow-xl border border-gray-200 overflow-hidden z-50">
                 <div className="p-4 border-b border-gray-100">
-                  <h3 className="text-lg font-semibold text-gray-900">Tài Khoản Kế Toán</h3>
+                  <h3 className="text-lg font-semibold text-gray-900">Tài khoản kế toán</h3>
                   <p className="text-sm text-gray-500">accounting@hub.vn</p>
                 </div>
                 <div className="py-1">
-                  <button onClick={() => handleProfileItemClick('profile')} className="w-full px-4 py-3 text-left text-gray-700 hover:bg-gray-50 transition-colors">Hồ Sơ</button>
-                  <button onClick={() => handleProfileItemClick('settings')} className="w-full px-4 py-3 text-left text-gray-700 hover:bg-gray-50 transition-colors">Cài Đặt</button>
+                  <button onClick={() => handleProfileItemClick('profile')} className="w-full px-4 py-3 text-left text-gray-700 hover:bg-gray-50 transition-colors">Hồ sơ</button>
+                  <button onClick={() => handleProfileItemClick('settings')} className="w-full px-4 py-3 text-left text-gray-700 hover:bg-gray-50 transition-colors">Cài đặt</button>
                 </div>
                 <div className="border-t border-gray-100">
-                  <button onClick={() => handleProfileItemClick('logout')} className="w-full px-4 py-3 text-left text-red-600 hover:bg-red-50 transition-colors font-medium">Đăng Xuất</button>
+                  <button onClick={() => handleProfileItemClick('logout')} className="w-full px-4 py-3 text-left text-red-600 hover:bg-red-50 transition-colors font-medium">Đăng xuất</button>
                 </div>
               </div>
             )}
