@@ -2,6 +2,7 @@ package itep.software.bluemoon.controller;
 
 import itep.software.bluemoon.model.DTO.issue.IssueCreateRequestDTO;
 import itep.software.bluemoon.model.DTO.issue.IssueResponseDTO;
+import itep.software.bluemoon.model.projection.IssueSummary;
 import itep.software.bluemoon.model.DTO.issue.IssueUpdateStatusRequestDTO;
 import itep.software.bluemoon.entity.Issue;
 import itep.software.bluemoon.service.IssueService;
@@ -46,9 +47,7 @@ public class IssueController {
     }
     
     @GetMapping
-    public ResponseEntity<List<IssueResponseDTO>> getAllIssues() {
-        List<IssueResponseDTO> issues = issueService.getAllIssues();
-        return ResponseEntity.ok(issues);
+    public ResponseEntity<List<IssueSummary>> getAllIssues() {
+        return ResponseEntity.ok(issueService.getAllIssues());
     }
-    
 }

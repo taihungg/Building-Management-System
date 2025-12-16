@@ -2,11 +2,14 @@ package itep.software.bluemoon.service;
 
 import itep.software.bluemoon.model.DTO.issue.IssueCreateRequestDTO;
 import itep.software.bluemoon.model.DTO.issue.IssueResponseDTO;
+import itep.software.bluemoon.model.projection.IssueSummary;
 import itep.software.bluemoon.model.mapper.EntityToDto;
 import itep.software.bluemoon.entity.Apartment;
 import itep.software.bluemoon.entity.Issue;
 import itep.software.bluemoon.entity.person.Resident;
 import itep.software.bluemoon.enumeration.IssueStatus;
+//import itep.software.bluemoon.enumeration.IssueLevel;
+//import itep.software.bluemoon.enumeration.EscalationRequest;
 import itep.software.bluemoon.repository.ApartmentRepository;
 import itep.software.bluemoon.repository.IssueRepository;
 import itep.software.bluemoon.repository.ResidentRepository;
@@ -24,7 +27,8 @@ public class IssueService {
     private final IssueRepository issueRepository;
     private final ApartmentRepository apartmentRepository;
     private final ResidentRepository residentRepository;
-
+    
+    //tạo Issue
     public Issue createIssue(IssueCreateRequestDTO request) {
 
         Apartment apartment = apartmentRepository.findById(request.getApartmentId())
@@ -39,11 +43,21 @@ public class IssueService {
                 .description(request.getDescription())
                 .type(request.getType())
                 .status(IssueStatus.UNPROCESSED)
+                //.level(request.getLevel())
+                //.escRequest(escalationRequest(request.getLevel()))
                 .reporter(reporter)
                 .build();
 
         return issueRepository.save(issue);
     }
+    /*
+    public EscalationRequest escalationRequest(IssueLevel level) {
+        return level == IssueLevel.AUTHORITY
+                ? EscalationRequest.REQUESTED
+                : EscalationRequest.NONE;
+    }
+    */
+
     
     public IssueResponseDTO updateStatus(UUID issueId, IssueStatus newStatus) {
         Issue issue = issueRepository.findById(issueId)
@@ -81,11 +95,8 @@ public class IssueService {
     }
 
     @Transactional(readOnly = true)
-    public List<IssueResponseDTO> getAllIssues() {
-        return issueRepository.findAll()
-                .stream()
-                .map(EntityToDto::issueToIssueResponseDto)
-                .collect(Collectors.toList());
+    public List<IssueSummary> getAllIssues() {
+    	return issueRepository.findAllIssueSummaries();
     }
 
 }
