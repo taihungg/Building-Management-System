@@ -1,6 +1,14 @@
 package itep.software.bluemoon.service;
 
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
+
+import org.springframework.stereotype.Service;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
+
 import itep.software.bluemoon.entity.Apartment;
 import itep.software.bluemoon.entity.Vehicle;
 import itep.software.bluemoon.entity.accounting.Invoice;
@@ -9,24 +17,20 @@ import itep.software.bluemoon.entity.accounting.PriceTier;
 import itep.software.bluemoon.entity.accounting.ServicePrice;
 import itep.software.bluemoon.entity.accounting.ServiceType;
 import itep.software.bluemoon.enumeration.InvoiceStatus;
+import itep.software.bluemoon.enumeration.ServiceCode;
 import itep.software.bluemoon.enumeration.TierName;
 import itep.software.bluemoon.enumeration.VehicleType;
 import itep.software.bluemoon.model.DTO.accounting.InvoiceLineItemDTO;
 import itep.software.bluemoon.model.projection.InvoiceSummary;
-import itep.software.bluemoon.repository.*;
+import itep.software.bluemoon.repository.ApartmentRepository;
+import itep.software.bluemoon.repository.InvoiceRepository;
+import itep.software.bluemoon.repository.ServicePriceRepository;
+import itep.software.bluemoon.repository.ServiceTypeRepository;
+import itep.software.bluemoon.repository.VehicleRepository;
 import itep.software.bluemoon.util.VndUtils;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
-
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Service;
-
-import java.math.BigDecimal;
-import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.List;
-
-import itep.software.bluemoon.enumeration.ServiceCode;
 
 @Service
 @RequiredArgsConstructor
@@ -35,10 +39,8 @@ import itep.software.bluemoon.enumeration.ServiceCode;
 public class InvoiceService {
     private final InvoiceRepository invoiceRepository;
     private final ApartmentRepository apartmentRepository;
-    private final InvoiceDetailRepository invoiceDetailResitory;
     private final ServiceTypeRepository serviceTypeRepository;
     private final ServicePriceRepository servicePriceRepository;
-    private final PriceTierRepository priceTierRepository;
     private final VehicleRepository vehicleRepository;
     private final ObjectMapper objectMapper;
 

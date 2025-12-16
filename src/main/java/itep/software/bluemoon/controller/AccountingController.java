@@ -1,8 +1,12 @@
 package itep.software.bluemoon.controller;
 
+import java.time.LocalDate;
 import java.util.List;
 
+import org.springframework.core.io.InputStreamResource;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -10,8 +14,13 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import itep.software.bluemoon.model.DTO.accounting.AccountingDashboardResponseDTO;
+import itep.software.bluemoon.model.DTO.accounting.MonthlyRevenueDTO;
+import itep.software.bluemoon.model.DTO.accounting.RevenueDistributionDTO;
 import itep.software.bluemoon.model.projection.InvoiceSummary;
 import itep.software.bluemoon.response.ApiResponse;
+import itep.software.bluemoon.service.AccountingService;
+import itep.software.bluemoon.service.ExcelExportService;
 import itep.software.bluemoon.service.InvoiceService;
 import lombok.RequiredArgsConstructor;
 
@@ -20,6 +29,8 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class AccountingController {
     private final InvoiceService invoiceService;
+    private final ExcelExportService excelExportService;
+    private final AccountingService accountingService;
 
     // Filter lọc theo trạng thái thanh toán thì front-end tự lọc
     @GetMapping("/invoices")
@@ -41,6 +52,65 @@ public class AccountingController {
                 HttpStatus.OK,
                 "Generate " + count + " draft invoices (PENDING). Please double check before publish!",
                 null
+        );
+    }
+
+    @SuppressWarnings("null")
+    @GetMapping("/invoices/export")
+    public ResponseEntity<InputStreamResource> exportInvoices(
+            @RequestParam Integer month,
+            @RequestParam Integer year
+    ) {
+        InputStreamResource file = new InputStreamResource(excelExportService.exportInvoicesToExcel(month, year));
+
+        String fileName = "HoaDon_" + month + "_" + year + ".xlsx";
+
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=" + fileName)
+                .contentType(MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
+                .body(file);
+    }
+
+    //dùng api này cho 4 chỉ số ở dashboard
+    @GetMapping("/dashboard/fourmetrics")
+    public ResponseEntity<Object> getDashboardData() {
+        
+        AccountingDashboardResponseDTO data = accountingService.getDashboardMetrics();
+
+        return ApiResponse.responseBuilder(
+                HttpStatus.OK,
+                "Get 4 metrics for dashboard successfully!",
+                data
+        );
+    }
+
+    //dùng api này cho bar chart ở dashboard
+    @GetMapping("/dashboard/barchart")
+    public ResponseEntity<Object> getRevenueChart(
+            @RequestParam(required = false) int year
+    ) {
+        if (year == 0) year = LocalDate.now().getYear();
+
+        List<MonthlyRevenueDTO> chartData = accountingService.getRevenueChartData(year);
+
+        return ApiResponse.responseBuilder(
+                HttpStatus.OK,
+                "Get data for bar chart of dashboard successfully!",
+                chartData
+        );
+    }
+
+    @GetMapping("/dashboard/piechart")
+    public ResponseEntity<Object> getRevenueDistributionChart(
+            @RequestParam Integer month,
+            @RequestParam Integer year
+    ) {
+        List<RevenueDistributionDTO> data = accountingService.getRevenueDistribution(month, year);
+
+        return ApiResponse.responseBuilder(
+                HttpStatus.OK,
+                "Get data for pie chart of dashboard successfully!",
+                data
         );
     }
 }
