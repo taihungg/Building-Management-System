@@ -43,4 +43,13 @@ public interface InvoiceRepository extends JpaRepository<Invoice, UUID> {
 
     @Query("SELECT COALESCE(SUM(i.totalAmount), 0) FROM Invoice i WHERE i.status = :status")
     BigDecimal sumTotalAmountByStatus(@Param("status") InvoiceStatus status);
+
+    @Query("SELECT " +
+        "   EXTRACT(MONTH FROM i.createdTime) as month, " +
+        "   SUM(i.totalAmount) as totalRevenue, " +
+        "   SUM(CASE WHEN i.status = 'PAID' THEN i.totalAmount ELSE 0 END) as paidRevenue " +
+        "FROM Invoice i " +
+        "WHERE EXTRACT(YEAR FROM i.createdTime) = :year " +
+        "GROUP BY EXTRACT(MONTH FROM i.createdTime)")
+    List<Object[]> findMonthlyRevenueByYear(@Param("year") int year);
 }

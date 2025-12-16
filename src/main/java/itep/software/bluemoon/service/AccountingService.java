@@ -2,11 +2,16 @@ package itep.software.bluemoon.service;
 
 import itep.software.bluemoon.enumeration.InvoiceStatus;
 import itep.software.bluemoon.model.DTO.accounting.AccountingDashboardResponseDTO;
+import itep.software.bluemoon.model.DTO.accounting.MonthlyRevenueDTO;
 import itep.software.bluemoon.repository.InvoiceRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
@@ -27,8 +32,6 @@ public class AccountingService {
 
         long totalInvoices = invoiceRepository.count();
 
-
-
         return AccountingDashboardResponseDTO.builder()
                 .revenue(AccountingDashboardResponseDTO.DashboardMetricDTO.builder()
                         .totalAmount(revAmount)
@@ -48,4 +51,30 @@ public class AccountingService {
                 .totalInvoices(totalInvoices)
                 .build();
     }
+    
+    public List<MonthlyRevenueDTO> getRevenueChartData(int year) {
+        List<Object[]> rawData = invoiceRepository.findMonthlyRevenueByYear(year);
+
+        Map<Integer, MonthlyRevenueDTO> dataMap = new HashMap<>();
+        
+        for (Object[] row : rawData) {
+                Integer month = ((Number) row[0]).intValue();
+                BigDecimal total = (BigDecimal) row[1];
+                BigDecimal paid = (BigDecimal) row[2];
+                
+                dataMap.put(month, new MonthlyRevenueDTO(month, total, paid));
+        }
+
+        List<MonthlyRevenueDTO> fullYearData = new ArrayList<>();
+        
+        for (int m = 1; m <= 12; m++) {
+                if (dataMap.containsKey(m)) {
+                fullYearData.add(dataMap.get(m));
+                } else {
+                fullYearData.add(new MonthlyRevenueDTO(m, BigDecimal.ZERO, BigDecimal.ZERO));
+                }
+        }
+
+        return fullYearData;
+        }
 }

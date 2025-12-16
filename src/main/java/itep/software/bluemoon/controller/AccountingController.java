@@ -1,5 +1,6 @@
 package itep.software.bluemoon.controller;
 
+import java.time.LocalDate;
 import java.util.List;
 
 import org.springframework.core.io.InputStreamResource;
@@ -14,6 +15,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import itep.software.bluemoon.model.DTO.accounting.AccountingDashboardResponseDTO;
+import itep.software.bluemoon.model.DTO.accounting.MonthlyRevenueDTO;
 import itep.software.bluemoon.model.projection.InvoiceSummary;
 import itep.software.bluemoon.response.ApiResponse;
 import itep.software.bluemoon.service.AccountingService;
@@ -68,6 +70,7 @@ public class AccountingController {
                 .body(file);
     }
 
+    //dùng api này cho 4 chỉ số ở dashboard
     @GetMapping("/dashboard/fourmetrics")
     public ResponseEntity<Object> getDashboardData() {
         
@@ -75,8 +78,24 @@ public class AccountingController {
 
         return ApiResponse.responseBuilder(
                 HttpStatus.OK,
-                "Get 4 metrics for dashboard successfully",
+                "Get 4 metrics for dashboard successfully!",
                 data
+        );
+    }
+
+    //dùng api này cho bar chart ở dashboard
+    @GetMapping("/dashboard/chart")
+    public ResponseEntity<Object> getRevenueChart(
+            @RequestParam(required = false) int year
+    ) {
+        if (year == 0) year = LocalDate.now().getYear();
+
+        List<MonthlyRevenueDTO> chartData = accountingService.getRevenueChartData(year);
+
+        return ApiResponse.responseBuilder(
+                HttpStatus.OK,
+                "Get data for bar chart of dashboard successfully!",
+                chartData
         );
     }
 }
