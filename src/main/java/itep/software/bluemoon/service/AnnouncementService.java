@@ -5,6 +5,8 @@ import itep.software.bluemoon.entity.Apartment;
 import itep.software.bluemoon.entity.person.Resident;
 import itep.software.bluemoon.entity.person.Staff;
 import itep.software.bluemoon.enumeration.AnnouncementTargetType;
+import itep.software.bluemoon.model.projection.AnnouncementSummary;
+import itep.software.bluemoon.model.mapper.EntityToDto;
 import itep.software.bluemoon.model.DTO.announcement.AnnouncementCreateRequestDTO;
 import itep.software.bluemoon.model.DTO.announcement.AnnouncementResponseDTO;
 import itep.software.bluemoon.repository.AnnouncementRepository;
@@ -146,5 +148,20 @@ public class AnnouncementService {
                         .createdAt(announcement.getCreatedAt())
                         .build())
                 .collect(Collectors.toList());
+    }
+    
+    
+    
+    
+    
+    
+    // Get cho resident - dùng projection (SUMMARY)
+    @Transactional(readOnly = true)
+    public List<AnnouncementSummary> getAnnouncementsForResident(UUID residentId) {
+        // Validate resident tồn tại
+        residentRepository.findById(residentId)
+                .orElseThrow(() -> new RuntimeException("Resident not found"));
+        
+        return announcementRepository.findAnnouncementsByResidentId(residentId);
     }
 }
