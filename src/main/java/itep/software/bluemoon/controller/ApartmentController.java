@@ -93,7 +93,7 @@ public class ApartmentController {
         );
     }
     
-     // API mới: Thêm/Gán cư dân vào căn hộ
+     //Thêm/Gán cư dân vào căn hộ
      @PutMapping("/{apartmentId}/residents/add")
      public ResponseEntity<Object> addResidents(@PathVariable UUID apartmentId, @RequestBody ApartmentResidentUpdateDTO request){
          apartmentService.addResidentsToApartment(apartmentId, request);
@@ -105,7 +105,7 @@ public class ApartmentController {
          );
      }
 
-     // API mới: Xóa/Loại bỏ cư dân khỏi căn hộ (thiết lập Apartment = null)
+     //Xóa/Loại bỏ cư dân khỏi căn hộ (thiết lập Apartment = null)
      @PutMapping("/{apartmentId}/residents/remove")
      public ResponseEntity<Object> removeResidents(@PathVariable UUID apartmentId, @RequestBody ApartmentResidentUpdateDTO request){
          apartmentService.removeResidentsFromApartment(apartmentId, request);
