@@ -107,7 +107,7 @@ export function Notifications() { // Giữ nguyên tên component là Notificati
       <div className="flex items-center justify-between">
         <div>
           {/* Tên trang đã dịch */}
-          <h1 className="text-3xl text-slate-900">Quản Lý Thông Báo</h1>
+          <h1 className="text-3xl text-slate-900">Quản lý thông báo</h1>
           <p className="text-slate-500 mt-1">Theo dõi các thông báo đã được Ban Quản Lý gửi đi</p>
         </div>
        
@@ -118,7 +118,7 @@ export function Notifications() { // Giữ nguyên tên component là Notificati
         >
             <span className="flex items-center"> 
                 <Plus className="w-4 h-4 mr-2" /> 
-                Tạo Thông Báo Mới
+                Tạo thông báo mới
             </span>
             
         </Button>
@@ -151,15 +151,7 @@ export function Notifications() { // Giữ nguyên tên component là Notificati
         </div>
 
         {/* Người nhận trung bình */}
-        <div className="bg-white rounded-xl p-6 shadow-sm border border-slate-200">
-          <div className="flex items-center gap-3 mb-2">
-            <div className="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center">
-              <Info className="w-5 h-5 text-blue-600" />
-            </div>
-            <p className="text-slate-500 text-sm">Người nhận Trung bình</p>
-          </div>
-          <p className="text-2xl text-slate-900">{avgReceivers}</p>
-        </div>
+        
       </div>
 
       <hr/>

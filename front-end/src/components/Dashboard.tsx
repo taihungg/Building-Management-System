@@ -17,7 +17,7 @@ interface Bill {
     status: string;
     totalAmount: number;
     paymentDate?: string;
-    createdTime: string; // 🔥 Đã thêm: Dùng để tính Phải Thu
+    createdTime: string; // Dùng để tính Phải Thu
 }
 // -----------------------------------------------------------
 
@@ -27,7 +27,8 @@ export function Dashboard() {
   const [residentCount, setResidentCount] = useState(0);
   const [apartmentStats, setApartmentStats] = useState({ occupied: 0, total: 0 });
   const [monthlyRevenue, setMonthlyRevenue] = useState(0);
-  const [chartData, setChartData] = useState<any[]>([]);
+  // Dữ liệu dòng tiền đã được lọc 6 tháng cuối
+  const [chartData, setChartData] = useState<any[]>([]); 
   const [pendingIssueCount, setPendingIssueCount] = useState(0); 
   const [serviceRequestsData, setServiceRequestsData] = useState<any[]>([]); 
 
@@ -69,66 +70,91 @@ export function Dashboard() {
       return chartData;
   };
 
+  // 🔥 Đã Sửa: Tính toán dữ liệu 6 tháng cuối cùng
   const calculateMonthlyChartData = (bills: Bill[]) => {
-    const monthlyMap = new Map<number, { month: string, phaiThu: number, thucThu: number, congNo: number }>();
+    const currentYear = new Date().getFullYear();
+    const currentMonthIndex = new Date().getMonth(); // 0 (Jan) to 11 (Dec)
+    const monthlyMap = new Map<string, { month: string, phaiThu: number, thucThu: number, congNo: number }>();
+    const monthsToShow: { month: number, year: number }[] = [];
 
-    // Khởi tạo 12 tháng (từ Thg 1 đến Thg 12)
-    for (let i = 1; i <= 12; i++) {
-        monthlyMap.set(i, {
-            month: `Thg ${i}`,
+    // 1. Xác định 6 tháng cuối cùng
+    for (let i = 0; i < 6; i++) {
+        let month = currentMonthIndex - i; 
+        let year = currentYear;
+
+        // Xử lý khi lùi về năm trước 
+        if (month < 0) {
+            month += 12; 
+            year -= 1;
+        }
+
+        monthsToShow.unshift({ month: month + 1, year: year }); // Thêm vào đầu để sắp xếp từ tháng cũ nhất
+    }
+    
+    // 2. Khởi tạo dữ liệu cho 6 tháng này
+    monthsToShow.forEach(({ month, year }) => {
+        const key = `${month}-${year}`;
+        monthlyMap.set(key, {
+            month: `Thg ${month}`,
             phaiThu: 0,
             thucThu: 0,
             congNo: 0,
         });
-    }
+    });
 
+    // 3. Xử lý bills
     bills.forEach(bill => {
       const amount = bill.totalAmount || 0;
       
-      // 1. TÍNH PHẢI THU (Dựa trên createdTime - tháng hóa đơn được tạo)
-      const createdMonthKey = new Date(bill.createdTime).getMonth() + 1; 
-      
-      if (monthlyMap.has(createdMonthKey)) {
-          const entry = monthlyMap.get(createdMonthKey)!;
-          entry.phaiThu += amount; // Cộng vào cột Phải Thu của tháng tạo hóa đơn
+      // Tính PHẢI THU (dựa trên createdTime)
+      if (bill.createdTime) {
+          const createdDate = new Date(bill.createdTime);
+          const createdMonth = createdDate.getMonth() + 1;
+          const createdYear = createdDate.getFullYear();
+          const createdKey = `${createdMonth}-${createdYear}`;
+
+          if (monthlyMap.has(createdKey)) {
+              const entry = monthlyMap.get(createdKey)!;
+              entry.phaiThu += amount; 
+          }
       }
 
-      // 2. TÍNH THỰC THU (Dựa trên paymentDate và status === 'PAID')
+      // Tính THỰC THU (dựa trên paymentDate và status === 'PAID')
       if (bill.status === 'PAID' && bill.paymentDate) {
-          const paymentMonthKey = new Date(bill.paymentDate).getMonth() + 1; 
+          const paymentDate = new Date(bill.paymentDate);
+          const paymentMonth = paymentDate.getMonth() + 1;
+          const paymentYear = paymentDate.getFullYear();
+          const paymentKey = `${paymentMonth}-${paymentYear}`;
           
-          if (monthlyMap.has(paymentMonthKey)) {
-              const entry = monthlyMap.get(paymentMonthKey)!;
-              entry.thucThu += amount; // Cộng vào cột Thực Thu của tháng thanh toán
+          if (monthlyMap.has(paymentKey)) {
+              const entry = monthlyMap.get(paymentKey)!;
+              entry.thucThu += amount; 
           }
       }
     });
     
-    // Lấy dữ liệu từ map, sắp xếp theo tháng và tính công nợ
-    const chartData = Array.from(monthlyMap.values())
-      .sort((a, b) => {
-          // Lấy số tháng để sắp xếp
-          return parseInt(a.month.split(' ')[1]) - parseInt(b.month.split(' ')[1]);
-      })
-      .map(entry => {
-          // 3. TÍNH CÔNG NỢ (Phải Thu - Thực Thu trong cùng tháng)
-          return {
-              ...entry,
-              congNo: entry.phaiThu - entry.thucThu 
-          };
-      })
-      // Lọc bỏ các tháng không có dữ liệu để chart gọn hơn
-      .filter(entry => entry.phaiThu > 0 || entry.thucThu > 0); 
+    // 4. Lấy dữ liệu theo thứ tự và tính công nợ
+    const chartData = monthsToShow.map(({ month, year }) => {
+        const entry = monthlyMap.get(`${month}-${year}`)!;
+        return {
+            ...entry,
+            // Thêm năm vào nhãn tháng nếu không phải là năm hiện tại
+            month: year !== currentYear ? `Thg ${month}/${year % 100}` : `Thg ${month}`, 
+            congNo: entry.phaiThu - entry.thucThu 
+        };
+    });
 
     return chartData;
   };
   
-  // --- USE EFFECT FETCH DATA (Giữ nguyên) ---
+  // --- USE EFFECT FETCH DATA (Đã sửa để lấy dữ liệu 2 năm cho chart) ---
   useEffect(() => {
     const fetchDashboardData = async () => {
       try {
         const currentYear = new Date().getFullYear(); 
+        const previousYear = currentYear - 1;
 
+        // Fetch Residents & Apartments (Không đổi)
         const resResidents = await fetch('http://localhost:8081/api/v1/residents');
         const dataResidents = await resResidents.json();
         if (resResidents.ok) {
@@ -143,15 +169,27 @@ export function Dashboard() {
           const occupied = allApartments.filter((apt: any) => apt.residentNumber > 0).length;
           setApartmentStats({ total, occupied });
         }
+        
+        // 🔥 Fetch Invoices: Lấy dữ liệu của năm hiện tại và năm trước để đảm bảo có đủ 6 tháng
+        let allRevenues: Bill[] = [];
+        
+        const resInvoicesCurrent = await fetch (`http://localhost:8081/api/v1/accounting/invoices?year=${currentYear}`);
+        const dataInvoicesCurrent = await resInvoicesCurrent.json();
+        if (resInvoicesCurrent.ok && dataInvoicesCurrent.data) {
+            allRevenues = allRevenues.concat(dataInvoicesCurrent.data as Bill[]);
+        }
+        
+        const resInvoicesPrevious = await fetch (`http://localhost:8081/api/v1/accounting/invoices?year=${previousYear}`);
+        const dataInvoicesPrevious = await resInvoicesPrevious.json();
+        if (resInvoicesPrevious.ok && dataInvoicesPrevious.data) {
+            allRevenues = allRevenues.concat(dataInvoicesPrevious.data as Bill[]);
+        }
 
-        const resInvoices =  await fetch (`http://localhost:8081/api/v1/accounting/invoices?year=${currentYear}`);
-        const dataInvoices = await resInvoices.json();
-        if (resInvoices.ok){
-          const allRevenues = dataInvoices.data;
-          
+        if (allRevenues.length > 0){
+          // Tính Doanh thu tháng hiện tại (chỉ cần data của năm hiện tại)
           const currentMonth = new Date().getMonth() + 1;
           const monthlyPaidInvoices = allRevenues.filter((e: Bill) => 
-            e.status === 'PAID' && e.paymentDate && new Date(e.paymentDate).getMonth() + 1 === currentMonth
+            e.status === 'PAID' && e.paymentDate && new Date(e.paymentDate).getMonth() + 1 === currentMonth && new Date(e.paymentDate).getFullYear() === currentYear
           );
 
           const currentMonthlyRevenue = monthlyPaidInvoices.reduce ((total: number, invoice: Bill)=>{
@@ -188,39 +226,35 @@ export function Dashboard() {
   
   const stats = [
     { 
-      label: 'Tổng số Cư Dân', 
+      label: 'Tổng số cư dân', 
       value: residentCount.toString(),
-      trend: 'up', 
+      
       icon: Users,
       bgColor: 'bg-blue-600',
       link: '/admin/residents',
       description: 'Hiện đang sinh sống' // Dịch
     },
     { 
-      label: 'Đơn Vị Đang ở', 
+      label: 'Số căn hộ có người ở', 
       value: `${apartmentStats.occupied}/${apartmentStats.total}`,
-      change: `${occupancyRate}%`,
-      trend: 'up', 
+     
       icon: Building2,
       bgColor: 'bg-purple-600',
       link: '/admin/apartments',
       description: 'Tỷ lệ Lấp đầy' // Dịch
     },
     { 
-      label: `Doanh thu Thg ${new Date().getMonth() + 1}`, 
+      label: `Doanh thu tháng ${new Date().getMonth() + 1}`, 
       value: formatCurrency(monthlyRevenue),
-      change: '+8.2%', 
-      trend: 'up', 
+      
       icon: DollarSign,
       bgColor: 'bg-green-600',
       link: '/admin/bills',
       description: 'Tổng tiền đã thanh toán' // Dịch
     },
     { 
-      label: 'Yêu cầu chờ Xử lý', 
+      label: 'Yêu cầu chờ xử lý', 
       value: pendingIssueCount.toString(),
-      change: '15', // Dữ liệu cứng (giữ nguyên)
-      trend: 'down', 
       icon: AlertCircle,
       bgColor: 'bg-orange-600',
       link: '/admin/services',
@@ -230,7 +264,7 @@ export function Dashboard() {
   
   // Dữ liệu Tỷ lệ Lấp đầy (Đã dịch tên)
   const occupancyData = [
-    { name: 'Đã Lấp đầy', value: apartmentStats.occupied, color: OCCUPANCY_COLORS[0] }, // Dịch
+    { name: 'Đang ở', value: apartmentStats.occupied, color: OCCUPANCY_COLORS[0] }, // Dịch
     { name: 'Trống', value: apartmentStats.total - apartmentStats.occupied, color: OCCUPANCY_COLORS[1] }, // Dịch
   ];
   
@@ -246,7 +280,7 @@ export function Dashboard() {
               {p.name === 'phaiThu' && 'Phải Thu'}
               {p.name === 'thucThu' && 'Thực Thu (Đã Paid)'}
               {p.name === 'congNo' && 'Công Nợ'}
-              {p.name !== 'phaiThu' && p.name !== 'thucThu' && p.name !== 'congNo' && p.name}: {/* Giữ lại nếu là nhãn khác */}
+              {p.name !== 'phaiThu' && p.name !== 'thucThu' && p.name !== 'congNo' && p.name}: 
               <span className="font-bold">{formatCurrency(p.value)}</span>
             </p>
           ))}
@@ -261,19 +295,21 @@ export function Dashboard() {
     // Thêm padding và background cho toàn bộ trang
     <div className="p-4 sm:p-6 lg:p-8 space-y-8 bg-gray-50 min-h-screen"> 
       
-      {/* --- HEADER KHU VỰC CHÍNH (Đã dịch) --- */}
+      {/* --- HEADER KHU VỰC CHÍNH --- */}
       <div className="flex items-center justify-between border-b pb-4 border-gray-200">
         <div className="flex items-center">
-            <LayoutDashboard className="w-8 h-8 mr-3 text-gray-700" />
             <div>
-              <h1 className="text-3xl font-extrabold text-gray-900">Bảng Điều Khiển Quản Lý Tòa Nhà</h1>
+              <h1 className="text-3xl font-extrabold text-gray-900">Bảng điều khiển quản lý tòa nhà</h1>
               <p className="text-gray-500 mt-1">Tổng quan về hoạt động và tài chính.</p>
             </div>
         </div>
       </div>
 
-      {/* --- STATS GRID (Giữ nguyên cấu trúc, nhãn đã dịch ở trên) --- */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+      {/* --- STATS GRID --- */}
+      <div 
+        className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6" 
+        style={{ marginTop: '48px' }} // Sử dụng giá trị tuyệt đối 3rem (48px)
+    >        
         {stats.map((stat) => {
           const Icon = stat.icon;
           const TrendIcon = stat.trend === 'up' ? TrendingUp : TrendingDown;
@@ -285,17 +321,17 @@ export function Dashboard() {
                   <Icon className="w-6 h-6 text-white" />
                 </div>
                 {stat.change && (
-                    <div className={`flex items-center gap-1 px-3 py-1 rounded-full ${ // Dùng rounded-full
+                    <div className={`flex items-center gap-1 px-3 py-1 rounded-full ${ 
                       stat.trend === 'up' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
                     }`}>
                       <TrendIcon className="w-4 h-4" />
-                      <span className="text-xs font-medium">{stat.change}</span> {/* Dùng text-xs */}
+                      <span className="text-xs font-medium">{stat.change}</span> 
                     </div>
                 )}
               </div>
               <div className="mt-4">
                 <p className="text-gray-500 text-sm font-medium">{stat.label}</p>
-                <p className="text-3xl text-gray-900 mt-1 font-bold">{stat.value}</p> {/* Tăng kích thước giá trị */}
+                <p className="text-3xl text-gray-900 mt-1 font-bold">{stat.value}</p> 
               </div>
             </div>
           );
@@ -312,12 +348,104 @@ export function Dashboard() {
         })}
       </div>
 
-      {/* --- CHARTS ROW --- */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Revenue Chart (Đã dịch tiêu đề và chú thích) */}
-        <div className="bg-white rounded-xl p-6 shadow-md border border-gray-200 col-span-2">
-              <h3 className="text-xl font-bold text-gray-900 mb-6">Phân Tích Dòng Tiền (Thu/Chi Phí)</h3> {/* Dịch tiêu đề */}
-              <div style={{ width: '100%', height: 350 }}>
+
+      {/* 🔥 TOP CHARTS ROW: Occupancy (1 cột) & Service Requests (2 cột) */}
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+      <div className="bg-white rounded-xl p-6 shadow-md border border-gray-200 col-span-1 lg:col-span-3"> 
+              <h3 className="text-xl font-bold text-gray-900 mb-6">Phân tích yêu cầu dịch vụ</h3> 
+              <ResponsiveContainer width="100%" height={360}>
+                <BarChart data={serviceRequestsData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" vertical={false} />
+                  <XAxis dataKey="category" stroke="#6b7280" />
+                  <YAxis stroke="#6b7280" allowDecimals={false} />
+                  <Tooltip 
+                    contentStyle={{ 
+                      backgroundColor: 'white', 
+                      border: '1px solid #ccc',
+                      borderRadius: '8px',
+                      padding: '10px'
+                    }} 
+                    formatter={(value: number, name: string) => [`${value} yêu cầu`, 'Loại yêu cầu']} 
+                  />
+                  <Bar dataKey="count" fill="#2563eb" radius={[8, 8, 0, 0]} barSize={40} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+            {/* Occupancy Pie Chart (1/3 chiều rộng) */}
+            <div className="bg-white rounded-xl p-6 shadow-md border border-gray-200 col-span-1">
+              <h3 className="text-xl font-bold text-gray-900 mb-6">Tỷ lệ căn hộ có người ở</h3> 
+              
+              <ResponsiveContainer width="100%" height={280}>
+                <PieChart>
+                  <Pie
+                    data={occupancyData.filter(d => d.value > 0)}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={70} 
+                    outerRadius={100} // Kích thước vòng tròn
+                    paddingAngle={2}
+                    dataKey="value"
+                    
+                    // 🔥 SỬA: Điều chỉnh label để tránh tràn
+                    labelLine={false}
+                    label={({ cx, cy, midAngle, innerRadius, outerRadius, percent, index }) => {
+                        // Tính toán tọa độ X, Y mới để đặt label bên ngoài
+                        const RADIAN = Math.PI / 180;
+                        const radius = outerRadius * 1.2; // Tăng bán kính 20% để đẩy label ra ngoài
+                        const x = cx + radius * Math.cos(-midAngle * RADIAN);
+                        const y = cy + radius * Math.sin(-midAngle * RADIAN);
+                        
+                        return (
+                            <text 
+                                x={x} 
+                                y={y} 
+                                fill="#374151" // Màu chữ xám đậm
+                                textAnchor={x > cx ? 'start' : 'end'} // Căn lề trái/phải tùy thuộc vào vị trí
+                                dominantBaseline="central"
+                                style={{ 
+                                    fontSize: '14px', 
+                                    fontWeight: 'bold' 
+                                }}
+                            >
+                                {`${(percent * 100).toFixed(1)}%`}
+                            </text>
+                        );
+                    }}
+                  >
+                    {occupancyData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.color} />
+                    ))}
+                  </Pie>
+                  <Tooltip formatter={(value: number, name: string) => [`${value} căn hộ`, name]} /> 
+                </PieChart>
+              </ResponsiveContainer>
+              
+              <div 
+                  className="flex justify-around mt-4 pt-4 border-t border-gray-100" 
+                  style={{ display: 'flex', justifyContent: 'space-around', width: '100%', marginTop: '1rem', paddingTop: '1rem', borderTopWidth: '1px', borderColor: '#f3f4f6' }}
+              >
+                {occupancyData.map((item) => (
+                  <div key={item.name} className="flex flex-col items-center gap-1">
+                    <div className="flex items-center">
+                        <div className="w-3 h-3 rounded-full mr-2" style={{ backgroundColor: item.color }} />
+                        <span className="text-sm font-medium text-gray-700">{item.name}</span>
+                    </div>
+                    <span className="text-lg font-bold text-gray-900">{item.value}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Service Requests Chart (2/3 chiều rộng) */}
+            
+      </div>
+      
+      {/* 🔥 BOTTOM CHART ROW: Revenue Chart (Full Width) */}
+      <div className="grid grid-cols-1">
+        {/* Revenue Chart */}
+        <div className="bg-white rounded-xl p-6 shadow-md border border-gray-200 col-span-full">
+              <h3 className="text-xl font-bold text-gray-900 mb-6">Phân tích dòng tiền (6 tháng gần nhất)</h3> 
+              <div style={{ width: '100%', height: 380 }}>
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart
                     data={chartData}
@@ -340,79 +468,16 @@ export function Dashboard() {
                     
                     <Legend wrapperStyle={{ paddingTop: 10 }} iconType="circle" />
 
-                    {/* Dịch nhãn cột */}
-                    <Bar dataKey="phaiThu" name="Tổng Phải Thu" fill="#8884d8" barSize={30} radius={[4, 4, 0, 0]} />
+                    <Bar dataKey="phaiThu" name="Tổng phải thu" fill="#8884d8" barSize={30} radius={[4, 4, 0, 0]} />
                     
-                    <Bar dataKey="thucThu" name="Tổng Thực Thu" fill="#4CAF50" barSize={30} radius={[4, 4, 0, 0]} />
+                    <Bar dataKey="thucThu" name="Tổng thực thu" fill="#4CAF50" barSize={30} radius={[4, 4, 0, 0]} />
 
-                    <Bar dataKey="congNo" name="Tổng Công Nợ Phát Sinh" fill="#FF9800" barSize={30} radius={[4, 4, 0, 0]} />
+                    <Bar dataKey="congNo" name="Tổng công nợ phát sinh" fill="#FF9800" barSize={30} radius={[4, 4, 0, 0]} />
 
                   </BarChart>
                 </ResponsiveContainer>
               </div>
             </div>
-
-            {/* Occupancy Pie Chart (Đã dịch tiêu đề và nhãn) */}
-            <div className="bg-white rounded-xl p-6 shadow-md border border-gray-200">
-              <h3 className="text-xl font-bold text-gray-900 mb-6">Tỷ Lệ Lấp Đầy Căn Hộ</h3> {/* Dịch tiêu đề */}
-              <ResponsiveContainer width="100%" height={280}>
-                <PieChart>
-                  <Pie
-                    data={occupancyData.filter(d => d.value > 0)}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={70} // Tăng kích thước Donut
-                    outerRadius={100}
-                    paddingAngle={2}
-                    dataKey="value"
-                    // Thêm label phần trăm trực tiếp lên biểu đồ
-                    label={({ name, percent }) => `${(percent * 100).toFixed(1)}%`}
-                    labelLine={false} 
-                  >
-                    {occupancyData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} />
-                    ))}
-                  </Pie>
-                  <Tooltip formatter={(value: number, name: string) => [`${value} căn hộ`, name]} /> {/* Dịch Tooltip */}
-                </PieChart>
-              </ResponsiveContainer>
-              <div className="flex justify-center gap-8 mt-4 pt-4 border-t border-gray-100">
-                {occupancyData.map((item) => (
-                  <div key={item.name} className="flex flex-col items-center gap-1">
-                    <div className="flex items-center">
-                        <div className="w-3 h-3 rounded-full mr-2" style={{ backgroundColor: item.color }} />
-                        <span className="text-sm font-medium text-gray-700">{item.name}</span>
-                    </div>
-                    <span className="text-lg font-bold text-gray-900">{item.value}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-      </div>
-
-      {/* Bottom Row: Service Requests (Đã dịch tiêu đề và Tooltip) */}
-      <div className="flex justify-center w-full"> 
-        
-        <div className="bg-white rounded-xl p-6 shadow-md border border-gray-200 w-full max-w-4xl"> {/* Tăng max-width để trông cân đối hơn */}
-          <h3 className="text-xl font-bold text-gray-900 mb-6">Phân Tích Yêu Cầu Dịch Vụ (Theo Loại)</h3> {/* Dịch tiêu đề */}
-          <ResponsiveContainer width="100%" height={280}>
-            <BarChart data={serviceRequestsData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" vertical={false} />
-              <XAxis dataKey="category" stroke="#6b7280" />
-              <YAxis stroke="#6b7280" allowDecimals={false} />
-              <Tooltip 
-                contentStyle={{ 
-                  backgroundColor: 'white', 
-                  border: '1px solid #ccc',
-                  borderRadius: '8px',
-                  padding: '10px'
-                }} 
-                formatter={(value: number, name: string) => [`${value} yêu cầu`, 'Loại yêu cầu']} // Dịch Tooltip
-              />
-              <Bar dataKey="count" fill="#2563eb" radius={[8, 8, 0, 0]} barSize={40} />
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
       </div>
     </div>
   );

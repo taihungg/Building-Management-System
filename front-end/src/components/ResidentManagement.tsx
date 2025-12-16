@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
-import { Search, Plus, Edit, Trash2, MoreVertical, MapPin, Phone, UserCircle, Mail, Eye, Home, Fingerprint, Globe, Users } from "lucide-react"; // Đã thêm Globe
+import { Search, Plus, Edit, Trash2, MoreVertical, MapPin, Phone, UserCircle, Mail, Eye, Home, Fingerprint, Globe, Users } from "lucide-react"; 
 import { Label } from "./ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
 import { Dropdown } from "./Dropdown";
@@ -10,9 +10,23 @@ import React from 'react';
 
 import { Toaster, toast } from 'sonner';
 
+// --- Định nghĩa Kiểu Dữ Liệu Tạm Thời (Giúp Type Safety) ---
+// Giả định: ResidentData chứa các trường cần thiết, bao gồm các trường detail từ API
+interface ResidentData {
+  id: string;
+  fullName: string;
+  idCard?: string;
+  dob?: string;
+  homeTown?: string;
+  email?: string;
+  phoneNumber?: string;
+  roomNumber?: string;
+  status: 'ACTIVE' | 'INACTIVE' | 'N/A';
+}
+
 export function ResidentManagement() {
-  const [residents, setResidents] = useState([]);
-  const [error, setError] = useState(null);
+  const [residents, setResidents] = useState<ResidentData[]>([]);
+  const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
 
   // --- TẠO STATE CHO FORM "THÊM MỚI" ---
@@ -21,9 +35,11 @@ export function ResidentManagement() {
   const [newDOB, setNewDOB] = useState("");
   const [newHomeTown, setNewHomeTown] = useState(""); 
   const [newAppartmentID, setNewAppartmentID] = useState("");
+  const [newEmail, setNewEmail] = useState('');
+  const [newPhone, setNewPhone] = useState('');
 
-  // Tao state cho apartment
-  const [apartmentList, setApartmentList] = useState([]);
+  // Tao state cho apartment Dropdown
+  const [apartmentList, setApartmentList] = useState<{ id: string, label: string }[]>([]);
   const [apartmentKeyword, setApartmentKeyword] = useState("");
   
   //kiem soat dong mo dialog
@@ -31,30 +47,30 @@ export function ResidentManagement() {
 
   //State xu ly viec xoa 
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  const [residentToDelete, setResidentToDelete] = useState(null);
+  const [residentToDelete, setResidentToDelete] = useState<ResidentData | null>(null);
 
   // Các state riêng cho form update (Dùng cho View/Edit Modal)
   const [updateName, setUpdateName] = useState("");
   const [updateIDCard, setUpdateIDCard] = useState("");
   const [updateDOB, setUpdateDOB] = useState("");
-  const [updateHomeTown, setUpdateHomeTown] = useState(""); // Đã có
+  const [updateHomeTown, setUpdateHomeTown] = useState("");
   const [updateEmail, setUpdateEmail] = useState("");
   const [updatePhone, setUpdatePhone] = useState("");
 
   // --- STATE CHO MODAL VIEW/EDIT DETAIL ---
-  const [selectedResident, setSelectedResident] = useState(null);
+  const [selectedResident, setSelectedResident] = useState<ResidentData | null>(null);
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
   const [isLoadingDetail, setIsLoadingDetail] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false); 
 
   const [createAccount, setCreateAccount] = useState(false);
-  const [newEmail, setNewEmail] = useState('');
-  const [newPhone, setNewPhone] = useState('');
+
 
   useEffect(() => {
     fetchResidents();
   }, []) 
 
+  // --- FETCH DỮ LIỆU CƯ DÂN ---
   const fetchResidents = async () => {
     try {
       let url = 'http://localhost:8081/api/v1/residents';
@@ -67,7 +83,7 @@ export function ResidentManagement() {
       setResidents(res.data);
     }
     catch (err) {
-      setError(err.message);
+      setError((err as Error).message);
     }
   }
 
@@ -86,7 +102,8 @@ export function ResidentManagement() {
     );
   });
 
-  const createResident = async (dataToCreate) => {
+  // --- API CALL: CREATE RESIDENT ---
+  const createResident = async (dataToCreate: any) => {
     try {
       const response = await fetch('http://localhost:8081/api/v1/residents', {
         method: 'POST',
@@ -106,6 +123,7 @@ export function ResidentManagement() {
     }
   }
 
+  // --- HANDLE SUBMIT THÊM CƯ DÂN ---
   const handleSubmit = async () => {
     if (!newName || !newIDCard) {
       toast.warning("Thiếu thông tin", { description: "Vui lòng nhập tên và CMND/CCCD" });
@@ -119,7 +137,9 @@ export function ResidentManagement() {
           idCard: newIDCard,
           dob: newDOB,
           homeTown: newHomeTown,
-          apartmentID: newAppartmentID
+          apartmentID: newAppartmentID,
+          // Thêm các trường có điều kiện
+          ...(createAccount && { email: newEmail, phoneNumber: newPhone }),
         }
         await createResident(dataform);
         await fetchResidents();
@@ -130,6 +150,9 @@ export function ResidentManagement() {
         setNewDOB("");
         setNewHomeTown("");
         setNewAppartmentID("");
+        setCreateAccount(false); // Reset checkbox
+        setNewEmail(''); // Reset email
+        setNewPhone(''); // Reset phone
         setIsAddDialogOpen(false);
         resolve("Đã thêm cư dân thành công!");
       } catch (err) {
@@ -140,10 +163,11 @@ export function ResidentManagement() {
     toast.promise(promise, {
       loading: 'Đang tạo cư dân...',
       success: (data) => `${data}`,
-      error: (err) => `Lỗi: ${err.message}`,
+      error: (err) => `Lỗi: ${(err as Error).message}`,
     });
   }
 
+  // --- FETCH APARTMENT DROPDOWN ---
   useEffect(() => {
     const getApartmentDropDown = async () => {
       try {
@@ -156,19 +180,20 @@ export function ResidentManagement() {
         setApartmentList(res.data || []);
       }
       catch (err) {
-        console.error(err.message);
+        console.error((err as Error).message);
         setApartmentList([]);
       }
     }
     getApartmentDropDown();
   }, [apartmentKeyword])
 
-  const openDeleteDialog = (resident) => {
+  // --- HANDLE DELETE ---
+  const openDeleteDialog = (resident: ResidentData) => {
     setResidentToDelete(resident);
     setIsDeleteDialogOpen(true);
   };
 
-  const handleDelete = async (residentID, isHardDelete) => {
+  const handleDelete = async (residentID: string, isHardDelete: boolean) => {
     const deleteAction = async () => {
       let baseUrl = `http://localhost:8081/api/v1/residents`;
       let url = `${baseUrl}?id=${residentID}`;
@@ -192,10 +217,11 @@ export function ResidentManagement() {
     toast.promise(deleteAction(), {
       loading: 'Đang xóa cư dân...',
       success: 'Đã xóa cư dân thành công!',
-      error: (err) => `Xóa thất bại: ${err.message}`
+      error: (err) => `Xóa thất bại: ${(err as Error).message}`
     });
   }
 
+  // --- HANDLE UPDATE ---
   const handleUpdate = async () => {
     if (!selectedResident) return;
     
@@ -235,7 +261,7 @@ export function ResidentManagement() {
     toast.promise(updateAction(), {
       loading: 'Đang cập nhật...',
       success: 'Cập nhật thông tin thành công!',
-      error: (err) => `Cập nhật thất bại: ${err.message}`
+      error: (err) => `Cập nhật thất bại: ${(err as Error).message}`
     });
   }
   
@@ -251,7 +277,7 @@ export function ResidentManagement() {
   };
 
   // Hàm tải chi tiết và mở ở chế độ VIEW
-  const handleViewDetail = async (id) => {
+  const handleViewDetail = async (id: string) => {
     setIsLoadingDetail(true);
     setIsEditMode(false); 
     try {
@@ -262,7 +288,7 @@ export function ResidentManagement() {
         }
 
         const res = await response.json();
-        const residentData = res.data;
+        const residentData: ResidentData = res.data;
 
         // Chuẩn bị dữ liệu đầy đủ cho Form Edit
         setSelectedResident(residentData); 
@@ -276,7 +302,7 @@ export function ResidentManagement() {
         setIsViewModalOpen(true);      // Mở Modal
     } catch (err) {
         console.error(err);
-        toast.error("Lỗi tải dữ liệu", { description: err.message });
+        toast.error("Lỗi tải dữ liệu", { description: (err as Error).message });
         setIsViewModalOpen(false);
     } finally {
         setIsLoadingDetail(false);
@@ -284,7 +310,7 @@ export function ResidentManagement() {
   };
 
   // Hàm tải chi tiết và mở ở chế độ EDIT
-  const handleOpenEdit = async (resident) => {
+  const handleOpenEdit = async (resident: ResidentData) => {
     setSelectedResident(resident);
     setIsViewModalOpen(true);
     setIsEditMode(true);
@@ -298,7 +324,7 @@ export function ResidentManagement() {
         }
 
         const res = await response.json();
-        const residentData = res.data;
+        const residentData: ResidentData = res.data;
 
         // Cập nhật state với DỮ LIỆU ĐẦY ĐỦ từ API chi tiết
         setSelectedResident(residentData); 
@@ -311,7 +337,7 @@ export function ResidentManagement() {
         
     } catch (err) {
         console.error(err);
-        toast.error("Lỗi tải dữ liệu", { description: err.message });
+        toast.error("Lỗi tải dữ liệu", { description: (err as Error).message });
         setIsViewModalOpen(false); 
     } finally {
         setIsLoadingDetail(false); 
@@ -325,57 +351,83 @@ export function ResidentManagement() {
 
       {error && (
         <div className="bg-red-50 border-2 border-red-200 text-red-700 px-4 py-3 rounded-lg">
-          <p className="font-medium">Lỗi: {error.message || error}</p>
+          <p className="font-medium">Lỗi: {error}</p>
         </div>
       )}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl text-gray-900">Quản lý Cư Dân</h1>
+          <h1 className="text-3xl text-gray-900">Quản lý cư dân</h1>
           <p className="text-gray-600 mt-1">Quản lý tất cả cư dân và thông tin của họ</p>
         </div>
         <Button
           onClick={() => {
             setIsAddDialogOpen(true);
           }}
-          className="flex items-center gap-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:shadow-xl transition-all">
+          className="flex rounded-full items-center gap-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:shadow-xl transition-all">
           <Plus className="w-5 h-5" />
           Thêm Cư Dân
         </Button>
       </div>
 
-      {/* Search Bar */}
-      <div className="bg-white rounded-xl p-6 border-2 border-gray-200">
-        <div className="relative">
-          <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-          <input
-            type="text"
-            placeholder="Tìm kiếm theo tên, số phòng, điện thoại hoặc email..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-12 pr-4 py-3 bg-gray-50 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600"
-          />
+     {/* Search + Stats Row - ĐÃ GIỚI HẠN CHIỀU RỘNG 50% */}
+     {/* Container điều chỉnh chiều rộng: w-full cho mobile, lg:w-1/2 cho màn hình lớn */}
+     {/* Search + Stats Row - ĐÃ DÙNG INLINE STYLE ĐỂ ÉP BUỘC CHIỀU RỘNG 50% */}
+     {/* Vẫn giữ w-full cho mobile, và sử dụng style={{ maxWidth: '50%' }} để đảm bảo khối không vượt quá nửa màn hình */}
+     <div 
+        className="w-full" 
+        style={{ maxWidth: '50%' }} // THAY THẾ CHO lg:w-1/2 (Có độ ưu tiên cao nhất)
+     > 
+        <div className="bg-white rounded-xl border-2 border-gray-200 p-6 space-y-4">
+
+            {/* Search – nằm trên, nhỏ gọn */}
+            <div className="relative max-w-md">
+                {/* Đã tăng kích thước icon (w-5 h-5) và điều chỉnh vị trí left-4 */}
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                <input
+                    type="text"
+                    placeholder="Tìm kiếm theo tên, số phòng, điện thoại hoặc email..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="
+                        w-full
+                        pl-12 pr-6 py-3 text-sm 
+                        bg-white border-2 border-gray-200 rounded-full // Đã thay đổi: border-2 và rounded-full
+                        focus:outline-none focus:border-blue-600 focus:ring-4 focus:ring-blue-100 // Hiệu ứng focus hiện đại hơn
+                    "
+                />
+            </div>
+
+            {/* Stats – cùng 1 hàng */}
+            <div className="grid grid-cols-2 gap-4">
+
+                {[
+                    { label: "Tổng số cư dân", value: residents.length, accent: "bg-blue-500" },
+                    { label: "Kết quả lọc", value: filteredResidents.length, accent: "bg-emerald-500" }
+                ].map(({ label, value, accent }) => (
+                    <div
+                        key={label}
+                        className="
+                            relative
+                            bg-white rounded-xl border border-gray-200
+                            px-6 py-5
+                            shadow-sm hover:shadow-md transition
+                            overflow-hidden
+                        "
+                    >
+                        {/* Accent line */}
+                        <span className={`absolute left-0 top-0 h-full w-1 rounded-l-xl ${accent}`} />
+
+                        <p className="text-sm text-gray-500">{label}</p>
+                        <p className="mt-1 text-2xl font-extrabold text-gray-900">
+                            {value}
+                        </p>
+                    </div>
+                ))}
+
+            </div>
         </div>
       </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-4 gap-4">
-        <div className="bg-white rounded-lg p-4 border-2 border-gray-200">
-          <p className="text-gray-500 text-sm">Tổng số Cư Dân</p>
-          <p className="text-2xl text-gray-900 mt-1">{residents.length}</p>
-        </div>
-        <div className="bg-white rounded-lg p-4 border-2 border-gray-200">
-          <p className="text-gray-500 text-sm">Kết quả Lọc</p>
-          <p className="text-2xl text-gray-900 mt-1">{filteredResidents.length}</p>
-        </div>
-        <div className="bg-white rounded-lg p-4 border-2 border-gray-200">
-          <p className="text-gray-500 text-sm">Có Email</p>
-          <p className="text-2xl text-green-600 mt-1">{residents.filter(r => r.email).length}</p>
-        </div>
-        <div className="bg-white rounded-lg p-4 border-2 border-gray-200">
-          <p className="text-gray-500 text-sm">Có SĐT</p>
-          <p className="text-2xl text-orange-600 mt-1">{residents.filter(r => r.phoneNumber).length}</p>
-        </div>
-      </div>
 
       {/* Residents Table */}
       <div className="bg-white rounded-xl border-2 border-gray-200 overflow-hidden">
@@ -383,11 +435,11 @@ export function ResidentManagement() {
           <table className="w-full">
             <thead className="bg-blue-600 border-b-2 border-blue-700">
               <tr>
-                <th className="text-left px-6 py-4 text-sm text-white">Cư Dân</th>
-                <th className="text-left px-6 py-4 text-sm text-white">Số Phòng</th>
-                <th className="text-left px-6 py-4 text-sm text-white">Liên Hệ</th>
-                <th className="text-left px-6 py-4 text-sm text-white">Trạng Thái</th>
-                <th className="text-left px-6 py-4 text-sm text-white">Hành Động</th>
+                <th className="text-left px-6 py-4 text-sm text-white">Cư dân</th>
+                <th className="text-left px-6 py-4 text-sm text-white">Số phòng</th>
+                <th className="text-left px-6 py-4 text-sm text-white">Liên hệ</th>
+                <th className="text-left px-6 py-4 text-sm text-white">Trạng thái</th>
+                <th className="text-left px-6 py-4 text-sm text-white">Hành động</th>
               </tr>
             </thead>
             <tbody className="divide-y-2 divide-gray-200">
@@ -623,7 +675,7 @@ export function ResidentManagement() {
               onClick={handleSubmit}
               className="flex-1 bg-blue-600 hover:bg-blue-700"
             >
-              Thêm Cư Dân
+              Thêm cư dân
             </Button>
         </div>
     </div>
@@ -899,7 +951,7 @@ export function ResidentManagement() {
                         {/* 🔥 NÚT CREATE ACCOUNT (TẠO TÀI KHOẢN) */}
                         <Button 
                             onClick={handleCreateAccount} 
-                            className="bg-orange-500 hover:bg-orange-600 text-black rounded-full px-6 shadow-lg shadow-orange-500/30"
+                            className="bg-orange-500 hover:bg-orange-600 text-white rounded-full px-6 shadow-lg shadow-orange-500/30"
                         >
                             <Users className="w-4 h-4 mr-2" /> Tạo tài khoản
                         </Button>

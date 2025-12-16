@@ -11,7 +11,8 @@ const categoryIcons = {
   Plumbing: Droplet,
   Electrical: Zap,
   HVAC: Wind,
-  Maintenance: Wrench,
+  MAINTENANCE: Wrench,
+  AUTHORITY:Shield,
   Cleaning: Trash2,
   Security: Shield,
   Complaint: Shield, // Thêm Complaint
@@ -19,16 +20,16 @@ const categoryIcons = {
 
 // Danh sách các trạng thái ENUM Backend và UI Label tương ứng (ĐÃ DỊCH)
 const STATUS_OPTIONS = [
-    { enum: 'UNPROCESSED', label: 'Chưa Xử Lý' },
-    { enum: 'PROCESSING', label: 'Đang Xử Lý' },
+    { enum: 'UNPROCESSED', label: 'Chưa xử lý' },
+    { enum: 'PROCESSING', label: 'Đang xử lý' },
     // ENUM PROCESSED (Backend) -> Label Processed (Frontend)
-    { enum: 'PROCESSED', label: 'Đã Xử Lý' }, 
+    { enum: 'PROCESSED', label: 'Đã xử lý' }, 
 ];
 
 
 export function ServiceManagement() {
   const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState('Chưa Xử Lý'); // Cập nhật filter mặc định theo tiếng Việt
+  const [statusFilter, setStatusFilter] = useState('Chưa xử lý'); // Cập nhật filter mặc định theo tiếng Việt
   const [isNewRequestOpen, setIsNewRequestOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   
@@ -141,6 +142,7 @@ export function ServiceManagement() {
                 switch (type) {
                     case 'MAINTENANCE': return 'Bảo Trì'; 
                     case 'COMPLAINT': return 'Khiếu Nại'; 
+                    case 'AUTHORITY': return 'Cơ Quan/An Ninh'; // Thêm Authority
                     default: return 'Bảo Trì';
                 }
             };
@@ -148,7 +150,8 @@ export function ServiceManagement() {
             return {
                 id: issue.id,
                 title: issue.title,
-                category: mapCategory(issue.type),
+                category: mapCategory(issue.type), // Label đã dịch
+                type: issue.type, // 🔥 Giữ ENUM gốc (MAINTENANCE, COMPLAINT, AUTHORITY)
                 status: mapStatus(rawStatus), 
                 rawStatus: rawStatus, // Lưu trạng thái ENUM gốc
                 unit: String(issue.roomNumber), 
@@ -286,7 +289,7 @@ export function ServiceManagement() {
     const statusLabel = mapFilterToStatusLabel(statusFilter);
     
     // Lọc theo Status 
-    if (statusLabel !== 'All' && issue.status !== statusLabel) {
+    if (statusFilter !== 'All' && issue.status !== statusFilter) {
       return false;
     }
     
@@ -296,14 +299,16 @@ export function ServiceManagement() {
       
       const unit = issue.unit || ''; 
       const resident = issue.resident || '';
-      const category = issue.category || '';
+      const category = issue.category || ''; // Label đã dịch (Bảo Trì, Khiếu Nại, Cơ Quan/An Ninh)
       const title = issue.title || '';
+      const type = issue.type || ''; // 🔥 ENUM gốc (MAINTENANCE, COMPLAINT, AUTHORITY)
 
       return (
         unit.toLowerCase().includes(lowerSearch) || 
         resident.toLowerCase().includes(lowerSearch) ||
         category.toLowerCase().includes(lowerSearch) ||
-        title.toLowerCase().includes(lowerSearch)
+        title.toLowerCase().includes(lowerSearch)||
+        type.toLowerCase().includes(lowerSearch) // 🔥 Thêm tìm kiếm theo type ENUM gốc
       );
     }
     return true;
@@ -314,30 +319,49 @@ export function ServiceManagement() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl text-slate-900">Quản Lý Yêu Cầu Dịch Vụ & Sự Cố</h1>
+          <h1 className="text-3xl text-slate-900">Quản lý yêu cầu dịch vụ và sự cố</h1>
           <p className="text-slate-500 mt-1">Theo dõi và quản lý tất cả các yêu cầu dịch vụ và sự cố</p>
         </div>
+        {/* Nút Tạo Yêu Cầu Mới - Đặt ở đây để nằm bên phải Header */}
         <button 
-          onClick={() => setIsNewRequestOpen(true)}
-          className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl hover:shadow-xl transition-all"
+            onClick={() => setIsNewRequestOpen(true)}
+            className="bg-blue-600 hover:bg-blue-700 text-white rounded-xl px-4 py-2 flex items-center gap-2 shadow-md transition duration-150"
         >
-          <Plus className="w-5 h-5" />
-          Tạo Yêu Cầu Mới
+            <Plus className="w-5 h-5" />
+            Tạo Yêu Cầu Mới
         </button>
       </div>
 
       <hr/>
 
-      {/* Search Bar */}
-      <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
+      {/* Search Bar (ĐÃ CHỈNH SỬA) */}
+      <div 
+        className="bg-white rounded-xl"
+        style={{ 
+            maxWidth: '25%', // Giới hạn chiều rộng 25%
+            padding: '0.5rem', // Giảm padding container
+        }}
+      >
         <div className="relative">
-          <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400" />
+          {/* Icon Search - Giảm kích thước và điều chỉnh vị trí */}
+          <Search 
+            className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" 
+            style={{ width: '1.15rem', height: '1.15rem', left: '0.75rem' }} 
+          />
           <input
             type="text"
-            placeholder="Tìm kiếm theo số phòng, cư dân, hoặc loại dịch vụ..."
+            placeholder="Tìm kiếm theo số phòng, cư dân, loại dịch vụ (ENUM/Việt)..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-12 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="w-full bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+            // ÉP BUỘC CHIỀU CAO VÀ PADDING BẰNG INLINE STYLE
+            style={{ 
+                paddingLeft: '2.5rem', // 1.15rem icon + space
+                paddingRight: '1rem', 
+                paddingTop: '0.4rem', 
+                paddingBottom: '0.4rem', 
+                height: '2.25rem' // Chiều cao cố định
+            }}
           />
         </div>
       </div>
@@ -349,7 +373,7 @@ export function ServiceManagement() {
             <div className="w-10 h-10 rounded-lg bg-orange-100 flex items-center justify-center">
               <Clock className="w-5 h-5 text-orange-600" />
             </div>
-            <p className="text-slate-500 text-sm">Chưa Xử Lý</p>
+            <p className="text-slate-500 text-sm">Chưa xử lý</p>
           </div>
           <p className="text-2xl text-slate-900">{allIssue.filter(s => s.status === 'Chưa Xử Lý').length}</p>
         </div>
@@ -359,7 +383,7 @@ export function ServiceManagement() {
             <div className="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center">
               <Wrench className="w-5 h-5 text-blue-600" />
             </div>
-            <p className="text-slate-500 text-sm">Đang Xử Lý</p>
+            <p className="text-slate-500 text-sm">Đang xử lý</p>
           </div>
           <p className="text-2xl text-slate-900">{allIssue.filter(s => s.status === 'Đang Xử Lý').length}</p>
         </div>
@@ -369,7 +393,7 @@ export function ServiceManagement() {
             <div className="w-10 h-10 rounded-lg bg-emerald-100 flex items-center justify-center">
               <CheckCircle className="w-5 h-5 text-emerald-600" />
             </div>
-            <p className="text-slate-500 text-sm">Đã Xử Lý</p> 
+            <p className="text-slate-500 text-sm">Đã xử lý</p> 
           </div>
           <p className="text-2xl text-slate-900">{allIssue.filter(s => s.status === 'Đã Xử Lý').length}</p> 
         </div>
@@ -379,7 +403,7 @@ export function ServiceManagement() {
             <div className="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center">
               <Wrench className="w-5 h-5 text-gray-600" />
             </div>
-            <p className="text-slate-500 text-sm">Tổng Yêu Cầu</p>
+            <p className="text-slate-500 text-sm">Tổng yêu cầu</p>
           </div>
           <p className="text-2xl text-slate-900">{allIssue.length}</p>
         </div>
@@ -399,7 +423,7 @@ export function ServiceManagement() {
                 : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'
             }`}
           >
-            {status === 'All' ? 'Tất Cả' : status}
+            {status === 'All' ? 'Tất cả' : status}
           </button>
         ))}
       </div>
@@ -414,7 +438,8 @@ export function ServiceManagement() {
         )}
 
         {filteredIssues.map((service) => {
-          const Icon = categoryIcons[service.category] || Wrench; 
+          // Sử dụng service.type (ENUM gốc) để chọn icon
+          const Icon = categoryIcons[service.type] || Wrench; 
           
           // Lấy status đã dịch từ issue.status
           const statusClass = 
@@ -435,7 +460,7 @@ export function ServiceManagement() {
                               <Icon className="w-6 h-6 text-white" />
                           </div>
                           <div>
-                              {/* Hiển thị Category */}
+                              {/* Hiển thị Category (Label đã dịch) */}
                               <p className="text-sm text-slate-500">{service.category}</p> 
                               
                               <div className="flex items-center gap-3">
@@ -511,127 +536,95 @@ export function ServiceManagement() {
       </div>
 
       {/* SlideOut - Form Tạo Yêu Cầu Mới - ĐÃ DỊCH */}
-      <SlideOut
-        isOpen={isNewRequestOpen}
-        onClose={() => setIsNewRequestOpen(false)}
-        title="Tạo Yêu Cầu Dịch Vụ / Sự Cố Mới"
+      <SlideOut 
+        isOpen={isNewRequestOpen} 
+        onClose={() => setIsNewRequestOpen(false)} 
+        title="Tạo Yêu Cầu Dịch Vụ Mới"
       >
-        <form onSubmit={handleSubmit} className="p-6 h-full flex flex-col">
-            <div className="space-y-6 flex-grow">
-                {/* Chọn Căn Hộ */}
-                <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Chọn Căn Hộ <span className="text-red-500">*</span></label>
-                    <div className="relative">
-                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
-                        <input
-                            type="text"
-                            placeholder="Nhập số phòng hoặc tên cư dân"
-                            value={apartmentSearchTerm}
-                            onChange={(e) => {
-                                setApartmentSearchTerm(e.target.value);
-                                setUpdateAppartmentID(''); // Xóa ID khi tìm kiếm mới
-                                setSelectedApartmentLabel('');
-                            }}
-                            className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
-                            required
-                        />
-                        {/* Hiển thị tên căn hộ đã chọn */}
-                        {selectedApartmentLabel && (
-                            <div className="absolute right-0 top-0 mt-3 mr-3 text-xs font-semibold text-blue-600">
-                                Đã Chọn: {selectedApartmentLabel}
+        <form onSubmit={handleSubmit} className="p-6 space-y-4">
+            {/* Input Căn hộ */}
+            <div className="relative">
+                <label className="block text-sm font-medium text-slate-700 mb-1">Căn hộ/Số phòng <span className="text-red-500">*</span></label>
+                <input
+                    type="text"
+                    placeholder="Nhập số phòng..."
+                    value={apartmentSearchTerm}
+                    onChange={(e) => {
+                      setApartmentSearchTerm(e.target.value);
+                      setUpdateAppartmentID(''); // Xóa ID khi bắt đầu nhập
+                      setSelectedApartmentLabel('');
+                    }}
+                    className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                />
+                
+                {/* Dropdown kết quả tìm kiếm */}
+                {apartmentDropdown.length > 0 && apartmentSearchTerm && updateApartmentID === '' && (
+                    <div className="absolute z-10 w-full mt-1 bg-white border border-slate-300 rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                        {apartmentDropdown.map(apt => (
+                            <div 
+                                key={apt.id}
+                                onClick={() => handleSelectApartment(apt.id, apt.roomNumber)}
+                                className="px-4 py-2 text-slate-700 hover:bg-slate-100 cursor-pointer text-sm"
+                            >
+                                #{apt.roomNumber} - Cư dân: {apt.residentName}
                             </div>
-                        )}
-                        
-                        {/* Dropdown Kết Quả */}
-                        {apartmentDropdown.length > 0 && apartmentSearchTerm.length > 0 && (
-                            <ul className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-40 overflow-y-auto">
-                                {apartmentDropdown.map(apt => (
-                                    <li 
-                                        key={apt.id} 
-                                        onClick={() => handleSelectApartment(apt.id, apt.label)}
-                                        className="px-4 py-3 hover:bg-blue-50 cursor-pointer transition-colors text-sm border-b border-gray-100"
-                                    >
-                                        <div className="font-semibold text-gray-900">{apt.label}</div>
-                                        <div className="text-xs text-gray-500">Chủ sở hữu: {apt.ownerName || 'Chưa rõ'}</div>
-                                    </li>
-                                ))}
-                            </ul>
-                        )}
-
-                        {isApartmentDropdownLoading && apartmentSearchTerm.length > 0 && (
-                            <p className="absolute z-10 w-full mt-1 px-4 py-2 bg-white border border-gray-300 rounded-lg shadow-lg text-sm text-center text-gray-500">
-                                Đang tìm kiếm...
-                            </p>
-                        )}
-
-                        {/* Thông báo lỗi nếu chưa chọn căn hộ */}
-                        {!updateApartmentID && apartmentSearchTerm.length > 0 && apartmentDropdown.length === 0 && !isApartmentDropdownLoading && (
-                            <p className="absolute z-10 w-full mt-1 px-4 py-2 bg-white border border-red-300 rounded-lg shadow-lg text-sm text-red-600">
-                                Không tìm thấy căn hộ nào phù hợp.
-                            </p>
+                        ))}
+                        {isApartmentDropdownLoading && (
+                             <div className="px-4 py-2 text-slate-500 text-sm italic">Đang tìm kiếm...</div>
                         )}
                     </div>
-                </div>
-
-                {/* Tiêu đề */}
-                <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Tiêu Đề Yêu Cầu <span className="text-red-500">*</span></label>
-                    <input
-                        type="text"
-                        placeholder="Ví dụ: Rò rỉ nước ở phòng tắm"
-                        value={updateTitle}
-                        onChange={(e) => setUpdateTitle(e.target.value)}
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
-                        required
-                    />
-                </div>
-                
-                {/* Loại Yêu Cầu */}
-                <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Loại Yêu Cầu <span className="text-red-500">*</span></label>
-                    <select
-                        value={updateType}
-                        onChange={(e) => setUpdateType(e.target.value)}
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 bg-white"
-                        required
-                    >
-                        <option value="MAINTENANCE">Bảo Trì</option>
-                        <option value="COMPLAINT">Khiếu Nại</option>
-                        {/* Các loại khác có thể thêm vào đây nếu backend hỗ trợ */}
-                    </select>
-                </div>
-
-                {/* Mô tả */}
-                <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Mô Tả Chi Tiết <span className="text-red-500">*</span></label>
-                    <textarea
-                        rows={5}
-                        placeholder="Cung cấp chi tiết vấn đề: vị trí, mức độ nghiêm trọng..."
-                        value={updateDescription}
-                        onChange={(e) => setUpdateDescription(e.target.value)}
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 resize-none"
-                        required
-                    />
-                </div>
-
+                )}
             </div>
+            
+            {/* Hiển thị căn hộ đã chọn (Tùy chọn) */}
+            {selectedApartmentLabel && (
+                <p className="text-sm text-green-600 font-medium">Đã chọn: Phòng #{selectedApartmentLabel}</p>
+            )}
 
-            {/* Footer Buttons */}
-            <div className="flex gap-3 pt-6 border-t mt-auto">
-                <button
-                    type="button"
-                    onClick={() => setIsNewRequestOpen(false)}
-                    className="flex-1 px-6 py-3 bg-gray-200 text-gray-700 rounded-xl hover:bg-gray-300 transition-colors font-medium"
-                >
-                    Hủy Bỏ
-                </button>
-                <button 
-                    type="submit"
-                    className="flex-1 px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl hover:shadow-xl transition-all font-semibold"
-                >
-                    Gửi Yêu Cầu
-                </button>
+            {/* Input Tiêu đề */}
+            <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Tiêu đề <span className="text-red-500">*</span></label>
+                <input
+                    type="text"
+                    placeholder="Ví dụ: Rò rỉ nước ở bếp"
+                    value={updateTitle}
+                    onChange={(e) => setUpdateTitle(e.target.value)}
+                    className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                />
             </div>
+            
+            {/* Select Loại */}
+            <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Loại Yêu Cầu <span className="text-red-500">*</span></label>
+                <select
+                    value={updateType}
+                    onChange={(e) => setUpdateType(e.target.value)}
+                    className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 bg-white"
+                >
+                    <option value="MAINTENANCE">Bảo Trì/Sửa Chữa</option>
+                    <option value="COMPLAINT">Khiếu Nại/Phản Ánh</option>
+                    <option value="AUTHORITY">Cơ Quan/An Ninh</option>
+                </select>
+            </div>
+            
+            {/* Textarea Mô tả */}
+            <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Mô tả chi tiết <span className="text-red-500">*</span></label>
+                <textarea
+                    placeholder="Mô tả chi tiết vấn đề đang gặp phải..."
+                    value={updateDescription}
+                    onChange={(e) => setUpdateDescription(e.target.value)}
+                    rows={4}
+                    className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                ></textarea>
+            </div>
+            
+            <button 
+                type="submit"
+                className="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-2 rounded-lg transition duration-150 shadow-md"
+            >
+                Gửi Yêu Cầu
+            </button>
         </form>
       </SlideOut>
 
