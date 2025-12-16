@@ -154,36 +154,48 @@ export function AccountingDashboard() {
 
   const stats = useMemo(() => ([
     { 
-      label: 'Tổng Doanh Thu Đã Thu', 
+      label: 'Thực thu', 
       value: formatCurrency(stats1.paidAmount), 
-      icon: DollarSign, bgColor: 'bg-green-100', iconColor: 'text-green-600',
+      icon: DollarSign, 
+      borderColor: 'border-green-500',
+      iconBg: 'bg-green-50', 
+      iconColor: 'text-green-600',
+      valueColor: 'text-green-700',
       billCount: stats1.paidCount, 
-      billCountLabel: 'Đã Thanh Toán', 
-      countTextLabel: 'text-green-700' 
+      billCountLabel: 'Đã thanh toán'
     },
     { 
-      label: 'Cần Phải Thu (Chưa thanh toán)', 
+      label: 'Công nợ', 
       value: formatCurrency(stats1.unpaidAmount), 
-      icon: Clock, bgColor: 'bg-red-100', iconColor: 'text-red-600',
+      icon: Clock, 
+      borderColor: 'border-red-500',
+      iconBg: 'bg-red-50', 
+      iconColor: 'text-red-600',
+      valueColor: 'text-red-700',
       billCount: stats1.unpaidCount, 
-      billCountLabel: 'Chưa Thanh Toán',
-      countTextLabel: 'text-red-700' 
+      billCountLabel: 'Chưa thanh toán'
     },
     { 
-      label: 'Đang chờ xử lý', 
+      label: 'Chờ xác nhận', 
       value: formatCurrency(stats1.pendingAmount),  
-      icon: AlertCircle, bgColor: 'bg-yellow-100', iconColor: 'text-yellow-600', // Đổi màu vàng cho Pending
+      icon: AlertCircle, 
+      borderColor: 'border-amber-500',
+      iconBg: 'bg-amber-50', 
+      iconColor: 'text-amber-600',
+      valueColor: 'text-amber-700',
       billCount: stats1.pendingCount, 
-      billCountLabel: 'Đang chờ xử lý',
-      countTextLabel: 'text-yellow-700' 
+      billCountLabel: 'Đang chờ xử lý'
     },
     { 
-      label: 'Tổng Số Lượng Hóa Đơn', 
+      label: 'Tổng hóa đơn', 
       value: bills.length.toString(),  
-      icon: Receipt, bgColor: 'bg-blue-100', iconColor: 'text-blue-600', 
+      icon: Receipt, 
+      borderColor: 'border-blue-500',
+      iconBg: 'bg-blue-50', 
+      iconColor: 'text-blue-600',
+      valueColor: 'text-blue-700',
       billCount: bills.length, 
-      billCountLabel: 'Tổng số hoá đơn', 
-      countTextLabel: 'text-blue-700'  
+      billCountLabel: 'Tổng số hoá đơn'
     },
   ]), [stats1, bills.length]); // Sử dụng useMemo để tránh tính toán lại không cần thiết
 
@@ -193,29 +205,51 @@ export function AccountingDashboard() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Dashboard Kế Toán</h1>
-          <p className="text-gray-600">Tổng quan tài chính và quản lý hóa đơn (Năm {new Date().getFullYear()})</p>
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">Tổng quan tài chính</h1>
         </div>
       </div>
 
       {/* --- PHẦN 1: THẺ TÓM TẮT THỐNG KÊ --- */}
-      <div className="grid grid-cols-4 gap-6">
-        {stats.map((stat) => {
+      <div className="grid grid-cols-4 gap-4">
+        {stats.map((stat, index) => {
           const Icon = stat.icon;
+          // Color themes matching InvoiceCreation page
+          const colorThemes = [
+            // Card 1: Green/Emerald theme (like InvoiceCreation Card 4)
+            { bg: '#ecfdf5', border: '#a7f3d0', text: '#047857' },
+            // Card 2: Red theme (custom for unpaid)
+            { bg: '#fef2f2', border: '#fecaca', text: '#dc2626' },
+            // Card 3: Amber theme (like InvoiceCreation Card 2)
+            { bg: '#fffbeb', border: '#fde68a', text: '#b45309' },
+            // Card 4: Blue theme (like InvoiceCreation Card 1)
+            { bg: '#eff6ff', border: '#bfdbfe', text: '#1d4ed8' }
+          ];
+          const theme = colorThemes[index] || colorThemes[0];
+          
           return (
-            <div key={stat.label} className="bg-white rounded-xl p-6 border border-gray-200 shadow-sm">
-              <div className="flex items-start justify-between">
-                <div className={`w-12 h-12 rounded-lg ${stat.bgColor} flex items-center justify-center`}>
-                  <Icon className={`w-6 h-6 ${stat.iconColor}`} />
-                </div>
-              </div>
-              <div className="mt-4">
-                <p className="text-gray-500 text-sm">{stat.label}</p>
-                <p className="text-2xl text-gray-900 mt-1 font-bold">{stat.value}</p>
-                <p className={`text-sm mt-1 ${stat.countTextLabel} font-medium`}>
-                  {stat.billCount} hóa đơn {stat.billCountLabel}
+            <div 
+              key={stat.label} 
+              className="rounded-xl p-4 shadow-sm"
+              style={{ 
+                backgroundColor: theme.bg,
+                border: `2px solid ${theme.border}`
+              }}
+            >
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-xs font-medium tracking-wide" style={{ color: theme.text }}>
+                  {stat.label}
                 </p>
+                <Icon className="w-5 h-5" style={{ color: theme.text }} />
               </div>
+              <p 
+                className="text-2xl font-bold"
+                style={{ color: theme.text }}
+              >
+                {stat.value}
+              </p>
+              <p className="text-xs text-gray-400 mt-1">
+                {stat.billCount} hóa đơn {stat.billCountLabel}
+              </p>
             </div>
           );
         })}
@@ -225,195 +259,88 @@ export function AccountingDashboard() {
       <div className="grid grid-cols-3 gap-6">
         {/* BAR CHART: Doanh Thu & Thanh Toán Theo Tháng */}
         <div className="col-span-2 bg-white rounded-xl p-6 border border-gray-200 shadow-sm">
-          <h3 className="text-lg font-bold text-gray-900 mb-4">Doanh Thu & Thanh Toán Theo Tháng</h3>
+          <h3 className="text-lg font-bold text-gray-900 mb-4">Thực thu theo tháng</h3>
           {isLoading ? (
             <div className="flex justify-center items-center h-[280px]">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
             </div>
           ) : (
-            <ResponsiveContainer width="100%" height={280}>
-              <BarChart data={monthlyRevenueData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                <XAxis dataKey="month" stroke="#6b7280" />
-                <YAxis 
-                  stroke="#6b7280" 
-                  tickFormatter={(value: number) => value >= 1000000 ? (value / 1000000).toFixed(0) + 'M' : value >= 1000 ? (value / 1000).toFixed(0) + 'K' : value.toString()}
-                  label={{ value: 'Số tiền (VND)', angle: -90, position: 'insideLeft', style: { textAnchor: 'middle' } }}
-                />
-                <Tooltip 
-                  contentStyle={{ backgroundColor: 'white', border: '1px solid #e5e7eb', borderRadius: '8px', padding: '10px' }} 
-                  formatter={(value: number, name: string) => [formatCurrency(value), name]} 
-                />
-                <Legend iconType="circle" wrapperStyle={{ paddingTop: '10px' }} />
-                <Bar dataKey="revenue" fill="#3B82F6" name="Tổng Doanh Thu Phát Sinh" radius={[4, 4, 0, 0]} />
-                <Bar dataKey="paid" fill="#10B981" name="Thực Thu (Đã thanh toán)" radius={[4, 4, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
+            <div style={{ width: '100%', height: '280px' }}>
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={monthlyRevenueData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                  <XAxis dataKey="month" stroke="#6b7280" />
+                  <YAxis 
+                    stroke="#6b7280" 
+                    tickFormatter={(value: number) => value >= 1000000 ? (value / 1000000).toFixed(0) + 'M' : value >= 1000 ? (value / 1000).toFixed(0) + 'K' : value.toString()}
+                    label={{ value: 'Số tiền (VND)', angle: -90, position: 'insideLeft', style: { textAnchor: 'middle' } }}
+                  />
+                  <Tooltip 
+                    contentStyle={{ backgroundColor: 'white', border: '1px solid #e5e7eb', borderRadius: '8px', padding: '10px' }} 
+                    formatter={(value: number, name: string) => [formatCurrency(value), name]} 
+                  />
+                  <Legend iconType="circle" wrapperStyle={{ paddingTop: '10px' }} />
+                  <Bar dataKey="revenue" fill="#3B82F6" name="Tổng doanh thu phát sinh" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="paid" fill="#10B981" name="Thực thu (Đã thanh toán)" radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
           )}
         </div>
 
-       {/* PIE CHART: Trạng Thái Hóa Đơn */}
-       <div className="bg-white rounded-xl p-6 border border-gray-200 shadow-sm">
-          <h3 className="text-lg font-bold text-gray-900 mb-4">Trạng Thái Hóa Đơn (Theo Số lượng)</h3>
-          <ResponsiveContainer width="100%" height={280}>
-            <RechartsPieChart>
-              <Pie 
-                data={filteredBillStatusData} 
-                cx="50%" cy="50%" 
-                innerRadius={70} 
-                outerRadius={110} 
-                paddingAngle={2} 
-                dataKey="value"
-                labelLine={false}
-                // label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-              >
-                {filteredBillStatusData.map((entry, index) => (<Cell key={`cell-${index}`} fill={entry.color} />))}
-              </Pie>
-              <Tooltip 
-                contentStyle={{ backgroundColor: 'white', border: '1px solid #e5e7eb', borderRadius: '8px', padding: '10px' }} 
-                formatter={(value: number, name: string) => [`${value} hóa đơn`, name]} 
-              />
-            </RechartsPieChart>
-          </ResponsiveContainer>
-          <div className="flex flex-col gap-2 mt-4">
-            {filteredBillStatusData.map((item) => (
-              <div key={item.name} className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 rounded-full" style={{ backgroundColor: item.color }} />
-                  <span className="text-sm text-gray-600">{item.name}</span>
-                </div>
-                {/* Hiển thị cả số lượng và số tiền */}
-                <div className="text-right">
-                    <span className="text-sm font-bold text-gray-900">{item.value}</span>
-                    <span className="text-xs text-gray-500 block">{formatCurrency(item.amount)}</span>
-                </div>
-              </div>
-            ))}
-          </div>
-       </div>
-      </div>
-
-      {/* --- PHẦN 3: DANH SÁCH HÓA ĐƠN GẦN ĐÂY --- */}
-      <div className="grid grid-cols-2 gap-6">
-        <div 
-      className="
-          bg-white 
-          rounded-xl 
-          p-6 
-          border 
-          border-gray-200 
-          shadow-lg /* 🔥 Đã thêm: Shadow lớn cho card chính */
-          transition-all 
-          hover:shadow-xl /* Hiệu ứng nổi bật khi hover */
-          hover:border-blue-300 /* Thêm viền màu xanh khi hover */
-      "
-  >
-      <h3 className="text-xl font-extrabold text-gray-900 mb-4 flex items-center gap-3">
-          {/* Thêm icon để tăng tính trực quan */}
-          <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6 text-green-600" viewBox="0 0 20 20" fill="currentColor">
-              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-          </svg>
-          Hóa Đơn Đã Thanh Toán Gần Đây
-      </h3>
-      <div className="space-y-4"> {/* Tăng khoảng cách giữa các item con */}
+        {/* PIE CHART: Trạng Thái Hóa Đơn */}
+        <div className="bg-white rounded-xl p-6 border border-gray-200 shadow-sm">
+          <h3 className="text-lg font-bold text-gray-900 mb-4">Thành phần nguồn thu</h3>
           {isLoading ? (
-              <div className="p-8 text-center text-gray-500">Đang tải...</div>
+            <div className="flex justify-center items-center h-[280px]">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+            </div>
           ) : (
-              bills.filter(e=> e.status ==='PAID').slice(0, 5).map((bill: any) => (
-                
-                <div 
-                  key={bill.id} 
-                  className="
-                      flex 
-                      items-center 
-                      justify-between 
-                      p-4 
-                      rounded-lg 
-                      border border-green-300 /* Tăng độ đậm viền */
-                      bg-green-50
-                      shadow-md /* 🔥 Đã thêm: Shadow vừa cho từng item */
-                      hover:shadow-lg /* Item nổi hơn khi hover */
-                      transition-shadow 
-                      cursor-pointer
-                  "
-                >
-                  <div className="flex-1">
-                    <p className="text-base font-bold text-green-800"> Phòng {bill.apartmentLabel}</p> {/* Tăng độ đậm */}
-                    <p className="text-xs text-gray-500 mt-1">Ngày TT: {bill.paymentDate ? new Date(bill.paymentDate).toLocaleDateString('vi-VN') : 'N/A'}</p>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-xl font-extrabold text-green-700">{formatCurrency(bill.totalAmount)}</p> {/* Tăng cỡ chữ và độ đậm */}
-                    <div className="flex items-center gap-1 mt-1 justify-end">
-                      <CheckCircle className="w-4 h-4 text-green-600" />
-                      <span className="text-sm font-medium text-green-600">Đã thanh toán</span>
+            <>
+              <div style={{ width: '100%', height: '280px' }}>
+                <ResponsiveContainer width="100%" height="100%">
+                  <RechartsPieChart>
+                    <Pie 
+                      data={filteredBillStatusData.length > 0 ? filteredBillStatusData : [{ name: 'Không có dữ liệu', value: 1, color: '#e5e7eb' }]} 
+                      cx="50%" cy="50%" 
+                      innerRadius={70} 
+                      outerRadius={110} 
+                      paddingAngle={2} 
+                      dataKey="value"
+                      labelLine={false}
+                    >
+                      {(filteredBillStatusData.length > 0 ? filteredBillStatusData : [{ name: 'Không có dữ liệu', value: 1, color: '#e5e7eb' }]).map((entry, index) => (<Cell key={`cell-${index}`} fill={entry.color} />))}
+                    </Pie>
+                    <Tooltip 
+                      contentStyle={{ backgroundColor: 'white', border: '1px solid #e5e7eb', borderRadius: '8px', padding: '10px' }} 
+                      formatter={(value: number, name: string) => [`${value} hóa đơn`, name]} 
+                    />
+                  </RechartsPieChart>
+                </ResponsiveContainer>
+              </div>
+              <div className="flex flex-col gap-2 mt-4">
+                {filteredBillStatusData.length > 0 ? (
+                  filteredBillStatusData.map((item) => (
+                    <div key={item.name} className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <div className="w-3 h-3 rounded-full" style={{ backgroundColor: item.color }} />
+                        <span className="text-sm text-gray-600">{item.name}</span>
+                      </div>
+                      <div className="text-right">
+                        <span className="text-sm font-bold text-gray-900">{item.value}</span>
+                        <span className="text-xs text-gray-500 block">{formatCurrency(item.amount)}</span>
+                      </div>
                     </div>
-                  </div>
-                </div>
-              ))
+                  ))
+                ) : (
+                  <p className="text-sm text-gray-500 text-center">Chưa có dữ liệu</p>
+                )}
+              </div>
+            </>
           )}
-          {!isLoading && bills.filter(e=> e.status ==='PAID').length === 0 && <p className="text-center text-gray-500 py-8">Chưa có hóa đơn đã thanh toán</p>}
-      </div>
         </div>
+      </div>
 
-        <div 
-    className="
-        bg-white 
-        rounded-xl 
-        p-6 
-        border 
-        border-gray-200 
-        shadow-lg /* 🔥 Đã thêm: Shadow lớn cho card chính */
-        transition-all 
-        hover:shadow-xl /* Hiệu ứng nổi bật khi hover */
-        hover:border-red-300 /* Viền đỏ khi hover */
-    "
->
-    <h3 className="text-xl font-extrabold text-gray-900 mb-4 flex items-center gap-3">
-        {/* Thêm icon cảnh báo cho trực quan */}
-        <AlertTriangle className="w-6 h-6 text-red-600" /> 
-        Hóa Đơn Chưa Thanh Toán
-    </h3>
-    <div className="space-y-4"> {/* Tăng khoảng cách giữa các item con */}
-        {isLoading ? (
-            <div className="p-8 text-center text-gray-500">Đang tải...</div>
-        ) : (
-            bills.filter(e => e.status === 'UNPAID').slice(0, 5).map((bill: any) => (
-                <div 
-                    key={bill.id} 
-                    className="
-                        flex 
-                        items-center 
-                        justify-between 
-                        p-4 
-                        rounded-lg 
-                        border border-red-400 /* Tăng độ đậm viền đỏ */
-                        bg-red-50
-                        shadow-md /* 🔥 Đã thêm: Shadow vừa cho từng item */
-                        hover:shadow-lg /* Item nổi hơn khi hover */
-                        transition-shadow 
-                        cursor-pointer
-                    "
-                >
-                    <div className="flex-1">
-                        <p className="text-base font-bold text-red-800"> Phòng {bill.apartmentLabel}</p> {/* Màu đỏ đậm cho số phòng */}
-                        <p className="text-xs text-red-600 mt-1">
-                            Hạn TT: {bill.dueDate ? new Date(bill.dueDate).toLocaleDateString('vi-VN') : 'N/A'}
-                        </p>
-                    </div>
-                    <div className="text-right">
-                        <p className="text-xl font-extrabold text-red-700">{formatCurrency(bill.totalAmount)}</p> {/* Tăng cỡ chữ và độ đậm */}
-                        <div className="flex items-center gap-1 mt-1 justify-end">
-                            <AlertCircle className="w-4 h-4 text-red-600" />
-                            <span className="text-sm font-medium text-red-600">Chưa thanh toán</span>
-                        </div>
-                    </div>
-                </div>
-            ))
-        )}
-        {!isLoading && bills.filter(e => e.status === 'UNPAID').length === 0 && <p className="text-center text-gray-500 py-8">Không có hóa đơn chưa thanh toán</p>}
-    </div>
-        </div>
-      </div>
     </div>
   );
 }

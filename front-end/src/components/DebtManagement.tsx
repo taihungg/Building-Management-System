@@ -1,4 +1,4 @@
-import { Search, Plus, Download, Clock, CheckCircle, AlertCircle, DollarSign, Calendar } from 'lucide-react';
+import { Search, Plus, Download, Clock, CheckCircle, AlertCircle, DollarSign, Calendar, CreditCard } from 'lucide-react';
 import { Modal } from './Modal';
 import { Toaster, toast } from 'sonner';
 import { useState, useEffect } from 'react';
@@ -10,6 +10,19 @@ export function DebtManagement() {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('All');
   const [isCreateBillOpen, setIsCreateBillOpen] = useState(false);
+  const [isUpdatePaymentOpen, setIsUpdatePaymentOpen] = useState(false);
+  const [selectedBill, setSelectedBill] = useState<any>(null);
+  const [paymentForm, setPaymentForm] = useState({
+    status: 'UNPAID',
+    paymentDate: new Date().toISOString().split('T')[0],
+    paymentMethod: 'Cash'
+  });
+  const [createBillForm, setCreateBillForm] = useState({
+    apartment: '',
+    billType: 'Tiền thuê',
+    amount: '',
+    description: ''
+  });
 
   const [bills, setBills] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -106,14 +119,55 @@ export function DebtManagement() {
     ? `Năm ${selectedYear}` 
     : `Tháng ${selectedMonth}/${selectedYear}`;
 
+  // Handle update payment button click
+  const handleUpdatePaymentClick = (bill: any) => {
+    setSelectedBill(bill);
+    setPaymentForm({
+      status: bill.status || 'UNPAID',
+      paymentDate: bill.paymentDate ? new Date(bill.paymentDate).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+      paymentMethod: 'Cash'
+    });
+    setIsUpdatePaymentOpen(true);
+  };
+
+  // Handle save payment update (Mock)
+  const handleSavePaymentUpdate = () => {
+    console.log('Updating payment status:', {
+      billId: selectedBill?.id,
+      apartmentLabel: selectedBill?.apartmentLabel,
+      ...paymentForm
+    });
+    toast.success('Đã cập nhật trạng thái thanh toán', { description: 'Dữ liệu đã được lưu thành công' });
+    setIsUpdatePaymentOpen(false);
+    setSelectedBill(null);
+  };
+
+  // Handle create bill (Mock)
+  const handleCreateBill = () => {
+    if (!createBillForm.apartment || !createBillForm.amount) {
+      toast.error('Vui lòng điền đầy đủ thông tin', { description: 'Căn hộ và số tiền là bắt buộc' });
+      return;
+    }
+    
+    console.log('Creating new bill:', createBillForm);
+    toast.success('Đã tạo hóa đơn thành công', { description: `Hóa đơn cho ${createBillForm.apartment} đã được tạo` });
+    setIsCreateBillOpen(false);
+    setCreateBillForm({
+      apartment: '',
+      billType: 'Tiền thuê',
+      amount: '',
+      description: ''
+    });
+  };
+
 
   return (
     <div className="space-y-6">
       <Toaster position="top-right" richColors />
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl text-gray-900">Bill Management</h1>
-          <p className="text-gray-600 mt-1">Track and manage all billing and payments</p>
+          <h1 className="text-3xl text-gray-900">Quản lý hóa đơn</h1>
+          <p className="text-gray-600 mt-1">Theo dõi và quản lý tất cả hóa đơn và thanh toán</p>
         </div>
         
         {/* UI CHỌN THÁNG VÀ NĂM */}
@@ -146,11 +200,15 @@ export function DebtManagement() {
             </div>
           
             <button 
-                onClick={() => setIsCreateBillOpen(true)}
-                className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl hover:shadow-xl transition-all"
+                onClick={() => {
+                  console.log('Button clicked, opening modal');
+                  setIsCreateBillOpen(true);
+                }}
+                className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl hover:shadow-xl transition-all cursor-pointer"
+                type="button"
             >
                 <Plus className="w-5 h-5" />
-                Create Bill
+                Tạo hóa đơn
             </button>
         </div>
       </div>
@@ -161,7 +219,7 @@ export function DebtManagement() {
           <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
           <input
             type="text"
-            placeholder="Search by unit, resident, or bill type..."
+            placeholder="Tìm kiếm theo căn hộ, cư dân, hoặc loại hóa đơn..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="w-full pl-12 pr-4 py-3 bg-gray-100 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -175,17 +233,22 @@ export function DebtManagement() {
 
       {/* Status Filter Tabs */}
       <div className="flex gap-2">
-        {['All', 'PAID', 'PENDING', 'UNPAID'].map((status) => (
+        {[
+          { value: 'All', label: 'Tất cả' },
+          { value: 'PAID', label: 'Đã thanh toán' },
+          { value: 'PENDING', label: 'Đang chờ' },
+          { value: 'UNPAID', label: 'Chưa thanh toán' }
+        ].map((status) => (
           <button
-            key={status}
-            onClick={() => setStatusFilter(status)}
+            key={status.value}
+            onClick={() => setStatusFilter(status.value)}
             className={`px-6 py-3 rounded-xl transition-all ${
-              statusFilter === status
+              statusFilter === status.value
                 ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-lg'
                 : 'bg-white text-gray-700 border border-gray-300 hover:bg-indigo-100'
             }`}
           >
-            {status}
+            {status.label}
           </button>
         ))}
       </div>
@@ -196,11 +259,11 @@ export function DebtManagement() {
           <table className="w-full">
             <thead className="bg-gradient-to-r from-indigo-100 to-purple-100 border-b border-gray-200">
               <tr>
-                <th className="text-left px-6 py-4 text-sm text-gray-700">Unit</th>
-                <th className="text-left px-6 py-4 text-sm text-gray-700">Payment Date</th>
-                <th className="text-left px-6 py-4 text-sm text-gray-700">Amount</th>
-                <th className="text-left px-6 py-4 text-sm text-gray-700">Status</th>
-                <th className="text-left px-6 py-4 text-sm text-gray-700">Action</th>
+                <th className="text-left px-6 py-4 text-sm text-gray-700">Căn hộ</th>
+                <th className="text-left px-6 py-4 text-sm text-gray-700">Ngày thanh toán</th>
+                <th className="text-left px-6 py-4 text-sm text-gray-700">Số tiền</th>
+                <th className="text-left px-6 py-4 text-sm text-gray-700">Trạng thái</th>
+                <th className="text-left px-6 py-4 text-sm text-gray-700">Hành động</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200">
@@ -232,17 +295,19 @@ export function DebtManagement() {
                         {bill.status === 'PAID' && <CheckCircle className="w-4 h-4" />}
                         {bill.status === 'PENDING' && <Clock className="w-4 h-4" />}
                         {bill.status === 'UNPAID' && <AlertCircle className="w-4 h-4" />}
-                        {bill.status}
+                        {bill.status === 'PAID' ? 'Đã thanh toán' : 
+                         bill.status === 'PENDING' ? 'Đang chờ' : 
+                         'Chưa thanh toán'}
                       </span>
                     </td>
                     <td className="px-6 py-4">
-                      {bill.status !== 'PAID' ? (
-                        <button className="px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white text-sm rounded-lg hover:shadow-xl transition-all">
-                          Mark Paid
-                        </button>
-                      ) : (
-                        <span className="text-sm text-gray-500">Paid on {bill.paymentDate ? new Date(bill.paymentDate).toLocaleDateString('vi-VN') : 'N/A'}</span>
-                      )}
+                      <button
+                        onClick={() => handleUpdatePaymentClick(bill)}
+                        className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors"
+                        title="Cập nhật thanh toán"
+                      >
+                        <CreditCard className="w-5 h-5" />
+                      </button>
                     </td>
                   </tr>
                 ))
@@ -256,36 +321,47 @@ export function DebtManagement() {
       <Modal
         isOpen={isCreateBillOpen}
         onClose={() => setIsCreateBillOpen(false)}
-        title="Create New Bill"
+        title="Tạo hóa đơn mới"
       >
         {/* ... Modal Content ... */}
         <div className="p-6 space-y-6">
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm text-gray-700 mb-2">Select Unit</label>
-              <select className="w-full px-4 py-3 bg-gray-100 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                <option>Unit 304 - Emma Johnson</option>
-                <option>Unit 112 - Michael Chen</option>
-                <option>Unit 205 - Sarah Williams</option>
+              <label className="block text-sm text-gray-700 mb-2">Chọn căn hộ</label>
+              <select 
+                value={createBillForm.apartment}
+                onChange={(e) => setCreateBillForm({ ...createBillForm, apartment: e.target.value })}
+                className="w-full px-4 py-3 bg-gray-100 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              >
+                <option value="">-- Chọn căn hộ --</option>
+                <option value="Căn hộ 304 - Emma Johnson">Căn hộ 304 - Emma Johnson</option>
+                <option value="Căn hộ 112 - Michael Chen">Căn hộ 112 - Michael Chen</option>
+                <option value="Căn hộ 205 - Sarah Williams">Căn hộ 205 - Sarah Williams</option>
               </select>
             </div>
 
             <div>
-              <label className="block text-sm text-gray-700 mb-2">Bill Type</label>
-              <select className="w-full px-4 py-3 bg-gray-100 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                <option>Rent</option>
-                <option>Utilities</option>
-                <option>Parking</option>
-                <option>Maintenance</option>
-                <option>Other</option>
+              <label className="block text-sm text-gray-700 mb-2">Loại hóa đơn</label>
+              <select 
+                value={createBillForm.billType}
+                onChange={(e) => setCreateBillForm({ ...createBillForm, billType: e.target.value })}
+                className="w-full px-4 py-3 bg-gray-100 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              >
+                <option value="Tiền thuê">Tiền thuê</option>
+                <option value="Tiện ích">Tiện ích</option>
+                <option value="Đỗ xe">Đỗ xe</option>
+                <option value="Bảo trì">Bảo trì</option>
+                <option value="Khác">Khác</option>
               </select>
             </div>
 
             <div>
-              <label className="block text-sm text-gray-700 mb-2">Amount</label>
+              <label className="block text-sm text-gray-700 mb-2">Số tiền</label>
               <input
                 type="number"
                 placeholder="0.00"
+                value={createBillForm.amount}
+                onChange={(e) => setCreateBillForm({ ...createBillForm, amount: e.target.value })}
                 className="w-full px-4 py-3 bg-gray-100 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
             </div>
@@ -293,10 +369,12 @@ export function DebtManagement() {
           </div>
 
           <div>
-            <label className="block text-sm text-gray-700 mb-2">Description (Optional)</label>
+            <label className="block text-sm text-gray-700 mb-2">Mô tả (Tùy chọn)</label>
             <textarea
               rows={3}
-              placeholder="Add any additional details..."
+              placeholder="Thêm chi tiết bổ sung..."
+              value={createBillForm.description}
+              onChange={(e) => setCreateBillForm({ ...createBillForm, description: e.target.value })}
               className="w-full px-4 py-3 bg-gray-100 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
             />
           </div>
@@ -306,10 +384,93 @@ export function DebtManagement() {
               onClick={() => setIsCreateBillOpen(false)}
               className="flex-1 px-6 py-3 bg-gray-200 text-gray-700 rounded-xl hover:bg-gray-300 transition-colors"
             >
-              Cancel
+              Hủy
             </button>
-            <button className="flex-1 px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl hover:shadow-xl transition-all">
-              Create Bill
+            <button 
+              onClick={handleCreateBill}
+              className="flex-1 px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl hover:shadow-xl transition-all cursor-pointer"
+              type="button"
+            >
+              Tạo hóa đơn
+            </button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Update Payment Status Modal */}
+      <Modal
+        isOpen={isUpdatePaymentOpen}
+        onClose={() => {
+          setIsUpdatePaymentOpen(false);
+          setSelectedBill(null);
+        }}
+        title="Cập nhật trạng thái thanh toán"
+      >
+        <div className="p-6 space-y-6">
+          {/* Status Selection */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-3">Trạng thái</label>
+            <div className="space-y-2">
+              {[
+                { value: 'UNPAID', label: 'Chưa thanh toán' },
+                { value: 'PENDING', label: 'Đang chờ' },
+                { value: 'PAID', label: 'Đã thanh toán' }
+              ].map((option) => (
+                <label key={option.value} className="flex items-center gap-3 p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="status"
+                    value={option.value}
+                    checked={paymentForm.status === option.value}
+                    onChange={(e) => setPaymentForm({ ...paymentForm, status: e.target.value })}
+                    className="w-4 h-4 text-blue-600 focus:ring-blue-500"
+                  />
+                  <span className="text-sm text-gray-700">{option.label}</span>
+                </label>
+              ))}
+            </div>
+          </div>
+
+          {/* Payment Date */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Ngày thanh toán</label>
+            <input
+              type="date"
+              value={paymentForm.paymentDate}
+              onChange={(e) => setPaymentForm({ ...paymentForm, paymentDate: e.target.value })}
+              className="w-full px-4 py-3 bg-gray-100 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            />
+          </div>
+
+          {/* Payment Method */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Hình thức</label>
+            <select
+              value={paymentForm.paymentMethod}
+              onChange={(e) => setPaymentForm({ ...paymentForm, paymentMethod: e.target.value })}
+              className="w-full px-4 py-3 bg-gray-100 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            >
+              <option value="Cash">Tiền mặt</option>
+              <option value="BankTransfer">Chuyển khoản</option>
+            </select>
+          </div>
+
+          {/* Footer Buttons */}
+          <div className="flex gap-3 pt-4 border-t border-gray-200">
+            <button
+              onClick={() => {
+                setIsUpdatePaymentOpen(false);
+                setSelectedBill(null);
+              }}
+              className="flex-1 px-6 py-3 bg-gray-200 text-gray-700 rounded-xl hover:bg-gray-300 transition-colors"
+            >
+              Hủy
+            </button>
+            <button
+              onClick={handleSavePaymentUpdate}
+              className="flex-1 px-6 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors font-medium"
+            >
+              Lưu cập nhật
             </button>
           </div>
         </div>

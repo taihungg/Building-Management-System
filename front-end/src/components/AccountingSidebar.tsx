@@ -12,15 +12,15 @@ interface AccountingSidebarProps {
 
 // 🛠️ ĐÃ SỬA: Thêm đường dẫn tuyệt đối /accounting/path
 const menuItems = [
-  { id: 'accounting-dashboard', label: 'Dashboard', icon: LayoutDashboard, path: '/accounting/dashboard' },
-  { id: 'debt-management', label: 'Quản Lý Công Nợ', icon: CreditCard, path: '/accounting/debt' },
-  { id: 'invoice-creation', label: 'Tạo Hóa Đơn', icon: PlusCircle, path: '/accounting/invoice' },
+  { id: 'accounting-dashboard', label: 'Tổng quan tài chính', icon: LayoutDashboard, path: '/accounting/dashboard' },
+  { id: 'debt-management', label: 'Quản lý hóa đơn', icon: CreditCard, path: '/accounting/debt' },
+  { id: 'invoice-creation', label: 'Dữ liệu sử dụng', icon: PlusCircle, path: '/accounting/invoice' },
 ];
 
 const bottomItems = [
-  { id: 'profile', label: 'Hồ Sơ', icon: User, path: '/accounting/profile' },
-  { id: 'settings', label: 'Cài Đặt', icon: Settings, path: '/accounting/settings' },
-  { id: 'logout', label: 'Đăng Xuất', icon: LogOut, path: null },
+  { id: 'profile', label: 'Hồ sơ', icon: User, path: '/accounting/profile' },
+  { id: 'settings', label: 'Cài đặt', icon: Settings, path: '/accounting/settings' },
+  { id: 'logout', label: 'Đăng xuất', icon: LogOut, path: null },
 ];
 
 export function AccountingSidebar({ isOpen, onClose, onLogout }: AccountingSidebarProps) {
