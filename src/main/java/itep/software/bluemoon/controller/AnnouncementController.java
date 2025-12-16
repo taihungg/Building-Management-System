@@ -2,13 +2,15 @@ package itep.software.bluemoon.controller;
 
 import itep.software.bluemoon.model.DTO.announcement.AnnouncementCreateRequestDTO;
 import itep.software.bluemoon.model.DTO.announcement.AnnouncementResponseDTO;
+import itep.software.bluemoon.model.projection.AnnouncementSummary;
 import itep.software.bluemoon.service.AnnouncementService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity; 
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-
+import java.util.UUID;
 @RestController
 @RequestMapping("/api/announcements")
 @RequiredArgsConstructor
@@ -27,5 +29,14 @@ public class AnnouncementController {
     @ResponseStatus(HttpStatus.OK)
     public List<AnnouncementResponseDTO> getAllAnnouncements() {
         return announcementService.getAllAnnouncements();
+    }
+    
+    // GET cho resident - trả về SUMMARY (không có receiverIds, senderId)
+    @GetMapping("/resident/{residentId}")
+    public ResponseEntity<List<AnnouncementSummary>> getResidentAnnouncements(
+            @PathVariable UUID residentId) {
+        List<AnnouncementSummary> announcements = 
+            announcementService.getAnnouncementsForResident(residentId);
+        return ResponseEntity.ok(announcements);
     }
 }
