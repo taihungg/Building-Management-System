@@ -22,10 +22,10 @@ export function ApartmentManagement() {
   
   // --- UTILS: MÀU SẮC ---
   const tailwindBgColors = [
-    'bg-red-500', 'bg-orange-500', 'bg-amber-500', 'bg-yellow-500', 
-    'bg-lime-500', 'bg-green-500', 'bg-emerald-500', 'bg-teal-500', 
-    'bg-cyan-500', 'bg-sky-500', 'bg-blue-500', 'bg-indigo-500', 
-    'bg-violet-500', 'bg-purple-500', 'bg-fuchsia-500', 'bg-pink-500', 'bg-rose-500',
+    'bg-orange-600',
+    'bg-green-600',
+    'bg-blue-600',
+    'bg-purple-600',
   ];
 
   const getStableRandomColor = (idString) => {
@@ -303,42 +303,76 @@ export function ApartmentManagement() {
           className="flex items-center gap-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:shadow-xl transition-all rounded-full px-6"
         >
           <Plus className="w-5 h-5" />
-          Thêm Đơn Vị
+          Tạo căn hộ
         </Button>
       </div>
 
-      {/* --- FILTERS --- */}
-      <div className="bg-white rounded-2xl p-6 shadow-md border border-gray-200">
-        <div className="flex flex-col md:flex-row gap-4 items-end">
-            <div className="flex-1 w-full group">
-                  <Label className="mb-2 block text-xs font-semibold text-gray-500 uppercase tracking-wider">Tìm Kiếm Phòng</Label>
-                  <Input
-                      placeholder="Nhập số phòng..."
-                      value={keyword}
-                      onChange={(e) => setKeyword(e.target.value)}
-                      className="!pl-4 py-6 bg-gray-50 border-transparent focus:bg-white focus:border-blue-500 rounded-xl"
-                  />
+{/* --- FILTERS - ĐÃ LÀM NHỎ GỌN --- */}
+<div 
+    className="w-full" 
+    style={{ maxWidth: '50%', marginBottom: '1.5rem' }} // Ép buộc 50% và mb-6 (1.5rem)
+>
+    {/* --- FILTERS - SIÊU GỌN GÀNG VÀ CÙNG DÒNG (Đã xóa đổ bóng) --- */}
+    <div className="bg-white rounded-lg p-3 border border-gray-100"> 
+        
+        {/* SỬ DỤNG INLINE STYLE CHO FLEXBOX VÀ GAP */}
+        <div 
+            className="flex items-end"
+            style={{ display: 'flex', gap: '0.5rem' }} // Ép buộc gap-2 (0.5rem)
+        > 
+            
+            {/* 1. INPUT TÌM KIẾM PHÒNG (Flex 2/3) - GIỮ NGUYÊN */}
+            <div 
+                className="w-full group" 
+                style={{ flexGrow: 2, flexShrink: 1 }}
+            >
+                <Label className="mb-1 block text-xs font-semibold text-gray-500 uppercase tracking-wider">Tìm Kiếm Phòng</Label>
+                <Input
+                    placeholder="Nhập số phòng..."
+                    value={keyword}
+                    onChange={(e) => setKeyword(e.target.value)}
+                    className="!pl-3 py-1.5 h-8 bg-gray-500/5 border-transparent focus:bg-white focus:border-blue-500 rounded-md text-sm transition" 
+                />
             </div>
-              <div className="w-full md:w-40 group">
-                  <Label className="mb-2 block text-xs font-semibold text-gray-500 uppercase tracking-wider">Tầng</Label>
-                  <Input
-                      type="number"
-                      placeholder="Tất cả"
-                      value={selectedFloor}
-                      onChange={(e) => setSelectedFloor(e.target.value)}
-                      className="!pl-4 py-6 bg-gray-50 border-transparent focus:bg-white focus:border-blue-500 rounded-xl"
-                  />
-              </div>
-            <div className="flex gap-2">
-                <Button onClick={fetchApartments} className="bg-blue-600 hover:bg-blue-700 text-white rounded-full px-6">
-                    <Search className="w-4 h-4 mr-2" /> Tìm
+            
+            {/* 2. INPUT TẦNG (Flex 1/3) - GIỮ NGUYÊN */}
+            <div 
+                className="w-full group" 
+                style={{ flexGrow: 1, flexShrink: 1 }} 
+            >
+                <Label className="mb-1 block text-xs font-semibold text-gray-500 uppercase tracking-wider">Tầng</Label>
+                <Input
+                    type="number"
+                    placeholder="Tất cả"
+                    value={selectedFloor}
+                    onChange={(e) => setSelectedFloor(e.target.value)}
+                    className="!pl-3 py-1.5 h-8 bg-gray-500/5 border-transparent focus:bg-white focus:border-blue-500 rounded-md text-sm transition"
+                />
+            </div>
+            
+            {/* 3. BUTTONS (ĐÃ TỐI ƯU VÀ THÊM MARGIN TOP ĐỂ CĂN CHỈNH) */}
+            <div 
+                className="flex gap-2" 
+                style={{ 
+                    display: 'flex', 
+                    gap: '0.5rem', 
+                    // 🔥 Bù đắp chiều cao của Label (mb-1 + text-xs/py) để nút căn thẳng hàng
+                    marginTop: '1.25rem' // Giá trị này xấp xỉ chiều cao của Label (mb-1 ~0.25rem + text-xs ~1rem)
+                }}
+            >
+                <Button 
+                    onClick={fetchApartments} 
+                    className="bg-blue-600 hover:bg-blue-700 text-white rounded-full px-4 py-1.5 h-8 text-sm transition duration-150 shadow-lg hover:shadow-xl font-semibold"
+                >
+                    <Search className="w-4 h-4 mr-1.5" /> Tìm
                 </Button>
-                <Button variant="outline" className="rounded-full w-10 h-10 p-0 flex items-center justify-center border-gray-300" onClick={handleResetFilter}>
-                    <X className="w-4 h-4" />
+                <Button variant="outline" className="rounded-full w-8 h-8 p-0 flex items-center justify-center border-gray-300 hover:bg-gray-100 transition duration-150" onClick={handleResetFilter}>
+                    <X className="w-4 h-4 text-gray-600" />
                 </Button>
             </div>
         </div>
-      </div>
+    </div>
+</div>
 
       {/* --- STATS --- */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -347,7 +381,7 @@ export function ApartmentManagement() {
           <p className="text-2xl text-gray-900 mt-1">{apartments.length}</p>
         </div>
         <div className="bg-white rounded-xl p-4 shadow-md border border-gray-200">
-          <p className="text-gray-600 text-sm">Tỷ Lệ Lấp Đầy</p>
+          <p className="text-gray-600 text-sm">Tỷ lệ căn hộ có người ở</p>
           <div className="flex items-end gap-2 mt-1">
             <p className="text-2xl font-bold text-emerald-600">{occupancyRate}%</p>
             <p className="text-xs text-gray-500 mb-1">({occupiedApartments}/{totalApartments})</p>
@@ -411,10 +445,6 @@ export function ApartmentManagement() {
                         </div>
 
                         <div className="flex items-center justify-between pt-4 border-t border-gray-200">
-                            <div>
-                                <p className="text-sm text-gray-600">Tòa Nhà</p>
-                                <p className="text-gray-600 font-medium">{apt.buildingName || 'BlueMoon Tower'}</p>
-                            </div>
                             <div className="text-right">
                                 <span className={`inline-flex px-3 py-1 rounded-full text-xs font-bold ${
                                     (apt.residentNumber && apt.residentNumber > 0) ? 'bg-emerald-100 text-emerald-800' : 'bg-gray-200 text-gray-800'
