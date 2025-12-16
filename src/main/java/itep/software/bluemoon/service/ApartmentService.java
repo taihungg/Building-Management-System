@@ -7,7 +7,9 @@ import java.util.UUID;
 import itep.software.bluemoon.entity.Building;
 import itep.software.bluemoon.entity.person.Resident;
 import itep.software.bluemoon.model.DTO.apartment.ApartmentCreationDTO;
+import itep.software.bluemoon.model.DTO.apartment.ApartmentResidentUpdateDTO;
 import itep.software.bluemoon.model.mapper.EntityToDto;
+import itep.software.bluemoon.model.projection.ResidentSummary;
 import itep.software.bluemoon.repository.*;
 import org.springframework.stereotype.Service;
 
@@ -106,5 +108,54 @@ public class ApartmentService {
         }
 
         apartmentRepository.delete(apartment);
+    }
+
+    
+    
+    // Thêm Residents vào căn hộ
+    public void addResidentsToApartment(UUID apartmentId, ApartmentResidentUpdateDTO dto){
+        Apartment apartment = apartmentRepository.findById(apartmentId)
+                .orElseThrow(() -> new RuntimeException("Apartment not found!"));
+
+        List<Resident> residentsToUpdate = residentRepository.findAllById(dto.getResidentIds());
+
+        if (residentsToUpdate.size() != dto.getResidentIds().size()) {
+            throw new RuntimeException("One or more residents not found!");
+        }
+
+        for (Resident resident : residentsToUpdate) {
+            // Gán căn hộ mới 
+            resident.setApartment(apartment);
+            //Resident có thể đã có Apartment cũ => cập nhật
+        }
+
+        residentRepository.saveAll(residentsToUpdate);
+    }
+    
+     // Xóa .... 
+    public void removeResidentsFromApartment(UUID apartmentId, ApartmentResidentUpdateDTO dto){
+        Apartment apartment = apartmentRepository.findById(apartmentId)
+                .orElseThrow(() -> new RuntimeException("Apartment not found!"));
+
+        List<Resident> residentsToUpdate = residentRepository.findAllById(dto.getResidentIds());
+
+        if (residentsToUpdate.size() != dto.getResidentIds().size()) {
+            throw new RuntimeException("One or more residents not found!");
+        }
+
+        for (Resident resident : residentsToUpdate) {
+            if (resident.getApartment() == null || !resident.getApartment().getId().equals(apartmentId)) {
+                throw new RuntimeException("Resident " + resident.getId() + " is not currently in this apartment!");
+            }
+
+            // Nếu cư dân là chủ hộ => hủy quyền chủ hộ
+            if (apartment.getOwner() != null && apartment.getOwner().getId().equals(resident.getId())) {
+                apartment.setOwner(null);
+                apartmentRepository.save(apartment); 
+            }
+            resident.setApartment(null);
+        }
+
+        residentRepository.saveAll(residentsToUpdate);
     }
 }
