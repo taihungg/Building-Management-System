@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import itep.software.bluemoon.model.DTO.accounting.AccountingDashboardResponseDTO;
 import itep.software.bluemoon.model.DTO.accounting.MonthlyRevenueDTO;
+import itep.software.bluemoon.model.DTO.accounting.RevenueDistributionDTO;
 import itep.software.bluemoon.model.projection.InvoiceSummary;
 import itep.software.bluemoon.response.ApiResponse;
 import itep.software.bluemoon.service.AccountingService;
@@ -84,7 +85,7 @@ public class AccountingController {
     }
 
     //dùng api này cho bar chart ở dashboard
-    @GetMapping("/dashboard/chart")
+    @GetMapping("/dashboard/barchart")
     public ResponseEntity<Object> getRevenueChart(
             @RequestParam(required = false) int year
     ) {
@@ -96,6 +97,20 @@ public class AccountingController {
                 HttpStatus.OK,
                 "Get data for bar chart of dashboard successfully!",
                 chartData
+        );
+    }
+
+    @GetMapping("/dashboard/piechart")
+    public ResponseEntity<Object> getRevenueDistributionChart(
+            @RequestParam Integer month,
+            @RequestParam Integer year
+    ) {
+        List<RevenueDistributionDTO> data = accountingService.getRevenueDistribution(month, year);
+
+        return ApiResponse.responseBuilder(
+                HttpStatus.OK,
+                "Get data for pie chart of dashboard successfully!",
+                data
         );
     }
 }

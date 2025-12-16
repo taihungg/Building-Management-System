@@ -52,4 +52,14 @@ public interface InvoiceRepository extends JpaRepository<Invoice, UUID> {
         "WHERE EXTRACT(YEAR FROM i.createdTime) = :year " +
         "GROUP BY EXTRACT(MONTH FROM i.createdTime)")
     List<Object[]> findMonthlyRevenueByYear(@Param("year") int year);
+
+    @Query("SELECT st.code, SUM(d.amount) " +
+           "FROM Invoice i " +
+           "JOIN i.details d " +
+           "JOIN d.serviceType st " +
+           "WHERE i.month = :month " +
+           "AND i.year = :year " +
+           "AND i.status = 'PAID' " +
+           "GROUP BY st.code")
+    List<Object[]> findRevenueDistribution(@Param("month") int month, @Param("year") int year);
 }

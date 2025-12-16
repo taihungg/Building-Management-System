@@ -1,17 +1,21 @@
 package itep.software.bluemoon.service;
 
-import itep.software.bluemoon.enumeration.InvoiceStatus;
-import itep.software.bluemoon.model.DTO.accounting.AccountingDashboardResponseDTO;
-import itep.software.bluemoon.model.DTO.accounting.MonthlyRevenueDTO;
-import itep.software.bluemoon.repository.InvoiceRepository;
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
-
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import org.springframework.stereotype.Service;
+
+import itep.software.bluemoon.enumeration.InvoiceStatus;
+import itep.software.bluemoon.enumeration.ServiceCode;
+import itep.software.bluemoon.model.DTO.accounting.AccountingDashboardResponseDTO;
+import itep.software.bluemoon.model.DTO.accounting.MonthlyRevenueDTO;
+import itep.software.bluemoon.model.DTO.accounting.RevenueDistributionDTO;
+import itep.software.bluemoon.repository.InvoiceRepository;
+import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
@@ -76,5 +80,53 @@ public class AccountingService {
         }
 
         return fullYearData;
+    }
+
+    public List<RevenueDistributionDTO> getRevenueDistribution(int month, int year) {
+        List<Object[]> rawData = invoiceRepository.findRevenueDistribution(month, year);
+
+        List<RevenueDistributionDTO> result = new ArrayList<>();
+        BigDecimal totalRevenue = BigDecimal.ZERO;
+
+        for (Object[] row : rawData) {
+            BigDecimal amount = (BigDecimal) row[1];
+            if (amount != null) {
+                totalRevenue = totalRevenue.add(amount);
+            }
         }
+
+        for (Object[] row : rawData) {
+            ServiceCode code = (ServiceCode) row[0];
+            BigDecimal amount = (BigDecimal) row[1];
+
+            if (amount == null) amount = BigDecimal.ZERO;
+
+            Double percentage = 0.0;
+            if (totalRevenue.compareTo(BigDecimal.ZERO) > 0) {
+                percentage = amount.multiply(BigDecimal.valueOf(100))
+                        .divide(totalRevenue, 2, RoundingMode.HALF_UP) // Lấy 2 số thập phân
+                        .doubleValue();
+            }
+
+            result.add(new RevenueDistributionDTO(
+                    convertToVietnamese(code),
+                    amount,
+                    percentage
+            ));
+        }
+
+        return result;
+    }
+
+    private String convertToVietnamese(ServiceCode code) {
+        if (code == null) return "Khác";
+        switch (code) {
+            case ServiceCode.ELECTRONIC: return "Tiền điện";
+            case ServiceCode.WATER: return "Tiền nước";
+            case ServiceCode.PARKING: return "Phí gửi xe";
+            case ServiceCode.MANAGEMENT: return "Phí quản lý";
+            case ServiceCode.PENALTY: return "Tiền phạt";
+            default: return code.name();
+        }
+    }
 }
