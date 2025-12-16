@@ -29,7 +29,7 @@ const STATUS_OPTIONS = [
 
 export function ServiceManagement() {
   const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState('Chưa xử lý'); // Cập nhật filter mặc định theo tiếng Việt
+  const [statusFilter, setStatusFilter] = useState('All'); // Cập nhật filter mặc định theo tiếng Việt
   const [isNewRequestOpen, setIsNewRequestOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   
@@ -323,13 +323,6 @@ export function ServiceManagement() {
           <p className="text-slate-500 mt-1">Theo dõi và quản lý tất cả các yêu cầu dịch vụ và sự cố</p>
         </div>
         {/* Nút Tạo Yêu Cầu Mới - Đặt ở đây để nằm bên phải Header */}
-        <button 
-            onClick={() => setIsNewRequestOpen(true)}
-            className="bg-blue-600 hover:bg-blue-700 text-white rounded-xl px-4 py-2 flex items-center gap-2 shadow-md transition duration-150"
-        >
-            <Plus className="w-5 h-5" />
-            Tạo Yêu Cầu Mới
-        </button>
       </div>
 
       <hr/>
@@ -536,97 +529,7 @@ export function ServiceManagement() {
       </div>
 
       {/* SlideOut - Form Tạo Yêu Cầu Mới - ĐÃ DỊCH */}
-      <SlideOut 
-        isOpen={isNewRequestOpen} 
-        onClose={() => setIsNewRequestOpen(false)} 
-        title="Tạo Yêu Cầu Dịch Vụ Mới"
-      >
-        <form onSubmit={handleSubmit} className="p-6 space-y-4">
-            {/* Input Căn hộ */}
-            <div className="relative">
-                <label className="block text-sm font-medium text-slate-700 mb-1">Căn hộ/Số phòng <span className="text-red-500">*</span></label>
-                <input
-                    type="text"
-                    placeholder="Nhập số phòng..."
-                    value={apartmentSearchTerm}
-                    onChange={(e) => {
-                      setApartmentSearchTerm(e.target.value);
-                      setUpdateAppartmentID(''); // Xóa ID khi bắt đầu nhập
-                      setSelectedApartmentLabel('');
-                    }}
-                    className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
-                />
-                
-                {/* Dropdown kết quả tìm kiếm */}
-                {apartmentDropdown.length > 0 && apartmentSearchTerm && updateApartmentID === '' && (
-                    <div className="absolute z-10 w-full mt-1 bg-white border border-slate-300 rounded-lg shadow-lg max-h-48 overflow-y-auto">
-                        {apartmentDropdown.map(apt => (
-                            <div 
-                                key={apt.id}
-                                onClick={() => handleSelectApartment(apt.id, apt.roomNumber)}
-                                className="px-4 py-2 text-slate-700 hover:bg-slate-100 cursor-pointer text-sm"
-                            >
-                                #{apt.roomNumber} - Cư dân: {apt.residentName}
-                            </div>
-                        ))}
-                        {isApartmentDropdownLoading && (
-                             <div className="px-4 py-2 text-slate-500 text-sm italic">Đang tìm kiếm...</div>
-                        )}
-                    </div>
-                )}
-            </div>
-            
-            {/* Hiển thị căn hộ đã chọn (Tùy chọn) */}
-            {selectedApartmentLabel && (
-                <p className="text-sm text-green-600 font-medium">Đã chọn: Phòng #{selectedApartmentLabel}</p>
-            )}
-
-            {/* Input Tiêu đề */}
-            <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Tiêu đề <span className="text-red-500">*</span></label>
-                <input
-                    type="text"
-                    placeholder="Ví dụ: Rò rỉ nước ở bếp"
-                    value={updateTitle}
-                    onChange={(e) => setUpdateTitle(e.target.value)}
-                    className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
-                />
-            </div>
-            
-            {/* Select Loại */}
-            <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Loại Yêu Cầu <span className="text-red-500">*</span></label>
-                <select
-                    value={updateType}
-                    onChange={(e) => setUpdateType(e.target.value)}
-                    className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 bg-white"
-                >
-                    <option value="MAINTENANCE">Bảo Trì/Sửa Chữa</option>
-                    <option value="COMPLAINT">Khiếu Nại/Phản Ánh</option>
-                    <option value="AUTHORITY">Cơ Quan/An Ninh</option>
-                </select>
-            </div>
-            
-            {/* Textarea Mô tả */}
-            <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Mô tả chi tiết <span className="text-red-500">*</span></label>
-                <textarea
-                    placeholder="Mô tả chi tiết vấn đề đang gặp phải..."
-                    value={updateDescription}
-                    onChange={(e) => setUpdateDescription(e.target.value)}
-                    rows={4}
-                    className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
-                ></textarea>
-            </div>
-            
-            <button 
-                type="submit"
-                className="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-2 rounded-lg transition duration-150 shadow-md"
-            >
-                Gửi Yêu Cầu
-            </button>
-        </form>
-      </SlideOut>
+     
 
     </div>
   );

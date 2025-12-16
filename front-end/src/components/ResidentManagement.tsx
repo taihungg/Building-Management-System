@@ -28,6 +28,7 @@ export function ResidentManagement() {
   const [residents, setResidents] = useState<ResidentData[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
+const [includeInactive, setIncludeInactive] = useState(false);
 
   // --- TẠO STATE CHO FORM "THÊM MỚI" ---
   const [newName, setNewName] = useState("");
@@ -87,18 +88,18 @@ export function ResidentManagement() {
     }
   }
 
-  const filteredResidents = residents.filter(resident => {
-    const searchLower = searchTerm.toLowerCase();
-    const fullName = String(resident.fullName).toLowerCase();
-    const room = String(resident.roomNumber).toLowerCase();
-    const phone = String(resident.phoneNumber).toLowerCase();
-    const email = String(resident.email).toLowerCase();
-
+  const filteredResidents = residents.filter((resident) => {
+    if (!includeInactive && resident.status !== "ACTIVE") {
+      return false;
+    }
+  
+    const keyword = searchTerm.toLowerCase();
+  
     return (
-      fullName.includes(searchLower) ||
-      room.includes(searchLower) ||
-      phone.includes(searchLower) ||
-      email.includes(searchLower)
+      String(resident.fullName || "").toLowerCase().includes(keyword) ||
+      String(resident.roomNumber || "").toLowerCase().includes(keyword) ||
+      String(resident.phoneNumber || "").toLowerCase().includes(keyword) ||
+      String(resident.email || "").toLowerCase().includes(keyword)
     );
   });
 
@@ -373,60 +374,70 @@ export function ResidentManagement() {
      {/* Container điều chỉnh chiều rộng: w-full cho mobile, lg:w-1/2 cho màn hình lớn */}
      {/* Search + Stats Row - ĐÃ DÙNG INLINE STYLE ĐỂ ÉP BUỘC CHIỀU RỘNG 50% */}
      {/* Vẫn giữ w-full cho mobile, và sử dụng style={{ maxWidth: '50%' }} để đảm bảo khối không vượt quá nửa màn hình */}
-     <div 
-        className="w-full" 
-        style={{ maxWidth: '50%' }} // THAY THẾ CHO lg:w-1/2 (Có độ ưu tiên cao nhất)
-     > 
-        <div className="bg-white rounded-xl border-2 border-gray-200 p-6 space-y-4">
+     <div className="w-full lg:w-1/2"  >
+  <div className="bg-white rounded-xl border-2 border-gray-200 p-6 space-y-4">
 
-            {/* Search – nằm trên, nhỏ gọn */}
-            <div className="relative max-w-md">
-                {/* Đã tăng kích thước icon (w-5 h-5) và điều chỉnh vị trí left-4 */}
-                <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                <input
-                    type="text"
-                    placeholder="Tìm kiếm theo tên, số phòng, điện thoại hoặc email..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="
-                        w-full
-                        pl-12 pr-6 py-3 text-sm 
-                        bg-white border-2 border-gray-200 rounded-full // Đã thay đổi: border-2 và rounded-full
-                        focus:outline-none focus:border-blue-600 focus:ring-4 focus:ring-blue-100 // Hiệu ứng focus hiện đại hơn
-                    "
-                />
-            </div>
+    {/* Search */}
+    <div className="space-y-2">
+    <div className="relative max-w-md">
+        {/* ICON SEARCH */}
+        {/* Đã tăng kích thước icon (w-5 h-5) và điều chỉnh vị trí left-4 */}
+        <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" /> 
+        
+        <input
+            type="text"
+            placeholder="Tìm kiếm theo tên, số phòng, điện thoại hoặc email..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="
+                w-full
+                // Tăng padding trái để chừa chỗ cho icon, tăng padding dọc
+                pl-12 pr-6 py-3 text-sm 
+                // THAY ĐỔI: bg-white, border-2, và rounded-full
+                bg-white border-2 border-gray-200 rounded-full 
+                // THAY ĐỔI: Hiệu ứng focus hiện đại hơn
+                focus:outline-none focus:border-blue-600 focus:ring-4 focus:ring-blue-100 
+            "
+        />
+    </div>
 
-            {/* Stats – cùng 1 hàng */}
-            <div className="grid grid-cols-2 gap-4">
+      {/* Checkbox include inactive */}
+      <label className="flex items-center gap-2 text-sm text-gray-600 cursor-pointer">
+        <input
+          type="checkbox"
+          checked={includeInactive}
+          onChange={(e) => setIncludeInactive(e.target.checked)}
+          className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+        />
+        Bao gồm cư dân không ở
+      </label>
+    </div>
 
-                {[
-                    { label: "Tổng số cư dân", value: residents.length, accent: "bg-blue-500" },
-                    { label: "Kết quả lọc", value: filteredResidents.length, accent: "bg-emerald-500" }
-                ].map(({ label, value, accent }) => (
-                    <div
-                        key={label}
-                        className="
-                            relative
-                            bg-white rounded-xl border border-gray-200
-                            px-6 py-5
-                            shadow-sm hover:shadow-md transition
-                            overflow-hidden
-                        "
-                    >
-                        {/* Accent line */}
-                        <span className={`absolute left-0 top-0 h-full w-1 rounded-l-xl ${accent}`} />
-
-                        <p className="text-sm text-gray-500">{label}</p>
-                        <p className="mt-1 text-2xl font-extrabold text-gray-900">
-                            {value}
-                        </p>
-                    </div>
-                ))}
-
-            </div>
+    {/* Stats */}
+    <div className="grid grid-cols-2 gap-4">
+      {[
+        { label: "Tổng số cư dân", value: residents.length, accent: "bg-blue-500" },
+        { label: "Kết quả lọc", value: filteredResidents.length, accent: "bg-emerald-500" }
+      ].map(({ label, value, accent }) => (
+        <div
+          key={label}
+          className="
+            relative bg-white rounded-xl border border-gray-200
+            px-6 py-5 shadow-sm
+          "
+        >
+          <span className={`absolute left-0 top-0 h-full w-1 rounded-l-xl ${accent}`} />
+          <p className="text-sm text-gray-500">{label}</p>
+          <p className="mt-1 text-2xl font-extrabold text-gray-900">
+            {value}
+          </p>
         </div>
-      </div>
+      ))}
+    </div>
+
+  </div>
+</div>
+
 
 
       {/* Residents Table */}
@@ -452,7 +463,6 @@ export function ResidentManagement() {
                       </div>
                       <div>
                         <p className="text-gray-900 text-sm font-medium">{resident.fullName || 'N/A'}</p>
-                        <p className="text-xs text-gray-500">{resident.email || 'Chưa có email'}</p>
                       </div>
                     </div>
                   </td>
