@@ -2,7 +2,10 @@ package itep.software.bluemoon.controller;
 
 import java.util.List;
 
+import org.springframework.core.io.InputStreamResource;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -12,6 +15,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import itep.software.bluemoon.model.projection.InvoiceSummary;
 import itep.software.bluemoon.response.ApiResponse;
+import itep.software.bluemoon.service.ExcelExportService;
 import itep.software.bluemoon.service.InvoiceService;
 import lombok.RequiredArgsConstructor;
 
@@ -20,6 +24,7 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class AccountingController {
     private final InvoiceService invoiceService;
+    private final ExcelExportService excelExportService;
 
     // Filter lọc theo trạng thái thanh toán thì front-end tự lọc
     @GetMapping("/invoices")
@@ -42,5 +47,21 @@ public class AccountingController {
                 "Generate " + count + " draft invoices (PENDING). Please double check before publish!",
                 null
         );
+    }
+
+    @SuppressWarnings("null")
+    @GetMapping("/invoices/export")
+    public ResponseEntity<InputStreamResource> exportInvoices(
+            @RequestParam Integer month,
+            @RequestParam Integer year
+    ) {
+        InputStreamResource file = new InputStreamResource(excelExportService.exportInvoicesToExcel(month, year));
+
+        String fileName = "HoaDon_" + month + "_" + year + ".xlsx";
+
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=" + fileName)
+                .contentType(MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
+                .body(file);
     }
 }

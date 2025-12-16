@@ -35,4 +35,6 @@ public interface InvoiceRepository extends JpaRepository<Invoice, UUID> {
     boolean existsByMonthAndYearAndStatusNot(int month, int year, InvoiceStatus status);
 
     List<Invoice> findByMonthAndYearAndStatus(int month, int year, InvoiceStatus status);
+
+    List<Invoice> findByMonthAndYear(int month, int year);
 }
