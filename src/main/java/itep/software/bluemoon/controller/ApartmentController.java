@@ -5,6 +5,7 @@ import java.util.UUID;
 
 import itep.software.bluemoon.entity.Apartment;
 import itep.software.bluemoon.model.DTO.apartment.ApartmentCreationDTO;
+import itep.software.bluemoon.model.DTO.apartment.ApartmentResidentUpdateDTO;
 import itep.software.bluemoon.model.projection.ApartmentSummary;
 
 import org.springframework.http.HttpStatus;
@@ -91,4 +92,28 @@ public class ApartmentController {
                 null
         );
     }
+    
+     // API mới: Thêm/Gán cư dân vào căn hộ
+     @PutMapping("/{apartmentId}/residents/add")
+     public ResponseEntity<Object> addResidents(@PathVariable UUID apartmentId, @RequestBody ApartmentResidentUpdateDTO request){
+         apartmentService.addResidentsToApartment(apartmentId, request);
+
+         return ApiResponse.responseBuilder(
+                 HttpStatus.OK,
+                 "Residents added to apartment successfully!",
+                 null
+         );
+     }
+
+     // API mới: Xóa/Loại bỏ cư dân khỏi căn hộ (thiết lập Apartment = null)
+     @PutMapping("/{apartmentId}/residents/remove")
+     public ResponseEntity<Object> removeResidents(@PathVariable UUID apartmentId, @RequestBody ApartmentResidentUpdateDTO request){
+         apartmentService.removeResidentsFromApartment(apartmentId, request);
+
+         return ApiResponse.responseBuilder(
+                 HttpStatus.OK,
+                 "Residents removed from apartment successfully!",
+                 null
+         );
+     }
 }
