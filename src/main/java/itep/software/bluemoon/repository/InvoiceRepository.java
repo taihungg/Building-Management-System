@@ -1,5 +1,6 @@
 package itep.software.bluemoon.repository;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.UUID;
 
@@ -37,4 +38,9 @@ public interface InvoiceRepository extends JpaRepository<Invoice, UUID> {
     List<Invoice> findByMonthAndYearAndStatus(int month, int year, InvoiceStatus status);
 
     List<Invoice> findByMonthAndYear(int month, int year);
+
+    long countByStatus(InvoiceStatus status);
+
+    @Query("SELECT COALESCE(SUM(i.totalAmount), 0) FROM Invoice i WHERE i.status = :status")
+    BigDecimal sumTotalAmountByStatus(@Param("status") InvoiceStatus status);
 }
