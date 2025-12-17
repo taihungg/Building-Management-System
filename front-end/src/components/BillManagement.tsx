@@ -1,31 +1,47 @@
-import { Search, Clock, CheckCircle, AlertCircle, Calendar } from 'lucide-react';
+import { Search, Clock, CheckCircle, AlertCircle, Calendar, FileText, Settings } from 'lucide-react'; 
 // Giả định Modal và Toaster được import từ thư viện/file nội bộ
 import { Modal } from './Modal'; 
 import { Toaster, toast } from 'sonner'; 
-import { useState, useEffect, useCallback } from 'react'; // Đã thêm useCallback
+import { useState, useEffect, useCallback } from 'react'; 
 import React from 'react';
 
 // Cấu hình các nút lọc trạng thái
 const STATUS_OPTIONS = [
-    // Đã thay đổi 'none' thành 'gray' để tránh lỗi Tailwind cho trạng thái 'All'
     { label: 'Tất cả', value: 'All', color: 'gray' }, 
-    { label: 'Đã thanh toán', value: 'PAID', icon: CheckCircle, color: 'green' }, // Dùng 'emerald' thay cho 'green'
+    // Sử dụng 'green' cho Tailwind class, mặc dù icon dùng 'emerald'
+    { label: 'Đã thanh toán', value: 'PAID', icon: CheckCircle, color: 'green' }, 
     { label: 'Đang chờ', value: 'PENDING', icon: Clock, color: 'blue' },
     { label: 'Chưa thanh toán', value: 'UNPAID', icon: AlertCircle, color: 'orange' }, 
 ];
+
+// Hàm định dạng ngày
+const formatDate = (dateString) => {
+    if (!dateString) return '—';
+    try {
+        const date = new Date(dateString); 
+        return date.toLocaleDateString('vi-VN', {
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric',
+        });
+    } catch {
+        return 'Ngày không hợp lệ';
+    }
+};
 
 export function BillManagement() {
   const currentDate = new Date();
   
   // --- STATES ---
   const [searchTerm, setSearchTerm] = useState('');
+  // 🔥 Mặc định là 'All'
   const [statusFilter, setStatusFilter] = useState('All'); 
   const [isCreateBillOpen, setIsCreateBillOpen] = useState(false);
 
   const [bills, setBills] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
 
-  // 🔥 Khởi tạo selectedMonth bằng tháng hiện tại (1-12)
+  // Khởi tạo selectedMonth bằng tháng hiện tại (1-12)
   const [selectedMonth, setSelectedMonth] = useState(currentDate.getMonth() + 1); 
   const [selectedYear, setSelectedYear] = useState(currentDate.getFullYear());
 
@@ -36,14 +52,12 @@ export function BillManagement() {
     unpaidAmount: 0
   });
   
-  // --- DATA FETCHING & LOGIC (Đã dùng useCallback) ---
+  // --- DATA FETCHING & LOGIC ---
   const fetchBills = useCallback(async () => {
     setIsLoading(true);
     try {
-      // Logic đã được điều chỉnh để luôn có month trong URL (vì selectedMonth >= 1)
       let url = `http://localhost:8081/api/v1/accounting/invoices?year=${selectedYear}`;
       
-      // Nếu không muốn gọi API với tháng 0 (Tất cả), thì chỉ cần đảm bảo selectedMonth luôn > 0
       if (selectedMonth > 0) url += `&month=${selectedMonth}`; 
       
       const response = await fetch(url);
@@ -60,7 +74,7 @@ export function BillManagement() {
     } finally {
       setIsLoading(false);
     }
-  }, [selectedMonth, selectedYear]); // Dependencies đã tối ưu
+  }, [selectedMonth, selectedYear]); 
 
   useEffect(() => {
     fetchBills();
@@ -98,6 +112,98 @@ export function BillManagement() {
 
   const periodLabel = `Tháng ${selectedMonth}/${selectedYear}`;
 
+  // --- HÀM TẠO HÓA ĐƠN HÀNG LOẠT (POST) ---
+  const handleGenerateInvoices = () => {
+    const promise = new Promise(async (resolve, reject) => {
+      try {
+        const url = `http://localhost:8081/api/v1/accounting/invoices/generation?month=${selectedMonth}&year=${selectedYear}`;
+        
+        const response = await fetch(url, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}));
+          throw new Error(errorData.message || `Lỗi: ${response.status} khi tạo hóa đơn.`);
+        }
+
+        const result = await response.json();
+        
+        await fetchBills(); 
+        
+        resolve(result.message || `Đã tạo thành công hóa đơn nháp tháng ${selectedMonth}/${selectedYear}.`);
+
+      } catch (error) {
+        console.error("Lỗi tạo hóa đơn hàng loạt:", error);
+        reject(error);
+      }
+    });
+
+    toast.promise(promise, {
+      loading: `Đang tạo hóa đơn nháp tháng ${selectedMonth}/${selectedYear}...`,
+      success: (message) => message, 
+      error: (err) => `Tạo hóa đơn thất bại: ${err.message}`,
+    });
+  };
+  
+  // 🔥 HÀM XUẤT EXCEL (GET BLOB) ---
+  const handleExportToExcel = () => {
+    const promise = new Promise(async (resolve, reject) => {
+        try {
+            // Sử dụng API GET mới
+            const url = `http://localhost:8081/api/v1/accounting/invoices/export?month=${selectedMonth}&year=${selectedYear}`;
+            
+            const response = await fetch(url);
+
+            if (!response.ok) {
+                // Thử đọc lỗi dưới dạng JSON nếu có
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(errorData.message || `Lỗi: ${response.status} khi xuất báo cáo.`);
+            }
+
+            // Lấy file Blob
+            const blob = await response.blob();
+            
+            // Lấy tên file từ header Content-Disposition
+            let fileName = `HoaDon_${selectedMonth}_${selectedYear}.xlsx`;
+            const disposition = response.headers.get('Content-Disposition');
+            if (disposition && disposition.indexOf('attachment') !== -1) {
+                const filenameRegex = /filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/;
+                const matches = filenameRegex.exec(disposition);
+                if (matches != null && matches[1]) {
+                    // Loại bỏ dấu nháy kép
+                    fileName = matches[1].replace(/['"]/g, ''); 
+                }
+            }
+
+            // Kích hoạt tải xuống
+            const href = window.URL.createObjectURL(blob);
+            const anchorElement = document.createElement('a');
+            anchorElement.href = href;
+            anchorElement.download = fileName;
+            document.body.appendChild(anchorElement);
+            anchorElement.click();
+            document.body.removeChild(anchorElement);
+            window.URL.revokeObjectURL(href);
+            
+            resolve(`Xuất file "${fileName}" thành công!`);
+
+        } catch (error) {
+            console.error("Lỗi xuất báo cáo:", error);
+            reject(error);
+        }
+    });
+
+    toast.promise(promise, {
+      loading: `Đang xuất báo cáo tháng ${selectedMonth}/${selectedYear}...`,
+      success: (message) => message, 
+      error: (err) => `Xuất file thất bại: ${err.message}`,
+    });
+  };
+
   return (
     <div className="space-y-6">
       <Toaster position="top-right" richColors />
@@ -112,10 +218,11 @@ export function BillManagement() {
         </div>
 
         <div className="flex items-center gap-4">
+          
+          {/* BỘ CHỌN THÁNG/NĂM */}
           <div className="flex items-center gap-2 px-3 py-2 bg-white border border-gray-300 rounded-xl shadow-sm">
             <Calendar className="w-5 h-5 text-gray-500" />
             
-            {/* 🔥 BỘ CHỌN THÁNG - ĐÃ BỎ 'Tất cả các tháng' */}
             <select
               value={selectedMonth}
               onChange={(e) => setSelectedMonth(Number(e.target.value))}
@@ -125,7 +232,6 @@ export function BillManagement() {
                 <option key={m} value={m}>Tháng {m}</option>
               ))}
             </select>
-            {/* HẾT BỘ CHỌN THÁNG */}
 
             <select
               value={selectedYear}
@@ -136,6 +242,19 @@ export function BillManagement() {
                 .map(y => <option key={y} value={y}>Năm {y}</option>)}
             </select>
           </div>
+          
+          {/* NÚT TẠO HÓA ĐƠN THÁNG (Primary Action) */}
+        
+          
+          {/* NÚT XUẤT EXCEL (Secondary Action) */}
+          <button
+            onClick={handleExportToExcel}
+            className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-black rounded-xl shadow-md hover:bg-emerald-700 transition duration-150"
+          >
+            <FileText className="w-5 h-5" />
+            Xuất báo cáo
+          </button>
+          
         </div>
       </div>
       
@@ -181,7 +300,7 @@ export function BillManagement() {
             <button
                 key={option.value}
                 onClick={() => setStatusFilter(option.value)}
-                // 🔥 Đã sửa logic màu Tailwind
+                // Đã sửa logic màu Tailwind
                 className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-medium transition duration-150
                     ${statusFilter === option.value
                         ? `bg-${option.color}-600 text-white shadow-md`
@@ -204,22 +323,28 @@ export function BillManagement() {
           <table className="w-full min-w-max"> 
             <thead className="bg-gradient-to-r from-indigo-100 to-purple-100/70 text-gray-700">
               <tr>
-                <th className="px-6 py-3 text-left font-semibold">Đơn Vị</th>
-                <th className="px-6 py-3 text-left font-semibold">Số Tiền</th>
-                <th className="px-6 py-3 text-left font-semibold">Trạng Thái</th>
+                <th className="px-6 py-3 text-left font-semibold">Căn hộ</th>
+                <th className="px-6 py-3 text-left font-semibold">Số tiền</th>
+                {/* Cột Ngày Tạo */}
+                <th className="px-6 py-3 text-left font-semibold">Ngày tạo</th>
+                {/* Cột Ngày Thanh Toán */}
+                <th className="px-6 py-3 text-left font-semibold">Ngày thanh toán</th>
+                <th className="px-6 py-3 text-left font-semibold">Trạng thái</th>
               </tr>
             </thead>
 
             <tbody className="divide-y divide-gray-100">
               {isLoading ? (
                 <tr>
-                  <td colSpan={3} className="text-center py-6 text-gray-500"> 
+                  {/* Cập nhật colspan lên 5 */}
+                  <td colSpan={5} className="text-center py-6 text-gray-500"> 
                     Đang tải hóa đơn...
                   </td>
                 </tr>
               ) : filteredBills.length === 0 ? (
                 <tr>
-                  <td colSpan={3} className="text-center py-6 text-gray-500"> 
+                  {/* Cập nhật colspan lên 5 */}
+                  <td colSpan={5} className="text-center py-6 text-gray-500"> 
                     Không tìm thấy hóa đơn nào trong {periodLabel}.
                   </td>
                 </tr>
@@ -236,13 +361,22 @@ export function BillManagement() {
                       {formatCurrency(bill.totalAmount)}
                     </td>
                     
+                    <td className="px-6 py-4 text-gray-600 font-medium text-sm">
+                       {formatDate(bill.createdTime)} 
+                    </td>
+
+                    <td className="px-6 py-4 text-gray-600 font-medium text-sm">
+                       {formatDate(bill.paymentDate)} 
+                    </td>
+                    
                     <td className="px-6 py-4">
                       <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm font-medium
                         ${bill.status === 'PAID'
                           ? 'bg-emerald-100 text-emerald-800'
                           : bill.status === 'PENDING'
                           ? 'bg-blue-100 text-blue-800'
-                          : 'bg-rose-100 text-rose-800'}`}>
+                          : bill.status === 'UNPAID'
+                          ? 'bg-rose-100 text-rose-800' : 'bg-gray-100 text-gray-800'}`}>
                         {bill.status === 'PAID' && <CheckCircle className="w-4 h-4" />}
                         {bill.status === 'PENDING' && <Clock className="w-4 h-4" />}
                         {bill.status === 'UNPAID' && <AlertCircle className="w-4 h-4" />}
@@ -250,7 +384,8 @@ export function BillManagement() {
                           ? 'Đã thanh toán'
                           : bill.status === 'PENDING'
                           ? 'Đang chờ'
-                          : 'Chưa thanh toán'}
+                          : bill.status === 'UNPAID'
+                          ? 'Chưa thanh toán' : 'Không xác định'}
                       </span>
                     </td>
                   </tr>

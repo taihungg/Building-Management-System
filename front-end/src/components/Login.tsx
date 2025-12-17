@@ -72,7 +72,7 @@ export function Login({ onLogin, onNavigateAuth }: LoginProps) {
                   style={{ color: selectedRole === 'admin' ? 'white' : '#4B5563' }}
                 />
                 <span className="text-sm font-medium" style={{ color: selectedRole === 'admin' ? 'white' : '#374151' }}>
-                  Quản Trị Viên
+                  Ban Quản Trị
                 </span>
               </button>
               {/* RESIDENT */}
