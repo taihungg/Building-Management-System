@@ -29,8 +29,8 @@ export function Settings() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl text-gray-900">Settings</h1>
-          <p className="text-gray-600 mt-1">Manage your application preferences</p>
+          <h1 className="text-3xl text-gray-900">Cài đặt</h1>
+          <p className="text-gray-600 mt-1">Quản lý tùy chọn ứng dụng của bạn</p>
         </div>
       </div>
 
@@ -40,27 +40,27 @@ export function Settings() {
           <div className="bg-white rounded-xl border-2 border-gray-200 p-4 space-y-1">
             <button className="w-full flex items-center gap-3 px-4 py-3 bg-cyan-500 text-white rounded-lg transition-all">
               <Bell className="w-5 h-5" />
-              <span className="text-sm">Notifications</span>
+              <span className="text-sm">Thông báo</span>
             </button>
             <button className="w-full flex items-center gap-3 px-4 py-3 text-gray-700 hover:bg-gray-100 rounded-lg transition-all">
               <Palette className="w-5 h-5" />
-              <span className="text-sm">Appearance</span>
+              <span className="text-sm">Giao diện</span>
             </button>
             <button className="w-full flex items-center gap-3 px-4 py-3 text-gray-700 hover:bg-gray-100 rounded-lg transition-all">
               <Globe className="w-5 h-5" />
-              <span className="text-sm">Preferences</span>
+              <span className="text-sm">Tùy chọn</span>
             </button>
             <button className="w-full flex items-center gap-3 px-4 py-3 text-gray-700 hover:bg-gray-100 rounded-lg transition-all">
               <Shield className="w-5 h-5" />
-              <span className="text-sm">Privacy</span>
+              <span className="text-sm">Quyền riêng tư</span>
             </button>
             <button className="w-full flex items-center gap-3 px-4 py-3 text-gray-700 hover:bg-gray-100 rounded-lg transition-all">
               <Lock className="w-5 h-5" />
-              <span className="text-sm">Security</span>
+              <span className="text-sm">Bảo mật</span>
             </button>
             <button className="w-full flex items-center gap-3 px-4 py-3 text-gray-700 hover:bg-gray-100 rounded-lg transition-all">
               <Database className="w-5 h-5" />
-              <span className="text-sm">Data & Storage</span>
+              <span className="text-sm">Dữ liệu & lưu trữ</span>
             </button>
           </div>
         </div>
@@ -74,21 +74,21 @@ export function Settings() {
                 <Bell className="w-5 h-5 text-cyan-600" />
               </div>
               <div>
-                <h3 className="text-xl text-gray-900">Notification Preferences</h3>
-                <p className="text-sm text-gray-600">Manage how you receive notifications</p>
+                <h3 className="text-xl text-gray-900">Tùy chọn thông báo</h3>
+                <p className="text-sm text-gray-600">Quản lý cách bạn nhận thông báo</p>
               </div>
             </div>
 
             {/* Notification Channels */}
             <div className="mb-6">
-              <h4 className="text-base text-gray-900 mb-4">Notification Channels</h4>
+              <h4 className="text-base text-gray-900 mb-4">Kênh thông báo</h4>
               <div className="space-y-4">
                 <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
                   <div className="flex items-center gap-3">
                     <Mail className="w-5 h-5 text-gray-600" />
                     <div>
-                      <p className="text-sm text-gray-900">Email Notifications</p>
-                      <p className="text-xs text-gray-600">Receive updates via email</p>
+                      <p className="text-sm text-gray-900">Thông báo email</p>
+                      <p className="text-xs text-gray-600">Nhận cập nhật qua email</p>
                     </div>
                   </div>
                   <label className="relative inline-flex items-center cursor-pointer">
@@ -106,8 +106,8 @@ export function Settings() {
                   <div className="flex items-center gap-3">
                     <Bell className="w-5 h-5 text-gray-600" />
                     <div>
-                      <p className="text-sm text-gray-900">Push Notifications</p>
-                      <p className="text-xs text-gray-600">Receive browser notifications</p>
+                      <p className="text-sm text-gray-900">Thông báo đẩy</p>
+                      <p className="text-xs text-gray-600">Nhận thông báo trình duyệt</p>
                     </div>
                   </div>
                   <label className="relative inline-flex items-center cursor-pointer">
@@ -125,8 +125,8 @@ export function Settings() {
                   <div className="flex items-center gap-3">
                     <Smartphone className="w-5 h-5 text-gray-600" />
                     <div>
-                      <p className="text-sm text-gray-900">SMS Notifications</p>
-                      <p className="text-xs text-gray-600">Receive text messages</p>
+                      <p className="text-sm text-gray-900">Thông báo SMS</p>
+                      <p className="text-xs text-gray-600">Nhận tin nhắn văn bản</p>
                     </div>
                   </div>
                   <label className="relative inline-flex items-center cursor-pointer">
@@ -144,10 +144,10 @@ export function Settings() {
 
             {/* Notification Types */}
             <div>
-              <h4 className="text-base text-gray-900 mb-4">Notification Types</h4>
+              <h4 className="text-base text-gray-900 mb-4">Loại thông báo</h4>
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-700">New Resident Registration</span>
+                  <span className="text-sm text-gray-700">Đăng ký cư dân mới</span>
                   <label className="relative inline-flex items-center cursor-pointer">
                     <input
                       type="checkbox"
@@ -159,7 +159,7 @@ export function Settings() {
                   </label>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-700">Payment Reminders</span>
+                  <span className="text-sm text-gray-700">Nhắc nhở thanh toán</span>
                   <label className="relative inline-flex items-center cursor-pointer">
                     <input
                       type="checkbox"
@@ -171,7 +171,7 @@ export function Settings() {
                   </label>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-700">Maintenance Alerts</span>
+                  <span className="text-sm text-gray-700">Cảnh báo bảo trì</span>
                   <label className="relative inline-flex items-center cursor-pointer">
                     <input
                       type="checkbox"
@@ -183,7 +183,7 @@ export function Settings() {
                   </label>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-700">System Updates</span>
+                  <span className="text-sm text-gray-700">Cập nhật hệ thống</span>
                   <label className="relative inline-flex items-center cursor-pointer">
                     <input
                       type="checkbox"
@@ -205,42 +205,44 @@ export function Settings() {
                 <Globe className="w-5 h-5 text-purple-600" />
               </div>
               <div>
-                <h3 className="text-xl text-gray-900">General Preferences</h3>
-                <p className="text-sm text-gray-600">Customize your experience</p>
+                <h3 className="text-xl text-gray-900">Tùy chọn chung</h3>
+                <p className="text-sm text-gray-600">Tùy chỉnh trải nghiệm của bạn</p>
               </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <label className="block text-sm text-gray-700 mb-2">Language</label>
+                <label className="block text-sm text-gray-700 mb-2">Ngôn ngữ</label>
                 <select
                   value={preferences.language}
                   onChange={(e) => setPreferences({ ...preferences, language: e.target.value })}
                   className="w-full px-4 py-3 bg-gray-50 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 text-gray-700"
                 >
-                  <option value="en">English</option>
-                  <option value="es">Spanish</option>
-                  <option value="fr">French</option>
-                  <option value="de">German</option>
+                  <option value="en">Tiếng Anh</option>
+                  <option value="es">Tiếng Tây Ban Nha</option>
+                  <option value="fr">Tiếng Pháp</option>
+                  <option value="de">Tiếng Đức</option>
+                  <option value="vi">Tiếng Việt</option>
                 </select>
               </div>
 
               <div>
-                <label className="block text-sm text-gray-700 mb-2">Timezone</label>
+                <label className="block text-sm text-gray-700 mb-2">Múi giờ</label>
                 <select
                   value={preferences.timezone}
                   onChange={(e) => setPreferences({ ...preferences, timezone: e.target.value })}
                   className="w-full px-4 py-3 bg-gray-50 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 text-gray-700"
                 >
-                  <option value="America/New_York">Eastern Time (ET)</option>
-                  <option value="America/Chicago">Central Time (CT)</option>
-                  <option value="America/Denver">Mountain Time (MT)</option>
-                  <option value="America/Los_Angeles">Pacific Time (PT)</option>
+                  <option value="Asia/Ho_Chi_Minh">Giờ Việt Nam (GMT+7)</option>
+                  <option value="America/New_York">Giờ miền Đông (ET)</option>
+                  <option value="America/Chicago">Giờ miền Trung (CT)</option>
+                  <option value="America/Denver">Giờ miền Núi (MT)</option>
+                  <option value="America/Los_Angeles">Giờ miền Thái Bình Dương (PT)</option>
                 </select>
               </div>
 
               <div>
-                <label className="block text-sm text-gray-700 mb-2">Date Format</label>
+                <label className="block text-sm text-gray-700 mb-2">Định dạng ngày</label>
                 <select
                   value={preferences.dateFormat}
                   onChange={(e) => setPreferences({ ...preferences, dateFormat: e.target.value })}
@@ -253,16 +255,17 @@ export function Settings() {
               </div>
 
               <div>
-                <label className="block text-sm text-gray-700 mb-2">Currency</label>
+                <label className="block text-sm text-gray-700 mb-2">Tiền tệ</label>
                 <select
                   value={preferences.currency}
                   onChange={(e) => setPreferences({ ...preferences, currency: e.target.value })}
                   className="w-full px-4 py-3 bg-gray-50 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 text-gray-700"
                 >
-                  <option value="USD">USD - US Dollar</option>
+                  <option value="VND">VND - Đồng Việt Nam</option>
+                  <option value="USD">USD - Đô la Mỹ</option>
                   <option value="EUR">EUR - Euro</option>
-                  <option value="GBP">GBP - British Pound</option>
-                  <option value="JPY">JPY - Japanese Yen</option>
+                  <option value="GBP">GBP - Bảng Anh</option>
+                  <option value="JPY">JPY - Yên Nhật</option>
                 </select>
               </div>
             </div>
@@ -275,32 +278,32 @@ export function Settings() {
                 <Shield className="w-5 h-5 text-blue-600" />
               </div>
               <div>
-                <h3 className="text-xl text-gray-900">Privacy & Security</h3>
-                <p className="text-sm text-gray-600">Control your privacy settings</p>
+                <h3 className="text-xl text-gray-900">Quyền riêng tư & bảo mật</h3>
+                <p className="text-sm text-gray-600">Kiểm soát cài đặt quyền riêng tư của bạn</p>
               </div>
             </div>
 
             <div className="space-y-4">
               <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
                 <div>
-                  <p className="text-sm text-gray-900">Profile Visibility</p>
-                  <p className="text-xs text-gray-600 mt-1">Who can see your profile</p>
+                  <p className="text-sm text-gray-900">Hiển thị hồ sơ</p>
+                  <p className="text-xs text-gray-600 mt-1">Ai có thể xem hồ sơ của bạn</p>
                 </div>
                 <select
                   value={privacy.profileVisibility}
                   onChange={(e) => setPrivacy({ ...privacy, profileVisibility: e.target.value })}
                   className="px-4 py-2 bg-white border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500 text-sm text-gray-700"
                 >
-                  <option value="public">Public</option>
-                  <option value="private">Private</option>
-                  <option value="team">Team Only</option>
+                  <option value="public">Công khai</option>
+                  <option value="private">Riêng tư</option>
+                  <option value="team">Chỉ nhóm</option>
                 </select>
               </div>
 
               <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
                 <div>
-                  <p className="text-sm text-gray-900">Activity Status</p>
-                  <p className="text-xs text-gray-600 mt-1">Show when you're online</p>
+                  <p className="text-sm text-gray-900">Trạng thái hoạt động</p>
+                  <p className="text-xs text-gray-600 mt-1">Hiển thị khi bạn đang trực tuyến</p>
                 </div>
                 <label className="relative inline-flex items-center cursor-pointer">
                   <input
@@ -315,8 +318,8 @@ export function Settings() {
 
               <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
                 <div>
-                  <p className="text-sm text-gray-900">Data Sharing</p>
-                  <p className="text-xs text-gray-600 mt-1">Share analytics data</p>
+                  <p className="text-sm text-gray-900">Chia sẻ dữ liệu</p>
+                  <p className="text-xs text-gray-600 mt-1">Chia sẻ dữ liệu phân tích</p>
                 </div>
                 <label className="relative inline-flex items-center cursor-pointer">
                   <input
@@ -334,7 +337,7 @@ export function Settings() {
           {/* Save Button */}
           <div className="flex justify-end">
             <button className="px-8 py-3 bg-cyan-500 text-white rounded-lg hover:bg-cyan-600 transition-all">
-              Save All Changes
+              Lưu tất cả thay đổi
             </button>
           </div>
         </div>

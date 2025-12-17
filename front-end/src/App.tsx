@@ -394,10 +394,23 @@ function AppContent() {
                 onLogout={handleLogout} 
             />
         );
+        // Handle navigation for accounting header
+        const handleAccountingNavigate = (page: string) => {
+          if (page === 'logout') {
+            handleLogout();
+          } else if (page === 'profile') {
+            navigate('/accounting/profile');
+          } else if (page === 'settings') {
+            navigate('/accounting/settings');
+          } else if (page === 'accounting-dashboard') {
+            navigate('/accounting/dashboard');
+          }
+        };
+
         headerComponent = (
             <AccountingHeader 
               onMenuClick={() => setIsSidebarOpen(true)}
-              onLogout={handleLogout}
+              onNavigate={handleAccountingNavigate}
             />
         );
         appRoutes = accountingRoutes;

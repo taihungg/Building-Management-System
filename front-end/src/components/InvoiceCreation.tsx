@@ -252,25 +252,18 @@ export function InvoiceCreation() {
     ).size || tableData.length;
 
     // Calculate total electricity consumption
-    // Try multiple approaches: direct consumption column or calculate from new - old
+    // Tổng điện tiêu thụ = tổng của tất cả các hiệu (mới - cũ) cho từng dòng
     let totalElectricity = 0;
     tableData.forEach(row => {
-      // First, try to find a direct consumption column
-      const directConsumption = row['Điện tiêu thụ'] || row['Điện'] || row['Tiêu thụ điện'] || 
-                                 row['electricityConsumption'] || row['electricityUsed'] || 0;
-      
-      if (directConsumption && !isNaN(Number(directConsumption))) {
-        totalElectricity += Number(directConsumption);
-      } else {
-        // If no direct column, calculate from new - old
-        const electricityNew = row['Chỉ số điện mới'] || row['Điện mới'] || row['Điện cuối'] ||
-                               row['electricityNew'] || row['electricity'] || 0;
-        const electricityOld = row['Chỉ số điện cũ'] || row['Điện cũ'] || row['Điện đầu'] ||
-                               row['electricityOld'] || 0;
-        const consumption = Number(electricityNew) - Number(electricityOld);
-        if (!isNaN(consumption) && consumption >= 0) {
-          totalElectricity += consumption;
-        }
+      const electricityNew = row['Chỉ số điện mới'] || row['Điện mới'] || row['Điện cuối'] ||
+                             row['electricityNew'] || row['electricity'] || 0;
+      const electricityOld = row['Chỉ số điện cũ'] || row['Điện cũ'] || row['Điện đầu'] ||
+                             row['electricityOld'] || 0;
+      // Tính hiệu (mới - cũ) cho từng dòng
+      const consumption = Number(electricityNew) - Number(electricityOld);
+      // Cộng vào tổng nếu giá trị hợp lệ
+      if (!isNaN(consumption) && consumption >= 0) {
+        totalElectricity += consumption;
       }
     });
 
@@ -379,20 +372,20 @@ export function InvoiceCreation() {
               disabled={isUploading}
             />
 
-            {/* Xuất Excel Button */}
+            {/* Tải xuống mẫu Button */}
             <button
               onClick={handleDownloadTemplate}
               className="h-10 flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all active:scale-95 border border-gray-300 text-gray-700 bg-white hover:bg-gray-50"
             >
               <Download className="w-4 h-4" />
-              <span>Xuất excel</span>
+              <span>Tải xuống mẫu</span>
             </button>
 
             {/* Upload Excel Button - Primary */}
             <button
               onClick={handleUploadClick}
               disabled={isUploading}
-              className={`h-10 flex items-center gap-2.5 px-6 rounded-lg font-bold transition-all shadow-sm active:scale-95 ${
+              className={`h-10 flex items-center gap-2 px-6 rounded-lg font-bold transition-all shadow-sm active:scale-95 ${
                 isUploading
                   ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
                   : 'bg-purple-600 text-white hover:bg-purple-700 hover:shadow-md'
@@ -406,7 +399,7 @@ export function InvoiceCreation() {
               ) : (
                 <>
                   <Upload className="w-4 h-4" />
-                  <span>Upload excel</span>
+                  <span>Tải lên</span>
                 </>
               )}
             </button>
@@ -415,7 +408,7 @@ export function InvoiceCreation() {
             <button
               onClick={handleSave}
               disabled={!isDataLoaded || isUploading || isSaved}
-              className={`h-10 flex items-center gap-2.5 px-6 py-2 rounded-lg font-medium transition-all shadow-sm active:scale-95 ${
+              className={`h-10 flex items-center gap-2 px-6 py-2 rounded-lg font-medium transition-all shadow-sm active:scale-95 ${
                 !isDataLoaded || isUploading || isSaved
                   ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
                   : 'bg-blue-600 text-white hover:bg-blue-700'
