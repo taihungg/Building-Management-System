@@ -3,7 +3,6 @@ package itep.software.bluemoon.controller;
 import java.util.List;
 import java.util.UUID;
 
-import itep.software.bluemoon.entity.Apartment;
 import itep.software.bluemoon.model.DTO.apartment.ApartmentCreationDTO;
 import itep.software.bluemoon.model.DTO.apartment.ApartmentResidentUpdateDTO;
 import itep.software.bluemoon.model.projection.ApartmentSummary;
@@ -83,7 +82,7 @@ public class ApartmentController {
     }
 
     @DeleteMapping
-    public ResponseEntity<Object> deleteResident(@RequestParam(value = "id", required = true) UUID id){
+    public ResponseEntity<Object> deleteApartment(@RequestParam(value = "id", required = true) UUID id){
         apartmentService.deleteApartment(id);
 
         return ApiResponse.responseBuilder(
