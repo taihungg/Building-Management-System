@@ -62,7 +62,7 @@ public class ApartmentController {
 
     @PostMapping
     public ResponseEntity<Object> createApartment(@RequestBody ApartmentCreationDTO request){
-        Apartment data = apartmentService.createResident(request);
+        ApartmentDetailDTO data = apartmentService.createApartment(request);
 
         return ApiResponse.responseBuilder(
                 HttpStatus.OK,

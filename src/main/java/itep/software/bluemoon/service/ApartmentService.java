@@ -9,14 +9,12 @@ import itep.software.bluemoon.entity.person.Resident;
 import itep.software.bluemoon.enumeration.InvoiceStatus;
 import itep.software.bluemoon.model.DTO.apartment.ApartmentCreationDTO;
 import itep.software.bluemoon.model.DTO.apartment.ApartmentResidentUpdateDTO;
-import itep.software.bluemoon.model.mapper.EntityToDto;
 import itep.software.bluemoon.model.projection.ResidentSummary;
 import itep.software.bluemoon.repository.*;
 
 import org.springframework.stereotype.Service;
 
 import itep.software.bluemoon.entity.Apartment;
-import itep.software.bluemoon.entity.Issue;
 import itep.software.bluemoon.enumeration.IssueStatus;
 import itep.software.bluemoon.model.DTO.apartment.ApartmentDetailDTO;
 import itep.software.bluemoon.model.projection.Dropdown;
@@ -97,23 +95,24 @@ public class ApartmentService {
                 .build();
     }
 
-    public Apartment createResident(ApartmentCreationDTO dto){
+    @SuppressWarnings("null")
+    public ApartmentDetailDTO createApartment(ApartmentCreationDTO dto){
         Building building = buildingRepository.findById(dto.getBuildingId())
-                    .orElseThrow(() -> new RuntimeException("Building not found!"));
+                    .orElseThrow(() -> new RuntimeException("Apartment must be in an existing building!"));
         Resident owner = dto.getOwnerId() != null
                 ? residentRepository.findById(dto.getOwnerId())
-                .orElseThrow(() -> new RuntimeException("Owner not found!"))
+                .orElseThrow(() -> new RuntimeException("Resident not found!"))
                 : null;
 
-        return apartmentRepository.save(
-                Apartment.builder()
-                        .roomNumber(dto.getRoomNumber())
-                        .floor(dto.getFloor())
-                        .area(dto.getArea())
-                        .building(building)
-                        .owner(owner)
-                        .build()
-        );
+        Apartment newApartment = apartmentRepository.save(Apartment.builder()
+                .roomNumber(dto.getRoomNumber())
+                .floor(dto.getFloor())
+                .area(dto.getArea())
+                .building(building)
+                .owner(owner)
+                .build());
+
+        return getApartmentDetail(newApartment.getId());
     }
 
     public void changeApartmentOwner(UUID apartmentId, UUID ownerId){
