@@ -115,13 +115,14 @@ public class ApartmentService {
         return getApartmentDetail(newApartment.getId());
     }
 
+    @SuppressWarnings("null")
     public void changeApartmentOwner(UUID apartmentId, UUID ownerId){
         Apartment apartment = apartmentRepository.findById(apartmentId)
                 .orElseThrow(() -> new RuntimeException("Apartment not found!"));
 
         Resident newOwner = ownerId != null
                 ? residentRepository.findById(ownerId)
-                .orElseThrow(() -> new RuntimeException("Owner not found!"))
+                .orElseThrow(() -> new RuntimeException("Resident not found!"))
                 : null;
 
         apartment.setOwner(newOwner);
@@ -152,8 +153,9 @@ public class ApartmentService {
 
     
     
-    // Thêm Residents vào căn hộ
-    public void addResidentsToApartment(UUID apartmentId, ApartmentResidentUpdateDTO dto){
+    // Thêm một danh sách cư dân vào căn hộ
+    @SuppressWarnings("null")
+    public ApartmentDetailDTO addResidentsToApartment(UUID apartmentId, ApartmentResidentUpdateDTO dto){
         Apartment apartment = apartmentRepository.findById(apartmentId)
                 .orElseThrow(() -> new RuntimeException("Apartment not found!"));
 
@@ -164,18 +166,19 @@ public class ApartmentService {
         }
 
         for (Resident resident : residentsToUpdate) {
-            // Gán căn hộ mới 
             resident.setApartment(apartment);
-            //Resident có thể đã có Apartment cũ => cập nhật
         }
 
         residentRepository.saveAll(residentsToUpdate);
+
+        return getApartmentDetail(apartmentId);
     }
     
-     // Xóa .... 
-    public void removeResidentsFromApartment(UUID apartmentId, ApartmentResidentUpdateDTO dto){
-        Apartment apartment = apartmentRepository.findById(apartmentId)
-                .orElseThrow(() -> new RuntimeException("Apartment not found!"));
+    // Xóa một danh sách cư dân khỏi căn hộ 
+    @SuppressWarnings("null")
+    public ApartmentDetailDTO removeResidentsFromApartment(UUID apartmentId, ApartmentResidentUpdateDTO dto){
+        apartmentRepository.findById(apartmentId)
+            .orElseThrow(() -> new RuntimeException("Apartment not found!"));
 
         List<Resident> residentsToUpdate = residentRepository.findAllById(dto.getResidentIds());
 
@@ -187,15 +190,11 @@ public class ApartmentService {
             if (resident.getApartment() == null || !resident.getApartment().getId().equals(apartmentId)) {
                 throw new RuntimeException("Resident " + resident.getId() + " is not currently in this apartment!");
             }
-
-            // Nếu cư dân là chủ hộ => hủy quyền chủ hộ
-            if (apartment.getOwner() != null && apartment.getOwner().getId().equals(resident.getId())) {
-                apartment.setOwner(null);
-                apartmentRepository.save(apartment); 
-            }
             resident.setApartment(null);
         }
 
         residentRepository.saveAll(residentsToUpdate);
+
+        return getApartmentDetail(apartmentId);
     }
 }
