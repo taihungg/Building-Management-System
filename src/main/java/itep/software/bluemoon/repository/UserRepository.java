@@ -9,5 +9,5 @@ import itep.software.bluemoon.entity.User;
 
 @Repository
 public interface UserRepository extends JpaRepository<User, UUID> {
-    boolean existsByPersonId(UUID id);
+    boolean existsByPersonId(UUID personId);
 }
