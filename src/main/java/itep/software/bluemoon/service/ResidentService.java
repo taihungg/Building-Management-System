@@ -11,11 +11,9 @@ import itep.software.bluemoon.entity.Apartment;
 import itep.software.bluemoon.entity.User;
 import itep.software.bluemoon.entity.person.Resident;
 import itep.software.bluemoon.enumeration.ResidentStatus;
-import itep.software.bluemoon.model.DTO.resident.ResidentAccountCreationDTO;
 import itep.software.bluemoon.model.DTO.resident.ResidentCreationDTO;
 import itep.software.bluemoon.model.DTO.resident.ResidentDetailDTO;
 import itep.software.bluemoon.model.DTO.resident.ResidentUpdateDTO;
-import itep.software.bluemoon.model.mapper.EntityToDto;
 import itep.software.bluemoon.model.projection.Dropdown;
 import itep.software.bluemoon.model.projection.ResidentSummary;
 import itep.software.bluemoon.repository.ApartmentRepository;
@@ -179,11 +177,11 @@ public class ResidentService {
     
     //tạo tài khoản user cho cư dân
     @SuppressWarnings("null")
-    public ResidentDetailDTO createAccountForResident(UUID residentId, ResidentAccountCreationDTO dto){
-        Resident resident = residentRepository.findById(residentId)
-                .orElseThrow(() -> new RuntimeException("Resident not found"));
+    public ResidentDetailDTO createAccountForResident(UUID id){
+        Resident resident = residentRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Resident not found: " + id));
 
-        if(resident.getAccount() != null){
+        if(userRepository.existsByPersonId(id)){
             throw new RuntimeException("Resident already has an account");
         }
 
@@ -191,16 +189,13 @@ public class ResidentService {
 
         User newAccount = User.builder()
                 .username(generatedUsername)
-                .email(dto.getEmail())
-                .phone(dto.getPhone())
                 .password("12345")
                 .createDate(LocalDate.now())
+                .person(resident)
                 .build();
 
-        User savedAccount = userRepository.save(newAccount);
-        resident.setAccount(savedAccount);
-        Resident savedResident = residentRepository.save(resident);
+        userRepository.save(newAccount);
         
-        return EntityToDto.residentToResidentDetailDto(savedResident);
+        return getResidentDetail(id);
     }
 }

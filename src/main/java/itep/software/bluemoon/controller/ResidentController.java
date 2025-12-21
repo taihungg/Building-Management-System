@@ -16,7 +16,6 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import itep.software.bluemoon.entity.person.Resident;
-import itep.software.bluemoon.model.DTO.resident.ResidentAccountCreationDTO;
 import itep.software.bluemoon.model.DTO.resident.ResidentCreationDTO;
 import itep.software.bluemoon.model.DTO.resident.ResidentDetailDTO;
 import itep.software.bluemoon.model.DTO.resident.ResidentUpdateDTO;
@@ -24,7 +23,6 @@ import itep.software.bluemoon.model.projection.Dropdown;
 import itep.software.bluemoon.model.projection.ResidentSummary;
 import itep.software.bluemoon.response.ApiResponse;
 import itep.software.bluemoon.service.ResidentService;
-import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
 @RestController
@@ -106,11 +104,8 @@ public class ResidentController {
     }
     
     @PostMapping("/{id}/account")
-    public ResponseEntity<Object> createAccountForResident(
-            @PathVariable UUID id, 
-            @RequestBody @Valid ResidentAccountCreationDTO request) {
-        
-        ResidentDetailDTO data = residentService.createAccountForResident(id, request);
+    public ResponseEntity<Object> createAccountForResident(@PathVariable UUID id) {
+        ResidentDetailDTO data = residentService.createAccountForResident(id);
         
         return ApiResponse.responseBuilder(
                 HttpStatus.CREATED,
