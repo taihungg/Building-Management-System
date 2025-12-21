@@ -17,10 +17,11 @@ public class ResidentDetailDTO {
     private UUID id;
     private String fullName;
     private String idCard;
+    private String email;
+    private String phone;
     private LocalDate dob;
     private String homeTown;
     private Integer roomNumber;
-    private String email;
-    private String phone;
+    private String building;
     private ResidentStatus status;
 }

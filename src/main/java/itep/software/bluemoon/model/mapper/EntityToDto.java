@@ -14,23 +14,6 @@ import itep.software.bluemoon.repository.InvoiceRepository;
 import java.util.List;
 
 public class EntityToDto {
-    public static ResidentDetailDTO residentToResidentDetailDto(Resident resident){
-        if (resident == null) {
-            return null;
-        }
-        return ResidentDetailDTO.builder()
-                .id(resident.getId())
-                .fullName(resident.getFullName())
-                .idCard(resident.getIdCard())
-                .dob(resident.getDob())
-                .homeTown(resident.getHomeTown())
-                .roomNumber(resident.getApartment() != null ? resident.getApartment().getRoomNumber() : null)
-                .email(resident.getEmail() != null ? resident.getEmail() : null)
-                .phone(resident.getPhone() != null ? resident.getPhone() : null)
-                .status(resident.getStatus())
-                .build();
-    }
-
     public static ApartmentDetailDTO apartmentToApartmentDetailDto(Apartment apartment, ResidentRepository residentRepository, InvoiceRepository invoiceRepository){
         ApartmentDetailDTO.ApartmentInfoDTO info = ApartmentDetailDTO.ApartmentInfoDTO.builder()
                 .roomNumber(apartment.getRoomNumber())

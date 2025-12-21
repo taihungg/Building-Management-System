@@ -46,12 +46,32 @@ public class ResidentService {
         return residentRepository.searchGeneral(keyword.trim(), includeInactive);
     }
 
-    @SuppressWarnings("null")
-    public ResidentDetailDTO getResidentDetail(UUID id){
-        Resident resident = residentRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Resident not found"));
+    public ResidentDetailDTO getResidentDetail(UUID id) {
+        Resident resident = residentRepository.findResidentWithDetails(id)
+                .orElseThrow(() -> new IllegalArgumentException("Resident not found!"));
 
-        return EntityToDto.residentToResidentDetailDto(resident);
+        Integer roomNumber = null;
+        String buildingName = null;
+
+        if (resident.getApartment() != null) {
+            roomNumber = resident.getApartment().getRoomNumber();
+            if (resident.getApartment().getBuilding() != null) {
+                buildingName = resident.getApartment().getBuilding().getName();
+            }
+        }
+
+        return ResidentDetailDTO.builder()
+                .id(resident.getId())
+                .fullName(resident.getFullName())
+                .idCard(resident.getIdCard())
+                .email(resident.getEmail())
+                .phone(resident.getPhone())
+                .dob(resident.getDob())
+                .homeTown(resident.getHomeTown())
+                .status(resident.getStatus())
+                .roomNumber(roomNumber)
+                .building(buildingName)
+                .build();
     }
 
     @SuppressWarnings("null")
