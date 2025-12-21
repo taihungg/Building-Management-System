@@ -5,28 +5,27 @@ import java.time.LocalDate;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
-import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import lombok.experimental.SuperBuilder;
 
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
+@SuperBuilder
 @Entity
 @Table(name = "staff")
+@PrimaryKeyJoinColumn(name = "id")
 public class Staff extends Person {
     @Column(name = "hire_date")
     @JsonFormat(pattern = "yyyy-MM-dd")
     private LocalDate hireDate;
 
-    @Column(name = "salary", precision = 19, scale = 0)
+    @Column(name = "salary", precision = 19, scale = 2)
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "#,##0.00")
     private BigDecimal salary;
 }
