@@ -1,5 +1,7 @@
 package itep.software.bluemoon.model.DTO.apartment;
 
+import java.math.BigDecimal;
+
 import lombok.*;
 
 import java.util.UUID;
@@ -11,7 +13,7 @@ import java.util.UUID;
 public class ApartmentCreationDTO {
     private Integer roomNumber;
     private Integer floor;
-    private Double area;
+    private BigDecimal area;
     private UUID buildingId;
     private UUID ownerId;
 }
