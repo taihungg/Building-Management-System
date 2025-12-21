@@ -6,6 +6,7 @@ import java.util.UUID;
 
 import itep.software.bluemoon.entity.Building;
 import itep.software.bluemoon.entity.person.Resident;
+import itep.software.bluemoon.enumeration.InvoiceStatus;
 import itep.software.bluemoon.model.DTO.apartment.ApartmentCreationDTO;
 import itep.software.bluemoon.model.DTO.apartment.ApartmentResidentUpdateDTO;
 import itep.software.bluemoon.model.mapper.EntityToDto;
@@ -39,13 +40,7 @@ public class ApartmentService {
     }
 
     public List<ApartmentSummary> searchByAllInformation(String keyword, UUID buildingId, Integer floor){
-        keyword = keyword != null && !keyword.isBlank() ? keyword.trim() : null;
-
-        if(keyword != null || buildingId != null || floor != null) {
-            return apartmentRepository.searchGeneral(keyword, buildingId, floor);
-        } else {
-            return apartmentRepository.findAllSummary();
-        }
+        return apartmentRepository.searchGeneral(keyword.trim(), buildingId, floor);
     }
 
     @SuppressWarnings("null")
@@ -53,7 +48,41 @@ public class ApartmentService {
         Apartment apartment = apartmentRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Apartment not found!"));
 
-        return EntityToDto.apartmentToApartmentDetailDto(apartment, residentRepository, invoiceRepository);
+        ApartmentDetailDTO.ApartmentInfoDTO info = ApartmentDetailDTO.ApartmentInfoDTO.builder()
+                .roomNumber(apartment.getRoomNumber())
+                .floor(apartment.getFloor())
+                .area(apartment.getArea())
+                .buildingName(apartment.getBuilding().getName())
+                .numberOfResidents(residentRepository.countByApartment_Id(id))
+                .build();
+
+        ApartmentDetailDTO.OwnerInfoDTO owner = ApartmentDetailDTO.OwnerInfoDTO.builder()
+                .id(apartment.getOwner().getId())
+                .fullName(apartment.getOwner().getFullName())
+                .phone(apartment.getOwner().getPhone())
+                .email(apartment.getOwner().getEmail())
+                .build();
+
+        List<ResidentSummary> residents = residentRepository.findByApartment_Id(apartment.getId());
+
+        int unpaidInvoicesCount = invoiceRepository.countByApartment_IdAndStatusIn(apartment.getId(), List.of(
+                InvoiceStatus.UNPAID,
+                InvoiceStatus.PARTIAL,
+                InvoiceStatus.OVERDUE
+        ));
+        ApartmentDetailDTO.SummaryDTO summary = ApartmentDetailDTO.SummaryDTO.builder()
+                .unpaidInvoicesCount(unpaidInvoicesCount)
+                .pendingIssuesCount(unpaidInvoicesCount)
+                .vehicleCount(unpaidInvoicesCount)
+                .build();
+
+        return ApartmentDetailDTO.builder()
+                .id(apartment.getId())
+                .info(info)
+                .owner(owner)
+                .residents(residents)
+                .summary(summary)
+                .build();
     }
 
     public Apartment createResident(ApartmentCreationDTO dto){
