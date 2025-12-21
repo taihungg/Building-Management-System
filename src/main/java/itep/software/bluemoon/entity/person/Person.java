@@ -5,16 +5,7 @@ import java.util.UUID;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 
-import itep.software.bluemoon.entity.User;
-import jakarta.persistence.CascadeType;
-import jakarta.persistence.Column;
-import jakarta.persistence.FetchType;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.MappedSuperclass;
-import jakarta.persistence.OneToOne;
+import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -25,8 +16,10 @@ import lombok.experimental.SuperBuilder;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@MappedSuperclass
 @SuperBuilder
+@Entity
+@Table(name = "person")
+@Inheritance(strategy = InheritanceType.JOINED)
 public abstract class Person {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
@@ -38,20 +31,22 @@ public abstract class Person {
     )
     private UUID id;
 
-    @Column(name = "full_name", nullable = false)
+    @Column(name = "full_name", nullable = false, length = 50)
     private String fullName;
 
-    @Column(name = "id_card", unique = true)
+    @Column(name = "id_card", unique = true, length = 14)
     private String idCard;
+
+    @Column(name = "email", unique = true, length = 100)
+    private String email;
+
+    @Column(name = "phone", unique = true, length = 10)
+    private String phone;
 
     @Column(name = "dob")
     @JsonFormat(pattern = "yyyy-MM-dd")
     private LocalDate dob;
 
-    @Column(name = "home_town")
+    @Column(name = "home_town", length = 150)
     private String homeTown;
-
-    @OneToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
-    @JoinColumn(name = "account_id", referencedColumnName = "id", unique = true)
-    private User account;
 }

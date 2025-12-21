@@ -1,11 +1,13 @@
 package itep.software.bluemoon.repository;
 
-import itep.software.bluemoon.entity.User;
+import java.util.UUID;
+
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
-import java.util.UUID;
+import itep.software.bluemoon.entity.User;
 
 @Repository
 public interface UserRepository extends JpaRepository<User, UUID> {
+    boolean existsByPersonId(UUID id);
 }
