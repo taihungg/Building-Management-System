@@ -8,7 +8,7 @@ public interface ResidentSummary {
     UUID getId();
     String getFullName();
     String getEmail();
-    String getPhoneNumber();
+    String getPhone();
     Integer getRoomNumber();
     ResidentStatus getStatus();
 }

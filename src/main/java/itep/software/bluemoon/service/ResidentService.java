@@ -41,11 +41,7 @@ public class ResidentService {
     }
 
     public List<ResidentSummary> searchByAllInformation(String keyword, boolean includeInactive){
-        if (keyword != null && !keyword.isBlank()) {
-            return residentRepository.searchGeneral(keyword.trim(), includeInactive);
-        } else {
-            return residentRepository.findAllSummary();
-        }
+        return residentRepository.searchGeneral(keyword.trim(), includeInactive);
     }
 
     @SuppressWarnings("null")
