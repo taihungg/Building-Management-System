@@ -1,22 +1,22 @@
 package itep.software.bluemoon.service;
 
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
-import java.time.LocalDate;
 
-import itep.software.bluemoon.model.projection.Dropdown;
 import org.springframework.stereotype.Service;
 
 import itep.software.bluemoon.entity.Apartment;
 import itep.software.bluemoon.entity.User;
 import itep.software.bluemoon.entity.person.Resident;
 import itep.software.bluemoon.enumeration.ResidentStatus;
+import itep.software.bluemoon.model.DTO.resident.ResidentAccountCreationDTO;
 import itep.software.bluemoon.model.DTO.resident.ResidentCreationDTO;
 import itep.software.bluemoon.model.DTO.resident.ResidentDetailDTO;
-import itep.software.bluemoon.model.DTO.resident.ResidentAccountCreationDTO;
 import itep.software.bluemoon.model.DTO.resident.ResidentUpdateDTO;
 import itep.software.bluemoon.model.mapper.EntityToDto;
+import itep.software.bluemoon.model.projection.Dropdown;
 import itep.software.bluemoon.model.projection.ResidentSummary;
 import itep.software.bluemoon.repository.ApartmentRepository;
 import itep.software.bluemoon.repository.PersonRepository;
@@ -87,25 +87,43 @@ public class ResidentService {
     }
 
     @SuppressWarnings("null")
-    public Resident updateResident(UUID id, ResidentUpdateDTO dto){
-        Resident exsistResident = residentRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Resident not found"));
+    public Resident updateResident(UUID id, ResidentUpdateDTO dto) {
+        Resident resident = residentRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Resident not found: " + id));
 
-        if(dto.getFullName() != null) exsistResident.setFullName(dto.getFullName());
-        if(dto.getIdCard() != null) exsistResident.setIdCard(dto.getIdCard());
-        if(dto.getDob() != null) exsistResident.setDob(dto.getDob());
-        if(dto.getHomeTown() != null) exsistResident.setHomeTown(dto.getHomeTown());
-
-        String phone = dto.getPhone();
-        String email = dto.getEmail();
-        if(phone != null && email != null){
-            User userAccount = exsistResident.getAccount();
-            if(userAccount == null) throw new RuntimeException("Resident don't have account");
-            userAccount.setPhone(dto.getPhone());
-            userAccount.setEmail(dto.getEmail());
+        if (dto.getIdCard() != null && !dto.getIdCard().equals(resident.getIdCard())) {
+            if (personRepository.existsByIdCard(dto.getIdCard())) {
+                throw new IllegalArgumentException("ID Card is used by other people: " + dto.getIdCard());
+            }
+            resident.setIdCard(dto.getIdCard());
         }
 
-        return residentRepository.save(exsistResident);
+        if (dto.getEmail() != null && !dto.getEmail().equals(resident.getEmail())) {
+            if (personRepository.existsByEmail(dto.getEmail())) {
+                throw new IllegalArgumentException("Email is used by other people: " + dto.getEmail());
+            }
+            resident.setEmail(dto.getEmail());
+        }
+
+        if (dto.getPhone() != null && !dto.getPhone().equals(resident.getPhone())) {
+            if (personRepository.existsByPhone(dto.getPhone())) {
+                throw new IllegalArgumentException("Phone is used by other people: " + dto.getPhone());
+            }
+            resident.setPhone(dto.getPhone());
+        }
+
+        resident.setFullName(dto.getFullName());
+        resident.setDob(dto.getDob());
+        resident.setHomeTown(dto.getHomeTown());
+        
+        if (dto.getStatus() != null) {
+            if (dto.getStatus().equals(ResidentStatus.INACTIVE)) {
+                throw new IllegalArgumentException("Can not change status to INACTIVE");
+            }
+            resident.setStatus(dto.getStatus());
+        }
+
+        return residentRepository.save(resident);
     }
 
     @SuppressWarnings("null")
