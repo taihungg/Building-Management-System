@@ -2,9 +2,7 @@ package itep.software.bluemoon.controller;
 
 import java.util.List;
 import java.util.UUID;
-import jakarta.validation.Valid;
 
-import itep.software.bluemoon.model.projection.Dropdown;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -18,14 +16,16 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import itep.software.bluemoon.entity.person.Resident;
+import itep.software.bluemoon.model.DTO.resident.ResidentAccountCreationDTO;
 import itep.software.bluemoon.model.DTO.resident.ResidentCreationDTO;
 import itep.software.bluemoon.model.DTO.resident.ResidentDetailDTO;
 import itep.software.bluemoon.model.DTO.resident.ResidentUpdateDTO;
-import itep.software.bluemoon.model.DTO.resident.ResidentAccountCreationDTO;
 import itep.software.bluemoon.model.mapper.EntityToDto;
+import itep.software.bluemoon.model.projection.Dropdown;
 import itep.software.bluemoon.model.projection.ResidentSummary;
 import itep.software.bluemoon.response.ApiResponse;
 import itep.software.bluemoon.service.ResidentService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
 @RestController
@@ -93,8 +93,6 @@ public class ResidentController {
         );
     }
 
-
-    // Nếu Resident chưa có account, không được truyền email, phone
     @DeleteMapping
     public ResponseEntity<Object> deleteResident(@RequestParam(value = "id", required = true) UUID id,
                                @RequestParam(value = "hard" /* true nếu muốn vĩnh viễn */, defaultValue = "false") boolean hardDelete){

@@ -134,14 +134,13 @@ public class ResidentService {
         existResident.setStatus(ResidentStatus.INACTIVE);
 
         if (existResident.getApartment() != null) {
-            existResident.getApartment().getResidents().remove(existResident);
             existResident.setApartment(null);
         }
 
         residentRepository.save(existResident);
     }
 
-    //WARNING: this method will clear all relative information
+    //WARNING: hàm này sẽ xóa toàn bộ dữ liệu liên quan tới resident trong dtb, hạn chế dùng
     @SuppressWarnings("null")
     public void deleteResident(UUID id){
         residentRepository.deleteById(id);
