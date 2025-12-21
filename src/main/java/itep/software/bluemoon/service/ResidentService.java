@@ -134,9 +134,17 @@ public class ResidentService {
             resident.setPhone(dto.getPhone());
         }
 
-        resident.setFullName(dto.getFullName());
-        resident.setDob(dto.getDob());
-        resident.setHomeTown(dto.getHomeTown());
+        if(dto.getFullName() != null) {
+            resident.setFullName(dto.getFullName());
+        }
+
+        if(dto.getDob() != null) {
+            resident.setDob(dto.getDob());
+        }
+
+        if(dto.getHomeTown() != null) {
+            resident.setHomeTown(dto.getHomeTown());
+        }
         
         if (dto.getStatus() != null) {
             if (dto.getStatus().equals(ResidentStatus.INACTIVE)) {
@@ -148,7 +156,7 @@ public class ResidentService {
         if (dto.getApartmentId() != null){
             Apartment apartment = apartmentRepository.findById(dto.getApartmentId())
                 .orElseThrow(() -> new IllegalArgumentException("Apartment not found: " + dto.getApartmentId()));
-            if(dto.getStatus().equals(ResidentStatus.INACTIVE) || resident.getStatus().equals(ResidentStatus.INACTIVE)) {
+            if(resident.getStatus().equals(ResidentStatus.INACTIVE)) {
                 throw new IllegalArgumentException("Can not change apartment of inactive resident!");
             }
             resident.setApartment(apartment);
