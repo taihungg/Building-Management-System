@@ -24,4 +24,5 @@ public class ResidentDetailDTO {
     private Integer roomNumber;
     private String building;
     private ResidentStatus status;
+    private boolean hasAccount;
 }

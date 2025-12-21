@@ -52,6 +52,7 @@ public class ResidentService {
 
         Integer roomNumber = null;
         String buildingName = null;
+        boolean hasAccount = userRepository.existsByPersonId(id);
 
         if (resident.getApartment() != null) {
             roomNumber = resident.getApartment().getRoomNumber();
@@ -71,6 +72,7 @@ public class ResidentService {
                 .status(resident.getStatus())
                 .roomNumber(roomNumber)
                 .building(buildingName)
+                .hasAccount(hasAccount)
                 .build();
     }
 
@@ -175,7 +177,7 @@ public class ResidentService {
         residentRepository.deleteById(id);
     }
     
-    //tạo tk
+    //tạo tài khoản user cho cư dân
     @SuppressWarnings("null")
     public ResidentDetailDTO createAccountForResident(UUID residentId, ResidentAccountCreationDTO dto){
         Resident resident = residentRepository.findById(residentId)
