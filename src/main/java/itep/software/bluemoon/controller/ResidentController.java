@@ -15,7 +15,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import itep.software.bluemoon.entity.person.Resident;
 import itep.software.bluemoon.model.DTO.resident.ResidentCreationDTO;
 import itep.software.bluemoon.model.DTO.resident.ResidentDetailDTO;
 import itep.software.bluemoon.model.DTO.resident.ResidentUpdateDTO;
@@ -66,7 +65,7 @@ public class ResidentController {
 
     @PostMapping
     public ResponseEntity<Object> createResident(@RequestBody ResidentCreationDTO request){
-        Resident data = residentService.createResident(request);
+        ResidentDetailDTO data = residentService.createResident(request);
 
         return ApiResponse.responseBuilder(
                 HttpStatus.CREATED,
@@ -76,14 +75,13 @@ public class ResidentController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<Object> updateResident(
-            @PathVariable UUID id,
-            @RequestBody ResidentUpdateDTO request) {
+    public ResponseEntity<Object> updateResident(@PathVariable UUID id, @RequestBody ResidentUpdateDTO request) {
+        ResidentDetailDTO data = residentService.updateResident(id, request);
 
         return ApiResponse.responseBuilder(
                 HttpStatus.OK,
                 "Update resident successfully!",
-                null
+                data
         );
     }
 

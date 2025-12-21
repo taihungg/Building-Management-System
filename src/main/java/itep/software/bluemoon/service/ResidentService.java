@@ -75,7 +75,7 @@ public class ResidentService {
     }
 
     @SuppressWarnings("null")
-    public Resident createResident(ResidentCreationDTO dto){
+    public ResidentDetailDTO createResident(ResidentCreationDTO dto){
         if (personRepository.existsByIdCard(dto.getIdCard())) {
             throw new IllegalArgumentException("ID Card exists: " + dto.getIdCard());
         }
@@ -92,7 +92,7 @@ public class ResidentService {
                     .orElseThrow(() -> new IllegalArgumentException("Apartment not found: " + dto.getApartmentID()));
         }
         
-        return residentRepository.save(
+        Resident newResident = residentRepository.save(
                 Resident.builder()
                 .fullName(dto.getFullName())
                 .idCard(dto.getIdCard())
@@ -104,10 +104,12 @@ public class ResidentService {
                 .apartment(apartment)
                 .build()
         );
+
+        return getResidentDetail(newResident.getId());
     }
 
     @SuppressWarnings("null")
-    public Resident updateResident(UUID id, ResidentUpdateDTO dto) {
+    public ResidentDetailDTO updateResident(UUID id, ResidentUpdateDTO dto) {
         Resident resident = residentRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Resident not found: " + id));
 
@@ -152,7 +154,9 @@ public class ResidentService {
             resident.setApartment(apartment);
         }
 
-        return residentRepository.save(resident);
+        residentRepository.save(resident);
+
+        return getResidentDetail(id);
     }
 
     @SuppressWarnings("null")
