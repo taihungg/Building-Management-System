@@ -19,6 +19,7 @@ import itep.software.bluemoon.model.DTO.resident.ResidentUpdateDTO;
 import itep.software.bluemoon.model.mapper.EntityToDto;
 import itep.software.bluemoon.model.projection.ResidentSummary;
 import itep.software.bluemoon.repository.ApartmentRepository;
+import itep.software.bluemoon.repository.PersonRepository;
 import itep.software.bluemoon.repository.ResidentRepository;
 import itep.software.bluemoon.repository.UserRepository;
 import jakarta.transaction.Transactional;
@@ -28,6 +29,7 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 @Transactional
 public class ResidentService {
+    private final PersonRepository personRepository;
     private final ResidentRepository residentRepository;
     private final ApartmentRepository apartmentRepository;
     private final UserRepository userRepository;
@@ -54,15 +56,31 @@ public class ResidentService {
 
     @SuppressWarnings("null")
     public Resident createResident(ResidentCreationDTO dto){
-        Apartment apartment = apartmentRepository.findById(dto.getApartmentID())
-                .orElseThrow(() -> new RuntimeException("Apartment not found"));
+        if (personRepository.existsByIdCard(dto.getIdCard())) {
+            throw new IllegalArgumentException("ID Card exists: " + dto.getIdCard());
+        }
+        if (dto.getEmail() != null && personRepository.existsByEmail(dto.getEmail())) {
+            throw new IllegalArgumentException("Email exists: " + dto.getEmail());
+        }
+        if (dto.getPhone() != null && personRepository.existsByPhone(dto.getPhone())) {
+            throw new IllegalArgumentException("Phone exists: " + dto.getPhone());
+        }
 
+        Apartment apartment = null;
+        if (dto.getApartmentID() != null) {
+            apartment = apartmentRepository.findById(dto.getApartmentID())
+                    .orElseThrow(() -> new IllegalArgumentException("Apartment not found: " + dto.getApartmentID()));
+        }
+        
         return residentRepository.save(
                 Resident.builder()
                 .fullName(dto.getFullName())
                 .idCard(dto.getIdCard())
+                .email(dto.getEmail())
+                .phone(dto.getPhone())
                 .dob(dto.getDob())
                 .homeTown(dto.getHomeTown())
+                .status(dto.getStatus())
                 .apartment(apartment)
                 .build()
         );
