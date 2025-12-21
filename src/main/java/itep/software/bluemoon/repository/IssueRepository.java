@@ -3,12 +3,14 @@ package itep.software.bluemoon.repository;
 import itep.software.bluemoon.entity.Issue;
 import itep.software.bluemoon.model.projection.IssueSummary;
 import org.springframework.data.jpa.repository.JpaRepository;
+
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
 import java.util.UUID;
 import java.util.List;
 
+import itep.software.bluemoon.enumeration.IssueStatus;
 @Repository
 public interface IssueRepository extends JpaRepository<Issue, UUID> {
     boolean existsByApartment_Id(UUID apartmentId);
@@ -25,5 +27,7 @@ public interface IssueRepository extends JpaRepository<Issue, UUID> {
             JOIN i.apartment a
             JOIN i.reporter r
             """)
-        List<IssueSummary> findAllIssueSummaries();
+    List<IssueSummary> findAllIssueSummaries();
+
+    int countByApartment_IdAndStatusIn(UUID apartmentID, List<IssueStatus> statuses);
 }

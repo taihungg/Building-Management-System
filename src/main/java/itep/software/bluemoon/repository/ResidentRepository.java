@@ -52,7 +52,7 @@ public interface ResidentRepository extends JpaRepository<Resident, UUID> {
 
     @Query("SELECT r.id AS id, " +
         "r.fullName AS fullName, " +
-        "u.phone AS phoneNumber, " +
+        "u.phone AS phone, " +
         "u.email AS email, " +
         "a.roomNumber AS roomNumber, " +
         "r.status AS status " +
@@ -63,4 +63,6 @@ public interface ResidentRepository extends JpaRepository<Resident, UUID> {
     List<ResidentSummary> findByApartment_Id(@Param("apartmentId") UUID apartmentId);
 
     boolean existsByApartment_Id(UUID apartmentId);
+
+    int countByApartment_Id(UUID apartmentId);
 }

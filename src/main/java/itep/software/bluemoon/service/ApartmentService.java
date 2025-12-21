@@ -12,9 +12,12 @@ import itep.software.bluemoon.model.DTO.apartment.ApartmentResidentUpdateDTO;
 import itep.software.bluemoon.model.mapper.EntityToDto;
 import itep.software.bluemoon.model.projection.ResidentSummary;
 import itep.software.bluemoon.repository.*;
+
 import org.springframework.stereotype.Service;
 
 import itep.software.bluemoon.entity.Apartment;
+import itep.software.bluemoon.entity.Issue;
+import itep.software.bluemoon.enumeration.IssueStatus;
 import itep.software.bluemoon.model.DTO.apartment.ApartmentDetailDTO;
 import itep.software.bluemoon.model.projection.Dropdown;
 import itep.software.bluemoon.model.projection.ApartmentSummary;
@@ -30,6 +33,7 @@ public class ApartmentService {
     private final BuildingRepository buildingRepository;
     private final InvoiceRepository invoiceRepository;
     private final IssueRepository issueRepository;
+    private final VehicleRepository vehicleRepository;
 
     public List<Dropdown> searchApartmentDropdown(String keyword){
         if(keyword == null || keyword.isBlank()) {
@@ -63,17 +67,25 @@ public class ApartmentService {
                 .email(apartment.getOwner().getEmail())
                 .build();
 
-        List<ResidentSummary> residents = residentRepository.findByApartment_Id(apartment.getId());
+        List<ResidentSummary> residents = residentRepository.findByApartment_Id(id);
 
-        int unpaidInvoicesCount = invoiceRepository.countByApartment_IdAndStatusIn(apartment.getId(), List.of(
+        int unpaidInvoicesCount = invoiceRepository.countByApartment_IdAndStatusIn(id, List.of(
                 InvoiceStatus.UNPAID,
                 InvoiceStatus.PARTIAL,
                 InvoiceStatus.OVERDUE
         ));
+
+        int vehicleCount = vehicleRepository.countByOwner_Apartment_Id(id);
+
+        int pendingIssuesCount = issueRepository.countByApartment_IdAndStatusIn(id, List.of(
+                IssueStatus.PROCESSING,
+                IssueStatus.UNPROCESSED
+        ));
+
         ApartmentDetailDTO.SummaryDTO summary = ApartmentDetailDTO.SummaryDTO.builder()
                 .unpaidInvoicesCount(unpaidInvoicesCount)
-                .pendingIssuesCount(unpaidInvoicesCount)
-                .vehicleCount(unpaidInvoicesCount)
+                .vehicleCount(vehicleCount)
+                .pendingIssuesCount(pendingIssuesCount)
                 .build();
 
         return ApartmentDetailDTO.builder()
