@@ -6,7 +6,7 @@ import * as XLSX from 'xlsx';
 // Interface cho dữ liệu từ Excel
 interface UsageData {
   apartmentNumber: string;
-  residentName?: string;
+    residentName?: string;
   electricity?: number;
   water?: number;
   otherServices?: number;
@@ -19,7 +19,7 @@ export function InvoiceCreation() {
   const [uploadedData, setUploadedData] = useState<UsageData[]>([]);
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-
+  
   // State cho Data Preview Table
   const [tableData, setTableData] = useState<any[]>([]);
   const [isDataLoaded, setIsDataLoaded] = useState<boolean>(false);
@@ -132,7 +132,7 @@ export function InvoiceCreation() {
       } catch (error) {
         console.error("Lỗi xuất dữ liệu:", error);
         toast.error("Lỗi xuất dữ liệu", { description: "Không thể xuất file. Vui lòng thử lại." });
-      }
+    }
       return;
     }
 
@@ -185,16 +185,16 @@ export function InvoiceCreation() {
   const handleSave = async () => {
     if (!isDataLoaded || tableData.length === 0) {
       toast.error("Vui lòng upload file trước", { description: "Chưa có dữ liệu để lưu" });
-      return;
+        return;
     }
-
+      
     if (isSaved) {
       toast.info("Dữ liệu đã được lưu", { description: "Dữ liệu này đã được lưu trước đó" });
       return;
     }
 
     setIsSaving(true);
-    
+
     try {
       // Mock save - Log to console to simulate API call
       console.log('Saving data to Database:', tableData);
@@ -222,13 +222,13 @@ export function InvoiceCreation() {
     if (uploadedData.length === 0) return [];
     return Object.keys(uploadedData[0]);
   };
-
+  
   const formatCurrency = (amount: number | undefined) => {
     if (amount === undefined || amount === null) return '-';
-    return new Intl.NumberFormat('vi-VN', {
-      style: 'currency',
-      currency: 'VND',
-      maximumFractionDigits: 0
+    return new Intl.NumberFormat('vi-VN', { 
+        style: 'currency', 
+        currency: 'VND',
+        maximumFractionDigits: 0 
     }).format(amount);
   };
 
@@ -331,7 +331,7 @@ export function InvoiceCreation() {
             {summaryStats.totalWater > 0 ? summaryStats.totalWater.toLocaleString('vi-VN') : '-'}
           </p>
         </div>
-
+        
         {/* Card 4: Trạng thái - Emerald theme */}
         <div className="rounded-xl p-4 shadow-sm" style={{ backgroundColor: '#ecfdf5', border: '2px solid #a7f3d0' }}>
           <div className="flex items-center justify-between mb-2">
@@ -358,7 +358,7 @@ export function InvoiceCreation() {
               </span>
             )}
           </div>
-
+          
           {/* Right: Action Buttons */}
           <div className="flex items-center gap-3">
             {/* Hidden file input - Completely hidden */}
@@ -405,7 +405,7 @@ export function InvoiceCreation() {
             </button>
 
             {/* Lưu Button - Save Action */}
-            <button
+          <button
               onClick={handleSave}
               disabled={!isDataLoaded || isUploading || isSaved}
               className={`h-10 flex items-center gap-2 px-6 py-2 rounded-lg font-medium transition-all shadow-sm active:scale-95 ${
@@ -413,7 +413,7 @@ export function InvoiceCreation() {
                   ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
                   : 'bg-blue-600 text-white hover:bg-blue-700'
               }`}
-            >
+          >
               {isSaving ? (
                 <>
                   <Loader2 className="w-4 h-4 animate-spin" />
@@ -424,15 +424,15 @@ export function InvoiceCreation() {
                   <CheckCircle2 className="w-4 h-4" />
                   <span>Đã lưu</span>
                 </>
-              ) : (
+            ) : (
                 <>
                   <Save className="w-4 h-4" />
                   <span>Lưu</span>
                 </>
-              )}
-            </button>
-          </div>
+            )}
+          </button>
         </div>
+      </div>
 
         {/* Data Preview Table Section - Only render when data exists */}
         {tableData.length > 0 && (
@@ -484,22 +484,22 @@ export function InvoiceCreation() {
                                                 colLower.includes('tiền') || 
                                                 colLower.includes('cost') || 
                                                 colLower.includes('price');
-                        return (
+            return (
                           <td
                             key={colIdx}
                             className="px-4 py-3 text-sm text-gray-900 border-b border-gray-100"
                           >
                             {isNumber && isCurrencyField ? formatCurrency(value) : value}
                           </td>
-                        );
-                      })}
+            );
+          })}
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
-          </div>
-        )}
+            </div>
+          )}
 
       </div>
 

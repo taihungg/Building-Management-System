@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Menu, Search, Clock, LogOut, User, Settings } from 'lucide-react'; // Import Clock icon
 import { useNavigate } from 'react-router-dom';
+import { getCurrentPeriod } from '../utils/timeUtils';
 
 interface AuthorityHeaderProps {
   onMenuClick: () => void;
@@ -24,6 +25,7 @@ export function AuthorityHeader({ onMenuClick, onLogout }: AuthorityHeaderProps)
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [currentTime, setCurrentTime] = useState(formatTimeAndDate(new Date())); // State mới cho thời gian
   const profileRef = useRef<HTMLDivElement>(null);
+  const currentPeriod = getCurrentPeriod();
 
   useEffect(() => {
     // 1. Logic Click Outside
@@ -75,7 +77,7 @@ export function AuthorityHeader({ onMenuClick, onLogout }: AuthorityHeaderProps)
             </div>
             <div className="text-left">
               <h1 className="text-xl text-gray-900 font-semibold">BuildingHub</h1>
-              <p className="text-xs text-gray-600">Cơ Quan Chức Năng</p>
+              <p className="text-xs text-gray-600">Quản lý Cư trú và an ninh</p>
             </div>
           </button>
         </div>
@@ -95,17 +97,18 @@ export function AuthorityHeader({ onMenuClick, onLogout }: AuthorityHeaderProps)
         {/* Right: Real-time Clock & Profile */}
         <div className="flex items-center gap-6"> 
             
-            {/* Real-time Clock Display */}
-            <div className="hidden sm:flex items-center gap-3 bg-gray-50 p-2.5 rounded-xl border border-gray-200">
-                <Clock className="w-5 h-5 text-blue-600 flex-shrink-0" />
-                <div className="text-sm">
-                    <p className="font-semibold text-gray-800 leading-tight">
-                        {currentTime.timeStr}
-                    </p>
-                    <p className="text-xs text-gray-500 leading-tight">
-                        {currentTime.dateStr}
-                    </p>
-                </div>
+            {/* Real-time Clock Display (match accounting header style) */}
+            <div className="hidden sm:flex items-center gap-3 bg-slate-100 px-6 py-2 rounded-full">
+              <Clock className="w-4 h-4 text-gray-600 flex-shrink-0" />
+              <div className="flex items-center gap-2">
+                <span className="font-mono font-semibold text-gray-800">
+                  {currentTime.timeStr}
+                </span>
+                <span className="text-gray-400">|</span>
+                <span className="text-sm text-gray-600">
+                  {currentPeriod} ({currentTime.dateStr})
+                </span>
+              </div>
             </div>
             
             {/* Profile Avatar with Dropdown */}
