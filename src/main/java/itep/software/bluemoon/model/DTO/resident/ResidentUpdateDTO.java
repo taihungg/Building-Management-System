@@ -1,6 +1,7 @@
 package itep.software.bluemoon.model.DTO.resident;
 
 import java.time.LocalDate;
+import java.util.UUID;
 
 import itep.software.bluemoon.enumeration.ResidentStatus;
 import lombok.Data;
@@ -14,4 +15,5 @@ public class ResidentUpdateDTO {
     private LocalDate dob;
     private String homeTown;
     private ResidentStatus status;
+    private UUID apartmentId;
 }

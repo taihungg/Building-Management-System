@@ -138,9 +138,18 @@ public class ResidentService {
         
         if (dto.getStatus() != null) {
             if (dto.getStatus().equals(ResidentStatus.INACTIVE)) {
-                throw new IllegalArgumentException("Can not change status to INACTIVE");
+                throw new IllegalArgumentException("Can not change status to INACTIVE!");
             }
             resident.setStatus(dto.getStatus());
+        }
+
+        if (dto.getApartmentId() != null){
+            Apartment apartment = apartmentRepository.findById(dto.getApartmentId())
+                .orElseThrow(() -> new IllegalArgumentException("Apartment not found: " + dto.getApartmentId()));
+            if(dto.getStatus().equals(ResidentStatus.INACTIVE) || resident.getStatus().equals(ResidentStatus.INACTIVE)) {
+                throw new IllegalArgumentException("Can not change apartment of inactive resident!");
+            }
+            resident.setApartment(apartment);
         }
 
         return residentRepository.save(resident);

@@ -20,7 +20,6 @@ import itep.software.bluemoon.model.DTO.resident.ResidentAccountCreationDTO;
 import itep.software.bluemoon.model.DTO.resident.ResidentCreationDTO;
 import itep.software.bluemoon.model.DTO.resident.ResidentDetailDTO;
 import itep.software.bluemoon.model.DTO.resident.ResidentUpdateDTO;
-import itep.software.bluemoon.model.mapper.EntityToDto;
 import itep.software.bluemoon.model.projection.Dropdown;
 import itep.software.bluemoon.model.projection.ResidentSummary;
 import itep.software.bluemoon.response.ApiResponse;
@@ -83,13 +82,10 @@ public class ResidentController {
             @PathVariable UUID id,
             @RequestBody ResidentUpdateDTO request) {
 
-        Resident resident = residentService.updateResident(id, request);
-        ResidentDetailDTO data = EntityToDto.residentToResidentDetailDto(resident);
-
         return ApiResponse.responseBuilder(
                 HttpStatus.OK,
                 "Update resident successfully!",
-                data
+                null
         );
     }
 
