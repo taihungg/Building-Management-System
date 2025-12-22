@@ -25,31 +25,14 @@ export function DebtManagement() {
     description: ''
   });
 
-  // Mock data for testing
-  const mockBills = [
-    {
-      id: 1,
-      apartmentLabel: 'P.1205',
-      totalAmount: 2500000,
-      paymentDate: '2025-02-15',
-      status: 'UNPAID',
-      createdTime: '2025-02-01T00:00:00'
-    },
-    {
-      id: 2,
-      apartmentLabel: 'P.1206',
-      totalAmount: 3200000,
-      paymentDate: '2025-02-20',
-      status: 'PAID',
-      createdTime: '2025-02-05T00:00:00'
-    }
-  ];
+ 
+ 
 
-  const [bills, setBills] = useState(mockBills);
+  const [bills, setBills] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   
   // Mặc định là 0 để hiển thị "Tất cả các tháng"
-  const [selectedMonth, setSelectedMonth] = useState(0); 
+  const [selectedMonth, setSelectedMonth] = useState(1); 
   const [selectedYear, setSelectedYear] = useState(currentDate.getFullYear());
 
   const [stats, setStats] = useState({
@@ -76,31 +59,20 @@ export function DebtManagement() {
       const res = await response.json();
       const data = res.data || [];
       
-      // Use API data if available, otherwise use mock data
-      if (data.length > 0) {
         setBills(data);
         calculateStats(data);
-      } else {
-        // Use mock data if API returns empty
-        setBills(mockBills);
-        calculateStats(mockBills);
-      }
+      
       
     } catch (error) {
       console.error("Lỗi tải hóa đơn:", error);
-      // Keep mock data on error instead of clearing
-      setBills(mockBills);
-      calculateStats(mockBills);
+     
     } finally {
       setIsLoading(false);
     }
   };
 
   useEffect(() => {
-    // Temporarily use mock data for testing
-    setBills(mockBills);
-    calculateStats(mockBills);
-    // fetchBills(); // Commented out for testing
+    fetchBills(); 
   }, [selectedMonth, selectedYear]); 
   
   const calculateStats = (data) => {
@@ -312,6 +284,7 @@ export function DebtManagement() {
             <thead>
               <tr className="border-b border-gray-100">
                 <th className="text-center px-6 py-3 text-gray-500 font-bold text-sm uppercase tracking-wider">Căn hộ</th>
+                <th className="text-center px-6 py-3 text-gray-500 font-bold text-sm uppercase tracking-wider">Ngày tạo hoá đơn</th>
                 <th className="text-center px-6 py-3 text-gray-500 font-bold text-sm uppercase tracking-wider">Ngày thanh toán</th>
                 <th className="text-center px-6 py-3 text-gray-500 font-bold text-sm uppercase tracking-wider">Số tiền</th>
                 <th className="text-center px-6 py-3 text-gray-500 font-bold text-sm uppercase tracking-wider">Trạng thái</th>
@@ -334,6 +307,14 @@ export function DebtManagement() {
                         {bill.apartmentLabel}
                       </span>
                     </td>
+                    <td className="px-6 py-4 text-center text-gray-700 text-sm align-middle">
+                      {bill.createdTime ? new Date(bill.createdTime).toLocaleString('vi-VN', {
+                        day: '2-digit',
+                        month: '2-digit',
+                        year: 'numeric',
+                      }) : "-"}
+                    </td>
+                    
                     <td className="px-6 py-4 text-center text-gray-700 text-sm align-middle">
                       {bill.status === 'PAID' && bill.paymentDate 
                         ? new Date(bill.paymentDate).toLocaleDateString('vi-VN') 
