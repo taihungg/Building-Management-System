@@ -1,30 +1,23 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { DollarSign, TrendingUp, TrendingDown, Receipt, FileText, AlertCircle, CheckCircle, Clock, AlertTriangle } from 'lucide-react';
+import { DollarSign, Receipt, AlertCircle, Clock } from 'lucide-react';
 import { BarChart, Bar, PieChart as RechartsPieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import { getBills, subscribe as subscribeBills, type Bill } from '../utils/bills'; // Đảm bảo type Bill đã được export nếu có
-import { getCurrentPeriod } from '../utils/timeUtils';
 import { toast } from 'sonner';
 
-
-const initialMonthlyData = Array.from({ length: 12 }, (_, i) => ({
-  month: `Tháng ${i + 1}`,
-  revenue: 0,
-  paid: 0,
-}));
-
+// Màu sắc cho Pie Chart (Giữ nguyên)
+const SERVICE_COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899'];
 
 export function AccountingDashboard() {
-  const [bills, setBills] = useState<any[]>([]); // Sử dụng any[] nếu không có type Bill
   const [isLoading, setIsLoading] = useState(false);
-  const [monthlyRevenueData, setMonthlyRevenueData] = useState(initialMonthlyData);
-  const [stats1, setStats1] = useState({
-    totalRevenue: 0,
-    pendingAmount: 0,
-    paidAmount: 0,
-    unpaidAmount: 0,
-    unpaidCount: 0,
-    pendingCount: 0,
-    paidCount: 0
+  
+  // 1. Logic State
+  const [selectedPieMonth, setSelectedPieMonth] = useState(new Date().getMonth() + 1);
+  const [monthlyRevenueData, setMonthlyRevenueData] = useState([]);
+  const [filteredBillStatusData, setFilteredBillStatusData] = useState([]);
+  const [metrics, setMetrics] = useState({
+    revenue: { totalAmount: 0, invoiceCount: 0 },
+    receivable: { totalAmount: 0, invoiceCount: 0 },
+    pending: { totalAmount: 0, invoiceCount: 0 },
+    totalInvoices: 0
   });
 
   const formatCurrency = (amount: number) => {
@@ -35,171 +28,112 @@ export function AccountingDashboard() {
     }).format(amount);
   };
 
-  /**
-   * Xử lý dữ liệu hóa đơn thô thành định dạng cho Bar Chart (Doanh thu theo tháng)
-   * @param data Dữ liệu hóa đơn từ API
-   * @returns Mảng dữ liệu đã nhóm theo tháng
-   */
-  const processMonthlyData = (data: any[]) => {
-    const monthlyMap: { [key: number]: { revenue: number, paid: number } } = {};
-
-    // Khởi tạo Map với 12 tháng
-    for (let i = 1; i <= 12; i++) {
-      monthlyMap[i] = { revenue: 0, paid: 0 };
-    }
-
-    data.forEach(bill => {
-      const createdDate = new Date(bill.createdTime);
-      const month = createdDate.getMonth() + 1; 
-
-      if (monthlyMap[month]) {
-        const amount = bill.totalAmount || 0;
-        monthlyMap[month].revenue += amount;
-
-        if (bill.status === 'PAID') {
-          monthlyMap[month].paid += amount;
-        }
-      }
-    });
-
-    // Chuyển Map thành mảng Recharts
-    const result = Object.keys(monthlyMap).map(key => {
-      const month = parseInt(key);
-      return {
-        month: `Tháng ${month}`,
-        revenue: monthlyMap[month].revenue,
-        paid: monthlyMap[month].paid
-      };
-    }).sort((a, b) => {
-      // Sắp xếp lại theo số tháng (từ 1 đến 12)
-      return parseInt(a.month.split(' ')[1]) - parseInt(b.month.split(' ')[1]);
-    });
-
-    return result;
-  };
-
-  const calculateStats = (data: any[]) => {
-    const initialStats = {
-      totalRevenue: 0,
-      pendingAmount: 0,
-      paidAmount: 0,
-      unpaidAmount: 0,
-      unpaidCount: 0,
-      pendingCount: 0,
-      paidCount: 0
-    };
-
-    const calculated = data.reduce((acc, bill) => {
-      const amount = bill.totalAmount || 0;
-
-      acc.totalRevenue += amount; // Tổng giá trị hóa đơn đã tạo
-
-      if (bill.status === 'PAID') {
-        acc.paidAmount += amount;
-        acc.paidCount += 1;
-      } else if (bill.status === 'PENDING') {
-        acc.pendingAmount += amount;
-        acc.pendingCount += 1;
-      } else { // UNPAID
-        acc.unpaidAmount += amount;
-        acc.unpaidCount += 1;
-      }
-
-      return acc;
-    }, initialStats);
-
-    setStats1(calculated);
-    setMonthlyRevenueData(processMonthlyData(data)); // **GỌI HÀM XỬ LÝ DỮ LIỆU THÁNG**
-  };
-
-
-  const fetchBills = async () => {
+  // Logic fetch dữ liệu tổng quát (Metrics và Bar Chart)
+  const fetchData = async () => {
     setIsLoading(true);
     try {
-      // Giả định lấy dữ liệu năm 2025
-      let url = `http://localhost:8081/api/v1/accounting/invoices?year=${new Date().getFullYear()}`; 
+      const year = new Date().getFullYear();
+      const [resMetrics, resBar] = await Promise.all([
+        fetch('http://localhost:8081/api/v1/accounting/dashboard/fourmetrics').then(r => r.json()),
+        fetch(`http://localhost:8081/api/v1/accounting/dashboard/barchart?year=${year}`).then(r => r.json()),
+      ]);
 
-      const response = await fetch(url);
-      if (!response.ok) throw new Error("Không thể tải dữ liệu hóa đơn");
+      if (resMetrics.statusCode === 200) setMetrics(resMetrics.data);
 
-      const res = await response.json();
-      const data = res.data || [];
-
-      setBills(data);
-      calculateStats(data); 
-      
+      if (resBar.statusCode === 200) {
+        const mappedBar = resBar.data.map((item: any) => ({
+          month: `Tháng ${item.month}`,
+          revenue: item.totalRevenue,
+          paid: item.paidRevenue
+        }));
+        setMonthlyRevenueData(mappedBar);
+      }
     } catch (error) {
-      console.error("Lỗi tải hóa đơn:", error);
-      toast.error("Lỗi tải dữ liệu", { description: (error as Error).message });
-      setBills([]);
-      setMonthlyRevenueData(initialMonthlyData);
+      console.error("Lỗi fetch dashboard:", error);
+      toast.error("Không thể cập nhật dữ liệu mới");
     } finally {
       setIsLoading(false);
     }
   };
 
+  // Logic fetch dữ liệu Pie Chart theo tháng
+  const fetchPieData = async (month: number) => {
+    try {
+      const year = new Date().getFullYear();
+      const response = await fetch(`http://localhost:8081/api/v1/accounting/dashboard/piechart?month=${month}&year=${year}`);
+      const res = await response.json();
+      
+      if (res.statusCode === 200) {
+        const mappedPie = res.data.map((item: any, index: number) => ({
+          name: item.serviceName,
+          value: item.totalAmount,
+          amount: item.totalAmount,
+          color: SERVICE_COLORS[index % SERVICE_COLORS.length]
+        }));
+        setFilteredBillStatusData(mappedPie);
+      } else {
+        setFilteredBillStatusData([]);
+      }
+    } catch (error) {
+      console.error("Lỗi fetch piechart:", error);
+      setFilteredBillStatusData([]);
+    }
+  };
 
   useEffect(() => {
-    fetchBills();
+    fetchData();
   }, []);
 
-  // Để xly pie chart
-  const billStatusData = [
-    { name: 'Đã thanh toán', value: stats1.paidCount, color: '#10B981', amount: stats1.paidAmount },
-    { name: 'Đang chờ xử lý', value: stats1.pendingCount, color: '#F59E0B', amount: stats1.pendingAmount },
-    { name: 'Chưa thanh toán', value: stats1.unpaidCount, color: '#EF4444', amount: stats1.unpaidAmount }, // Đổi màu sang đỏ để nổi bật hơn
-  ];
-  // Lọc bỏ các mục có value = 0 để Pie Chart không bị lỗi
-  const filteredBillStatusData = billStatusData.filter(item => item.value > 0);
+  useEffect(() => {
+    fetchPieData(selectedPieMonth);
+  }, [selectedPieMonth]);
 
   const stats = useMemo(() => ([
     { 
       label: 'Thực thu', 
-      value: formatCurrency(stats1.paidAmount), 
+      value: formatCurrency(metrics.revenue.totalAmount), 
       icon: DollarSign, 
       borderColor: 'border-green-500',
       iconBg: 'bg-green-50', 
       iconColor: 'text-green-600',
       valueColor: 'text-green-700',
-      billCount: stats1.paidCount, 
+      billCount: metrics.revenue.invoiceCount, 
       billCountLabel: 'Đã thanh toán'
     },
     { 
       label: 'Công nợ', 
-      value: formatCurrency(stats1.unpaidAmount), 
+      value: formatCurrency(metrics.receivable.totalAmount), 
       icon: Clock, 
       borderColor: 'border-red-500',
       iconBg: 'bg-red-50', 
       iconColor: 'text-red-600',
       valueColor: 'text-red-700',
-      billCount: stats1.unpaidCount, 
+      billCount: metrics.receivable.invoiceCount, 
       billCountLabel: 'Chưa thanh toán'
     },
     { 
       label: 'Chờ xác nhận', 
-      value: formatCurrency(stats1.pendingAmount),  
+      value: formatCurrency(metrics.pending.totalAmount),  
       icon: AlertCircle, 
       borderColor: 'border-amber-500',
       iconBg: 'bg-amber-50', 
       iconColor: 'text-amber-600',
       valueColor: 'text-amber-700',
-      billCount: stats1.pendingCount, 
+      billCount: metrics.pending.invoiceCount, 
       billCountLabel: 'Đang chờ xử lý'
     },
     { 
       label: 'Tổng hóa đơn', 
-      value: bills.length.toString(),  
+      value: metrics.totalInvoices.toString(),  
       icon: Receipt, 
       borderColor: 'border-blue-500',
       iconBg: 'bg-blue-50', 
       iconColor: 'text-blue-600',
       valueColor: 'text-blue-700',
-      billCount: bills.length, 
+      billCount: metrics.totalInvoices, 
       billCountLabel: 'Tổng số hoá đơn'
     },
-  ]), [stats1, bills.length]); // Sử dụng useMemo để tránh tính toán lại không cần thiết
-
-  const currentPeriod = getCurrentPeriod();
+  ]), [metrics]);
 
   return (
     <div className="space-y-6">
@@ -209,77 +143,46 @@ export function AccountingDashboard() {
         </div>
       </div>
 
-      {/* --- PHẦN 1: THẺ TÓM TẮT THỐNG KÊ --- */}
+      {/* Thẻ tóm tắt */}
       <div className="grid grid-cols-4 gap-4">
         {stats.map((stat, index) => {
           const Icon = stat.icon;
-          // Color themes matching InvoiceCreation page
           const colorThemes = [
-            // Card 1: Green/Emerald theme (like InvoiceCreation Card 4)
             { bg: '#ecfdf5', border: '#a7f3d0', text: '#047857' },
-            // Card 2: Red theme (custom for unpaid)
             { bg: '#fef2f2', border: '#fecaca', text: '#dc2626' },
-            // Card 3: Amber theme (like InvoiceCreation Card 2)
             { bg: '#fffbeb', border: '#fde68a', text: '#b45309' },
-            // Card 4: Blue theme (like InvoiceCreation Card 1)
             { bg: '#eff6ff', border: '#bfdbfe', text: '#1d4ed8' }
           ];
           const theme = colorThemes[index] || colorThemes[0];
           
           return (
-            <div 
-              key={stat.label} 
-              className="rounded-xl p-4 shadow-sm"
-              style={{ 
-                backgroundColor: theme.bg,
-                border: `2px solid ${theme.border}`
-              }}
-            >
+            <div key={stat.label} className="rounded-xl p-4 shadow-sm" style={{ backgroundColor: theme.bg, border: `2px solid ${theme.border}` }}>
               <div className="flex items-center justify-between mb-2">
-                <p className="text-xs font-medium tracking-wide" style={{ color: theme.text }}>
-                  {stat.label}
-                </p>
+                <p className="text-xs font-medium tracking-wide" style={{ color: theme.text }}>{stat.label}</p>
                 <Icon className="w-5 h-5" style={{ color: theme.text }} />
               </div>
-              <p 
-                className="text-2xl font-bold"
-                style={{ color: theme.text }}
-              >
-                {stat.value}
-              </p>
-              <p className="text-xs text-gray-400 mt-1">
-                {stat.billCount} hóa đơn {stat.billCountLabel}
-              </p>
+              <p className="text-2xl font-bold" style={{ color: theme.text }}>{stat.value}</p>
+              <p className="text-xs text-gray-400 mt-1">{stat.billCount} hóa đơn {stat.billCountLabel}</p>
             </div>
           );
         })}
       </div>
 
-      {/* --- PHẦN 2: BIỂU ĐỒ (BAR CHART & PIE CHART) --- */}
       <div className="grid grid-cols-3 gap-6">
-        {/* BAR CHART: Doanh Thu & Thanh Toán Theo Tháng */}
+        {/* Bar Chart */}
         <div className="col-span-2 bg-white rounded-xl p-6 border border-gray-200 shadow-sm">
           <h3 className="text-lg font-bold text-gray-900 mb-4">Thực thu theo tháng</h3>
           {isLoading ? (
-            <div className="flex justify-center items-center h-[280px]">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-            </div>
+            <div className="flex justify-center items-center h-[280px]"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div></div>
           ) : (
             <div style={{ width: '100%', height: '280px' }}>
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={monthlyRevenueData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
                   <XAxis dataKey="month" stroke="#6b7280" />
-                  <YAxis 
-                    stroke="#6b7280" 
-                    tickFormatter={(value: number) => value >= 1000000 ? (value / 1000000).toFixed(0) + 'M' : value >= 1000 ? (value / 1000).toFixed(0) + 'K' : value.toString()}
-                    label={{ value: 'Số tiền (VND)', angle: -90, position: 'insideLeft', style: { textAnchor: 'middle' } }}
-                  />
-                  <Tooltip 
-                    contentStyle={{ backgroundColor: 'white', border: '1px solid #e5e7eb', borderRadius: '8px', padding: '10px' }} 
-                    formatter={(value: number, name: string) => [formatCurrency(value), name]} 
-                  />
-                  <Legend iconType="circle" wrapperStyle={{ paddingTop: '10px' }} />
+                  <YAxis tickFormatter={(v) => v >= 1000000 ? (v / 1000000).toFixed(0) + 'M' : v >= 1000 ? (v / 1000).toFixed(0) + 'K' : v.toString()} />
+                  <Tooltip formatter={(v: number) => [formatCurrency(v), ""]} />
+                  <Legend iconType="circle" />
                   <Bar dataKey="revenue" fill="#3B82F6" name="Tổng doanh thu phát sinh" radius={[4, 4, 0, 0]} />
                   <Bar dataKey="paid" fill="#10B981" name="Thực thu (Đã thanh toán)" radius={[4, 4, 0, 0]} />
                 </BarChart>
@@ -288,9 +191,25 @@ export function AccountingDashboard() {
           )}
         </div>
 
-        {/* PIE CHART: Trạng Thái Hóa Đơn */}
+        {/* Pie Chart với Select bình thường */}
         <div className="bg-white rounded-xl p-6 border border-gray-200 shadow-sm">
-          <h3 className="text-lg font-bold text-gray-900 mb-4">Thành phần nguồn thu</h3>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-bold text-gray-900">Nguồn thu</h3>
+            
+            {/* Sử dụng SELECT HTML chuẩn */}
+            <select 
+              value={selectedPieMonth} 
+              onChange={(e) => setSelectedPieMonth(parseInt(e.target.value))}
+              className="text-xs border border-gray-300 rounded-md p-1 focus:outline-none focus:ring-1 focus:ring-blue-500 bg-white cursor-pointer"
+            >
+              {Array.from({ length: 12 }, (_, i) => (
+                <option key={i + 1} value={i + 1}>
+                  Tháng {i + 1}
+                </option>
+              ))}
+            </select>
+          </div>
+
           {isLoading ? (
             <div className="flex justify-center items-center h-[280px]">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
@@ -301,46 +220,43 @@ export function AccountingDashboard() {
                 <ResponsiveContainer width="100%" height="100%">
                   <RechartsPieChart>
                     <Pie 
-                      data={filteredBillStatusData.length > 0 ? filteredBillStatusData : [{ name: 'Không có dữ liệu', value: 1, color: '#e5e7eb' }]} 
-                      cx="50%" cy="50%" 
-                      innerRadius={70} 
-                      outerRadius={110} 
-                      paddingAngle={2} 
-                      dataKey="value"
-                      labelLine={false}
+                      key={filteredBillStatusData.length}
+                      data={filteredBillStatusData.length > 0 ? filteredBillStatusData : [{ name: 'Trống', value: 1, color: '#f3f4f6' }]} 
+                      cx="50%" cy="50%" innerRadius={70} outerRadius={100} paddingAngle={2} dataKey="value"
                     >
-                      {(filteredBillStatusData.length > 0 ? filteredBillStatusData : [{ name: 'Không có dữ liệu', value: 1, color: '#e5e7eb' }]).map((entry, index) => (<Cell key={`cell-${index}`} fill={entry.color} />))}
+                      {filteredBillStatusData.length > 0 ? (
+                        filteredBillStatusData.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.color} />
+                        ))
+                      ) : (
+                        <Cell fill="#f3f4f6" />
+                      )}
                     </Pie>
-                    <Tooltip 
-                      contentStyle={{ backgroundColor: 'white', border: '1px solid #e5e7eb', borderRadius: '8px', padding: '10px' }} 
-                      formatter={(value: number, name: string) => [`${value} hóa đơn`, name]} 
-                    />
+                    <Tooltip formatter={(v: number, name: string) => [formatCurrency(v), name]} />
                   </RechartsPieChart>
                 </ResponsiveContainer>
               </div>
-              <div className="flex flex-col gap-2 mt-4">
+
+              {/* Danh sách chi tiết */}
+              <div className="flex flex-col gap-2 mt-4 max-h-[150px] overflow-y-auto pr-1">
                 {filteredBillStatusData.length > 0 ? (
                   filteredBillStatusData.map((item) => (
-                    <div key={item.name} className="flex items-center justify-between">
+                    <div key={item.name} className="flex items-center justify-between p-1">
                       <div className="flex items-center gap-2">
-                        <div className="w-3 h-3 rounded-full" style={{ backgroundColor: item.color }} />
-                        <span className="text-sm text-gray-600">{item.name}</span>
+                        <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: item.color }} />
+                        <span className="text-xs text-gray-600">{item.name}</span>
                       </div>
-                      <div className="text-right">
-                        <span className="text-sm font-bold text-gray-900">{item.value}</span>
-                        <span className="text-xs text-gray-500 block">{formatCurrency(item.amount)}</span>
-                      </div>
+                      <span className="text-xs font-bold text-gray-900">{formatCurrency(item.amount)}</span>
                     </div>
                   ))
                 ) : (
-                  <p className="text-sm text-gray-500 text-center">Chưa có dữ liệu</p>
+                  <p className="text-center text-xs text-gray-400 italic py-4">Tháng này chưa phát sinh doanh thu</p>
                 )}
               </div>
             </>
           )}
         </div>
       </div>
-
     </div>
   );
 }
