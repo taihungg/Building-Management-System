@@ -1,5 +1,6 @@
-import { Bell, Receipt, FileText, TrendingUp, AlertCircle, CheckCircle, X, Info, ArrowRight } from 'lucide-react';
+import { Bell, Receipt, FileText, TrendingUp, Wallet, AlertCircle, CheckCircle, X, Info, ArrowRight } from 'lucide-react';
 import { useState, useEffect, useMemo } from 'react';
+import { Link } from 'react-router-dom';
 import { getAnnouncements, getUnreadCount, subscribe, markAsRead, type Announcement } from '../utils/announcements';
 import { getBills, subscribe as subscribeBills, type Bill } from '../utils/bills';
 import { formatRelativeTime, getCurrentPeriod } from '../utils/timeUtils';
@@ -74,71 +75,47 @@ export function ResidentDashboard({ onNavigate }: ResidentDashboardProps = {}) {
         </div>
       </div>
 
-      {/* Stats Grid */}
-      <div className="grid grid-cols-4 gap-6">
-        <div className="bg-white rounded-xl p-6 border-2 border-gray-200">
-          <div className="flex items-start justify-between">
-            <div className={`w-12 h-12 rounded-lg bg-blue-600 flex items-center justify-center`}>
-              <Bell className="w-6 h-6 text-white" />
-            </div>
-            <div className={`flex items-center gap-1 px-3 py-1 rounded-lg ${
-              unreadAnnouncements > 0 ? 'bg-orange-100 text-orange-700' : 'bg-green-100 text-green-700'
-            }`}>
-              {unreadAnnouncements > 0 ? <AlertCircle className="w-4 h-4" /> : <CheckCircle className="w-4 h-4" />}
-              <span className="text-sm">{unreadAnnouncements} mới</span>
-            </div>
+      {/* Stats Grid - KhaService Style Sync */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        {/* Card 1: Thông báo mới - Navy */}
+        <div className="p-6 rounded-xl h-32 flex justify-between items-center text-white shadow-sm" style={{ backgroundColor: '#1e293b' }}>
+          <div className="pl-6">
+            <p className="text-3xl font-bold block mb-1">{unreadAnnouncements}</p>
+            <p className="text-sm font-medium opacity-90 block">Thông báo mới</p>
           </div>
-          <div className="mt-4">
-            <p className="text-gray-500 text-sm">Thông báo chưa đọc</p>
-            <p className="text-2xl text-gray-900 mt-1">{unreadAnnouncements}</p>
-          </div>
+          <Bell className="w-12 h-12 text-white flex-shrink-0" />
         </div>
 
-        <div className="bg-white rounded-xl p-6 border-2 border-gray-200">
-          <div className="flex items-start justify-between">
-            <div className={`w-12 h-12 rounded-lg bg-purple-600 flex items-center justify-center`}>
-              <Receipt className="w-6 h-6 text-white" />
-            </div>
-            <div className={`flex items-center gap-1 px-3 py-1 rounded-lg ${
-              unpaidBills.length > 0 ? 'bg-orange-100 text-orange-700' : 'bg-green-100 text-green-700'
-            }`}>
-              {unpaidBills.length > 0 ? <AlertCircle className="w-4 h-4" /> : <CheckCircle className="w-4 h-4" />}
-              <span className="text-sm">{unpaidBills.length} chưa thanh toán</span>
-            </div>
+        {/* Card 2: Hóa đơn dịch vụ - Green */}
+        <div className="p-6 rounded-xl h-32 flex justify-between items-center text-white shadow-sm" style={{ backgroundColor: '#059669' }}>
+          <div className="pl-6">
+            <p className="text-3xl font-bold block mb-1">{unpaidBills.length}</p>
+            <p className="text-sm font-medium opacity-90 block">Hóa đơn dịch vụ</p>
           </div>
-          <div className="mt-4">
-            <p className="text-gray-500 text-sm">Hóa đơn chưa thanh toán</p>
-            <p className="text-2xl text-gray-900 mt-1">{unpaidBills.length}</p>
-          </div>
+          <Receipt className="w-12 h-12 text-white flex-shrink-0" />
         </div>
 
-        <div className="bg-white rounded-xl p-6 border-2 border-gray-200">
-          <div className="flex items-start justify-between">
-            <div className={`w-12 h-12 rounded-lg bg-green-600 flex items-center justify-center`}>
-              <TrendingUp className="w-6 h-6 text-white" />
-            </div>
+        {/* Card 3: Dư nợ hiện tại - Blue */}
+        <div className="p-6 rounded-xl h-32 flex justify-between items-center text-white shadow-sm" style={{ backgroundColor: '#2563eb' }}>
+          <div className="pl-6">
+            <p className="text-3xl font-bold block mb-1">{totalUnpaid.toLocaleString('vi-VN')} đ</p>
+            <p className="text-sm font-medium opacity-90 block">Dư nợ hiện tại</p>
           </div>
-          <div className="mt-4">
-            <p className="text-gray-500 text-sm">Tổng tiền chưa thanh toán</p>
-            <p className="text-2xl text-gray-900 mt-1">{totalUnpaid.toLocaleString('vi-VN')} đ</p>
-          </div>
+          <Wallet className="w-12 h-12 text-white flex-shrink-0" />
         </div>
 
-        <button
-          onClick={() => onNavigate?.('building-rules')}
-          className="bg-white rounded-xl p-6 border-2 border-gray-200 hover:border-orange-300 hover:shadow-lg transition-all text-left w-full group"
+        {/* Card 4: Nội quy chung cư - Orange */}
+        <Link
+          to="/resident/rules"
+          className="p-6 rounded-xl h-32 flex justify-between items-center text-white shadow-sm cursor-pointer no-underline"
+          style={{ backgroundColor: '#ea580c' }}
         >
-          <div className="flex items-start justify-between">
-            <div className={`w-12 h-12 rounded-lg bg-orange-600 flex items-center justify-center group-hover:bg-orange-700 transition-colors`}>
-              <FileText className="w-6 h-6 text-white" />
-            </div>
-            <ArrowRight className="w-5 h-5 text-gray-400 group-hover:text-orange-600 transition-colors" />
+          <div className="pl-6">
+            <p className="text-3xl font-bold block mb-1">Xem ngay</p>
+            <p className="text-sm font-medium opacity-90 block">Nội quy chung cư</p>
           </div>
-          <div className="mt-4">
-            <p className="text-gray-500 text-sm">Nội quy & Quy định</p>
-            <p className="text-2xl text-gray-900 mt-1 group-hover:text-orange-600 transition-colors">Xem ngay</p>
-          </div>
-        </button>
+          <FileText className="w-12 h-12 text-white flex-shrink-0" />
+        </Link>
       </div>
 
       {/* Recent Announcements & Bills */}
