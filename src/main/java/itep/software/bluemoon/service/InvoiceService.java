@@ -56,12 +56,10 @@ public class InvoiceService {
         }
 
         List<Invoice> pendingInvoices = invoiceRepository.findByMonthAndYearAndStatus(month, year, InvoiceStatus.PENDING);
-        if(pendingInvoices != null) {
-            invoiceRepository.deleteAll(pendingInvoices);
-            invoiceRepository.flush();
-        }
+        invoiceRepository.deleteAll(pendingInvoices);
+        invoiceRepository.flush();
 
-        List<Apartment> apartments = apartmentRepository.findApartmentsWithResidents();
+        List<Apartment>  apartments = apartmentRepository.findApartmentsWithResidents();
         List<ServiceType> allServices = serviceTypeRepository.findAll();
 
         List<Invoice> newInvoices = new ArrayList<>();
@@ -116,7 +114,7 @@ public class InvoiceService {
                     throw new RuntimeException("Management Fee price list has no price levels yet!");
                 }
 
-                quantity = apartment.getArea();
+                quantity = BigDecimal.valueOf(apartment.getArea());
                 unitPrice = priceConfig.getTiers().getFirst().getUnitPrice();
                 amount = VndUtils.multiply(quantity, unitPrice);
                 description = "";
