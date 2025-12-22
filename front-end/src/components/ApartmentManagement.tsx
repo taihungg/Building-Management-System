@@ -889,7 +889,7 @@ export function ApartmentManagement() {
                                                 <td className="px-4 py-3 text-center">
                                                     {/* 🔥 THÊM: NÚT XÓA CƯ DÂN */}
                                                     <button 
-                                                        onClick={() => handleRemoveResident(res.id)}
+                                                        onClick={() => handleRemoveResident(res.id, res.fullName)}
                                                         disabled={isProcessingResident}
                                                         className="p-1.5 text-red-500 hover:bg-red-50 rounded-lg transition-all opacity-0 group-hover:opacity-100"
                                                         title="Loại bỏ cư dân"
