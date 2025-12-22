@@ -70,7 +70,6 @@ export function Dashboard() {
       return chartData;
   };
 
-  // 🔥 Đã Sửa: Tính toán dữ liệu 6 tháng cuối cùng
   const calculateMonthlyChartData = (bills: Bill[]) => {
     const currentYear = new Date().getFullYear();
     const currentMonthIndex = new Date().getMonth(); // 0 (Jan) to 11 (Dec)
