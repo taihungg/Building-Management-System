@@ -8,9 +8,12 @@ import java.util.UUID;
 import org.hibernate.annotations.CreationTimestamp;
 
 import itep.software.bluemoon.entity.person.Staff;
+import itep.software.bluemoon.enumeration.AnnouncementTargetType;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -56,6 +59,13 @@ public class Announcement {
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
+    
+    @Column(name = "target_type", length = 20)
+    @Enumerated(EnumType.STRING)
+    private AnnouncementTargetType targetType;
+
+    @Column(name = "target_detail") 
+    private String targetDetail;
     
     @OneToMany(
             mappedBy = "announcement", 
