@@ -1,5 +1,18 @@
-import { Menu, Search, Bell } from 'lucide-react';
+import { Menu, Search, Clock } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
+import { getCurrentPeriod } from '../utils/timeUtils';
+
+// Hàm tiện ích để định dạng thời gian và ngày tháng
+const formatTimeAndDate = (date: Date) => {
+  // Định dạng giờ:phút:giây và Ngày, Tháng, Năm
+  const timeOptions: Intl.DateTimeFormatOptions = { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false };
+  const dateOptions: Intl.DateTimeFormatOptions = { weekday: 'short', month: 'short', day: 'numeric' };
+  
+  const timeStr = date.toLocaleTimeString('vi-VN', timeOptions);
+  const dateStr = date.toLocaleDateString('vi-VN', dateOptions);
+
+  return { timeStr, dateStr };
+};
 
 interface ResidentHeaderProps {
   onMenuClick: () => void;
@@ -8,7 +21,9 @@ interface ResidentHeaderProps {
 
 export function ResidentHeader({ onMenuClick, onNavigate }: ResidentHeaderProps) {
   const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [currentTime, setCurrentTime] = useState(formatTimeAndDate(new Date()));
   const profileRef = useRef<HTMLDivElement>(null);
+  const currentPeriod = getCurrentPeriod();
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -18,7 +33,16 @@ export function ResidentHeader({ onMenuClick, onNavigate }: ResidentHeaderProps)
     };
 
     document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+
+    // Real-time Clock (Cập nhật mỗi giây)
+    const timerId = setInterval(() => {
+      setCurrentTime(formatTimeAndDate(new Date()));
+    }, 1000);
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      clearInterval(timerId);
+    };
   }, []);
 
   const handleProfileItemClick = (page: string) => {
@@ -64,16 +88,21 @@ export function ResidentHeader({ onMenuClick, onNavigate }: ResidentHeaderProps)
           </div>
         </div>
 
-        {/* Right: Notification & Profile */}
+        {/* Right: Clock & Profile */}
         <div className="flex items-center gap-4">
-          {/* Notification Bell */}
-          <button 
-            onClick={() => onNavigate('resident-announcements')}
-            className="relative p-2 hover:bg-gray-100 rounded-lg transition-colors"
-          >
-            <Bell className="w-6 h-6 text-gray-700" />
-            <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
-          </button>
+          {/* Real-time Clock Display */}
+          <div className="hidden sm:flex items-center gap-3 bg-slate-100 px-6 py-2 rounded-full">
+            <Clock className="w-4 h-4 text-gray-600 flex-shrink-0" />
+            <div className="flex items-center gap-2">
+              <span className="font-mono font-semibold text-gray-800">
+                {currentTime.timeStr}
+              </span>
+              <span className="text-gray-400">|</span>
+              <span className="text-sm text-gray-600">
+                {currentPeriod} ({currentTime.dateStr})
+              </span>
+            </div>
+          </div>
 
           {/* Profile Avatar with Dropdown */}
           <div className="relative" ref={profileRef}>

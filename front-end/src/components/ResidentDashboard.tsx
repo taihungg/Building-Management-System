@@ -3,8 +3,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { getAnnouncements, getUnreadCount, subscribe, markAsRead, type Announcement } from '../utils/announcements';
 import { getBills, subscribe as subscribeBills, type Bill } from '../utils/bills';
-import { formatRelativeTime, getCurrentPeriod } from '../utils/timeUtils';
-import { useRealtime } from '../hooks/useRealtime';
+import { formatRelativeTime } from '../utils/timeUtils';
 
 interface ResidentDashboardProps {
   onNavigate?: (page: string) => void;
@@ -21,7 +20,6 @@ export function ResidentDashboard({ onNavigate }: ResidentDashboardProps = {}) {
   const [announcements, setAnnouncements] = useState<Announcement[]>(getAnnouncements());
   const [selectedAnnouncement, setSelectedAnnouncement] = useState<Announcement | null>(null);
   const [bills, setBills] = useState<Bill[]>(getBills());
-  const currentTime = useRealtime(60000); // Update every minute
 
   // Memoize recent announcements with real-time time formatting
   const recentAnnouncements = useMemo(() => {
@@ -29,7 +27,7 @@ export function ResidentDashboard({ onNavigate }: ResidentDashboardProps = {}) {
       ...ann,
       displayTime: ann.createdAt ? formatRelativeTime(ann.createdAt) : ann.time
     }));
-  }, [announcements, currentTime]);
+  }, [announcements]);
 
   useEffect(() => {
     const unsubscribeAnnouncements = subscribe((updatedAnnouncements) => {
@@ -61,18 +59,9 @@ export function ResidentDashboard({ onNavigate }: ResidentDashboardProps = {}) {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl text-gray-900">Dashboard Cư Dân</h1>
-          <p className="text-gray-600 mt-1">Chào mừng bạn trở lại! Đây là tổng quan về thông tin của bạn.</p>
-        </div>
-        <div className="text-right">
-          <p className="text-sm text-gray-500">Kỳ hiện tại</p>
-          <p className="text-base text-gray-900">{getCurrentPeriod()}</p>
-          <p className="text-xs text-gray-400 mt-1">
-            {currentTime.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}
-          </p>
-        </div>
+      <div>
+        <h1 className="text-3xl text-gray-900">Dashboard Cư Dân</h1>
+        <p className="text-gray-600 mt-1">Chào mừng bạn trở lại! Đây là tổng quan về thông tin của bạn.</p>
       </div>
 
       {/* Stats Grid - KhaService Style Sync */}
