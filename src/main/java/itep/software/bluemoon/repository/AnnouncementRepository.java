@@ -1,30 +1,33 @@
 package itep.software.bluemoon.repository;
 
-import itep.software.bluemoon.entity.Announcement;
-import itep.software.bluemoon.model.projection.AnnouncementSummary;
+import java.util.List;
+import java.util.UUID;
+
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
-import java.util.UUID;
-import java.util.List;
+import itep.software.bluemoon.entity.Announcement;
+import itep.software.bluemoon.model.DTO.announcement.AnnouncementResponseDTO;
 
 
 @Repository
 public interface AnnouncementRepository extends JpaRepository<Announcement, UUID> {
-	List<Announcement> findAllByOrderByCreatedAtDesc();
-	
 	@Query("""
-	        SELECT a.id as id,
-	               a.title as title,
-	               a.message as message,
-	               a.sender.fullName as senderName,
-	               a.createdAt as createdAt
+	        SELECT new itep.software.bluemoon.model.DTO.announcement.AnnouncementResponseDTO(
+	            a.id, 
+	            a.title, 
+	            a.message, 
+	            a.sender.fullName, 
+	            a.createdAt,
+	            CAST(a.targetType AS string),
+	            a.targetDetail,
+	            COUNT(ra)
+	        )
 	        FROM Announcement a
-	        JOIN a.receiver r
-	        WHERE r.id = :residentId
+	        LEFT JOIN a.residentAnnouncements ra
+	        GROUP BY a.id, a.title, a.message, a.sender.fullName, a.createdAt, a.targetType, a.targetDetail
 	        ORDER BY a.createdAt DESC
-	        """)
-	    List<AnnouncementSummary> findAnnouncementsByResidentId(@Param("residentId") UUID residentId);
+	    """)
+	    List<AnnouncementResponseDTO> findAllSummary();
 }
