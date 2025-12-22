@@ -78,8 +78,8 @@ export function DebtManagement() {
       
       // Use API data if available, otherwise use mock data
       if (data.length > 0) {
-        setBills(data);
-        calculateStats(data);
+      setBills(data);
+      calculateStats(data);
       } else {
         // Use mock data if API returns empty
         setBills(mockBills);
@@ -212,48 +212,48 @@ export function DebtManagement() {
             {/* Date Picker */}
             <div className="flex items-center bg-white border border-gray-200 rounded-lg shadow-sm px-3 py-2 transition-all hover:border-blue-400 hover:shadow-md">
               <Calendar className="w-4 h-4 text-gray-500 flex-shrink-0 mr-2" />
-              
-              {/* Select MONTH */}
-              <select
-                value={selectedMonth}
-                onChange={(e) => setSelectedMonth(Number(e.target.value))}
+                
+                {/* Select MONTH */}
+                <select
+                    value={selectedMonth}
+                    onChange={(e) => setSelectedMonth(Number(e.target.value))}
                 className="text-sm font-medium text-gray-700 bg-transparent border-none focus:ring-0 cursor-pointer outline-none appearance-none pr-6"
                 style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' fill=\'none\' viewBox=\'0 0 24 24\' stroke=\'%236b7280\'%3E%3Cpath stroke-linecap=\'round\' stroke-linejoin=\'round\' stroke-width=\'2\' d=\'M19 9l-7 7-7-7\'/%3E%3C/svg%3E")', backgroundRepeat: 'no-repeat', backgroundPosition: 'right 0 center', backgroundSize: '16px' }}
-              >
+                >
                 <option value={0}>Tất cả các tháng</option>
-                {Array.from({ length: 12 }, (_, i) => i + 1).map(month => (
-                  <option key={month} value={month}>Tháng {month}</option>
-                ))}
-              </select>
+                    {Array.from({ length: 12 }, (_, i) => i + 1).map(month => (
+                        <option key={month} value={month}>Tháng {month}</option>
+                    ))}
+                </select>
               
               {/* Divider */}
               <div className="w-px h-4 bg-gray-300 mx-2"></div>
-              
-              {/* Select YEAR */}
-              <select
-                value={selectedYear}
-                onChange={(e) => setSelectedYear(Number(e.target.value))}
+                
+                {/* Select YEAR */}
+                <select
+                    value={selectedYear}
+                    onChange={(e) => setSelectedYear(Number(e.target.value))}
                 className="text-sm font-medium text-gray-700 bg-transparent border-none focus:ring-0 cursor-pointer outline-none appearance-none pr-6"
                 style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' fill=\'none\' viewBox=\'0 0 24 24\' stroke=\'%236b7280\'%3E%3Cpath stroke-linecap=\'round\' stroke-linejoin=\'round\' stroke-width=\'2\' d=\'M19 9l-7 7-7-7\'/%3E%3C/svg%3E")', backgroundRepeat: 'no-repeat', backgroundPosition: 'right 0 center', backgroundSize: '16px' }}
-              >
-                {[currentDate.getFullYear() - 1, currentDate.getFullYear(), currentDate.getFullYear() + 1].map(year => (
-                  <option key={year} value={year}>Năm {year}</option>
-                ))}
-              </select>
+                >
+                    {[currentDate.getFullYear() - 1, currentDate.getFullYear(), currentDate.getFullYear() + 1].map(year => (
+                        <option key={year} value={year}>Năm {year}</option>
+                    ))}
+                </select>
             </div>
-
+          
             {/* Search Input - Pill Style */}
             <div className="relative w-96">
             <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
-            <input
-              type="text"
+          <input
+            type="text"
               placeholder="Tìm kiếm hoá đơn theo số phòng"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full bg-white rounded-full shadow-sm border border-gray-200 px-4 py-2 pl-12 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            />
-          </div>
-          </div>
+          />
+        </div>
+      </div>
 
           {/* Filter Buttons - Pill Chips */}
           <div className="flex items-center gap-2">
@@ -290,7 +290,7 @@ export function DebtManagement() {
               <Clock className="w-4 h-4 text-blue-600" />
               Đang chờ
             </button>
-            <button
+          <button
               onClick={() => setStatusFilter('UNPAID')}
               className={`bg-white rounded-full border shadow-sm px-4 py-2 text-sm font-medium flex items-center justify-center gap-2 hover:bg-gray-50 cursor-pointer transition-all ${
                 statusFilter === 'UNPAID'
@@ -300,7 +300,7 @@ export function DebtManagement() {
             >
               <AlertCircle className="w-4 h-4 text-red-600" />
               Chưa thanh toán
-            </button>
+          </button>
           </div>
         </div>
       </div>
