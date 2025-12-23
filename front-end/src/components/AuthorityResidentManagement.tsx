@@ -82,82 +82,11 @@ const getResidenceTypeIcon = (type: ResidenceType) => {
 };
 
 // Mock data for development
-const MOCK_RESIDENTS = [
-  {
-    id: 1,
-    fullName: 'Nguyễn Văn A',
-    roomNumber: 'L81-12.05',
-    phoneNumber: '0987654321',
-    email: 'nguyenvana@example.com',
-    type: 'Chủ hộ',
-    status: 'Thường trú',
-    avatar: 'https://ui-avatars.com/api/?name=Nguyễn+Văn+A&background=3b82f6&color=fff'
-  },
-  {
-    id: 2,
-    fullName: 'Trần Thị B',
-    roomNumber: 'L81-20.01',
-    phoneNumber: '0912345678',
-    email: 'tranthib@example.com',
-    type: 'Khách thuê',
-    status: 'Thường trú',
-    avatar: 'https://ui-avatars.com/api/?name=Trần+Thị+B&background=10b981&color=fff'
-  },
-  {
-    id: 3,
-    fullName: 'Lê Văn C',
-    roomNumber: 'L81-15.08',
-    phoneNumber: '0923456789',
-    email: 'levanc@example.com',
-    type: 'Chủ hộ',
-    status: 'Tạm vắng',
-    avatar: 'https://ui-avatars.com/api/?name=Lê+Văn+C&background=f59e0b&color=fff'
-  },
-  {
-    id: 4,
-    fullName: 'Phạm Thị D',
-    roomNumber: 'L81-08.12',
-    phoneNumber: '0934567890',
-    email: 'phamthid@example.com',
-    type: 'Khách thuê',
-    status: 'Thường trú',
-    avatar: 'https://ui-avatars.com/api/?name=Phạm+Thị+D&background=8b5cf6&color=fff'
-  },
-  {
-    id: 5,
-    fullName: 'Hoàng Văn E',
-    roomNumber: 'L81-22.03',
-    phoneNumber: '0945678901',
-    email: 'hoangvane@example.com',
-    type: 'Chủ hộ',
-    status: 'Thường trú',
-    avatar: 'https://ui-avatars.com/api/?name=Hoàng+Văn+E&background=ef4444&color=fff'
-  },
-  {
-    id: 6,
-    fullName: 'Vũ Thị F',
-    roomNumber: 'L81-11.07',
-    phoneNumber: '0956789012',
-    email: 'vuthif@example.com',
-    type: 'Khách thuê',
-    status: 'Tạm vắng',
-    avatar: 'https://ui-avatars.com/api/?name=Vũ+Thị+F&background=06b6d4&color=fff'
-  },
-  {
-    id: 7,
-    fullName: 'Đỗ Văn G',
-    roomNumber: 'L81-18.09',
-    phoneNumber: '0967890123',
-    email: 'dovang@example.com',
-    type: 'Chủ hộ',
-    status: 'Thường trú',
-    avatar: 'https://ui-avatars.com/api/?name=Đỗ+Văn+G&background=ec4899&color=fff'
-  }
-];
+
 
 export function AuthorityResidentManagement() {
   // Temporarily use mock data instead of API
-  const [residents, setResidents] = useState<any[]>(MOCK_RESIDENTS); 
+  const [residents, setResidents] = useState([]); 
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
@@ -176,66 +105,26 @@ export function AuthorityResidentManagement() {
     away: residents.filter(r => r.status === 'Tạm vắng').length,
   };
 
-  // Comment out API call temporarily
-  // useEffect(() => {
-  //   fetchResidents();
-  // }, []) 
+  useEffect(() => {
+    fetchResidents();
+  }, []) 
 
-  // const fetchResidents = async () => {
-  //   setIsLoading(true);
-  //   setError(null);
-  //   
-  //   const controller = new AbortController();
-  //   const timeoutId = setTimeout(() => controller.abort(), 10000); 
-  //   
-  //   try {
-  //     let url = 'http://localhost:8081/api/v1/residents';
+  const fetchResidents = async () => {
+    try {
+      let url = 'http://localhost:8081/api/v1/residents';
 
-  //     const response = await fetch(url, {
-  //       method: 'GET',
-  //       headers: {
-  //         'Content-Type': 'application/json',
-  //       },
-  //       signal: controller.signal,
-  //     });
-  //     
-  //     clearTimeout(timeoutId);
-  //     
-  //     if (!response.ok) {
-  //       throw new Error(`Không thể tải danh sách cư dân. Mã lỗi: ${response.status}`);
-  //     }
-  //     
-  //     const res = await response.json();
-  //     
-  //     // Gắn kèm ResidenceType đã tính toán vào dữ liệu khi fetch thành công
-  //     const residentsWithTypes = (res.data || []).map((resident: any) => ({
-  //       ...resident,
-  //       residenceType: getResidenceType(resident) 
-  //     }));
-
-  //     setResidents(residentsWithTypes);
-  //     setError(null); 
-  //   }
-  //   catch (err: any) {
-  //     clearTimeout(timeoutId);
-  //     console.error('Error fetching residents:', err);
-  //     
-  //     let errorMessage = 'Không thể kết nối đến server.';
-  //     
-  //     if (err.name === 'AbortError') {
-  //       errorMessage = 'Kết nối quá thời gian. Vui lòng thử lại.';
-  //     } else if (err.message && (err.message.includes('Failed to fetch') || err.message.includes('NetworkError'))) {
-  //       errorMessage = 'Lỗi kết nối mạng: Không thể truy cập API.';
-  //     } else if (err.message) {
-  //       errorMessage = err.message;
-  //     }
-  //     
-  //     setError(errorMessage);
-  //     setResidents([]);
-  //   } finally {
-  //     setIsLoading(false);
-  //   }
-  // }
+      const response = await fetch(url);
+      if (!response.ok) {
+        throw new Error("Can't get residents");
+      }
+      const res = await response.json();
+      setResidents(res.data);
+    }
+    catch (err) {
+      setError(err.message);
+      console.error(err); // Log ra để dễ debug
+    }
+  }
 
   const filteredResidents = (residents || []).filter(resident => {
     if (!resident) return false;
@@ -258,13 +147,20 @@ export function AuthorityResidentManagement() {
     return matchesSearch && matchesBuilding && matchesStatus;
   });
 
-  const handleViewDetail = async (residentId) => {
+  // để tạo ava
+  const getInitials = (name: string) => {
+    if (!name) return 'U';
+    return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+  };
+  
+
+  /*const handleViewDetail = async (residentId) => {
     setIsLoadingDetail(true);
     setIsViewModalOpen(true);
     setSelectedResident(null); 
     try {
       // Use mock data instead of API call
-      const resident = MOCK_RESIDENTS.find(r => r.id === residentId);
+      const resident = residents.find(r => r.id === residentId);
       if (resident) {
         // Add mock detail fields
         const detailedResident = {
@@ -285,7 +181,7 @@ export function AuthorityResidentManagement() {
     } finally {
       setIsLoadingDetail(false);
     }
-  };
+  }; */
 
   return (
     <div className="space-y-6">
@@ -307,28 +203,12 @@ export function AuthorityResidentManagement() {
           <Users className="h-12 w-12 text-white" />
         </div>
 
-        {/* Card 2: Chủ hộ (Green/Teal) */}
-        <div className="bg-emerald-500 flex justify-between items-center p-6 rounded-xl shadow-md h-32 relative overflow-hidden" style={{ backgroundColor: '#10b981' }}>
-          <div className="flex flex-col">
-            <p className="text-4xl font-bold text-white">{stats.owners}</p>
-            <p className="text-sm font-medium mt-1 opacity-90 text-white">Chủ hộ</p>
-          </div>
-          <Key className="h-12 w-12 text-white" />
-        </div>
-
-        {/* Card 3: Khách thuê (Orange) */}
-        <div className="bg-orange-500 flex justify-between items-center p-6 rounded-xl shadow-md h-32 relative overflow-hidden" style={{ backgroundColor: '#f97316' }}>
-          <div className="flex flex-col">
-            <p className="text-4xl font-bold text-white">{stats.tenants}</p>
-            <p className="text-sm font-medium mt-1 opacity-90 text-white">Khách thuê</p>
-          </div>
-          <UserCheck className="h-12 w-12 text-white" />
-        </div>
+    
 
         {/* Card 4: Tạm vắng (Bright Blue) */}
         <div className="bg-blue-500 flex justify-between items-center p-6 rounded-xl shadow-md h-32 relative overflow-hidden" style={{ backgroundColor: '#3b82f6' }}>
           <div className="flex flex-col">
-            <p className="text-4xl font-bold text-white">{stats.away}</p>
+            <p className="text-4xl font-bold text-white">{residents.filter(e=> e.status === 'INACTIVE').length}</p>
             <p className="text-sm font-medium mt-1 opacity-90 text-white">Tạm vắng</p>
           </div>
           <UserMinus className="h-12 w-12 text-white" />
@@ -347,52 +227,169 @@ export function AuthorityResidentManagement() {
             onChange={(e) => setSearchTerm(e.target.value)}
             className="w-full h-12 pl-12 pr-4 bg-gray-50/50 border-none rounded-xl text-sm focus:ring-2 focus:ring-blue-500/20 focus:bg-white transition-all placeholder:text-gray-400 outline-none"
           />
-        </div>
+      </div>
+
 
         {/* Actions Group (Right - Sát bên phải) */}
-        <div className="flex items-center gap-4">
-          {/* Building Dropdown */}
-          <Select value={selectedBuilding} onValueChange={setSelectedBuilding}>
-            <SelectTrigger className="flex items-center justify-between w-full h-11 px-4 bg-white border border-gray-200 rounded-xl shadow-sm text-sm font-medium text-gray-700 hover:border-blue-400 transition-all min-w-[160px]">
-              <SelectValue placeholder="Tất cả tòa nhà" />
-            </SelectTrigger>
-            <SelectContent className="absolute z-[100] mt-2 w-full bg-white rounded-xl shadow-[0_10px_25px_-5px_rgba(0,0,0,0.1),0_8px_10px_-6px_rgba(0,0,0,0.1)] border border-gray-100 py-1.5 overflow-hidden">
-              <SelectItem value="all" className="relative w-full cursor-default select-none py-2.5 pl-10 pr-4 text-sm text-gray-600 hover:bg-blue-50 hover:text-blue-700 transition-colors data-[state=checked]:text-blue-700 data-[state=checked]:font-semibold [&>span:first-child]:absolute [&>span:first-child]:left-3 [&>span:first-child]:top-1/2 [&>span:first-child]:-translate-y-1/2 [&>span:first-child]:flex [&>span:first-child]:items-center [&>span:first-child]:justify-center [&>span:first-child]:text-blue-600">
-                Tất cả tòa nhà
-              </SelectItem>
-              <SelectItem value="building1" className="relative w-full cursor-default select-none py-2.5 pl-10 pr-4 text-sm text-gray-600 hover:bg-blue-50 hover:text-blue-700 transition-colors data-[state=checked]:text-blue-700 data-[state=checked]:font-semibold [&>span:first-child]:absolute [&>span:first-child]:left-3 [&>span:first-child]:top-1/2 [&>span:first-child]:-translate-y-1/2 [&>span:first-child]:flex [&>span:first-child]:items-center [&>span:first-child]:justify-center [&>span:first-child]:text-blue-600">
-                Tòa nhà A
-              </SelectItem>
-              <SelectItem value="building2" className="relative w-full cursor-default select-none py-2.5 pl-10 pr-4 text-sm text-gray-600 hover:bg-blue-50 hover:text-blue-700 transition-colors data-[state=checked]:text-blue-700 data-[state=checked]:font-semibold [&>span:first-child]:absolute [&>span:first-child]:left-3 [&>span:first-child]:top-1/2 [&>span:first-child]:-translate-y-1/2 [&>span:first-child]:flex [&>span:first-child]:items-center [&>span:first-child]:justify-center [&>span:first-child]:text-blue-600">
-                Tòa nhà B
-              </SelectItem>
-            </SelectContent>
-          </Select>
+        {/* Container chính: Tăng padding và shadow mềm để nổi khối */}
+        <div style={{
+  display: 'flex',
+  alignItems: 'center',
+  gap: '12px',
+  backgroundColor: '#ffffff',
+  padding: '12px',
+  borderRadius: '12px',
+  border: '2px solid #eef2ff',
+  boxShadow: '0 4px 12px rgba(0, 0, 0, 0.03)'
+}}>
 
-          {/* Status Dropdown */}
-          <Select value={selectedStatus} onValueChange={setSelectedStatus}>
-            <SelectTrigger className="flex items-center justify-between w-full h-11 px-4 bg-white border border-gray-200 rounded-xl shadow-sm text-sm font-medium text-gray-700 hover:border-blue-400 transition-all min-w-[160px]">
-              <SelectValue placeholder="Tất cả trạng thái" />
-            </SelectTrigger>
-            <SelectContent className="absolute z-[100] mt-2 w-full bg-white rounded-xl shadow-[0_10px_25px_-5px_rgba(0,0,0,0.1),0_8px_10px_-6px_rgba(0,0,0,0.1)] border border-gray-100 py-1.5 overflow-hidden">
-              <SelectItem value="all" className="relative w-full cursor-default select-none py-2.5 pl-10 pr-4 text-sm text-gray-600 hover:bg-blue-50 hover:text-blue-700 transition-colors data-[state=checked]:text-blue-700 data-[state=checked]:font-semibold [&>span:first-child]:absolute [&>span:first-child]:left-3 [&>span:first-child]:top-1/2 [&>span:first-child]:-translate-y-1/2 [&>span:first-child]:flex [&>span:first-child]:items-center [&>span:first-child]:justify-center [&>span:first-child]:text-blue-600">
-                Tất cả trạng thái
-              </SelectItem>
-              <SelectItem value="Thường trú" className="relative w-full cursor-default select-none py-2.5 pl-10 pr-4 text-sm text-gray-600 hover:bg-blue-50 hover:text-blue-700 transition-colors data-[state=checked]:text-blue-700 data-[state=checked]:font-semibold [&>span:first-child]:absolute [&>span:first-child]:left-3 [&>span:first-child]:top-1/2 [&>span:first-child]:-translate-y-1/2 [&>span:first-child]:flex [&>span:first-child]:items-center [&>span:first-child]:justify-center [&>span:first-child]:text-blue-600">
-                Thường trú
-              </SelectItem>
-              <SelectItem value="Tạm vắng" className="relative w-full cursor-default select-none py-2.5 pl-10 pr-4 text-sm text-gray-600 hover:bg-blue-50 hover:text-blue-700 transition-colors data-[state=checked]:text-blue-700 data-[state=checked]:font-semibold [&>span:first-child]:absolute [&>span:first-child]:left-3 [&>span:first-child]:top-1/2 [&>span:first-child]:-translate-y-1/2 [&>span:first-child]:flex [&>span:first-child]:items-center [&>span:first-child]:justify-center [&>span:first-child]:text-blue-600">
-                Tạm vắng
-              </SelectItem>
-            </SelectContent>
-          </Select>
+  {/* Tòa nhà */}
+  <div style={{ position: 'relative', flex: 1, minWidth: '160px' }}>
+    <label style={{
+      position: 'absolute',
+      top: '-8px',
+      left: '12px',
+      backgroundColor: '#ffffff',
+      padding: '0 6px',
+      fontSize: '10px',
+      fontWeight: '800',
+      color: '#1e40af',
+      textTransform: 'uppercase',
+      zIndex: 10
+    }}>
+      Tòa nhà
+    </label>
+    <div style={{ position: 'relative' }}>
+      <select
+        value={selectedBuilding}
+        onChange={(e) => setSelectedBuilding(e.target.value)}
+        style={{
+          width: '100%',
+          height: '42px',
+          paddingLeft: '14px',
+          paddingRight: '36px',
+          backgroundColor: '#ffffff',
+          border: '2px solid #dbeafe',
+          borderRadius: '8px',
+          fontSize: '13px',
+          fontWeight: '600',
+          color: '#1e3a8a',
+          cursor: 'pointer',
+          appearance: 'none',
+          outline: 'none'
+        }}
+        onFocus={(e) => e.target.style.borderColor = '#2563eb'}
+        onBlur={(e) => e.target.style.borderColor = '#dbeafe'}
+      >
+        <option value="all">Tất cả khu vực</option>
+        <option value="building1">Tòa nhà A</option>
+        <option value="building2">Tòa nhà B</option>
+      </select>
+      <div style={{
+        position: 'absolute',
+        right: '12px',
+        top: '50%',
+        transform: 'translateY(-50%)',
+        pointerEvents: 'none',
+        color: '#60a5fa'
+      }}>
+        <ChevronDown size={16} strokeWidth={3} />
+      </div>
+    </div>
+  </div>
 
-          {/* Export Button */}
-          <button className="h-12 bg-blue-600 text-white rounded-xl font-semibold text-sm flex items-center justify-center gap-2 hover:bg-blue-700 active:scale-[0.98] transition-all shadow-lg shadow-blue-500/25 whitespace-nowrap px-4">
-            <Download className="w-4 h-4" />
-            Xuất báo cáo
-          </button>
-        </div>
+  {/* Trạng thái */}
+  <div style={{ position: 'relative', flex: 1, minWidth: '160px' }}>
+    <label style={{
+      position: 'absolute',
+      top: '-8px',
+      left: '12px',
+      backgroundColor: '#ffffff',
+      padding: '0 6px',
+      fontSize: '10px',
+      fontWeight: '800',
+      color: '#1e40af',
+      textTransform: 'uppercase',
+      zIndex: 10
+    }}>
+      Trạng thái
+    </label>
+    <div style={{ position: 'relative' }}>
+      <select
+        value={selectedStatus}
+        onChange={(e) => setSelectedStatus(e.target.value)}
+        style={{
+          width: '100%',
+          height: '42px',
+          paddingLeft: '14px',
+          paddingRight: '36px',
+          backgroundColor: '#ffffff',
+          border: '2px solid #dbeafe',
+          borderRadius: '8px',
+          fontSize: '13px',
+          fontWeight: '600',
+          color: '#1e3a8a',
+          cursor: 'pointer',
+          appearance: 'none',
+          outline: 'none'
+        }}
+        onFocus={(e) => e.target.style.borderColor = '#2563eb'}
+        onBlur={(e) => e.target.style.borderColor = '#dbeafe'}
+      >
+        <option value="all">Tất cả trạng thái</option>
+        <option value="Tạm trú">Tạm trú</option>
+        <option value="Thường trú">Thường trú</option>
+        <option value="Vãng lai">Vãng lai</option>
+        <option value="INACTIVE">Inactive</option>
+      </select>
+      <div style={{
+        position: 'absolute',
+        right: '12px',
+        top: '50%',
+        transform: 'translateY(-50%)',
+        pointerEvents: 'none',
+        color: '#60a5fa'
+      }}>
+        <ChevronDown size={16} strokeWidth={3} />
+      </div>
+    </div>
+  </div>
+
+  {/* Nút Xuất báo cáo - Nhỏ gọn hơn */}
+  <button 
+    style={{
+      height: '42px',
+      padding: '0 20px',
+      backgroundColor: '#2563eb',
+      color: '#ffffff',
+      border: 'none',
+      borderRadius: '8px',
+      fontSize: '12px',
+      fontWeight: '800',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: '8px',
+      cursor: 'pointer',
+      boxShadow: '0 3px 0 0 #1e40af',
+      transition: 'all 0.1s'
+    }}
+    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#1d4ed8'}
+    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#2563eb'}
+    onMouseDown={(e) => {
+      e.currentTarget.style.transform = 'translateY(2px)';
+      e.currentTarget.style.boxShadow = '0 1px 0 0 #1e40af';
+    }}
+    onMouseUp={(e) => {
+      e.currentTarget.style.transform = 'translateY(0px)';
+      e.currentTarget.style.boxShadow = '0 3px 0 0 #1e40af';
+    }}
+  >
+    <Download size={16} strokeWidth={3} />
+    <span>Xuất Excel</span>
+  </button>
+</div>
+       
       </div>
 
       {/* Main Table */}
@@ -403,7 +400,6 @@ export function AuthorityResidentManagement() {
               <tr>
                 <th className="text-left px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Cư dân</th>
                 <th className="text-left px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Căn hộ</th>
-                <th className="text-left px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Vai trò</th>
                 <th className="text-left px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Trạng thái</th>
                 <th className="text-right px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Thao tác</th>
               </tr>
@@ -430,39 +426,36 @@ export function AuthorityResidentManagement() {
                     <tr key={resident.id} className="hover:bg-gray-50 transition-colors duration-150 border-b border-gray-100 last:border-0">
                       {/* Cư dân: Avatar + Name + Email */}
                       <td className="px-6 py-4">
-                        <div className="flex items-center gap-3">
+                      <div className="flex items-center gap-3">
+                        {resident.avatarUrl ? (
                           <img 
-                            src={resident.avatar} 
-                            alt={resident.fullName}
-                            className="w-10 h-10 rounded-full bg-gray-200"
-                            onError={(e) => {
-                              e.currentTarget.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(resident.fullName)}&background=3b82f6&color=fff`;
-                            }}
+                            src={resident.avatarUrl} 
+                            className="w-10 h-10 rounded-full object-cover border border-gray-100" 
+                            onError={(e) => { e.currentTarget.style.display = 'none'; }} // Ẩn ảnh nếu lỗi
                           />
-                          <div className="flex flex-col">
-                            <span className="text-sm font-medium text-gray-900">{resident.fullName || '-'}</span>
-                            <span className="text-xs text-gray-500">{resident.email || '-'}</span>
+                        ) : (
+                          <div className="w-10 h-10 rounded-full bg-blue-100 border border-blue-200 flex items-center justify-center shadow-sm">
+                            <span className="text-blue-700 font-bold text-xs">
+                              {getInitials(resident.fullName)}
+                            </span>
                           </div>
+                        )}
+                        <div>
+                          <p className="text-sm font-bold text-gray-900">{resident.fullName}</p>
+                          <p className="text-xs text-gray-500">{resident.email}</p>
                         </div>
+                      </div>
                       </td>
                       
                       {/* Căn hộ: Badge */}
                       <td className="px-6 py-4">
                         <span className="inline-flex px-3 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-700 border border-gray-200">
-                          {resident.roomNumber || '-'}
+                        {resident.roomNumber ? `Phòng ${resident.roomNumber}` : 'N/A'}                        
                         </span>
                       </td>
                       
                       {/* Vai trò: Badge */}
-                      <td className="px-6 py-4">
-                        <span className={`inline-flex px-3 py-1 rounded-full text-xs font-medium ${
-                          resident.type === 'Chủ hộ' 
-                            ? 'bg-green-50 text-green-700 border border-green-100' 
-                            : 'bg-blue-50 text-blue-700 border border-blue-100'
-                        }`}>
-                          {resident.type || '-'}
-                        </span>
-                      </td>
+                      
                       
                       {/* Trạng thái: Dot + Text */}
                       <td className="px-6 py-4">
@@ -472,8 +465,8 @@ export function AuthorityResidentManagement() {
                               ? 'bg-green-500' 
                               : 'bg-amber-500'
                           }`}></div>
-                          <span className="text-sm text-gray-700">
-                            {resident.status === 'Thường trú' ? 'Đang ở' : 'Tạm vắng'}
+                          <span className={`text-sm font-medium ${resident.status === 'ACTIVE' ? 'text-green-600' : 'text-gray-400'}`}>
+                              Đợi api trả về trường trạng thái
                           </span>
                         </div>
                       </td>
@@ -481,7 +474,7 @@ export function AuthorityResidentManagement() {
                       {/* Thao tác: Ghost button */}
                       <td className="px-6 py-4 text-right">
                         <button
-                          onClick={() => handleViewDetail(resident.id)}
+                          /*onClick={() => handleViewDetail(resident.id)}*/
                           className="text-sm font-medium text-gray-600 hover:text-gray-900 hover:underline transition-colors"
                         >
                           Xem chi tiết

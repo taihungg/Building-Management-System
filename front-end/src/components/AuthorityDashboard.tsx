@@ -10,7 +10,6 @@ const renderActiveLostItemSector = (props: any) => {
 
   return (
     <g>
-      {/* main slice */}
       <Sector
         cx={cx}
         cy={cy}
@@ -38,11 +37,13 @@ export function AuthorityDashboard() {
   const navigate = useNavigate();
   const [announcements, setAnnouncements] = useState([]);
   const [residents, setResidents] = useState([]);
-  const [error, setError] = useState ();
-  const [activeLostItemIndex, setActiveLostItemIndex] = useState<number | null>(null);
+  const [error, setError] = useState<string | null>(null);
+    const [activeLostItemIndex, setActiveLostItemIndex] = useState<number | null>(null);
+  const [issues, setIssues]= useState([]);
 
   useEffect(() => {
       fetchResidents();
+      fetchIssues();
     }, []);
 
     
@@ -60,14 +61,27 @@ export function AuthorityDashboard() {
     }
     catch (err) {
       setError(err.message);
-      // Không cần toast lỗi ở đây nếu muốn hiển thị lỗi tĩnh trên UI, 
-      // nhưng nếu muốn có thể dùng toast.error("Lỗi tải dữ liệu");
+      console.error(err); // Log ra để dễ debug
     }
   }
+  const fetchIssues = async () => {
+    try {
+      let url = 'http://localhost:8081/api/issues';
 
-  // Dữ liệu mẫu cho biểu đồ thông báo mất đồ
-  // Trong thực tế, cần thêm trường status vào Announcement interface
-  const lostItemStatusData = [
+      const response = await fetch(url);
+      if (!response.ok) {
+        throw new Error("Can't get issues");
+      }
+      const res = await response.json();
+      setIssues(res.data);
+    }
+    catch (err) {
+      setError(err.message);
+      console.error(err); // Log ra để dễ debug
+    }
+  }
+  /*const filteredIssue = (issues || []).filter(e => e?.type === 'AUTHORITY'); */
+    const lostItemStatusData = [
     { name: 'Đã xử lý', value: 8, color: '#10B981' },
     { name: 'Đang xử lý', value: 3, color: '#F59E0B' },
     { name: 'Không tìm thấy', value: 2, color: '#EF4444' },
@@ -147,7 +161,7 @@ export function AuthorityDashboard() {
           style={{ backgroundColor: '#f97316' }}
         >
           <div className="flex flex-col">
-            <p className="text-3xl font-bold text-white mb-1">{totalLostItems}</p>
+            <p className="text-3xl font-bold text-white mb-1">{issues?.length || 0}</p>
             <p className="text-sm font-medium text-white opacity-90">Tin báo mới</p>
           </div>
           <FileText className="w-12 h-12 text-white opacity-80" />
