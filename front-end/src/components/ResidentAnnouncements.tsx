@@ -59,27 +59,9 @@ export function ResidentAnnouncements() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl text-gray-900">Thông Báo</h1>
-          <p className="text-gray-600 mt-1">Cập nhật thông tin mới nhất từ Ban Quản Trị</p>
-        </div>
-        <div className="flex items-center gap-3">
-          <div className="px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-xl">
-            {unreadCount} Chưa đọc
-          </div>
-          <button 
-            onClick={handleMarkAllAsRead}
-            disabled={unreadCount === 0}
-            className={`px-6 py-3 border-2 rounded-xl transition-colors ${
-              unreadCount === 0
-                ? 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed'
-                : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'
-            }`}
-          >
-            Đánh dấu tất cả đã đọc
-          </button>
-        </div>
+      <div>
+        <h1 className="text-3xl text-gray-900">Thông Báo</h1>
+        <p className="text-gray-600 mt-1">Cập nhật thông tin mới nhất từ Ban Quản Trị</p>
       </div>
 
       {/* Stats Cards */}
@@ -129,25 +111,38 @@ export function ResidentAnnouncements() {
         </div>
       </div>
 
-      {/* Filter Tabs */}
-      <div className="flex gap-2">
-        {[
-          { id: 'all', label: 'Tất cả' },
-          { id: 'unread', label: 'Chưa đọc' },
-          { id: 'read', label: 'Đã đọc' }
-        ].map((tab) => (
-          <button
-            key={tab.id}
-            onClick={() => setFilter(tab.id as typeof filter)}
-            className={`px-6 py-3 rounded-xl transition-all ${
-              filter === tab.id
-                ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-lg'
-                : 'bg-white text-gray-700 border-2 border-gray-200 hover:bg-gray-50'
-            }`}
-          >
-            {tab.label}
-          </button>
-        ))}
+      {/* Filter Tabs & Mark All as Read */}
+      <div className="flex justify-between items-center mb-6">
+        <div className="flex gap-2">
+          {[
+            { id: 'all', label: 'Tất cả' },
+            { id: 'unread', label: 'Chưa đọc' },
+            { id: 'read', label: 'Đã đọc' }
+          ].map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => setFilter(tab.id as typeof filter)}
+              className={`text-sm font-medium px-4 py-2 rounded-xl transition-all ${
+                filter === tab.id
+                  ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-lg'
+                  : 'bg-white text-gray-700 border-2 border-gray-200 hover:bg-gray-50'
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+        <button 
+          onClick={handleMarkAllAsRead}
+          disabled={unreadCount === 0}
+          className={`text-sm font-medium transition-colors flex items-center gap-2 px-4 py-2 rounded-xl ${
+            unreadCount === 0
+              ? 'text-gray-400 cursor-not-allowed bg-gray-100'
+              : 'text-blue-600 bg-blue-50 hover:bg-blue-100 hover:text-blue-700'
+          }`}
+        >
+          Đánh dấu tất cả đã đọc
+        </button>
       </div>
 
       {/* Announcements List */}
