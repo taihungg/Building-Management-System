@@ -40,13 +40,4 @@ public class Resident extends Person {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "apartment_id")
     private Apartment apartment;
-
-    @OneToMany(
-    	mappedBy = "resident",
-    	cascade = CascadeType.ALL,
-    	orphanRemoval = true,
-        fetch = FetchType.LAZY
-    )
-    @Builder.Default
-    private List<ResidentAnnouncement> announcementsReceived = new ArrayList<>();
 }
