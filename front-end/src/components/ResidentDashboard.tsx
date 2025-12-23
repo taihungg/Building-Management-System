@@ -182,27 +182,34 @@ export function ResidentDashboard({ onNavigate }: ResidentDashboardProps = {}) {
             </Link>
           </div>
           <div className="space-y-3">
-            {recentBills.map((bill) => (
-              <div 
-                key={bill.id} 
-                className="p-4 rounded-lg border-2 border-gray-200 bg-gray-50 hover:shadow-md transition-all"
-              >
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm font-semibold text-gray-900">{bill.type}</span>
-                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                    bill.status === 'Paid' ? 'bg-green-100 text-green-700' :
-                    bill.status === 'Pending' ? 'bg-orange-100 text-orange-700' :
-                    'bg-red-100 text-red-700'
-                  }`}>
-                    {bill.status === 'Paid' ? 'Đã thanh toán' : 'Chưa thanh toán'}
-                  </span>
+            {recentBills.map((bill) => {
+              // Extract month number from period (e.g., "Tháng 7/2025" -> "7")
+              const monthMatch = bill.period.match(/Tháng\s+(\d+)/);
+              const monthNumber = monthMatch ? monthMatch[1] : '';
+              const billTitle = monthNumber ? `Hóa đơn tháng ${monthNumber}` : bill.type;
+              
+              return (
+                <div 
+                  key={bill.id} 
+                  className="p-4 rounded-lg border-2 border-gray-200 bg-gray-50 hover:shadow-md transition-all"
+                >
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm font-semibold text-gray-900">{billTitle}</span>
+                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                      bill.status === 'Paid' ? 'bg-green-100 text-green-700' :
+                      bill.status === 'Pending' ? 'bg-orange-100 text-orange-700' :
+                      'bg-red-100 text-red-700'
+                    }`}>
+                      {bill.status === 'Paid' ? 'Đã thanh toán' : 'Chưa thanh toán'}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between mt-3">
+                    <span className="text-lg font-bold text-gray-900">{bill.amount.toLocaleString('vi-VN')} đ</span>
+                    <span className="text-xs text-gray-500">Hạn: {bill.dueDate}</span>
+                  </div>
                 </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-lg font-bold text-gray-900">{bill.amount.toLocaleString('vi-VN')} đ</span>
-                  <span className="text-xs text-gray-500">Hạn: {bill.dueDate}</span>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       </div>
