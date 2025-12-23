@@ -1,4 +1,4 @@
-import { Bell, AlertCircle, Info, CheckCircle, Calendar, FileText, X } from 'lucide-react';
+import { Bell, AlertCircle, Info, CheckCircle, Calendar, FileText, X, AlertTriangle, Wallet, Megaphone } from 'lucide-react';
 import { useState, useEffect, useMemo } from 'react';
 import { getAnnouncements, markAsRead, markAllAsRead, getUnreadCount, subscribe, type Announcement } from '../utils/announcements';
 import { formatRelativeTime } from '../utils/timeUtils';
@@ -82,36 +82,50 @@ export function ResidentAnnouncements() {
         </div>
       </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-3 gap-6">
-        <div className="bg-white rounded-xl p-6 border-2 border-gray-200">
-          <div className="flex items-center gap-3 mb-2">
-            <div className="w-10 h-10 rounded-lg bg-orange-100 flex items-center justify-center">
-              <AlertCircle className="w-5 h-5 text-orange-600" />
-            </div>
-            <p className="text-gray-600 text-sm">Thông báo quan trọng</p>
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        {/* Card 1: Thông báo chưa đọc - Navy */}
+        <div className="h-32 rounded-2xl p-6 flex justify-between items-center text-white shadow-sm relative overflow-hidden" style={{ backgroundColor: '#1e293b' }}>
+          <div className="flex flex-col">
+            <p className="text-3xl font-bold">{unreadCount}</p>
+            <p className="text-sm font-medium opacity-80 mt-1">Thông báo chưa đọc</p>
           </div>
-          <p className="text-2xl text-gray-900">{announcements.filter(n => n.type === 'alert').length}</p>
+          <Bell className="w-12 h-12 opacity-20 flex-shrink-0" />
         </div>
 
-        <div className="bg-white rounded-xl p-6 border-2 border-gray-200">
-          <div className="flex items-center gap-3 mb-2">
-            <div className="w-10 h-10 rounded-lg bg-emerald-100 flex items-center justify-center">
-              <CheckCircle className="w-5 h-5 text-emerald-600" />
-            </div>
-            <p className="text-gray-600 text-sm">Thông báo hoàn thành</p>
+        {/* Card 2: Tin khẩn cấp - Red */}
+        <div className="h-32 rounded-2xl p-6 flex justify-between items-center text-white shadow-sm relative overflow-hidden" style={{ backgroundColor: '#dc2626' }}>
+          <div className="flex flex-col">
+            <p className="text-3xl font-bold">{announcements.filter(n => n.type === 'alert').length}</p>
+            <p className="text-sm font-medium opacity-80 mt-1">Tin khẩn cấp</p>
           </div>
-          <p className="text-2xl text-gray-900">{announcements.filter(n => n.type === 'success').length}</p>
+          <AlertTriangle className="w-12 h-12 opacity-20 flex-shrink-0" />
         </div>
 
-        <div className="bg-white rounded-xl p-6 border-2 border-gray-200">
-          <div className="flex items-center gap-3 mb-2">
-            <div className="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center">
-              <Info className="w-5 h-5 text-blue-600" />
-            </div>
-            <p className="text-gray-600 text-sm">Thông tin chung</p>
+        {/* Card 3: Tiền phí & Hóa đơn - Green */}
+        <div className="h-32 rounded-2xl p-6 flex justify-between items-center text-white shadow-sm relative overflow-hidden" style={{ backgroundColor: '#059669' }}>
+          <div className="flex flex-col">
+            <p className="text-3xl font-bold">
+              {announcements.filter(n => 
+                n.type === 'info' && (n.title.toLowerCase().includes('phí') || n.title.toLowerCase().includes('hóa đơn') || n.title.toLowerCase().includes('thanh toán'))
+              ).length}
+            </p>
+            <p className="text-sm font-medium opacity-80 mt-1">Tiền phí & Hóa đơn</p>
           </div>
-          <p className="text-2xl text-gray-900">{announcements.filter(n => n.type === 'info').length}</p>
+          <Wallet className="w-12 h-12 opacity-20 flex-shrink-0" />
+        </div>
+
+        {/* Card 4: Tin tức chung - Blue */}
+        <div className="h-32 rounded-2xl p-6 flex justify-between items-center text-white shadow-sm relative overflow-hidden" style={{ backgroundColor: '#2563eb' }}>
+          <div className="flex flex-col">
+            <p className="text-3xl font-bold">
+              {announcements.filter(n => 
+                n.type === 'info' && !(n.title.toLowerCase().includes('phí') || n.title.toLowerCase().includes('hóa đơn') || n.title.toLowerCase().includes('thanh toán'))
+              ).length}
+            </p>
+            <p className="text-sm font-medium opacity-80 mt-1">Tin tức chung</p>
+          </div>
+          <Megaphone className="w-12 h-12 opacity-20 flex-shrink-0" />
         </div>
       </div>
 
