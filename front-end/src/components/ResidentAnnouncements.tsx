@@ -93,8 +93,7 @@ export function ResidentAnnouncements() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl text-gray-900">Thông Báo</h1>
-        <p className="text-gray-600 mt-1">Cập nhật thông tin mới nhất từ Ban Quản Trị</p>
+        <h1 className="text-3xl text-gray-900">Hộp thư cư dân</h1>
       </div>
 
       {/* Stats Cards */}
