@@ -1,16 +1,14 @@
 package itep.software.bluemoon.entity;
 
-import java.util.UUID;
-
+import itep.software.bluemoon.entity.key.ResidentAnnouncementId;
 import itep.software.bluemoon.entity.person.Resident;
 import jakarta.persistence.Column;
+import jakarta.persistence.EmbeddedId;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.MapsId;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -26,25 +24,20 @@ import lombok.Setter;
 @Entity
 @Table(name = "resident_announcement")
 public class ResidentAnnouncement {
-	@Id
-    @GeneratedValue(strategy = GenerationType.UUID)
-    @Column(
-            name = "id",
-            updatable = false,
-            nullable = false,
-            columnDefinition = "UUID"
-    )
-    private UUID id;
-	
-	@ManyToOne(fetch = FetchType.LAZY)
-	@JoinColumn(name = "resident_id", nullable = false)
-	private Resident resident;
-	
-	@ManyToOne(fetch = FetchType.LAZY)
-	@JoinColumn(name = "announcement_id", nullable = false)
-	private Announcement announcement;
-	
-	@Builder.Default
+    @EmbeddedId
+    private ResidentAnnouncementId id;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @MapsId("residentId")
+    @JoinColumn(name = "resident_id") 
+    private Resident resident;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @MapsId("announcementId")
+    @JoinColumn(name = "announcement_id")
+    private Announcement announcement;
+
     @Column(name = "is_read")
+    @Builder.Default
     private Boolean isRead = false;
 }
