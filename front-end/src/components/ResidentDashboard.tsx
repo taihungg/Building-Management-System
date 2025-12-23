@@ -62,8 +62,7 @@ export function ResidentDashboard({ onNavigate }: ResidentDashboardProps = {}) {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl text-gray-900">Dashboard Cư Dân</h1>
-        <p className="text-gray-600 mt-1">Chào mừng bạn trở lại! Đây là tổng quan về thông tin của bạn.</p>
+        <h1 className="text-3xl text-gray-900">Quản lý căn hộ</h1>
       </div>
 
       {/* Stats Grid - KhaService Style Sync */}
