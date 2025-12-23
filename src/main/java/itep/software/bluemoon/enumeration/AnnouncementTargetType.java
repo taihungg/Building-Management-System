@@ -9,5 +9,5 @@ public enum AnnouncementTargetType {
     
     BY_FLOOR,
     
-    SPECIFIC_RESIDENTS
+    SPECIFIC_APARTMENTS
 }
