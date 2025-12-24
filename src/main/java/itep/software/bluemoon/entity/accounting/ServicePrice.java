@@ -1,14 +1,29 @@
 package itep.software.bluemoon.entity.accounting;
 
-import itep.software.bluemoon.enumeration.PriceModel;
-import jakarta.persistence.*;
-import lombok.*;
-
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
+
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.OrderBy;
+import jakarta.persistence.Table;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 @Getter
 @Setter
@@ -40,11 +55,21 @@ public class ServicePrice {
     @Column(name = "end_date")
     private LocalDate endDate;   // Ngày kết thúc (NULL = Đang áp dụng)
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "model")
-    private PriceModel model;
+    //chỉ có tiền điện nước thì cái này mới là false, và dùng tới price tier
+    @Column(name = "is_flat", nullable = false)
+    private boolean isFlat;
+
+    @Column(name = "flat_price", precision = 10, scale = 2)
+    private BigDecimal flatPrice;
 
     @OneToMany(mappedBy = "servicePrice", cascade = CascadeType.ALL, orphanRemoval = true)
     @OrderBy("minUsage ASC")
     private List<PriceTier> tiers;
+
+    @Column(name = "vat_rate", precision = 6, scale = 2)
+    private BigDecimal vatRate;
+
+    //phí bảo vệ môi trường dành riêng cho tiền nước
+    @Column(name = "env_rate", precision = 6, scale = 2)
+    private BigDecimal envRate;
 }

@@ -1,10 +1,21 @@
 package itep.software.bluemoon.entity.accounting;
 
-import itep.software.bluemoon.enumeration.ServiceCode;
-import jakarta.persistence.*;
-import lombok.*;
-
 import java.util.UUID;
+
+import itep.software.bluemoon.enumeration.ServiceCode;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 @Getter
 @Setter
@@ -24,10 +35,13 @@ public class ServiceType {
     )
     private UUID id;
 
+    @Column(name = "title", nullable = false, length = 100)
+    private String title;
+
     @Enumerated(EnumType.STRING)
-    @Column(name = "type")
+    @Column(name = "type", nullable = false, length = 20)
     private ServiceCode code;
 
-    @Column(name = "unit")
+    @Column(name = "unit", nullable = false, length = 10)
     private String unit;
 }
