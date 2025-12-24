@@ -16,15 +16,15 @@ public interface AnnouncementRepository extends JpaRepository<Announcement, UUID
 	List<Announcement> findAllByOrderByCreatedAtDesc();
 	
 	@Query("""
-	        SELECT a.id as id,
-	               a.title as title,
-	               a.message as message,
-	               a.sender.fullName as senderName,
-	               a.createdAt as createdAt
-	        FROM Announcement a
-	        JOIN a.receiver r
-	        WHERE r.id = :residentId
-	        ORDER BY a.createdAt DESC
-	        """)
-	    List<AnnouncementSummary> findAnnouncementsByResidentId(@Param("residentId") UUID residentId);
+		    SELECT a.id as id,
+		           a.title as title,
+		           a.message as message,
+		           a.sender.fullName as senderName,
+		           a.createdAt as createdAt
+		    FROM ResidentAnnouncement ra
+		    JOIN ra.announcement a
+		    WHERE ra.resident.id = :residentId
+		    ORDER BY a.createdAt DESC
+		    """)
+		List<AnnouncementSummary> findAnnouncementsByResidentId(@Param("residentId") UUID residentId);
 }
