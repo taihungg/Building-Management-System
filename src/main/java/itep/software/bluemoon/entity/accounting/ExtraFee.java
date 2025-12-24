@@ -1,6 +1,7 @@
 package itep.software.bluemoon.entity.accounting;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.UUID;
 
 import itep.software.bluemoon.entity.Apartment;
@@ -13,7 +14,6 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
-import jakarta.persistence.UniqueConstraint;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -22,18 +22,12 @@ import lombok.Setter;
 
 @Getter
 @Setter
+@Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
 @Entity
-@Table(name = "usage_record", 
-       uniqueConstraints = {
-           @UniqueConstraint(
-               name = "uk_usage_apt_service_time",
-               columnNames = {"apartment_id", "service_type_id", "month", "year"} 
-           )
-       })
-public class UsageRecord {
+@Table(name = "extra_fee")
+public class ExtraFee {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     @Column(
@@ -48,22 +42,22 @@ public class UsageRecord {
     @JoinColumn(name = "apartment_id", nullable = false)
     private Apartment apartment;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "service_type_id", nullable = false)
-    private ServiceType serviceType;
+    @Column(name = "title", nullable = false, length = 100)
+    private String title;
 
-    @Column(name = "month", nullable = false)
-    private int month;
+    @Column(name = "description", columnDefinition = "TEXT")
+    private String description;
 
-    @Column(name = "year", nullable = false)
-    private int year;
+    @Column(name = "amount", nullable = false, precision = 20, scale = 2)
+    private BigDecimal amount;
 
-    @Column(name = "old_index", nullable = false, precision = 10, scale = 0)
-    private BigDecimal oldIndex;
+    @Column(name = "fee_date", nullable = false)
+    private LocalDate feeDate;
 
-    @Column(name = "new_index", nullable = false, precision = 10, scale = 0)
-    private BigDecimal newIndex;
-
-    @Column(name = "quantity", nullable = false, precision = 10, scale = 0)
-    private BigDecimal quantity;
+    @Column(name = "is_billed")
+    @Builder.Default
+    private boolean isBilled = false;
+    
+    @Column(name = "created_by", length = 20)
+    private String createdBy;
 }

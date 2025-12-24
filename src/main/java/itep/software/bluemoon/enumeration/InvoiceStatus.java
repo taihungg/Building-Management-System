@@ -1,10 +1,10 @@
 package itep.software.bluemoon.enumeration;
 
 public enum InvoiceStatus {
-    PAID,
+    PENDING,
     UNPAID,
     PARTIAL,
-    PENDING,
+    PAID,
     OVERDUE,
     CANCELED,
 }
