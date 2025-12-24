@@ -1,6 +1,6 @@
 package itep.software.bluemoon.enumeration;
 
-public enum TierName {
+public enum TierCode {
     BIKE,
     MOTO,
     CAR,
