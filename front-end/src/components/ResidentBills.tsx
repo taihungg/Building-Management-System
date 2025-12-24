@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Search, Download, Clock, CheckCircle, AlertCircle, DollarSign, Receipt, Calendar, CheckCircle2 } from 'lucide-react';
+import { Search, Download, Clock, CheckCircle, AlertCircle, DollarSign, Receipt, Calendar, CheckCircle2, Wallet, Banknote, AlertTriangle } from 'lucide-react';
 import { getBills, payBill, subscribe, exportToCSV, type Bill } from '../utils/bills';
 import { addAnnouncement } from '../utils/announcements';
 
@@ -67,8 +67,8 @@ export function ResidentBills() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl text-gray-900">Tra Cứu Hóa Đơn</h1>
-          <p className="text-gray-600 mt-1">Lịch sử và chi tiết các khoản phí dịch vụ</p>
+          <h1 className="text-3xl text-gray-900">Quản lý tài chính</h1>
+          <p className="text-gray-600 mt-1">Theo dõi chi tiết và thanh toán các khoản phí dịch vụ</p>
         </div>
         <div className="flex gap-3">
           <button 
@@ -96,56 +96,41 @@ export function ResidentBills() {
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-4 gap-6">
-        <div className="bg-white rounded-xl p-6 border-2 border-gray-200">
-          <div className="flex items-center gap-3 mb-2">
-            <div className="w-10 h-10 rounded-lg bg-emerald-500 flex items-center justify-center">
-              <CheckCircle className="w-5 h-5 text-white" />
-            </div>
-            <p className="text-gray-600 text-sm">Đã thanh toán</p>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        {/* Card 1: Đã thanh toán - Green */}
+        <div className="h-32 rounded-2xl p-6 flex justify-between items-center text-white shadow-sm relative overflow-hidden" style={{ backgroundColor: '#059669' }}>
+          <div className="flex flex-col">
+            <p className="text-3xl font-bold">{totalPaid.toLocaleString('vi-VN')} đ</p>
+            <p className="text-sm font-medium opacity-80 mt-1">Đã thanh toán</p>
           </div>
-          <p className="text-2xl text-gray-900">{totalPaid.toLocaleString('vi-VN')} đ</p>
-          <p className="text-sm text-emerald-700 mt-1">{bills.filter(b => b.status === 'Paid').length} hóa đơn</p>
+          <CheckCircle className="w-12 h-12 opacity-20 flex-shrink-0" />
         </div>
 
-        <div className="bg-white rounded-xl p-6 border-2 border-gray-200">
-          <div className="flex items-center gap-3 mb-2">
-            <div className="w-10 h-10 rounded-lg bg-blue-500 flex items-center justify-center">
-              <Clock className="w-5 h-5 text-white" />
-            </div>
-            <p className="text-gray-600 text-sm">Chưa thanh toán</p>
+        {/* Card 2: Phí cần đóng - Navy */}
+        <div className="h-32 rounded-2xl p-6 flex justify-between items-center text-white shadow-sm relative overflow-hidden" style={{ backgroundColor: '#1e293b' }}>
+          <div className="flex flex-col">
+            <p className="text-3xl font-bold">{totalPending.toLocaleString('vi-VN')} đ</p>
+            <p className="text-sm font-medium opacity-80 mt-1">Phí cần đóng</p>
           </div>
-          <p className="text-2xl text-gray-900">{totalPending.toLocaleString('vi-VN')} đ</p>
-          <p className="text-sm text-blue-700 mt-1">{bills.filter(b => b.status === 'Pending').length} hóa đơn</p>
+          <Wallet className="w-12 h-12 opacity-20 flex-shrink-0" />
         </div>
 
-        <div className="bg-white rounded-xl p-6 border-2 border-gray-200">
-          <div className="flex items-center gap-3 mb-2">
-            <div className="w-10 h-10 rounded-lg bg-red-500 flex items-center justify-center">
-              <AlertCircle className="w-5 h-5 text-white" />
-            </div>
-            <p className="text-gray-600 text-sm">Quá hạn</p>
+        {/* Card 3: Hóa đơn trễ hạn - Red */}
+        <div className="h-32 rounded-2xl p-6 flex justify-between items-center text-white shadow-sm relative overflow-hidden" style={{ backgroundColor: '#dc2626' }}>
+          <div className="flex flex-col">
+            <p className="text-3xl font-bold">{totalOverdue.toLocaleString('vi-VN')} đ</p>
+            <p className="text-sm font-medium opacity-80 mt-1">Hóa đơn trễ hạn</p>
           </div>
-          <p className="text-2xl text-gray-900">{totalOverdue.toLocaleString('vi-VN')} đ</p>
-          <p className="text-sm text-red-700 mt-1">{bills.filter(b => {
-            if (b.status === 'Pending') {
-              const dueDate = new Date(b.dueDate);
-              const today = new Date();
-              return dueDate < today;
-            }
-            return false;
-          }).length} hóa đơn</p>
+          <AlertTriangle className="w-12 h-12 opacity-20 flex-shrink-0" />
         </div>
 
-        <div className="bg-white rounded-xl p-6 border-2 border-gray-200">
-          <div className="flex items-center gap-3 mb-2">
-            <div className="w-10 h-10 rounded-lg bg-purple-500 flex items-center justify-center">
-              <DollarSign className="w-5 h-5 text-white" />
-            </div>
-            <p className="text-gray-600 text-sm">Tổng chi phí</p>
+        {/* Card 4: Sổ chi tiêu - Indigo */}
+        <div className="h-32 rounded-2xl p-6 flex justify-between items-center text-white shadow-sm relative overflow-hidden" style={{ backgroundColor: '#4f46e5' }}>
+          <div className="flex flex-col">
+            <p className="text-3xl font-bold">{(totalPaid + totalPending).toLocaleString('vi-VN')} đ</p>
+            <p className="text-sm font-medium opacity-80 mt-1">Sổ chi tiêu</p>
           </div>
-          <p className="text-2xl text-gray-900">{(totalPaid + totalPending).toLocaleString('vi-VN')} đ</p>
-          <p className="text-sm text-purple-700 mt-1">Tất cả hóa đơn</p>
+          <Banknote className="w-12 h-12 opacity-20 flex-shrink-0" />
         </div>
       </div>
 
