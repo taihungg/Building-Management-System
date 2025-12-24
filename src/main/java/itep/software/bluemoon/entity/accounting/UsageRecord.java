@@ -1,12 +1,24 @@
 package itep.software.bluemoon.entity.accounting;
 
-import itep.software.bluemoon.entity.Apartment;
-import itep.software.bluemoon.enumeration.UsageStatus;
-import jakarta.persistence.*;
-import lombok.*;
-
-import java.time.LocalDateTime;
+import java.math.BigDecimal;
 import java.util.UUID;
+
+import itep.software.bluemoon.entity.Apartment;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 @Getter
 @Setter
@@ -14,7 +26,13 @@ import java.util.UUID;
 @AllArgsConstructor
 @Builder
 @Entity
-@Table(name = "usage_record", uniqueConstraints = {@UniqueConstraint(columnNames = {"apartment_id", "service_type_id", "month", "year"})})
+@Table(name = "usage_record", 
+       uniqueConstraints = {
+           @UniqueConstraint(
+               name = "uk_usage_apt_service_time",
+               columnNames = {"apartment_id", "service_type_id", "month", "year"} 
+           )
+       })
 public class UsageRecord {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
@@ -40,22 +58,12 @@ public class UsageRecord {
     @Column(name = "year", nullable = false)
     private int year;
 
-    @Column(name = "old_index", nullable = false)
-    private Double oldIndex;
+    @Column(name = "old_index", nullable = false, precision = 10, scale = 0)
+    private BigDecimal oldIndex;
 
-    @Column(name = "new_index", nullable = false)
-    private Double newIndex;
+    @Column(name = "new_index", nullable = false, precision = 10, scale = 0)
+    private BigDecimal newIndex;
 
-    @Column(name = "quantity", nullable = false)
-    private Double quantity;
-
-    @Column(name = "reading_date")
-    private LocalDateTime readingDate;
-
-    @Enumerated(EnumType.STRING)
-    @Column(name = "usage_status")
-    private UsageStatus status;
-
-    @Column(name = "image_url", columnDefinition = "TEXT")
-    private String imageUrl;
+    @Column(name = "quantity", nullable = false, precision = 10, scale = 0)
+    private BigDecimal quantity;
 }
