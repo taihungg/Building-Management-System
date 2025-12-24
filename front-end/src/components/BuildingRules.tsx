@@ -128,11 +128,8 @@ export function BuildingRules() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl text-gray-900">Nội Quy Chung Cư</h1>
-          <p className="text-gray-600 mt-1">Các quy định và nội quy cần tuân thủ khi sinh sống tại tòa nhà</p>
-        </div>
+      <div className="mb-8">
+        <h1 className="text-3xl text-gray-900">Quy định và tiện ích</h1>
       </div>
 
       {/* Summary Cards */}
