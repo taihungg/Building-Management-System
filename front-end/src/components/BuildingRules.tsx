@@ -1,4 +1,4 @@
-import { FileText, AlertCircle, CheckCircle, Info, BookOpen } from 'lucide-react';
+import { FileText, AlertCircle, CheckCircle, Info, BookOpen, ShieldAlert, Leaf, LayoutGrid } from 'lucide-react';
 import { useState } from 'react';
 
 interface Rule {
@@ -80,6 +80,12 @@ export function BuildingRules() {
 
   const categories = ['all', ...Array.from(new Set(buildingRules.map(rule => rule.category)))];
   
+  // Calculate stats for summary cards
+  const totalRules = buildingRules.length;
+  const safetyRules = buildingRules.filter(r => r.category.includes('An toàn')).length;
+  const environmentRules = buildingRules.filter(r => r.category.includes('Vệ sinh')).length;
+  const serviceRules = buildingRules.filter(r => r.category.includes('Sử dụng dịch vụ')).length;
+  
   const filteredRules = selectedCategory === 'all' 
     ? buildingRules 
     : buildingRules.filter(rule => rule.category === selectedCategory);
@@ -93,52 +99,62 @@ export function BuildingRules() {
         </div>
       </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-3 gap-6">
-        <div className="bg-white rounded-xl p-6 border-2 border-gray-200">
-          <div className="flex items-center gap-3 mb-2">
-            <div className="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center">
-              <FileText className="w-5 h-5 text-blue-600" />
-            </div>
-            <p className="text-gray-600 text-sm">Tổng số quy định</p>
+      {/* Summary Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        {/* Card 1: Tổng quy định - Navy */}
+        <div className="h-32 rounded-2xl p-6 flex justify-between items-center text-white shadow-sm relative overflow-hidden" style={{ backgroundColor: '#1e293b' }}>
+          <div className="flex flex-col">
+            <p className="text-3xl font-bold">{totalRules}</p>
+            <p className="text-sm font-medium opacity-80 mt-1">Tổng quy định</p>
           </div>
-          <p className="text-2xl text-gray-900">{buildingRules.length}</p>
+          <FileText className="w-12 h-12 opacity-20 flex-shrink-0" />
         </div>
 
-        <div className="bg-white rounded-xl p-6 border-2 border-gray-200">
-          <div className="flex items-center gap-3 mb-2">
-            <div className="w-10 h-10 rounded-lg bg-orange-100 flex items-center justify-center">
-              <AlertCircle className="w-5 h-5 text-orange-600" />
-            </div>
-            <p className="text-gray-600 text-sm">Quy định an toàn</p>
+        {/* Card 2: An toàn & PCCC - Red */}
+        <div className="h-32 rounded-2xl p-6 flex justify-between items-center text-white shadow-sm relative overflow-hidden" style={{ backgroundColor: '#dc2626' }}>
+          <div className="flex flex-col">
+            <p className="text-3xl font-bold">{safetyRules}</p>
+            <p className="text-sm font-medium opacity-80 mt-1">An toàn & PCCC</p>
           </div>
-          <p className="text-2xl text-gray-900">{buildingRules.filter(r => r.category.includes('An toàn')).length}</p>
+          <ShieldAlert className="w-12 h-12 opacity-20 flex-shrink-0" />
         </div>
 
-        <div className="bg-white rounded-xl p-6 border-2 border-gray-200">
-          <div className="flex items-center gap-3 mb-2">
-            <div className="w-10 h-10 rounded-lg bg-emerald-100 flex items-center justify-center">
-              <BookOpen className="w-5 h-5 text-emerald-600" />
-            </div>
-            <p className="text-gray-600 text-sm">Danh mục</p>
+        {/* Card 3: Vệ sinh & Môi trường - Green */}
+        <div className="h-32 rounded-2xl p-6 flex justify-between items-center text-white shadow-sm relative overflow-hidden" style={{ backgroundColor: '#059669' }}>
+          <div className="flex flex-col">
+            <p className="text-3xl font-bold">{environmentRules}</p>
+            <p className="text-sm font-medium opacity-80 mt-1">Vệ sinh & Môi trường</p>
           </div>
-          <p className="text-2xl text-gray-900">{categories.length - 1}</p>
+          <Leaf className="w-12 h-12 opacity-20 flex-shrink-0" />
+        </div>
+
+        {/* Card 4: Tiện ích chung - Indigo */}
+        <div className="h-32 rounded-2xl p-6 flex justify-between items-center text-white shadow-sm relative overflow-hidden" style={{ backgroundColor: '#4f46e5' }}>
+          <div className="flex flex-col">
+            <p className="text-3xl font-bold">{serviceRules}</p>
+            <p className="text-sm font-medium opacity-80 mt-1">Tiện ích chung</p>
+          </div>
+          <LayoutGrid className="w-12 h-12 opacity-20 flex-shrink-0" />
         </div>
       </div>
 
-      {/* Category Filter */}
-      <div className="flex gap-2 flex-wrap">
+      {/* Filter Tabs */}
+      <div className="flex gap-2 mb-8">
         {categories.map((category) => (
           <button
             key={category}
             onClick={() => setSelectedCategory(category)}
-            className={`px-6 py-3 rounded-xl transition-all ${
+            className={`px-6 py-3 rounded-full transition-all ${
               selectedCategory === category
-                ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-lg'
-                : 'bg-white text-gray-700 border-2 border-gray-200 hover:bg-gray-50'
+                ? 'bg-blue-600 text-white shadow-lg'
+                : 'bg-white text-gray-700 border border-gray-200 hover:bg-gray-50'
             }`}
           >
-            {category === 'all' ? 'Tất cả' : category}
+            {category === 'all' ? 'Tất cả' : 
+             category === 'An toàn & Bảo mật' ? 'An toàn' :
+             category === 'Vệ sinh & Môi trường' ? 'Vệ sinh' :
+             category === 'Sử dụng dịch vụ' ? 'Tiện ích' :
+             category}
           </button>
         ))}
       </div>
@@ -148,29 +164,37 @@ export function BuildingRules() {
         {filteredRules.map((rule) => {
           const Icon = iconMap[rule.icon];
           
+          // Determine category badge color
+          const getCategoryBadgeColor = (category: string) => {
+            if (category.includes('An toàn')) return 'bg-orange-50 text-orange-600';
+            if (category.includes('Vệ sinh')) return 'bg-emerald-50 text-emerald-600';
+            if (category.includes('Sử dụng dịch vụ')) return 'bg-blue-50 text-blue-600';
+            if (category.includes('Giao thông')) return 'bg-purple-50 text-purple-600';
+            if (category.includes('Giờ giấc')) return 'bg-indigo-50 text-indigo-600';
+            return 'bg-gray-50 text-gray-600';
+          };
+          
           return (
             <div 
               key={rule.id} 
               onClick={() => setSelectedRule(rule)}
-              className="bg-white rounded-2xl p-6 border-2 border-gray-200 transition-all hover:shadow-md cursor-pointer"
+              className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 hover:shadow-md transition-shadow cursor-pointer"
             >
               <div className="flex items-start gap-4">
-                <div className={`w-12 h-12 rounded-xl bg-gradient-to-br flex items-center justify-center flex-shrink-0 ${
-                  rule.icon === 'alert' ? 'from-orange-400 to-orange-600' :
-                  rule.icon === 'check' ? 'from-emerald-400 to-emerald-600' :
-                  'from-blue-400 to-blue-600'
+                <div className={`w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 ${
+                  rule.icon === 'alert' ? 'bg-orange-500' :
+                  rule.icon === 'check' ? 'bg-emerald-500' :
+                  'bg-blue-500'
                 }`}>
                   <Icon className="w-6 h-6 text-white" />
                 </div>
                 
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-start justify-between gap-4 mb-2">
-                    <div>
-                      <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-lg mb-2 inline-block">
-                        {rule.category}
-                      </span>
-                      <h3 className="text-lg text-gray-900 font-semibold">{rule.title}</h3>
-                    </div>
+                  <div className="mb-2">
+                    <span className={`text-xs font-medium px-2.5 py-1 rounded-md mb-2 inline-block ${getCategoryBadgeColor(rule.category)}`}>
+                      {rule.category}
+                    </span>
+                    <h3 className="text-lg text-gray-900 font-semibold mt-2">{rule.title}</h3>
                   </div>
                   <p className="text-gray-600 line-clamp-2">{rule.description}</p>
                 </div>
