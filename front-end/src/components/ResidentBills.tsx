@@ -21,7 +21,17 @@ export function ResidentBills() {
   const filteredBills = bills.filter(bill => {
     const matchesSearch = bill.type.toLowerCase().includes(searchTerm.toLowerCase()) ||
       bill.period.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = statusFilter === 'All' || bill.status === statusFilter;
+    
+    let matchesStatus = false;
+    if (statusFilter === 'All') {
+      matchesStatus = true;
+    } else if (statusFilter === 'Overdue') {
+      // Hóa đơn trễ hạn: status là Pending và dueDate đã qua
+      matchesStatus = bill.status === 'Pending' && new Date(bill.dueDate) < new Date();
+    } else {
+      matchesStatus = bill.status === statusFilter;
+    }
+    
     return matchesSearch && matchesStatus;
   });
 
@@ -109,17 +119,15 @@ export function ResidentBills() {
       </div>
 
       {/* Search Bar */}
-      <div className="bg-white rounded-2xl p-6 border-2 border-gray-200">
-        <div className="relative">
-          <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-          <input
-            type="text"
-            placeholder="Tìm kiếm theo loại hóa đơn hoặc kỳ..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-12 pr-4 py-3 bg-gray-50 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
-          />
-        </div>
+      <div className="relative">
+        <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+        <input
+          type="text"
+          placeholder="Tìm kiếm theo loại hóa đơn hoặc kỳ..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="w-full pl-12 pr-4 py-3 bg-white border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
+        />
       </div>
 
       {/* Actions Row: Filter Tabs & Export Button */}
