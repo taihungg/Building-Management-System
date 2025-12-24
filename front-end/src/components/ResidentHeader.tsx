@@ -1,4 +1,4 @@
-import { Menu, Search, Clock, Bell, Wrench, Wallet, Info, AlertCircle, MoreVertical, MessageCircle, Users, Calendar } from 'lucide-react';
+import { Menu, Search, Clock, Bell, Wrench, Wallet, Info, AlertCircle, MoreVertical, MessageCircle, Users, Calendar, LayoutGrid } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { getCurrentPeriod } from '../utils/timeUtils';
@@ -22,6 +22,11 @@ const getNotificationTypeIcon = (announcement: Announcement) => {
   // Financial (Thu phí, Hóa đơn, Thanh toán)
   if (title.includes('thu phí') || title.includes('hóa đơn') || (title.includes('phí dịch vụ') && !title.includes('nội quy')) || title.includes('thanh toán') || title.includes('payment')) {
     return { Icon: Wallet, bgClass: 'bg-emerald-50', textClass: 'text-emerald-600' };
+  }
+  
+  // Utilities/Services (Tiện ích, Dịch vụ tiện ích)
+  if (title.includes('tiện ích') || title.includes('dịch vụ tiện ích') || title.includes('khu tiện ích')) {
+    return { Icon: LayoutGrid, bgClass: 'bg-indigo-50', textClass: 'text-indigo-600' };
   }
   
   // Rules/Regulations (Nội quy, Quy định)
@@ -300,7 +305,7 @@ export function ResidentHeader({ onMenuClick, onNavigate }: ResidentHeaderProps)
                 <div className="border-t-2 border-gray-100">
                   <button 
                     onClick={() => handleProfileItemClick('logout')}
-                    className="w-full px-6 py-4 text-left text-gray-700 hover:bg-gray-50 transition-colors"
+                    className="w-full px-6 py-4 text-left text-red-600 hover:bg-red-50 transition-colors"
                   >
                     Đăng Xuất
                   </button>
