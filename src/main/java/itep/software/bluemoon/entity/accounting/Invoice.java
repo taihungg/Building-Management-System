@@ -66,7 +66,7 @@ public class Invoice {
     @Column(name = "year", nullable = false)
     private int year;
 
-    @Column(name = "total_amount")
+    @Column(name = "total_amount", precision = 20, scale = 2)
     private BigDecimal totalAmount;
 
     @Enumerated(EnumType.STRING)
@@ -74,7 +74,7 @@ public class Invoice {
     @Builder.Default
     private InvoiceStatus status = InvoiceStatus.UNPAID;
 
-    @Column(name = "paid_amount", precision = 10, scale = 2)
+    @Column(name = "paid_amount", precision = 20, scale = 2)
     @Builder.Default
     private BigDecimal paidAmount = BigDecimal.ZERO;
 

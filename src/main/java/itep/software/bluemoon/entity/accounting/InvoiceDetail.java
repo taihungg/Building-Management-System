@@ -45,13 +45,13 @@ public class InvoiceDetail {
     @JoinColumn(name = "service_type_id", nullable = false)
     private ServiceType serviceType;
 
-    @Column(name = "quantity", precision = 6, scale = 2)
+    @Column(name = "quantity", precision = 10, scale = 2)
     private BigDecimal quantity;
 
-    @Column(name = "unit_price", precision = 10, scale = 2)
+    @Column(name = "unit_price", precision = 20, scale = 2)
     private BigDecimal unitPrice; // giá bậc 0 hoặc trung bình
 
-    @Column(name = "amount", precision = 10, scale = 2)
+    @Column(name = "amount", precision = 20, scale = 2)
     private BigDecimal amount;
 
     //nếu tính giá điện, nước thì cần thuộc tính này, không thì null

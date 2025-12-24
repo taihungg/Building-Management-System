@@ -53,13 +53,13 @@ public class ServicePrice {
 
     @JsonFormat(pattern = "yyyy-MM-dd")
     @Column(name = "end_date")
-    private LocalDate endDate;   // Ngày kết thúc (NULL = Đang áp dụng)
+    private LocalDate endDate;
 
     //chỉ có tiền điện nước thì cái này mới là false, và dùng tới price tier
     @Column(name = "is_flat", nullable = false)
     private boolean isFlat;
 
-    @Column(name = "flat_price", precision = 10, scale = 2)
+    @Column(name = "flat_price", precision = 20, scale = 2)
     private BigDecimal flatPrice;
 
     @OneToMany(mappedBy = "servicePrice", cascade = CascadeType.ALL, orphanRemoval = true)

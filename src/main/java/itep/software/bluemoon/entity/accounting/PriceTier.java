@@ -40,7 +40,7 @@ public class PriceTier {
     private UUID id;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "code")
+    @Column(name = "code", length = 10)
     private TierCode code;
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -53,6 +53,6 @@ public class PriceTier {
     @Column(name = "max_usage")
     private Integer maxUsage;
 
-    @Column(name = "unit_price", nullable = false)
+    @Column(name = "unit_price", nullable = false, precision = 20, scale = 2)
     private BigDecimal unitPrice;
 }

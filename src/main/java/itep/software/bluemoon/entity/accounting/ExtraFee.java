@@ -48,7 +48,7 @@ public class ExtraFee {
     @Column(name = "description", columnDefinition = "TEXT")
     private String description;
 
-    @Column(name = "amount", nullable = false, precision = 10, scale = 2)
+    @Column(name = "amount", nullable = false, precision = 20, scale = 2)
     private BigDecimal amount;
 
     @Column(name = "fee_date", nullable = false)

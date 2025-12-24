@@ -44,7 +44,7 @@ public class PaymentTransaction {
     @JoinColumn(name = "invoice_id", nullable = false)
     private Invoice invoice;
 
-    @Column(name = "amount", nullable = false, precision = 10, scale = 2)
+    @Column(name = "amount", nullable = false, precision = 20, scale = 2)
     private BigDecimal amount;
 
     @Enumerated(EnumType.STRING)
@@ -64,6 +64,7 @@ public class PaymentTransaction {
     @Column(name = "note", columnDefinition = "TEXT")
     private String note;
 
-    @Column(name = "verified_by")
+    //username của kế toán
+    @Column(name = "verified_by", length = 20)
     private String verifiedBy; 
 }
