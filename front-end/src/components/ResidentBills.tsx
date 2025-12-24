@@ -65,34 +65,8 @@ export function ResidentBills() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl text-gray-900">Quản lý tài chính</h1>
-          <p className="text-gray-600 mt-1">Theo dõi chi tiết và thanh toán các khoản phí dịch vụ</p>
-        </div>
-        <div className="flex gap-3">
-          <button 
-            onClick={handleExport}
-            className="flex items-center gap-2 px-6 py-3 bg-white text-gray-700 border-2 border-gray-200 rounded-xl hover:bg-gray-50 transition-colors"
-          >
-            <Download className="w-5 h-5" />
-            Xuất file
-          </button>
-        </div>
-      </div>
-
-      {/* Search Bar */}
-      <div className="bg-white rounded-2xl p-6 border-2 border-gray-200">
-        <div className="relative">
-          <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-          <input
-            type="text"
-            placeholder="Tìm kiếm theo loại hóa đơn hoặc kỳ..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-12 pr-4 py-3 bg-gray-50 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
-          />
-        </div>
+      <div>
+        <h1 className="text-3xl text-gray-900">Quản lý tài chính</h1>
       </div>
 
       {/* Stats Grid */}
@@ -134,23 +108,46 @@ export function ResidentBills() {
         </div>
       </div>
 
-      {/* Status Filter Tabs */}
-      <div className="flex gap-2">
-        {['All', 'Paid', 'Pending', 'Overdue'].map((status) => (
-          <button
-            key={status}
-            onClick={() => setStatusFilter(status as typeof statusFilter)}
-            className={`px-6 py-3 rounded-xl transition-all ${
-              statusFilter === status
-                ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-lg'
-                : 'bg-white text-gray-700 border-2 border-gray-200 hover:bg-gray-50'
-            }`}
-          >
-            {status === 'All' ? 'Tất cả' : 
-             status === 'Paid' ? 'Đã thanh toán' :
-             status === 'Pending' ? 'Chưa thanh toán' : 'Quá hạn'}
-          </button>
-        ))}
+      {/* Search Bar */}
+      <div className="bg-white rounded-2xl p-6 border-2 border-gray-200">
+        <div className="relative">
+          <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+          <input
+            type="text"
+            placeholder="Tìm kiếm theo loại hóa đơn hoặc kỳ..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full pl-12 pr-4 py-3 bg-gray-50 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
+          />
+        </div>
+      </div>
+
+      {/* Actions Row: Filter Tabs & Export Button */}
+      <div className="flex justify-between items-center mb-6">
+        <div className="flex gap-2">
+          {['All', 'Paid', 'Pending', 'Overdue'].map((status) => (
+            <button
+              key={status}
+              onClick={() => setStatusFilter(status as typeof statusFilter)}
+              className={`px-6 py-3 rounded-xl transition-all ${
+                statusFilter === status
+                  ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-lg'
+                  : 'bg-white text-gray-700 border-2 border-gray-200 hover:bg-gray-50'
+              }`}
+            >
+              {status === 'All' ? 'Tất cả' : 
+               status === 'Paid' ? 'Đã thanh toán' :
+               status === 'Pending' ? 'Chưa thanh toán' : 'Quá hạn'}
+            </button>
+          ))}
+        </div>
+        <button 
+          onClick={handleExport}
+          className="flex items-center gap-2 px-6 py-3 bg-white text-gray-700 border-2 border-gray-200 rounded-xl hover:bg-gray-50 transition-colors"
+        >
+          <Download className="w-5 h-5" />
+          Xuất file
+        </button>
       </div>
 
       {/* Bills List */}
