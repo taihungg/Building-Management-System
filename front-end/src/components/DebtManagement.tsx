@@ -199,7 +199,6 @@ export function DebtManagement() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl text-gray-900">Quản lý hóa đơn</h1>
-          <p className="text-gray-600 mt-1">Theo dõi và quản lý tất cả hóa đơn và thanh toán</p>
         </div>
         
       </div>
