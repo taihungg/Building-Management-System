@@ -1,23 +1,30 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { DollarSign, Receipt, AlertCircle, Clock } from 'lucide-react';
+import { DollarSign, TrendingUp, TrendingDown, Receipt, FileText, AlertCircle, CheckCircle, Clock, AlertTriangle, Banknote } from 'lucide-react';
 import { BarChart, Bar, PieChart as RechartsPieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { getBills, subscribe as subscribeBills, type Bill } from '../utils/bills'; // Đảm bảo type Bill đã được export nếu có
+import { getCurrentPeriod } from '../utils/timeUtils';
 import { toast } from 'sonner';
 
-// Màu sắc cho Pie Chart (Giữ nguyên)
-const SERVICE_COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899'];
+
+const initialMonthlyData = Array.from({ length: 12 }, (_, i) => ({
+  month: `Tháng ${i + 1}`,
+  revenue: 0,
+  paid: 0,
+}));
+
 
 export function AccountingDashboard() {
+  const [bills, setBills] = useState<any[]>([]); // Sử dụng any[] nếu không có type Bill
   const [isLoading, setIsLoading] = useState(false);
-  
-  // 1. Logic State
-  const [selectedPieMonth, setSelectedPieMonth] = useState(new Date().getMonth() + 1);
-  const [monthlyRevenueData, setMonthlyRevenueData] = useState([]);
-  const [filteredBillStatusData, setFilteredBillStatusData] = useState([]);
-  const [metrics, setMetrics] = useState({
-    revenue: { totalAmount: 0, invoiceCount: 0 },
-    receivable: { totalAmount: 0, invoiceCount: 0 },
-    pending: { totalAmount: 0, invoiceCount: 0 },
-    totalInvoices: 0
+  const [monthlyRevenueData, setMonthlyRevenueData] = useState(initialMonthlyData);
+  const [stats1, setStats1] = useState({
+    totalRevenue: 0,
+    pendingAmount: 0,
+    paidAmount: 0,
+    unpaidAmount: 0,
+    unpaidCount: 0,
+    pendingCount: 0,
+    paidCount: 0
   });
 
   const formatCurrency = (amount: number) => {
@@ -28,122 +35,163 @@ export function AccountingDashboard() {
     }).format(amount);
   };
 
-  // Logic fetch dữ liệu tổng quát (Metrics và Bar Chart)
-  const fetchData = async () => {
+  /**
+   * Xử lý dữ liệu hóa đơn thô thành định dạng cho Bar Chart (Doanh thu theo tháng)
+   * @param data Dữ liệu hóa đơn từ API
+   * @returns Mảng dữ liệu đã nhóm theo tháng
+   */
+  const processMonthlyData = (data: any[]) => {
+    const monthlyMap: { [key: number]: { revenue: number, paid: number } } = {};
+
+    // Khởi tạo Map với 12 tháng
+    for (let i = 1; i <= 12; i++) {
+      monthlyMap[i] = { revenue: 0, paid: 0 };
+    }
+
+    data.forEach(bill => {
+      const createdDate = new Date(bill.createdTime);
+      const month = createdDate.getMonth() + 1; 
+
+      if (monthlyMap[month]) {
+        const amount = bill.totalAmount || 0;
+        monthlyMap[month].revenue += amount;
+
+        if (bill.status === 'PAID') {
+          monthlyMap[month].paid += amount;
+        }
+      }
+    });
+
+    // Chuyển Map thành mảng Recharts
+    const result = Object.keys(monthlyMap).map(key => {
+      const month = parseInt(key);
+      return {
+        month: `Tháng ${month}`,
+        revenue: monthlyMap[month].revenue,
+        paid: monthlyMap[month].paid
+      };
+    }).sort((a, b) => {
+      // Sắp xếp lại theo số tháng (từ 1 đến 12)
+      return parseInt(a.month.split(' ')[1]) - parseInt(b.month.split(' ')[1]);
+    });
+
+    return result;
+  };
+
+  const calculateStats = (data: any[]) => {
+    const initialStats = {
+      totalRevenue: 0,
+      pendingAmount: 0,
+      paidAmount: 0,
+      unpaidAmount: 0,
+      unpaidCount: 0,
+      pendingCount: 0,
+      paidCount: 0
+    };
+
+    const calculated = data.reduce((acc, bill) => {
+      const amount = bill.totalAmount || 0;
+
+      acc.totalRevenue += amount; // Tổng giá trị hóa đơn đã tạo
+
+      if (bill.status === 'PAID') {
+        acc.paidAmount += amount;
+        acc.paidCount += 1;
+      } else if (bill.status === 'PENDING') {
+        acc.pendingAmount += amount;
+        acc.pendingCount += 1;
+      } else { // UNPAID
+        acc.unpaidAmount += amount;
+        acc.unpaidCount += 1;
+      }
+
+      return acc;
+    }, initialStats);
+
+    setStats1(calculated);
+    setMonthlyRevenueData(processMonthlyData(data)); // **GỌI HÀM XỬ LÝ DỮ LIỆU THÁNG**
+  };
+
+
+  const fetchBills = async () => {
     setIsLoading(true);
     try {
-      const year = new Date().getFullYear();
-      const currentMonth = new Date().getMonth() + 1; // Lấy tháng hiện tại
+      // Giả định lấy dữ liệu năm 2025
+      let url = `http://localhost:8081/api/v1/accounting/invoices?year=${new Date().getFullYear()}`; 
 
-      const [resMetrics, resBar] = await Promise.all([
-        fetch('http://localhost:8081/api/v1/accounting/dashboard/fourmetrics').then(r => r.json()),
-        fetch(`http://localhost:8081/api/v1/accounting/dashboard/barchart?year=${year}`).then(r => r.json()),
-      ]);
+      const response = await fetch(url);
+      if (!response.ok) throw new Error("Không thể tải dữ liệu hóa đơn");
 
-      if (resMetrics.statusCode === 200) setMetrics(resMetrics.data);
+      const res = await response.json();
+      const data = res.data || [];
 
-      if (resBar.statusCode === 200) {
-        // --- SỬA LOGIC HIỂN THỊ 6 THÁNG GẦN NHẤT TẠI ĐÂY ---
-        const mappedBar = resBar.data
-          .map((item: any) => ({
-            month: `Tháng ${item.month}`,
-            monthNum: item.month,
-            revenue: item.totalRevenue,
-            paid: item.paidRevenue
-          }))
-          // Lọc lấy các tháng <= tháng hiện tại và > (tháng hiện tại - 6)
-          .filter((item: any) => item.monthNum <= currentMonth && item.monthNum > currentMonth - 6)
-          // Sắp xếp theo thứ tự tháng tăng dần
-          .sort((a: any, b: any) => a.monthNum - b.monthNum);
-          
-        setMonthlyRevenueData(mappedBar);
-      }
+      setBills(data);
+      calculateStats(data); 
+      
     } catch (error) {
-      console.error("Lỗi fetch dashboard:", error);
-      toast.error("Không thể cập nhật dữ liệu mới");
+      console.error("Lỗi tải hóa đơn:", error);
+      toast.error("Lỗi tải dữ liệu", { description: (error as Error).message });
+      setBills([]);
+      setMonthlyRevenueData(initialMonthlyData);
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Logic fetch dữ liệu Pie Chart theo tháng
-  const fetchPieData = async (month: number) => {
-    try {
-      const year = new Date().getFullYear();
-      const response = await fetch(`http://localhost:8081/api/v1/accounting/dashboard/piechart?month=${month}&year=${year}`);
-      const res = await response.json();
-      
-      if (res.statusCode === 200) {
-        const mappedPie = res.data.map((item: any, index: number) => ({
-          name: item.serviceName,
-          value: item.totalAmount,
-          amount: item.totalAmount,
-          color: SERVICE_COLORS[index % SERVICE_COLORS.length]
-        }));
-        setFilteredBillStatusData(mappedPie);
-      } else {
-        setFilteredBillStatusData([]);
-      }
-    } catch (error) {
-      console.error("Lỗi fetch piechart:", error);
-      setFilteredBillStatusData([]);
-    }
-  };
 
   useEffect(() => {
-    fetchData();
+    fetchBills();
   }, []);
 
-  useEffect(() => {
-    fetchPieData(selectedPieMonth);
-  }, [selectedPieMonth]);
+  // Để xly pie chart
+  const billStatusData = [
+    { name: 'Đã thanh toán', value: stats1.paidCount, color: '#10B981', amount: stats1.paidAmount },
+    { name: 'Đang chờ xử lý', value: stats1.pendingCount, color: '#F59E0B', amount: stats1.pendingAmount },
+    { name: 'Chưa thanh toán', value: stats1.unpaidCount, color: '#EF4444', amount: stats1.unpaidAmount }, // Đổi màu sang đỏ để nổi bật hơn
+  ];
+  // Lọc bỏ các mục có value = 0 để Pie Chart không bị lỗi
+  const filteredBillStatusData = billStatusData.filter(item => item.value > 0);
 
   const stats = useMemo(() => ([
     { 
       label: 'Thực thu', 
-      value: formatCurrency(metrics.revenue.totalAmount), 
+      value: formatCurrency(stats1.paidAmount), 
       icon: DollarSign, 
-      borderColor: 'border-green-500',
-      iconBg: 'bg-green-50', 
-      iconColor: 'text-green-600',
-      valueColor: 'text-green-700',
-      billCount: metrics.revenue.invoiceCount, 
+      watermarkIcon: Banknote,
+      bgColor: '#059669',
+      billCount: stats1.paidCount, 
       billCountLabel: 'Đã thanh toán'
     },
     { 
       label: 'Công nợ', 
-      value: formatCurrency(metrics.receivable.totalAmount), 
+      value: formatCurrency(stats1.unpaidAmount), 
       icon: Clock, 
-      borderColor: 'border-red-500',
-      iconBg: 'bg-red-50', 
-      iconColor: 'text-red-600',
-      valueColor: 'text-red-700',
-      billCount: metrics.receivable.invoiceCount, 
+      watermarkIcon: AlertCircle,
+      bgColor: '#dc2626',
+      billCount: stats1.unpaidCount, 
       billCountLabel: 'Chưa thanh toán'
     },
     { 
       label: 'Chờ xác nhận', 
-      value: formatCurrency(metrics.pending.totalAmount),  
+      value: formatCurrency(stats1.pendingAmount),  
       icon: AlertCircle, 
-      borderColor: 'border-amber-500',
-      iconBg: 'bg-amber-50', 
-      iconColor: 'text-amber-600',
-      valueColor: 'text-amber-700',
-      billCount: metrics.pending.invoiceCount, 
+      watermarkIcon: Clock,
+      bgColor: '#d97706',
+      billCount: stats1.pendingCount, 
       billCountLabel: 'Đang chờ xử lý'
     },
     { 
       label: 'Tổng hóa đơn', 
-      value: metrics.totalInvoices.toString(),  
+      value: bills.length.toString(),  
       icon: Receipt, 
-      borderColor: 'border-blue-500',
-      iconBg: 'bg-blue-50', 
-      iconColor: 'text-blue-600',
-      valueColor: 'text-blue-700',
-      billCount: metrics.totalInvoices, 
+      watermarkIcon: FileText,
+      bgColor: '#2563eb',
+      billCount: bills.length, 
       billCountLabel: 'Tổng số hoá đơn'
     },
-  ]), [metrics]);
+  ]), [stats1, bills.length]); // Sử dụng useMemo để tránh tính toán lại không cần thiết
+
+  const currentPeriod = getCurrentPeriod();
 
   return (
     <div className="space-y-6">
@@ -153,46 +201,66 @@ export function AccountingDashboard() {
         </div>
       </div>
 
-      {/* Thẻ tóm tắt */}
+      {/* --- PHẦN 1: THẺ TÓM TẮT THỐNG KÊ --- */}
       <div className="grid grid-cols-4 gap-4">
-        {stats.map((stat, index) => {
-          const Icon = stat.icon;
-          const colorThemes = [
-            { bg: '#ecfdf5', border: '#a7f3d0', text: '#047857' },
-            { bg: '#fef2f2', border: '#fecaca', text: '#dc2626' },
-            { bg: '#fffbeb', border: '#fde68a', text: '#b45309' },
-            { bg: '#eff6ff', border: '#bfdbfe', text: '#1d4ed8' }
-          ];
-          const theme = colorThemes[index] || colorThemes[0];
+        {stats.map((stat) => {
+          const WatermarkIcon = stat.watermarkIcon;
           
           return (
-            <div key={stat.label} className="rounded-xl p-4 shadow-sm" style={{ backgroundColor: theme.bg, border: `2px solid ${theme.border}` }}>
-              <div className="flex items-center justify-between mb-2">
-                <p className="text-xs font-medium tracking-wide" style={{ color: theme.text }}>{stat.label}</p>
-                <Icon className="w-5 h-5" style={{ color: theme.text }} />
+            <div 
+              key={stat.label} 
+              className="h-32 rounded-2xl p-6 shadow-md relative overflow-hidden"
+              style={{ 
+                backgroundColor: stat.bgColor
+              }}
+            >
+              {/* Watermark Icon - Vertically centered on far right */}
+              <WatermarkIcon 
+                className="absolute right-4 top-1/2 -translate-y-1/2 w-12 h-12 opacity-20"
+                style={{ color: 'white' }}
+              />
+              
+              {/* Content - Perfectly vertically centered */}
+              <div className="relative z-10 h-full flex flex-col justify-center gap-1 pr-16">
+                {/* Title - white with opacity-90 */}
+                <p className="text-sm font-medium tracking-wide text-white opacity-90">
+                  {stat.label}
+                </p>
+                {/* Main number - text-4xl font-extrabold */}
+                <p className="text-3xl font-bold text-white">
+                  {stat.value}
+                </p>
               </div>
-              <p className="text-2xl font-bold" style={{ color: theme.text }}>{stat.value}</p>
-              <p className="text-xs text-gray-400 mt-1">{stat.billCount} hóa đơn {stat.billCountLabel}</p>
             </div>
           );
         })}
       </div>
 
+      {/* --- PHẦN 2: BIỂU ĐỒ (BAR CHART & PIE CHART) --- */}
       <div className="grid grid-cols-3 gap-6">
-        {/* Bar Chart */}
+        {/* BAR CHART: Doanh Thu & Thanh Toán Theo Tháng */}
         <div className="col-span-2 bg-white rounded-xl p-6 border border-gray-200 shadow-sm">
-          <h3 className="text-lg font-bold text-gray-900 mb-4">Thực thu 6 tháng gần nhất</h3>
+          <h3 className="text-lg font-bold text-gray-900 mb-4">Thực thu theo tháng</h3>
           {isLoading ? (
-            <div className="flex justify-center items-center h-[280px]"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div></div>
+            <div className="flex justify-center items-center h-[280px]">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+            </div>
           ) : (
             <div style={{ width: '100%', height: '280px' }}>
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={monthlyRevenueData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
                   <XAxis dataKey="month" stroke="#6b7280" />
-                  <YAxis tickFormatter={(v) => v >= 1000000 ? (v / 1000000).toFixed(0) + 'M' : v >= 1000 ? (v / 1000).toFixed(0) + 'K' : v.toString()} />
-                  <Tooltip formatter={(v: number) => [formatCurrency(v), ""]} />
-                  <Legend iconType="circle" />
+                  <YAxis 
+                    stroke="#6b7280" 
+                    tickFormatter={(value: number) => value >= 1000000 ? (value / 1000000).toFixed(0) + 'M' : value >= 1000 ? (value / 1000).toFixed(0) + 'K' : value.toString()}
+                    label={{ value: 'Số tiền (VND)', angle: -90, position: 'insideLeft', style: { textAnchor: 'middle' } }}
+                  />
+                  <Tooltip 
+                    contentStyle={{ backgroundColor: 'white', border: '1px solid #e5e7eb', borderRadius: '8px', padding: '10px' }} 
+                    formatter={(value: number, name: string) => [formatCurrency(value), name]} 
+                  />
+                  <Legend iconType="circle" wrapperStyle={{ paddingTop: '10px' }} />
                   <Bar dataKey="revenue" fill="#3B82F6" name="Tổng doanh thu phát sinh" radius={[4, 4, 0, 0]} />
                   <Bar dataKey="paid" fill="#10B981" name="Thực thu (Đã thanh toán)" radius={[4, 4, 0, 0]} />
                 </BarChart>
@@ -201,23 +269,9 @@ export function AccountingDashboard() {
           )}
         </div>
 
-        {/* Pie Chart giữ nguyên UI */}
+        {/* PIE CHART: Trạng Thái Hóa Đơn */}
         <div className="bg-white rounded-xl p-6 border border-gray-200 shadow-sm">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-bold text-gray-900">Nguồn thu</h3>
-            <select 
-              value={selectedPieMonth} 
-              onChange={(e) => setSelectedPieMonth(parseInt(e.target.value))}
-              className="text-xs border border-gray-300 rounded-md p-1 focus:outline-none focus:ring-1 focus:ring-blue-500 bg-white cursor-pointer"
-            >
-              {Array.from({ length: 12 }, (_, i) => (
-                <option key={i + 1} value={i + 1}>
-                  Tháng {i + 1}
-                </option>
-              ))}
-            </select>
-          </div>
-
+          <h3 className="text-lg font-bold text-gray-900 mb-4">Thành phần nguồn thu</h3>
           {isLoading ? (
             <div className="flex justify-center items-center h-[280px]">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
@@ -228,52 +282,46 @@ export function AccountingDashboard() {
                 <ResponsiveContainer width="100%" height="100%">
                   <RechartsPieChart>
                     <Pie 
-                      key={filteredBillStatusData.length}
-                      data={filteredBillStatusData.length > 0 ? filteredBillStatusData : [{ name: 'Trống', value: 1, color: '#f3f4f6' }]} 
-                      cx="50%" cy="50%" innerRadius={70} outerRadius={100} paddingAngle={2} dataKey="value"
+                      data={filteredBillStatusData.length > 0 ? filteredBillStatusData : [{ name: 'Không có dữ liệu', value: 1, color: '#e5e7eb' }]} 
+                      cx="50%" cy="50%" 
+                      innerRadius={70} 
+                      outerRadius={110} 
+                      paddingAngle={2} 
+                      dataKey="value"
+                      labelLine={false}
                     >
-                      {filteredBillStatusData.length > 0 ? (
-                        filteredBillStatusData.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={entry.color} />
-                        ))
-                      ) : (
-                        <Cell fill="#f3f4f6" />
-                      )}
+                      {(filteredBillStatusData.length > 0 ? filteredBillStatusData : [{ name: 'Không có dữ liệu', value: 1, color: '#e5e7eb' }]).map((entry, index) => (<Cell key={`cell-${index}`} fill={entry.color} />))}
                     </Pie>
-                    <Tooltip formatter={(v: number, name: string) => [formatCurrency(v), name]} />
+                    <Tooltip 
+                      contentStyle={{ backgroundColor: 'white', border: '1px solid #e5e7eb', borderRadius: '8px', padding: '10px' }} 
+                      formatter={(value: number, name: string) => [`${value} hóa đơn`, name]} 
+                    />
                   </RechartsPieChart>
                 </ResponsiveContainer>
               </div>
-
-              <div className="flex flex-col gap-2 mt-4 max-h-[150px] overflow-y-auto pr-1">
+              <div className="flex flex-col gap-2 mt-4">
                 {filteredBillStatusData.length > 0 ? (
                   filteredBillStatusData.map((item) => (
-                    <div key={item.name} className="flex items-center justify-between p-1">
+                    <div key={item.name} className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
-                      <div 
-                        className="rounded-full" 
-                        style={{ 
-                          backgroundColor: item.color , 
-                          width: '10px',          
-                          height: '10px',        
-                          minWidth: '10px',       
-                          minHeight: '10px',     
-                          display: 'block',     
-                          flexShrink: 0          
-                        }} 
-                      />                        <span className="text-xs text-gray-600">{item.name}</span>
+                        <div className="w-3 h-3 rounded-full" style={{ backgroundColor: item.color }} />
+                        <span className="text-sm text-gray-600">{item.name}</span>
                       </div>
-                      <span className="text-xs font-bold text-gray-900">{formatCurrency(item.amount)}</span>
+                      <div className="text-right">
+                        <span className="text-sm font-bold text-gray-900">{item.value}</span>
+                        <span className="text-xs text-gray-500 block">{formatCurrency(item.amount)}</span>
+                      </div>
                     </div>
                   ))
                 ) : (
-                  <p className="text-center text-xs text-gray-400 italic py-4">Tháng này chưa phát sinh doanh thu</p>
+                  <p className="text-sm text-gray-500 text-center">Chưa có dữ liệu</p>
                 )}
               </div>
             </>
           )}
         </div>
       </div>
+
     </div>
   );
 }

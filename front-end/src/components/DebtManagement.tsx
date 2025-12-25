@@ -1,8 +1,9 @@
-import { Search, Plus, Download, Clock, CheckCircle, AlertCircle, DollarSign, Calendar, CreditCard, List, X } from 'lucide-react';
+import { Search, Plus, Download, Clock, CheckCircle, AlertCircle, DollarSign, Calendar, CreditCard, List, X, Loader2, Upload } from 'lucide-react';
 import { Modal } from './Modal';
 import { Toaster, toast } from 'sonner';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import React from 'react';
+import * as XLSX from 'xlsx';
 
 
 export function DebtManagement() {
@@ -25,14 +26,22 @@ export function DebtManagement() {
     description: ''
   });
 
- 
- 
-
-  const [bills, setBills] = useState([]);
+  const [bills, setBills] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+  const [isDataLoaded, setIsDataLoaded] = useState(false);
+  const [isApproving, setIsApproving] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   
-  // Mặc định là 0 để hiển thị "Tất cả các tháng"
-  const [selectedMonth, setSelectedMonth] = useState(1); 
+  // Không dùng localStorage nữa, chỉ dùng API thật
+  
+  // State cho inline editing
+  const [editingCell, setEditingCell] = useState<{ row: string; col: string } | null>(null);
+  const [editingValue, setEditingValue] = useState<string>('');
+  
+  // Bắt buộc chọn tháng (không có "Tất cả các tháng")
+  const [selectedMonth, setSelectedMonth] = useState(currentDate.getMonth() + 1); 
   const [selectedYear, setSelectedYear] = useState(currentDate.getFullYear());
 
   const [stats, setStats] = useState({
@@ -46,12 +55,8 @@ export function DebtManagement() {
   const fetchBills = async () => {
     setIsLoading(true);
     try {
-      // 1. LOGIC XÂY DỰNG URL: Mặc định lấy theo năm
-      let url = `http://localhost:8081/api/v1/accounting/invoices?year=${selectedYear}`; 
-
-      if (selectedMonth > 0) {
-        url += `&month=${selectedMonth}`;
-      }
+      // Bắt buộc có tháng và năm
+      const url = `http://localhost:8081/api/v1/accounting/invoices?year=${selectedYear}&month=${selectedMonth}`;
       
       const response = await fetch(url);
       if (!response.ok) throw new Error("Không thể tải dữ liệu hóa đơn");
@@ -59,20 +64,357 @@ export function DebtManagement() {
       const res = await response.json();
       const data = res.data || [];
       
-        setBills(data);
-        calculateStats(data);
+      // Chỉ dùng dữ liệu từ API, không dùng localStorage
+      console.log('fetchBills - data from API:', data.length);
       
+      // Chỉ dùng dữ liệu từ API
+      setBills(data);
+      calculateStats(data);
+      setIsDataLoaded(data.length > 0);
       
     } catch (error) {
       console.error("Lỗi tải hóa đơn:", error);
-     
+      const errorMessage = error instanceof Error ? error.message : "Không thể tải dữ liệu hóa đơn";
+      toast.error("Lỗi tải dữ liệu", { description: errorMessage });
+      setBills([]);
+      calculateStats([]);
+      setIsDataLoaded(false);
     } finally {
       setIsLoading(false);
     }
   };
 
+  // Handle file upload click
+  const handleUploadClick = () => {
+    if (isUploading) return;
+    if (fileInputRef.current) {
+      fileInputRef.current.click();
+    }
+  };
+
+  // Hàm download template Excel
+  const handleDownloadTemplate = () => {
+    if (!selectedMonth || !selectedYear) {
+      toast.error("Vui lòng chọn tháng và năm", { description: "Cần chọn Tháng và Năm trước khi tải template" });
+      return;
+    }
+
+    try {
+      // Headers theo yêu cầu
+      const headers = [
+        'STT',
+        'Căn hộ',
+        'Hóa đơn theo tháng đã chọn',
+        'Số tiền',
+        'Trạng thái'
+      ];
+
+      // Tạo dữ liệu mẫu
+      const sampleData = [
+        [1, 'P.101', `${selectedMonth}/${selectedYear}`, 5000000, 'PENDING'],
+        [2, 'P.102', `${selectedMonth}/${selectedYear}`, 6000000, 'PENDING'],
+        [3, 'P.103', `${selectedMonth}/${selectedYear}`, 5500000, 'PENDING']
+      ];
+
+      // Tạo worksheet
+      const worksheetData = [headers, ...sampleData];
+      const worksheet = XLSX.utils.aoa_to_sheet(worksheetData);
+
+      // Tạo workbook
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, 'Template');
+
+      // Xuất file Excel
+      const fileName = `Template_hoa_don_${selectedMonth}_${selectedYear}.xlsx`;
+      XLSX.writeFile(workbook, fileName);
+
+      toast.success("Đã tải template", { description: `File ${fileName} đã được tải xuống` });
+    } catch (error) {
+      console.error("Lỗi tải template:", error);
+      toast.error("Lỗi tải template", { description: "Không thể tải template. Vui lòng thử lại." });
+    }
+  };
+
+  // Handle file upload and generate invoices from file
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) {
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+      return;
+    }
+
+    // Kiểm tra bắt buộc chọn tháng và năm
+    if (!selectedMonth || !selectedYear) {
+      toast.error("Vui lòng chọn tháng và năm", { description: "Cần chọn Tháng và Năm trước khi tạo hóa đơn" });
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+      return;
+    }
+
+    // Kiểm tra định dạng file
+    if (!file.name.match(/\.(xlsx|xls)$/i)) {
+      toast.error("Định dạng file không hợp lệ", { description: "Vui lòng chọn file Excel (.xlsx hoặc .xls)" });
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+      return;
+    }
+
+    setIsUploading(true);
+    setIsGenerating(true);
+
+    try {
+      const reader = new FileReader();
+      reader.onload = async (e) => {
+        let jsonData: any[] = [];
+        
+        try {
+          const data = new Uint8Array(e.target?.result as ArrayBuffer);
+          const workbook = XLSX.read(data, { type: 'array' });
+          const firstSheetName = workbook.SheetNames[0];
+          const worksheet = workbook.Sheets[firstSheetName];
+          jsonData = XLSX.utils.sheet_to_json<any>(worksheet);
+
+          if (jsonData.length === 0) {
+            toast.error("File Excel trống", { description: "Vui lòng kiểm tra lại file của bạn" });
+            setIsUploading(false);
+            setIsGenerating(false);
+            if (fileInputRef.current) {
+              fileInputRef.current.value = '';
+            }
+            return;
+          }
+
+          console.log('Parsed invoice data from file:', jsonData);
+
+          // Gọi API để tạo hóa đơn từ file
+          const response = await fetch(
+            `http://localhost:8081/api/v1/accounting/invoices/generation?month=${selectedMonth}&year=${selectedYear}`,
+            {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                data: jsonData
+              })
+            }
+          );
+
+          if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(errorText || "Không thể tạo hóa đơn");
+          }
+
+          const res = await response.json();
+          
+          // Lấy dữ liệu từ API response
+          if (!res.data || res.data.length === 0) {
+            throw new Error("API không trả về dữ liệu hóa đơn");
+          }
+          
+          const newInvoices = res.data;
+          
+          // Chỉ lưu vào state tạm thời, KHÔNG lưu vào localStorage
+          setBills(prev => [...prev, ...newInvoices]);
+          setIsDataLoaded(true);
+          
+          toast.success("Tạo hóa đơn thành công", { description: res.message || `Đã tạo ${newInvoices.length} hóa đơn từ file ở trạng thái Pending` });
+        } catch (error) {
+          console.error("Lỗi xử lý file:", error);
+          const errorMessage = error instanceof Error ? error.message : "Không thể tạo hóa đơn. Vui lòng thử lại.";
+          toast.error("Lỗi tạo hóa đơn", { description: errorMessage });
+        } finally {
+          setIsUploading(false);
+          setIsGenerating(false);
+          if (fileInputRef.current) {
+            fileInputRef.current.value = '';
+          }
+        }
+      };
+
+      reader.onerror = () => {
+        toast.error("Lỗi đọc file", { description: "Không thể đọc file. Vui lòng thử lại." });
+        setIsUploading(false);
+        setIsGenerating(false);
+        if (fileInputRef.current) {
+          fileInputRef.current.value = '';
+        }
+      };
+
+      reader.readAsArrayBuffer(file);
+    } catch (error) {
+      console.error("Lỗi upload file:", error);
+      toast.error("Lỗi upload", { description: "Đã xảy ra lỗi khi upload file." });
+      setIsUploading(false);
+      setIsGenerating(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
+  };
+
+  // Approve all PENDING invoices (Duyệt tất cả) - Chuyển từ PENDING sang UNPAID
+  const handleApproveAll = async () => {
+    if (!isDataLoaded) {
+      toast.error("Chưa có dữ liệu", { description: "Vui lòng tải lên file trước" });
+      return;
+    }
+
+    const pendingBills = bills.filter(bill => bill.status === 'PENDING');
+    if (pendingBills.length === 0) {
+      toast.info("Không có hóa đơn cần duyệt", { description: "Tất cả hóa đơn đã được duyệt" });
+      return;
+    }
+
+    setIsApproving(true);
+    try {
+      // Gọi API để duyệt tất cả hóa đơn PENDING
+      const response = await fetch(`http://localhost:8081/api/v1/accounting/invoices/approve-all?month=${selectedMonth}&year=${selectedYear}`, { 
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(errorText || `HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      const res = await response.json();
+      
+      // Reload dữ liệu từ API sau khi duyệt
+      await fetchBills();
+      
+      toast.success("Đã duyệt tất cả hóa đơn", { description: res.message || `Đã duyệt ${pendingBills.length} hóa đơn` });
+    } catch (error) {
+      console.error("Lỗi duyệt hóa đơn:", error);
+      toast.error("Lỗi duyệt hóa đơn", { description: (error as Error).message });
+    } finally {
+      setIsApproving(false);
+    }
+  };
+
+  // Inline editing handlers
+  const handleCellEdit = (billId: string, col: string, value: any) => {
+    setEditingCell({ row: billId, col }); // Dùng billId thay vì index để tránh lỗi khi filter
+    setEditingValue(String(value || ''));
+  };
+
+  const handleCellSave = async (billId: string, col: string) => {
+    const bill = bills.find(b => b.id === billId);
+    if (!bill) return;
+
+    const newValue = Number(editingValue);
+    if (isNaN(newValue) || newValue < 0) {
+      toast.error("Giá trị không hợp lệ", { description: "Vui lòng nhập số dương" });
+      setEditingCell(null);
+      return;
+    }
+
+    try {
+      // Gọi API để cập nhật hóa đơn
+      const response = await fetch(`http://localhost:8081/api/v1/accounting/invoices/${billId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          totalAmount: newValue
+        })
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(errorText || `HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      // Reload dữ liệu từ API sau khi cập nhật
+      await fetchBills();
+
+      setEditingCell(null);
+      toast.success("Đã cập nhật", { description: "Giá trị đã được cập nhật" });
+    } catch (error) {
+      console.error("Lỗi cập nhật:", error);
+      const errorMessage = error instanceof Error ? error.message : "Không thể cập nhật. Vui lòng thử lại.";
+      toast.error("Lỗi cập nhật", { description: errorMessage });
+      setEditingCell(null);
+    }
+  };
+
+  const handleCellCancel = () => {
+    setEditingCell(null);
+    setEditingValue('');
+  };
+
+  // Pay invoice (Thanh toán) - Chuyển từ UNPAID sang PAID
+  const handlePayInvoice = async (invoiceId: string) => {
+    try {
+      // Gọi API để thanh toán hóa đơn
+      const response = await fetch(`http://localhost:8081/api/v1/accounting/invoices/${invoiceId}/pay`, { 
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(errorText || `HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      const res = await response.json();
+      
+      // Reload dữ liệu từ API sau khi thanh toán
+      await fetchBills();
+      
+      toast.success("Thanh toán thành công", { description: res.message || "Hóa đơn đã được thanh toán" });
+    } catch (error) {
+      console.error("Lỗi thanh toán:", error);
+      toast.error("Lỗi thanh toán", { description: (error as Error).message });
+    }
+  };
+
+  // Pay all UNPAID invoices (Thanh toán tất cả) - Chuyển từ UNPAID sang PAID
+  const handlePayAll = async () => {
+    const unpaidBills = bills.filter(bill => bill.status === 'UNPAID');
+    if (unpaidBills.length === 0) {
+      toast.info("Không có hóa đơn cần thanh toán", { description: "Tất cả hóa đơn đã được thanh toán" });
+      return;
+    }
+
+    try {
+      // Gọi API để thanh toán tất cả hóa đơn UNPAID
+      const response = await fetch(`http://localhost:8081/api/v1/accounting/invoices/pay-all?month=${selectedMonth}&year=${selectedYear}`, { 
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(errorText || `HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      const res = await response.json();
+      
+      // Reload dữ liệu từ API sau khi thanh toán
+      await fetchBills();
+      
+      toast.success("Đã thanh toán tất cả hóa đơn", { description: res.message || `Đã thanh toán ${unpaidBills.length} hóa đơn` });
+    } catch (error) {
+      console.error("Lỗi thanh toán:", error);
+      toast.error("Lỗi thanh toán", { description: (error as Error).message });
+    }
+  };
+
   useEffect(() => {
-    fetchBills(); 
+    fetchBills();
   }, [selectedMonth, selectedYear]); 
   
   const calculateStats = (data) => {
@@ -119,9 +461,10 @@ export function DebtManagement() {
   });
   
   // Tạo nhãn thời gian hiển thị
-  const periodLabel = selectedMonth === 0 
-    ? `Năm ${selectedYear}` 
-    : `Tháng ${selectedMonth}/${selectedYear}`;
+  const periodLabel = `Tháng ${selectedMonth}/${selectedYear}`;
+  
+  // Kiểm tra xem đã có hóa đơn chưa
+  const hasInvoices = bills.length > 0;
 
   // Handle update payment button click
   const handleUpdatePaymentClick = (bill: any) => {
@@ -171,184 +514,296 @@ export function DebtManagement() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl text-gray-900">Quản lý hóa đơn</h1>
-          <p className="text-gray-600 mt-1">Theo dõi và quản lý tất cả hóa đơn và thanh toán</p>
         </div>
         
       </div>
       
-      {/* Toolbar: Search + Filter Pills - Pill Design */}
-      <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
-        <div className="flex w-full items-center justify-between gap-3">
-          {/* Left Side: Date Picker + Search Input */}
-          <div className="flex items-center gap-3">
-            {/* Date Picker */}
-            <div className="flex items-center bg-white border border-gray-200 rounded-lg shadow-sm px-3 py-2 transition-all hover:border-blue-400 hover:shadow-md">
-              <Calendar className="w-4 h-4 text-gray-500 flex-shrink-0 mr-2" />
-              
-              {/* Select MONTH */}
-              <select
-                value={selectedMonth}
-                onChange={(e) => setSelectedMonth(Number(e.target.value))}
-                className="text-sm font-medium text-gray-700 bg-transparent border-none focus:ring-0 cursor-pointer outline-none appearance-none pr-6"
-                style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' fill=\'none\' viewBox=\'0 0 24 24\' stroke=\'%236b7280\'%3E%3Cpath stroke-linecap=\'round\' stroke-linejoin=\'round\' stroke-width=\'2\' d=\'M19 9l-7 7-7-7\'/%3E%3C/svg%3E")', backgroundRepeat: 'no-repeat', backgroundPosition: 'right 0 center', backgroundSize: '16px' }}
-              >
-                <option value={0}>Tất cả các tháng</option>
-                {Array.from({ length: 12 }, (_, i) => i + 1).map(month => (
-                  <option key={month} value={month}>Tháng {month}</option>
-                ))}
-              </select>
-              
-              {/* Divider */}
-              <div className="w-px h-4 bg-gray-300 mx-2"></div>
-              
-              {/* Select YEAR */}
-              <select
-                value={selectedYear}
-                onChange={(e) => setSelectedYear(Number(e.target.value))}
-                className="text-sm font-medium text-gray-700 bg-transparent border-none focus:ring-0 cursor-pointer outline-none appearance-none pr-6"
-                style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' fill=\'none\' viewBox=\'0 0 24 24\' stroke=\'%236b7280\'%3E%3Cpath stroke-linecap=\'round\' stroke-linejoin=\'round\' stroke-width=\'2\' d=\'M19 9l-7 7-7-7\'/%3E%3C/svg%3E")', backgroundRepeat: 'no-repeat', backgroundPosition: 'right 0 center', backgroundSize: '16px' }}
-              >
-                {[currentDate.getFullYear() - 1, currentDate.getFullYear(), currentDate.getFullYear() + 1].map(year => (
-                  <option key={year} value={year}>Năm {year}</option>
-                ))}
-              </select>
-            </div>
+      {/* First Row: Date Filter + Search */}
+      <div className="flex items-center gap-3 mb-4">
+        {/* Date/Year Filter */}
+        <div className="flex items-center bg-white border border-gray-200 rounded-lg shadow-sm px-3 py-2 transition-all hover:border-blue-400 hover:shadow-md">
+          <Calendar className="w-4 h-4 text-gray-500 flex-shrink-0 mr-2" />
+          
+          {/* Select MONTH - Bắt buộc chọn */}
+          <select
+            value={selectedMonth}
+            onChange={(e) => setSelectedMonth(Number(e.target.value))}
+            className="text-sm font-medium text-gray-700 bg-transparent border-none focus:ring-0 cursor-pointer outline-none appearance-none pr-6"
+            style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' fill=\'none\' viewBox=\'0 0 24 24\' stroke=\'%236b7280\'%3E%3Cpath stroke-linecap=\'round\' stroke-linejoin=\'round\' stroke-width=\'2\' d=\'M19 9l-7 7-7-7\'/%3E%3C/svg%3E")', backgroundRepeat: 'no-repeat', backgroundPosition: 'right 0 center', backgroundSize: '16px' }}
+          >
+            {Array.from({ length: 12 }, (_, i) => i + 1).map(month => (
+              <option key={month} value={month}>Tháng {month}</option>
+            ))}
+          </select>
+          
+          {/* Divider */}
+          <div className="w-px h-4 bg-gray-300 mx-2"></div>
+          
+          {/* Select YEAR */}
+          <select
+            value={selectedYear}
+            onChange={(e) => setSelectedYear(Number(e.target.value))}
+            className="text-sm font-medium text-gray-700 bg-transparent border-none focus:ring-0 cursor-pointer outline-none appearance-none pr-6"
+            style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' fill=\'none\' viewBox=\'0 0 24 24\' stroke=\'%236b7280\'%3E%3Cpath stroke-linecap=\'round\' stroke-linejoin=\'round\' stroke-width=\'2\' d=\'M19 9l-7 7-7-7\'/%3E%3C/svg%3E")', backgroundRepeat: 'no-repeat', backgroundPosition: 'right 0 center', backgroundSize: '16px' }}
+          >
+            {[currentDate.getFullYear() - 1, currentDate.getFullYear(), currentDate.getFullYear() + 1].map(year => (
+              <option key={year} value={year}>Năm {year}</option>
+            ))}
+          </select>
+        </div>
 
-            {/* Search Input - Pill Style */}
-            <div className="relative w-96">
-            <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
-            <input
-              type="text"
-              placeholder="Tìm kiếm hoá đơn theo số phòng"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full bg-white rounded-full shadow-sm border border-gray-200 px-4 py-2 pl-12 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            />
-          </div>
-          </div>
-
-          {/* Filter Buttons - Pill Chips */}
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => setStatusFilter('All')}
-              className={`bg-white rounded-full border shadow-sm px-4 py-2 text-sm font-medium flex items-center justify-center gap-2 hover:bg-gray-50 cursor-pointer transition-all ${
-                statusFilter === 'All'
-                  ? 'border-blue-500 text-blue-700'
-                  : 'border-gray-200 text-gray-600'
-              }`}
-            >
-              <List className="w-4 h-4" />
-              Tất cả
-            </button>
-            <button
-              onClick={() => setStatusFilter('PAID')}
-              className={`bg-white rounded-full border shadow-sm px-4 py-2 text-sm font-medium flex items-center justify-center gap-2 hover:bg-gray-50 cursor-pointer transition-all ${
-                statusFilter === 'PAID'
-                  ? 'border-blue-500 text-blue-700'
-                  : 'border-gray-200 text-gray-600'
-              }`}
-            >
-              <CheckCircle className="w-4 h-4 text-green-600" />
-              Đã thanh toán
-            </button>
-            <button
-              onClick={() => setStatusFilter('PENDING')}
-              className={`bg-white rounded-full border shadow-sm px-4 py-2 text-sm font-medium flex items-center justify-center gap-2 hover:bg-gray-50 cursor-pointer transition-all ${
-                statusFilter === 'PENDING'
-                  ? 'border-blue-500 text-blue-700'
-                  : 'border-gray-200 text-gray-600'
-              }`}
-            >
-              <Clock className="w-4 h-4 text-blue-600" />
-              Đang chờ
-            </button>
-            <button
-              onClick={() => setStatusFilter('UNPAID')}
-              className={`bg-white rounded-full border shadow-sm px-4 py-2 text-sm font-medium flex items-center justify-center gap-2 hover:bg-gray-50 cursor-pointer transition-all ${
-                statusFilter === 'UNPAID'
-                  ? 'border-blue-500 text-blue-700'
-                  : 'border-gray-200 text-gray-600'
-              }`}
-            >
-              <AlertCircle className="w-4 h-4 text-red-600" />
-              Chưa thanh toán
-            </button>
-          </div>
+        {/* Search Bar */}
+        <div className="relative w-96">
+          <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+          <input
+            type="text"
+            placeholder="Tìm kiếm hoá đơn theo số phòng"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full bg-white rounded-full shadow-sm border border-gray-200 px-4 py-2 pl-12 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+          />
         </div>
       </div>
+
+      {/* Second Row: Filter Tabs + Tạo hóa đơn Button */}
+      <div className="flex items-center justify-between gap-3 mb-6">
+        <div className="flex gap-3">
+          <button
+            onClick={() => setStatusFilter('All')}
+            className={`rounded-xl border shadow-sm px-4 py-2 text-sm font-medium flex items-center justify-center gap-2 hover:bg-gray-50 cursor-pointer transition-all ${
+              statusFilter === 'All'
+                ? 'bg-blue-50 text-blue-700 border-blue-500'
+                : 'bg-white border-gray-200 text-gray-600'
+            }`}
+          >
+            <List className="w-4 h-4" />
+            Tất cả
+          </button>
+          <button
+            onClick={() => setStatusFilter('PAID')}
+            className={`rounded-xl border shadow-sm px-4 py-2 text-sm font-medium flex items-center justify-center gap-2 hover:bg-gray-50 cursor-pointer transition-all ${
+              statusFilter === 'PAID'
+                ? 'bg-green-50 text-green-700 border-green-500'
+                : 'bg-white border-gray-200 text-gray-600'
+            }`}
+          >
+            <CheckCircle className="w-4 h-4" />
+            Đã thanh toán
+          </button>
+          <button
+            onClick={() => setStatusFilter('PENDING')}
+            className={`rounded-xl border shadow-sm px-4 py-2 text-sm font-medium flex items-center justify-center gap-2 hover:bg-gray-50 cursor-pointer transition-all ${
+              statusFilter === 'PENDING'
+                ? 'bg-yellow-50 text-yellow-700 border-yellow-500'
+                : 'bg-white border-gray-200 text-gray-600'
+            }`}
+          >
+            <Clock className="w-4 h-4" />
+            Chờ duyệt
+          </button>
+          <button
+            onClick={() => setStatusFilter('UNPAID')}
+            className={`rounded-xl border shadow-sm px-4 py-2 text-sm font-medium flex items-center justify-center gap-2 hover:bg-gray-50 cursor-pointer transition-all ${
+              statusFilter === 'UNPAID'
+                ? 'bg-red-50 text-red-700 border-red-500'
+                : 'bg-white border-gray-200 text-gray-600'
+            }`}
+          >
+            <AlertCircle className="w-4 h-4" />
+            Chưa thanh toán
+          </button>
+        </div>
+
+        {/* Hidden file input */}
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept=".xlsx,.xls"
+          onChange={handleFileUpload}
+          style={{ display: 'none' }}
+          disabled={isUploading}
+        />
+
+        {/* Action Buttons */}
+        <div className="flex items-center gap-3">
+          {/* Tạo hóa đơn Button */}
+          <button
+            onClick={handleUploadClick}
+            disabled={isUploading || isGenerating}
+            className={`px-4 py-2 rounded-xl font-semibold transition-all flex items-center gap-2 ${
+              isUploading || isGenerating
+                ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                : 'bg-blue-600 text-white hover:bg-blue-700 shadow-md hover:shadow-lg'
+            }`}
+          >
+            {isUploading || isGenerating ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                Đang tạo...
+              </>
+            ) : (
+              <>
+                <Plus className="w-4 h-4" />
+                Tạo hóa đơn
+              </>
+            )}
+          </button>
+
+          {/* Duyệt Button - Hiển thị khi đã upload file */}
+          {isDataLoaded && bills.some(bill => bill.status === 'PENDING') && (
+            <button
+              onClick={handleApproveAll}
+              disabled={isApproving}
+              className={`px-4 py-2 rounded-xl font-semibold transition-all flex items-center gap-2 ${
+                isApproving
+                  ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                  : 'bg-green-600 text-white hover:bg-green-700 shadow-md hover:shadow-lg'
+              }`}
+            >
+              {isApproving ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Đang duyệt...
+                </>
+              ) : (
+                <>
+                  <CheckCircle className="w-4 h-4" />
+                  Duyệt
+                </>
+              )}
+            </button>
+          )}
+
+          {/* Thanh toán Button - Hiển thị khi có hóa đơn đã duyệt (UNPAID) */}
+          {bills.some(bill => bill.status === 'UNPAID') && (
+            <button
+              onClick={handlePayAll}
+              className="px-4 py-2 rounded-xl font-semibold transition-all flex items-center gap-2 bg-green-600 text-white hover:bg-green-700 shadow-md hover:shadow-lg"
+            >
+              <CreditCard className="w-4 h-4" />
+              Thanh toán
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Empty State - Hiển thị khi chưa có hóa đơn */}
+      {!hasInvoices && !isLoading && (
+        <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-12 text-center">
+          <AlertCircle className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+          <h3 className="text-xl font-semibold text-gray-900 mb-2">Chưa có hóa đơn</h3>
+          <p className="text-gray-600">Tháng {selectedMonth}/{selectedYear} chưa có hóa đơn. Hãy sử dụng nút "Tạo hóa đơn" ở trên để tạo hóa đơn.</p>
+        </div>
+      )}
 
       {/* Bills Table - SỬ DỤNG filteredBills */}
-      <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-gray-100">
-                <th className="text-center px-6 py-3 text-gray-500 font-bold text-sm uppercase tracking-wider">Căn hộ</th>
-                <th className="text-center px-6 py-3 text-gray-500 font-bold text-sm uppercase tracking-wider">Ngày tạo hoá đơn</th>
-                <th className="text-center px-6 py-3 text-gray-500 font-bold text-sm uppercase tracking-wider">Ngày thanh toán</th>
-                <th className="text-center px-6 py-3 text-gray-500 font-bold text-sm uppercase tracking-wider">Số tiền</th>
-                <th className="text-center px-6 py-3 text-gray-500 font-bold text-sm uppercase tracking-wider">Trạng thái</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100">
-              {isLoading ? (
-                <tr><td colSpan={4} className="text-center py-6 text-gray-500">Đang tải hóa đơn...</td></tr>
-              ) : filteredBills.length === 0 ? (
-                <tr><td colSpan={4} className="text-center py-6 text-gray-500">Không tìm thấy hóa đơn nào trong {periodLabel}.</td></tr>
-              ) : (
-                filteredBills.map((bill) => (
-                  <tr 
-                    key={bill.id} 
-                    className="hover:bg-gray-50 transition-colors cursor-pointer"
-                    onClick={() => setSelectedInvoice(bill)}
-                  >
-                    <td className="px-6 py-4 text-center align-middle">
-                      <span className="px-3 py-1 bg-gray-200 text-gray-800 rounded-lg text-sm whitespace-nowrap inline-block">
-                        {bill.apartmentLabel}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 text-center text-gray-700 text-sm align-middle">
-                      {bill.createdTime ? new Date(bill.createdTime).toLocaleString('vi-VN', {
-                        day: '2-digit',
-                        month: '2-digit',
-                        year: 'numeric',
-                      }) : "-"}
-                    </td>
-                    
-                    <td className="px-6 py-4 text-center text-gray-700 text-sm align-middle">
-                      {bill.status === 'PAID' && bill.paymentDate 
-                        ? new Date(bill.paymentDate).toLocaleDateString('vi-VN') 
-                        : bill.status === 'UNPAID' 
-                        ? '-' 
-                        : 'N/A'}
-                    </td>
-                    <td className="px-6 py-4 text-center align-middle">
-                      <span className="text-gray-900 font-bold">{formatCurrency(bill.totalAmount)}</span>
-                    </td>
-    
-                    <td className="px-6 py-4 text-center align-middle">
-                      <span className={`rounded-full px-3 py-1 inline-flex items-center gap-2 w-fit text-sm font-medium ${
-                        bill.status === 'PAID' 
-                          ? 'bg-green-100 text-green-700' 
-                          : bill.status === 'PENDING'
-                          ? 'bg-blue-100 text-blue-700'
-                          : 'bg-red-100 text-red-700'
-                      }`}>
-                        {bill.status === 'PAID' && <CheckCircle className="w-4 h-4" />}
-                        {bill.status === 'PENDING' && <Clock className="w-4 h-4" />}
-                        {bill.status === 'UNPAID' && <AlertCircle className="w-4 h-4" />}
-                        {bill.status === 'PAID' ? 'Đã thanh toán' : 
-                         bill.status === 'PENDING' ? 'Đang chờ' : 
-                         'Chưa thanh toán'}
-                      </span>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
+      {hasInvoices && (
+        <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b border-gray-100">
+                  <th className="text-center px-6 py-3 text-gray-500 font-bold text-sm uppercase tracking-wider">STT</th>
+                  <th className="text-center px-6 py-3 text-gray-500 font-bold text-sm uppercase tracking-wider">Căn hộ</th>
+                  <th className="text-center px-6 py-3 text-gray-500 font-bold text-sm uppercase tracking-wider">Hóa đơn</th>
+                  <th className="text-center px-6 py-3 text-gray-500 font-bold text-sm uppercase tracking-wider">Số tiền</th>
+                  <th className="text-center px-6 py-3 text-gray-500 font-bold text-sm uppercase tracking-wider">Trạng thái</th>
+                  <th className="text-center px-6 py-3 text-gray-500 font-bold text-sm uppercase tracking-wider">Thao tác</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {isLoading ? (
+                  <tr><td colSpan={6} className="text-center py-6 text-gray-500">Đang tải hóa đơn...</td></tr>
+                ) : filteredBills.length === 0 ? (
+                  <tr><td colSpan={6} className="text-center py-6 text-gray-500">Không tìm thấy hóa đơn nào phù hợp với bộ lọc.</td></tr>
+                ) : (
+                  filteredBills.map((bill, index) => (
+                    <tr 
+                      key={bill.id} 
+                      className="hover:bg-gray-50 transition-colors"
+                    >
+                      <td className="px-6 py-4 text-center align-middle text-gray-700 text-sm">
+                        {index + 1}
+                      </td>
+                      <td className="px-6 py-4 text-center align-middle">
+                        <span className="px-3 py-1 bg-gray-200 text-gray-800 rounded-lg text-sm whitespace-nowrap inline-block">
+                          {bill.apartmentLabel || bill.apartmentNumber || 'N/A'}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 text-center text-gray-700 text-sm align-middle">
+                        {selectedMonth}/{selectedYear}
+                      </td>
+                      <td 
+                        className="px-6 py-4 text-center align-middle"
+                        onClick={() => {
+                          if (bill.status === 'PENDING' && isDataLoaded) {
+                            handleCellEdit(bill.id, 'totalAmount', bill.totalAmount);
+                          }
+                        }}
+                        style={{ cursor: bill.status === 'PENDING' && isDataLoaded ? 'pointer' : 'default' }}
+                      >
+                        {editingCell && editingCell.row === bill.id && editingCell.col === 'totalAmount' ? (
+                          <input
+                            type="number"
+                            value={editingValue}
+                            onChange={(e) => setEditingValue(e.target.value)}
+                            onBlur={() => handleCellSave(bill.id, 'totalAmount')}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') {
+                                handleCellSave(bill.id, 'totalAmount');
+                              } else if (e.key === 'Escape') {
+                                handleCellCancel();
+                              }
+                            }}
+                            className="w-full px-2 py-1 border border-blue-500 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-center"
+                            autoFocus
+                          />
+                        ) : (
+                          <span className={`text-gray-900 font-bold ${bill.status === 'PENDING' && isDataLoaded ? 'hover:bg-blue-100 px-2 py-1 rounded' : ''}`}>
+                            {formatCurrency(bill.totalAmount)}
+                          </span>
+                        )}
+                      </td>
+      
+                      <td className="px-6 py-4 text-center align-middle">
+                        <span className={`rounded-full px-3 py-1 inline-flex items-center gap-2 w-fit text-sm font-medium ${
+                          bill.status === 'PAID' 
+                            ? 'bg-green-100 text-green-700' 
+                            : bill.status === 'PENDING'
+                            ? 'bg-yellow-100 text-yellow-700'
+                            : 'bg-red-100 text-red-700'
+                        }`}>
+                          {bill.status === 'PAID' && <CheckCircle className="w-4 h-4" />}
+                          {bill.status === 'PENDING' && <Clock className="w-4 h-4" />}
+                          {bill.status === 'UNPAID' && <AlertCircle className="w-4 h-4" />}
+                          {bill.status === 'PAID' ? 'Đã thanh toán' : 
+                           bill.status === 'PENDING' ? 'Chờ duyệt' : 
+                           'Chưa thanh toán'}
+                        </span>
+                      </td>
+                      
+                      <td className="px-6 py-4 text-center align-middle">
+                        <div className="flex items-center justify-center gap-2">
+                          {/* Xem chi tiết - Luôn có */}
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSelectedInvoice(bill);
+                            }}
+                            className="px-3 py-1.5 bg-blue-50 text-blue-600 rounded-lg text-sm font-medium hover:bg-blue-100 transition-colors"
+                          >
+                            Xem chi tiết
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Create Bill Modal */}
       <Modal
