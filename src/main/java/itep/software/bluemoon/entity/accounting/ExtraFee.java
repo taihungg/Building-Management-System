@@ -48,10 +48,17 @@ public class ExtraFee {
     @Column(name = "description", columnDefinition = "TEXT")
     private String description;
 
-    @Column(name = "amount", nullable = false, precision = 20, scale = 2)
+    @Column(name = "quantity", precision = 10, scale = 2)
+    private BigDecimal quantity;
+
+    @Column(name = "unit_price", precision = 20, scale = 2)
+    private BigDecimal unitPrice;
+
+    @Column(name = "amount", precision = 20, scale = 2)
     private BigDecimal amount;
 
     @Column(name = "fee_date", nullable = false)
+    @JsonFormat(pattern = "yyyy-MM-dd")
     private LocalDate feeDate;
 
     @Column(name = "is_billed")
