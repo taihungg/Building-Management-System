@@ -32,6 +32,7 @@ const menuItems = [
   { id: 'bills', label: 'Hóa Đơn', icon: Receipt, path: '/admin/bills' },
   { id: 'services', label: 'Sự Cố/Yêu Cầu', icon: Wrench, path: '/admin/services' },
   { id: 'notifications', label: 'Thông Báo', icon: Bell, path: '/admin/notifications' },
+  { id: 'extra-services', label: 'Dịch vụ phát sinh', icon: Lightbulb, path: '/admin/extra-services' },
 ];
 
 const bottomItems = [
