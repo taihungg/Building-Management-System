@@ -1,24 +1,25 @@
 package itep.software.bluemoon.service;
 
-import itep.software.bluemoon.model.DTO.issue.IssueCreateRequestDTO;
-import itep.software.bluemoon.model.DTO.issue.IssueResponseDTO;
-import itep.software.bluemoon.model.projection.IssueSummary;
-import itep.software.bluemoon.model.mapper.EntityToDto;
+import java.util.List;
+import java.util.UUID;
+
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import itep.software.bluemoon.entity.Apartment;
 import itep.software.bluemoon.entity.Issue;
 import itep.software.bluemoon.entity.person.Resident;
 import itep.software.bluemoon.enumeration.IssueStatus;
+import itep.software.bluemoon.enumeration.IssueType;
+import itep.software.bluemoon.model.DTO.issue.IssueCreateRequestDTO;
+import itep.software.bluemoon.model.DTO.issue.IssueResponseDTO;
+import itep.software.bluemoon.model.projection.IssueSummary;
 //import itep.software.bluemoon.enumeration.IssueLevel;
 //import itep.software.bluemoon.enumeration.EscalationRequest;
 import itep.software.bluemoon.repository.ApartmentRepository;
 import itep.software.bluemoon.repository.IssueRepository;
 import itep.software.bluemoon.repository.ResidentRepository;
 import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-import java.util.stream.Collectors;
-import java.util.UUID;
-import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -97,6 +98,17 @@ public class IssueService {
     @Transactional(readOnly = true)
     public List<IssueSummary> getAllIssues() {
     	return issueRepository.findAllIssueSummaries();
+    }
+    // Số lượng Issue có Type là Security
+    @Transactional(readOnly = true)
+    public int countIssuesByType(IssueType type) {
+        return issueRepository.countByType(type);
+    }
+    
+    // Danh sách Issue có Type là Security
+    @Transactional(readOnly = true)
+    public List<IssueSummary> getIssuesByType(IssueType type) {
+        return issueRepository.findIssueSummariesByType(type);
     }
 
 }
