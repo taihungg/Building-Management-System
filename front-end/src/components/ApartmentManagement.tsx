@@ -118,7 +118,7 @@ export function ApartmentManagement() {
         const jsonOwner = await resOwner.json();
         setPotentialOwners(jsonOwner.data || []);
 
-        const resBuild = await fetch('http://localhost:8081/api/v1/buildings/dropdown?keyword=B');
+        const resBuild = await fetch('http://localhost:8081/api/v1/buildings/dropdown?keyword=C');
         if (resBuild.ok) {
            const jsonBuild = await resBuild.json();
            setBuildingList(jsonBuild.data || []);

@@ -34,13 +34,12 @@ export function ExtraServiceManagement() {
     const fetchExtraServices = useCallback(async () => {
         setIsLoading(true);
         try {
-            // Thay đổi URL theo API thực tế của bạn
             const response = await fetch('http://localhost:8081/api/v1/accounting/extra-services');
             const res = await response.json();
             setServices(res.data || []);
         } catch (error) {
-            console.error(error);
-            // setServices([...]) // Bạn có thể set data mẫu ở đây để test UI
+            console.error("Lỗi tải dữ liệu:", error);
+            // setServices([]); 
         } finally {
             setIsLoading(false);
         }
@@ -69,32 +68,59 @@ export function ExtraServiceManagement() {
                     <h1 className="text-3xl font-bold text-gray-900">Dịch vụ phát sinh</h1>
                     <p className="text-gray-500 mt-1">Ghi nhận các khoản phí ngoài tiền nhà (Bể bơi, Gym, sửa chữa...)</p>
                 </div>
-
-                <button 
-                    onClick={() => setIsCreateModalOpen(true)}
-                    className="flex items-center gap-2 px-6 py-3 text-white rounded-xl shadow-lg transition-all hover:scale-105 font-bold"
-                    style={{ backgroundColor: '#6366f1' }}
-                >
-                    <Plus size={20} /> Tạo khoản thu
-                </button>
             </div>
 
-            {/* BỘ LỌC & SEARCH */}
-            <div className="flex flex-col lg:flex-row gap-4">
-                <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-2 flex items-center w-full lg:w-96">
+            {/* BỘ LỌC & SEARCH & NÚT TẠO (DÙNG INLINE CSS ĐỂ ÉP LỀ TRÁI) */}
+            <div style={{ 
+                display: 'flex', 
+                flexDirection: 'row', 
+                alignItems: 'center', 
+                justifyContent: 'flex-start', 
+                gap: '16px', 
+                width: '100%',
+                marginBottom: '24px' 
+            }}>
+                {/* CỤM SEARCH */}
+                <div 
+                    className="bg-white rounded-2xl shadow-sm border border-gray-100 p-2 flex items-center" 
+                    style={{ width: '320px', height: '48px' }}
+                >
                     <Search className="ml-3 text-gray-400" size={18} />
                     <input
                         type="text"
-                        placeholder="Tìm số phòng hoặc nội dung..."
+                        placeholder="Tìm số phòng..."
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                         className="w-full px-3 py-2 bg-transparent focus:outline-none text-sm"
                     />
                 </div>
-                
-                <div className="flex bg-gray-100 p-1 rounded-2xl gap-1">
+
+                {/* NÚT TẠO KHOẢN THU */}
+                <button 
+                    onClick={() => setIsCreateModalOpen(true)}
+                    className="flex items-center justify-center gap-2 px-6 text-white rounded-xl shadow-lg transition-all hover:scale-105 font-bold whitespace-nowrap"
+                    style={{ 
+                        backgroundColor: '#6366f1', 
+                        width: '180px', 
+                        height: '48px',
+                        border: 'none',
+                        cursor: 'pointer'
+                    }}
+                >
+                    <Plus size={20} /> Tạo khoản thu
+                </button>
+
+                {/* CỤM FILTER TABS */}
+                <div 
+                    className="flex bg-gray-100 p-1 rounded-2xl gap-1"
+                    style={{ height: '48px', alignItems: 'center' }}
+                >
                     {SERVICE_TYPES.map(type => (
-                        <button key={type.value} className="px-4 py-2 rounded-xl text-xs font-bold text-gray-500 hover:bg-white hover:shadow-sm transition-all">
+                        <button 
+                            key={type.value} 
+                            className="px-4 py-2 rounded-xl text-xs font-bold text-gray-500 hover:bg-white hover:shadow-sm transition-all whitespace-nowrap"
+                            style={{ height: '36px' }} // Cho nút filter nhỏ hơn khung một chút
+                        >
                             {type.label}
                         </button>
                     ))}
@@ -116,7 +142,9 @@ export function ExtraServiceManagement() {
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-50">
-                            {services.length === 0 ? (
+                            {isLoading ? (
+                                <tr><td colSpan={6} className="text-center py-20 text-gray-400">Đang tải dữ liệu...</td></tr>
+                            ) : services.length === 0 ? (
                                 <tr><td colSpan={6} className="text-center py-20 text-gray-400 italic">Chưa có khoản thu phát sinh nào trong tháng</td></tr>
                             ) : (
                                 services.map((item: any) => (

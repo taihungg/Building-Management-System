@@ -9,7 +9,8 @@ import {
   ChevronLeft,
   Settings,
   User,
-  LogOut
+  LogOut,
+  Heart
 } from 'lucide-react';
 // Sửa lỗi: Import đúng từ 'framer-motion'
 import { motion, AnimatePresence } from 'framer-motion'; 
@@ -33,6 +34,7 @@ const menuItems = [
   { id: 'services', label: 'Sự Cố/Yêu Cầu', icon: Wrench, path: '/admin/services' },
   { id: 'notifications', label: 'Thông Báo', icon: Bell, path: '/admin/notifications' },
   { id: 'extra-services', label: 'Dịch vụ phát sinh', icon: Lightbulb, path: '/admin/extra-services' },
+  {id: 'voluntary-contributions', label: 'Khoản thu tự nguyện', icon: Heart, path: '/admin/voluntary-contributions'}
 ];
 
 const bottomItems = [
