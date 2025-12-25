@@ -1,167 +1,171 @@
 package itep.software.bluemoon.service;
 
-import itep.software.bluemoon.entity.Announcement;
-import itep.software.bluemoon.entity.Apartment;
-import itep.software.bluemoon.entity.person.Resident;
-import itep.software.bluemoon.entity.person.Staff;
-import itep.software.bluemoon.enumeration.AnnouncementTargetType;
-import itep.software.bluemoon.model.projection.AnnouncementSummary;
-import itep.software.bluemoon.model.mapper.EntityToDto;
-import itep.software.bluemoon.model.DTO.announcement.AnnouncementCreateRequestDTO;
-import itep.software.bluemoon.model.DTO.announcement.AnnouncementResponseDTO;
-import itep.software.bluemoon.repository.AnnouncementRepository;
-import itep.software.bluemoon.repository.ApartmentRepository;
-import itep.software.bluemoon.repository.ResidentRepository;
-import itep.software.bluemoon.repository.StaffRepository;
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
+
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import itep.software.bluemoon.entity.Announcement;
+import itep.software.bluemoon.entity.ResidentAnnouncement;
+import itep.software.bluemoon.entity.key.ResidentAnnouncementId;
+import itep.software.bluemoon.entity.person.Resident;
+import itep.software.bluemoon.entity.person.Staff;
+import itep.software.bluemoon.model.DTO.announcement.AnnouncementCreateRequestDTO;
+import itep.software.bluemoon.model.DTO.announcement.AnnouncementResponseDTO;
+import itep.software.bluemoon.model.DTO.announcement.RecipientStatusResponseDTO;
+import itep.software.bluemoon.repository.AnnouncementRepository;
+import itep.software.bluemoon.repository.ResidentAnnouncementRepository;
+import itep.software.bluemoon.repository.ResidentRepository;
+import itep.software.bluemoon.repository.StaffRepository;
+import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
 public class AnnouncementService {
 
     private final AnnouncementRepository announcementRepository;
-    private final StaffRepository staffRepository;
+    private final ResidentAnnouncementRepository residentAnnouncementRepository;
     private final ResidentRepository residentRepository;
-    private final ApartmentRepository apartmentRepository;
+    private final StaffRepository staffRepository;
 
     @Transactional
-    public AnnouncementResponseDTO createAnnouncement(AnnouncementCreateRequestDTO request) {
-        
-        // Validate sender
-        Staff sender = staffRepository.findById(request.getSenderId())
-                .orElseThrow(() -> new RuntimeException("Staff not found"));
-
-        // Get target residents based on targetType
-        List<Resident> receivers = getTargetResidents(request);
-
-        if (receivers.isEmpty()) {
-            throw new RuntimeException("No residents found for the specified target");
-        }
-
-        // Create announcement
+    public void createAnnouncement(AnnouncementCreateRequestDTO request) {
+    	Staff sender = staffRepository.findById(request.getSenderId())
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy nhân viên"));
+    	
         Announcement announcement = Announcement.builder()
                 .title(request.getTitle())
                 .message(request.getMessage())
                 .sender(sender)
-                .receiver(receivers)
+                .targetType(request.getTargetType())
+                .targetDetail(request.getTargetDetail()) 
                 .build();
+        announcement = announcementRepository.save(announcement);
 
-        Announcement saved = announcementRepository.save(announcement);
 
-        // Update residents' receivedAnnouncements
-        for (Resident resident : receivers) {
-            resident.getReceivedAnnouncements().add(saved);
-        }
-        residentRepository.saveAll(receivers);
+        List<Resident> targets = getTargetResidents(request);
 
-        // Build response
-        return AnnouncementResponseDTO.builder()
-                .id(saved.getId())
-                .title(saved.getTitle())
-                .message(saved.getMessage())
-                .senderId(saved.getSender().getId())
-                .senderName(saved.getSender().getFullName())
-                .receiverIds(receivers.stream()
-                        .map(Resident::getId)
-                        .collect(Collectors.toList()))
-                .receiverCount(receivers.size())
-                .createdAt(saved.getCreatedAt())
-                .build();
+        saveInBatches(targets, announcement);
     }
 
     private List<Resident> getTargetResidents(AnnouncementCreateRequestDTO request) {
-        AnnouncementTargetType targetType = request.getTargetType();
+        String detail = request.getTargetDetail();
+        
+        try {
+            return switch (request.getTargetType()) {
+                case BY_BUILDING -> residentRepository.findByBuildingName(detail);
+                
+                case BY_FLOOR -> {
+                    String[] parts = detail.split("-");
+                    if (parts.length < 2) throw new IllegalArgumentException("Định dạng tầng sai (VD: 12 - Block A)");
+                    int floor = Integer.parseInt(parts[0].trim()); //
+                    String buildingName = parts[1].trim(); //
+                    yield residentRepository.findByFloorAndBuildingName(floor, buildingName);
+                }
+                
+                case SPECIFIC_APARTMENTS -> {
+                    String[] parts = detail.split("-"); 
+                    if (parts.length < 2) throw new IllegalArgumentException("Định dạng căn hộ sai (VD: 101, 102 - Block A)");
 
-        return switch (targetType) {
-            case ALL -> getAllResidents();
-            case BY_BUILDING -> getResidentsByBuilding(request.getBuildingId());
-            case BY_FLOOR -> getResidentsByFloor(request.getBuildingId(), request.getFloor());
-            case SPECIFIC_RESIDENTS -> getSpecificResidents(request.getResidentIds());
-        };
-    }
+                    List<Integer> roomNumbers = Arrays.stream(parts[0].split(","))
+                            .map(String::trim)
+                            .map(Integer::parseInt) 
+                            .toList();
 
-    private List<Resident> getAllResidents() {
-        return residentRepository.findAll();
-    }
-
-    private List<Resident> getResidentsByBuilding(UUID buildingId) {
-        if (buildingId == null) {
-            throw new RuntimeException("Building ID is required for BY_BUILDING target type");
+                    String buildingName = parts[1].trim(); 
+                    yield residentRepository.findByRoomNumbersAndBuilding(roomNumbers, buildingName);
+                }
+                default -> residentRepository.findAll(); 
+            };
+        } catch (NumberFormatException e) {
+            throw new RuntimeException("Lỗi nhập liệu: Số phòng hoặc số tầng phải là chữ số!");
+        } catch (IllegalArgumentException e) {
+            throw new RuntimeException(e.getMessage());
         }
-
-        List<Apartment> apartments = apartmentRepository.findByBuildingId(buildingId);
-        
-        List<Resident> residents = new ArrayList<>();
-        for (Apartment apartment : apartments) {
-            residents.addAll(apartment.getResidents());
-        }
-        
-        return residents.stream().distinct().collect(Collectors.toList());
     }
 
-    private List<Resident> getResidentsByFloor(UUID buildingId, Integer floor) {
-        if (buildingId == null || floor == null) {
-            throw new RuntimeException("Building ID and Floor are required for BY_FLOOR target type");
+    private void saveInBatches(List<Resident> residents, Announcement announcement) {
+        List<ResidentAnnouncement> batchList = new ArrayList<>();
+        for (Resident r : residents) {
+            ResidentAnnouncement ra = ResidentAnnouncement.builder()
+                    .id(new ResidentAnnouncementId(r.getId(), announcement.getId()))
+                    .resident(r)
+                    .announcement(announcement)
+                    .isRead(false)
+                    .build();
+            batchList.add(ra);
+            
+            if (batchList.size() >= 500) {
+                residentAnnouncementRepository.saveAll(batchList);
+                batchList.clear();
+            }
         }
-
-        List<Apartment> apartments = apartmentRepository.findByBuildingIdAndFloor(buildingId, floor);
-        
-        List<Resident> residents = new ArrayList<>();
-        for (Apartment apartment : apartments) {
-            residents.addAll(apartment.getResidents());
+        if (!batchList.isEmpty()) {
+            residentAnnouncementRepository.saveAll(batchList);
         }
-        
-        return residents.stream().distinct().collect(Collectors.toList());
     }
-
-    private List<Resident> getSpecificResidents(List<UUID> residentIds) {
-        if (residentIds == null || residentIds.isEmpty()) {
-            throw new RuntimeException("Resident IDs are required for SPECIFIC_RESIDENTS target type");
-        }
-
-        return residentRepository.findAllById(residentIds);
-    }
-    
-    //Get all 
-    @Transactional(readOnly = true)
-    public List<AnnouncementResponseDTO> getAllAnnouncements() {
-        List<Announcement> announcements = announcementRepository.findAllByOrderByCreatedAtDesc();
-        
-        return announcements.stream()
-                .map(announcement -> AnnouncementResponseDTO.builder()
-                        .id(announcement.getId())
-                        .title(announcement.getTitle())
-                        .message(announcement.getMessage())
-                        .senderId(announcement.getSender().getId())
-                        .senderName(announcement.getSender().getFullName())
-                        .receiverIds(announcement.getReceiver().stream()
-                                .map(Resident::getId)
-                                .collect(Collectors.toList()))
-                        .receiverCount(announcement.getReceiver().size())
-                        .createdAt(announcement.getCreatedAt())
-                        .build())
-                .collect(Collectors.toList());
+    public Page<AnnouncementResponseDTO> getResidentAnnouncements(UUID residentId, Pageable pageable) {
+        return residentAnnouncementRepository.findByResidentId(residentId, pageable);
     }
     
     
+    /*
+     * Staff xem danh sách thông báo
+     */
     
-    
-    
-    
-    // Get cho resident - dùng projection (SUMMARY)
-    @Transactional(readOnly = true)
-    public List<AnnouncementSummary> getAnnouncementsForResident(UUID residentId) {
-        // Validate resident tồn tại
-        residentRepository.findById(residentId)
-                .orElseThrow(() -> new RuntimeException("Resident not found"));
+   // Staff xem toàn bộ danh sách thông báo đã gửi
+    public Page<Announcement> getAllAnnouncements(Pageable pageable) {
+        return announcementRepository.findAll(pageable);
+    }
+
+    // Staff xem danh sách người nhận và trạng thái đọc của 1 thông báo
+    public List<RecipientStatusResponseDTO> getRecipientStatuses(UUID announcementId) {
+        List<ResidentAnnouncement> recipients = residentAnnouncementRepository
+                .findByAnnouncementIdWithDetails(announcementId); // ← ĐÂY NÈ!
         
-        return announcementRepository.findAnnouncementsByResidentId(residentId);
+        return recipients.stream().map(ra -> {
+            Resident resident = ra.getResident();
+            Integer roomNumber = null;
+            String buildingName = "N/A";
+            
+            if (resident.getApartment() != null) {
+                roomNumber = resident.getApartment().getRoomNumber();
+                if (resident.getApartment().getBuilding() != null) {
+                    buildingName = resident.getApartment().getBuilding().getName();
+                }
+            }
+            
+            return RecipientStatusResponseDTO.builder()
+                    .residentName(resident.getFullName())
+                    .roomNumber(roomNumber)
+                    .buildingName(buildingName)
+                    .isRead(ra.getIsRead())
+                    .build();
+                    
+        }).collect(Collectors.toList());
+    }
+    
+    
+    /*
+     * Đánh dấu đã đọc
+     */
+    @Transactional
+    public void markAsRead(UUID residentId, UUID announcementId) {
+        ResidentAnnouncementId id = new ResidentAnnouncementId(residentId, announcementId);
+        
+        ResidentAnnouncement ra = residentAnnouncementRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy thông báo cho cư dân này!"));
+        
+        // Cập nhậy
+        ra.setIsRead(true);
+        residentAnnouncementRepository.save(ra);
+
     }
 }
+    

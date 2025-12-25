@@ -13,12 +13,10 @@ import java.util.UUID;
 @AllArgsConstructor
 @NoArgsConstructor
 public class AnnouncementResponseDTO {
-    private UUID id;
+	private UUID id;
     private String title;
     private String message;
-    private UUID senderId;
     private String senderName;
-    private List<UUID> receiverIds;
-    private int receiverCount;
     private LocalDateTime createdAt;
+    private Boolean isRead;
 }

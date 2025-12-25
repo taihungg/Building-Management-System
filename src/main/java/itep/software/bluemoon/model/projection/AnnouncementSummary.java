@@ -8,5 +8,5 @@ public interface AnnouncementSummary {
     String getTitle();
     String getMessage();
     String getSenderName();
-    LocalDateTime getCreatedAt();
+    LocalDateTime getCreatedDate();  
 }
