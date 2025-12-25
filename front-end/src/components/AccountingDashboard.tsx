@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { DollarSign, TrendingUp, TrendingDown, Receipt, FileText, AlertCircle, CheckCircle, Clock, AlertTriangle } from 'lucide-react';
+import { DollarSign, TrendingUp, TrendingDown, Receipt, FileText, AlertCircle, CheckCircle, Clock, AlertTriangle, Banknote } from 'lucide-react';
 import { BarChart, Bar, PieChart as RechartsPieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { getBills, subscribe as subscribeBills, type Bill } from '../utils/bills'; // Đảm bảo type Bill đã được export nếu có
 import { getCurrentPeriod } from '../utils/timeUtils';
@@ -157,10 +157,8 @@ export function AccountingDashboard() {
       label: 'Thực thu', 
       value: formatCurrency(stats1.paidAmount), 
       icon: DollarSign, 
-      borderColor: 'border-green-500',
-      iconBg: 'bg-green-50', 
-      iconColor: 'text-green-600',
-      valueColor: 'text-green-700',
+      watermarkIcon: Banknote,
+      bgColor: '#059669',
       billCount: stats1.paidCount, 
       billCountLabel: 'Đã thanh toán'
     },
@@ -168,10 +166,8 @@ export function AccountingDashboard() {
       label: 'Công nợ', 
       value: formatCurrency(stats1.unpaidAmount), 
       icon: Clock, 
-      borderColor: 'border-red-500',
-      iconBg: 'bg-red-50', 
-      iconColor: 'text-red-600',
-      valueColor: 'text-red-700',
+      watermarkIcon: AlertCircle,
+      bgColor: '#dc2626',
       billCount: stats1.unpaidCount, 
       billCountLabel: 'Chưa thanh toán'
     },
@@ -179,10 +175,8 @@ export function AccountingDashboard() {
       label: 'Chờ xác nhận', 
       value: formatCurrency(stats1.pendingAmount),  
       icon: AlertCircle, 
-      borderColor: 'border-amber-500',
-      iconBg: 'bg-amber-50', 
-      iconColor: 'text-amber-600',
-      valueColor: 'text-amber-700',
+      watermarkIcon: Clock,
+      bgColor: '#d97706',
       billCount: stats1.pendingCount, 
       billCountLabel: 'Đang chờ xử lý'
     },
@@ -190,10 +184,8 @@ export function AccountingDashboard() {
       label: 'Tổng hóa đơn', 
       value: bills.length.toString(),  
       icon: Receipt, 
-      borderColor: 'border-blue-500',
-      iconBg: 'bg-blue-50', 
-      iconColor: 'text-blue-600',
-      valueColor: 'text-blue-700',
+      watermarkIcon: FileText,
+      bgColor: '#2563eb',
       billCount: bills.length, 
       billCountLabel: 'Tổng số hoá đơn'
     },
@@ -211,45 +203,34 @@ export function AccountingDashboard() {
 
       {/* --- PHẦN 1: THẺ TÓM TẮT THỐNG KÊ --- */}
       <div className="grid grid-cols-4 gap-4">
-        {stats.map((stat, index) => {
-          const Icon = stat.icon;
-          // Color themes matching InvoiceCreation page
-          const colorThemes = [
-            // Card 1: Green/Emerald theme (like InvoiceCreation Card 4)
-            { bg: '#ecfdf5', border: '#a7f3d0', text: '#047857' },
-            // Card 2: Red theme (custom for unpaid)
-            { bg: '#fef2f2', border: '#fecaca', text: '#dc2626' },
-            // Card 3: Amber theme (like InvoiceCreation Card 2)
-            { bg: '#fffbeb', border: '#fde68a', text: '#b45309' },
-            // Card 4: Blue theme (like InvoiceCreation Card 1)
-            { bg: '#eff6ff', border: '#bfdbfe', text: '#1d4ed8' }
-          ];
-          const theme = colorThemes[index] || colorThemes[0];
+        {stats.map((stat) => {
+          const WatermarkIcon = stat.watermarkIcon;
           
           return (
             <div 
               key={stat.label} 
-              className="rounded-xl p-4 shadow-sm"
+              className="h-32 rounded-2xl p-6 shadow-md relative overflow-hidden"
               style={{ 
-                backgroundColor: theme.bg,
-                border: `2px solid ${theme.border}`
+                backgroundColor: stat.bgColor
               }}
             >
-              <div className="flex items-center justify-between mb-2">
-                <p className="text-xs font-medium tracking-wide" style={{ color: theme.text }}>
+              {/* Watermark Icon - Vertically centered on far right */}
+              <WatermarkIcon 
+                className="absolute right-4 top-1/2 -translate-y-1/2 w-12 h-12 opacity-20"
+                style={{ color: 'white' }}
+              />
+              
+              {/* Content - Perfectly vertically centered */}
+              <div className="relative z-10 h-full flex flex-col justify-center gap-1 pr-16">
+                {/* Title - white with opacity-90 */}
+                <p className="text-sm font-medium tracking-wide text-white opacity-90">
                   {stat.label}
                 </p>
-                <Icon className="w-5 h-5" style={{ color: theme.text }} />
+                {/* Main number - text-4xl font-extrabold */}
+                <p className="text-4xl font-extrabold text-white">
+                  {stat.value}
+                </p>
               </div>
-              <p 
-                className="text-2xl font-bold"
-                style={{ color: theme.text }}
-              >
-                {stat.value}
-              </p>
-              <p className="text-xs text-gray-400 mt-1">
-                {stat.billCount} hóa đơn {stat.billCountLabel}
-              </p>
             </div>
           );
         })}
