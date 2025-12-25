@@ -250,8 +250,18 @@ export function AccountingDashboard() {
                   filteredBillStatusData.map((item) => (
                     <div key={item.name} className="flex items-center justify-between p-1">
                       <div className="flex items-center gap-2">
-                        <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: item.color }} />
-                        <span className="text-xs text-gray-600">{item.name}</span>
+                      <div 
+                        className="rounded-full" 
+                        style={{ 
+                          backgroundColor: item.color , 
+                          width: '10px',          
+                          height: '10px',        
+                          minWidth: '10px',       
+                          minHeight: '10px',     
+                          display: 'block',     
+                          flexShrink: 0          
+                        }} 
+                      />                        <span className="text-xs text-gray-600">{item.name}</span>
                       </div>
                       <span className="text-xs font-bold text-gray-900">{formatCurrency(item.amount)}</span>
                     </div>
