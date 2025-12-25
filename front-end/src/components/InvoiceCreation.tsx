@@ -299,48 +299,92 @@ export function InvoiceCreation() {
 
       {/* Summary Statistics Section */}
       <div className="grid grid-cols-4 gap-4">
-        {/* Card 1: Tổng số phòng - Blue theme */}
-        <div className="rounded-xl p-4 shadow-sm" style={{ backgroundColor: '#eff6ff', border: '2px solid #bfdbfe' }}>
-          <div className="flex items-center justify-between mb-2">
-            <p className="text-xs font-medium tracking-wide" style={{ color: '#1d4ed8' }}>Tổng số phòng</p>
-            <Home className="w-5 h-5" style={{ color: '#1d4ed8' }} />
+        {/* Card 1: Tổng số phòng - Navy theme */}
+        <div 
+          className="h-32 rounded-2xl p-6 shadow-md relative overflow-hidden"
+          style={{ backgroundColor: '#1e293b' }}
+        >
+          {/* Watermark Icon */}
+          <Home 
+            className="absolute right-4 top-1/2 -translate-y-1/2 w-12 h-12 opacity-20"
+            style={{ color: 'white' }}
+          />
+          
+          {/* Content - Perfectly vertically centered */}
+          <div className="relative z-10 h-full flex flex-col justify-center gap-1 pr-16">
+            <p className="text-sm font-medium tracking-wide text-white opacity-90">
+              Tổng số phòng
+            </p>
+            <p className="text-4xl font-extrabold text-white">
+              {summaryStats.totalRooms > 0 ? summaryStats.totalRooms : '-'}
+            </p>
           </div>
-          <p className="text-2xl font-bold" style={{ color: '#1d4ed8' }}>
-            {summaryStats.totalRooms > 0 ? summaryStats.totalRooms : '-'}
-          </p>
         </div>
 
         {/* Card 2: Tổng điện tiêu thụ - Amber theme */}
-        <div className="rounded-xl p-4 shadow-sm" style={{ backgroundColor: '#fffbeb', border: '2px solid #fde68a' }}>
-          <div className="flex items-center justify-between mb-2">
-            <p className="text-xs font-medium tracking-wide" style={{ color: '#b45309' }}>Tổng điện tiêu thụ</p>
-            <Zap className="w-5 h-5" style={{ color: '#b45309' }} />
+        <div 
+          className="h-32 rounded-2xl p-6 shadow-md relative overflow-hidden"
+          style={{ backgroundColor: '#d97706' }}
+        >
+          {/* Watermark Icon */}
+          <Zap 
+            className="absolute right-4 top-1/2 -translate-y-1/2 w-12 h-12 opacity-20"
+            style={{ color: 'white' }}
+          />
+          
+          {/* Content - Perfectly vertically centered */}
+          <div className="relative z-10 h-full flex flex-col justify-center gap-1 pr-16">
+            <p className="text-sm font-medium tracking-wide text-white opacity-90">
+              Tổng điện tiêu thụ
+            </p>
+            <p className="text-4xl font-extrabold text-white">
+              {summaryStats.totalElectricity > 0 ? summaryStats.totalElectricity.toLocaleString('vi-VN') : '-'}
+            </p>
           </div>
-          <p className="text-2xl font-bold" style={{ color: '#b45309' }}>
-            {summaryStats.totalElectricity > 0 ? summaryStats.totalElectricity.toLocaleString('vi-VN') : '-'}
-          </p>
         </div>
 
-        {/* Card 3: Tổng nước tiêu thụ - Cyan theme */}
-        <div className="rounded-xl p-4 shadow-sm" style={{ backgroundColor: '#ecfeff', border: '2px solid #a5f3fc' }}>
-          <div className="flex items-center justify-between mb-2">
-            <p className="text-xs font-medium tracking-wide" style={{ color: '#0e7490' }}>Tổng nước tiêu thụ</p>
-            <Droplet className="w-5 h-5" style={{ color: '#0e7490' }} />
+        {/* Card 3: Tổng nước tiêu thụ - Blue theme */}
+        <div 
+          className="h-32 rounded-2xl p-6 shadow-md relative overflow-hidden"
+          style={{ backgroundColor: '#2563eb' }}
+        >
+          {/* Watermark Icon */}
+          <Droplet 
+            className="absolute right-4 top-1/2 -translate-y-1/2 w-12 h-12 opacity-20"
+            style={{ color: 'white' }}
+          />
+          
+          {/* Content - Perfectly vertically centered */}
+          <div className="relative z-10 h-full flex flex-col justify-center gap-1 pr-16">
+            <p className="text-sm font-medium tracking-wide text-white opacity-90">
+              Tổng nước tiêu thụ
+            </p>
+            <p className="text-4xl font-extrabold text-white">
+              {summaryStats.totalWater > 0 ? summaryStats.totalWater.toLocaleString('vi-VN') : '-'}
+            </p>
           </div>
-          <p className="text-2xl font-bold" style={{ color: '#0e7490' }}>
-            {summaryStats.totalWater > 0 ? summaryStats.totalWater.toLocaleString('vi-VN') : '-'}
-          </p>
         </div>
 
-        {/* Card 4: Trạng thái - Emerald theme */}
-        <div className="rounded-xl p-4 shadow-sm" style={{ backgroundColor: '#ecfdf5', border: '2px solid #a7f3d0' }}>
-          <div className="flex items-center justify-between mb-2">
-            <p className="text-xs font-medium tracking-wide" style={{ color: '#047857' }}>Trạng thái</p>
-            <Clock className="w-5 h-5" style={{ color: '#047857' }} />
+        {/* Card 4: Trạng thái - Green theme */}
+        <div 
+          className="h-32 rounded-2xl p-6 shadow-md relative overflow-hidden"
+          style={{ backgroundColor: '#059669' }}
+        >
+          {/* Watermark Icon */}
+          <Clock 
+            className="absolute right-4 top-1/2 -translate-y-1/2 w-12 h-12 opacity-20"
+            style={{ color: 'white' }}
+          />
+          
+          {/* Content - Perfectly vertically centered */}
+          <div className="relative z-10 h-full flex flex-col justify-center gap-1 pr-16">
+            <p className="text-sm font-medium tracking-wide text-white opacity-90">
+              Trạng thái
+            </p>
+            <p className="text-4xl font-extrabold text-white">
+              {summaryStats.status}
+            </p>
           </div>
-          <p className="text-2xl font-bold" style={{ color: '#047857' }}>
-            {summaryStats.status}
-          </p>
         </div>
       </div>
 
