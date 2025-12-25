@@ -1,15 +1,15 @@
 import { motion, AnimatePresence } from 'motion/react';
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, type ComponentType, type ReactNode } from 'react';
 
 interface DropdownItem {
   label: string;
-  icon?: React.ComponentType<{ className?: string }>;
+  icon?: ComponentType<{ className?: string }>;
   onClick: () => void;
   danger?: boolean;
 }
 
 interface DropdownProps {
-  trigger: React.ReactNode;
+  trigger: ReactNode;
   items: DropdownItem[];
 }
 

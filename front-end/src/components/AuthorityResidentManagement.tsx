@@ -176,6 +176,26 @@ export function AuthorityResidentManagement() {
     away: residents.filter(r => r.status === 'Tạm vắng').length,
   };
 
+  const buildingOptions = [
+    { value: 'all', label: 'Tất cả tòa nhà' },
+    { value: 'building1', label: 'Tòa nhà A' },
+    { value: 'building2', label: 'Tòa nhà B' },
+  ];
+
+  const statusOptions = [
+    { value: 'all', label: 'Tất cả trạng thái' },
+    { value: 'Thường trú', label: 'Thường trú' },
+    { value: 'Tạm vắng', label: 'Tạm vắng' },
+  ];
+
+  const getFixedSelectWidth = (options: { label: string }[]) => {
+    const maxLen = options.reduce((max, opt) => Math.max(max, opt.label.length), 0);
+    return `calc(${maxLen}ch + 5.5rem)`;
+  };
+
+  const buildingSelectWidth = getFixedSelectWidth(buildingOptions);
+  const statusSelectWidth = getFixedSelectWidth(statusOptions);
+
   // Comment out API call temporarily
   // useEffect(() => {
   //   fetchResidents();
@@ -352,40 +372,52 @@ export function AuthorityResidentManagement() {
         {/* Actions Group (Right - Sát bên phải) */}
         <div className="flex items-center gap-4">
           {/* Building Dropdown */}
-          <Select value={selectedBuilding} onValueChange={setSelectedBuilding}>
-            <SelectTrigger className="flex items-center justify-between w-full h-11 px-4 bg-white border border-gray-200 rounded-xl shadow-sm text-sm font-medium text-gray-700 hover:border-blue-400 transition-all min-w-[160px]">
-              <SelectValue placeholder="Tất cả tòa nhà" />
-            </SelectTrigger>
-            <SelectContent className="absolute z-[100] mt-2 w-full bg-white rounded-xl shadow-[0_10px_25px_-5px_rgba(0,0,0,0.1),0_8px_10px_-6px_rgba(0,0,0,0.1)] border border-gray-100 py-1.5 overflow-hidden">
-              <SelectItem value="all" className="relative w-full cursor-default select-none py-2.5 pl-10 pr-4 text-sm text-gray-600 hover:bg-blue-50 hover:text-blue-700 transition-colors data-[state=checked]:text-blue-700 data-[state=checked]:font-semibold [&>span:first-child]:absolute [&>span:first-child]:left-3 [&>span:first-child]:top-1/2 [&>span:first-child]:-translate-y-1/2 [&>span:first-child]:flex [&>span:first-child]:items-center [&>span:first-child]:justify-center [&>span:first-child]:text-blue-600">
-                Tất cả tòa nhà
-              </SelectItem>
-              <SelectItem value="building1" className="relative w-full cursor-default select-none py-2.5 pl-10 pr-4 text-sm text-gray-600 hover:bg-blue-50 hover:text-blue-700 transition-colors data-[state=checked]:text-blue-700 data-[state=checked]:font-semibold [&>span:first-child]:absolute [&>span:first-child]:left-3 [&>span:first-child]:top-1/2 [&>span:first-child]:-translate-y-1/2 [&>span:first-child]:flex [&>span:first-child]:items-center [&>span:first-child]:justify-center [&>span:first-child]:text-blue-600">
-                Tòa nhà A
-              </SelectItem>
-              <SelectItem value="building2" className="relative w-full cursor-default select-none py-2.5 pl-10 pr-4 text-sm text-gray-600 hover:bg-blue-50 hover:text-blue-700 transition-colors data-[state=checked]:text-blue-700 data-[state=checked]:font-semibold [&>span:first-child]:absolute [&>span:first-child]:left-3 [&>span:first-child]:top-1/2 [&>span:first-child]:-translate-y-1/2 [&>span:first-child]:flex [&>span:first-child]:items-center [&>span:first-child]:justify-center [&>span:first-child]:text-blue-600">
-                Tòa nhà B
-              </SelectItem>
-            </SelectContent>
-          </Select>
+          <div style={{ width: buildingSelectWidth }}>
+            <Select value={selectedBuilding} onValueChange={setSelectedBuilding}>
+              <SelectTrigger className="flex items-center justify-between w-full h-11 px-4 bg-white border border-gray-200 rounded-xl shadow-sm text-sm font-medium text-gray-700 hover:border-blue-400 transition-all">
+                <SelectValue placeholder="Tất cả tòa nhà" />
+              </SelectTrigger>
+              <SelectContent
+                align="start"
+                style={{ width: buildingSelectWidth }}
+                className="z-[100] rounded-xl border border-gray-200 !bg-white shadow-xl ring-1 ring-gray-200/70"
+              >
+                {buildingOptions.map((opt) => (
+                  <SelectItem
+                    key={opt.value}
+                    value={opt.value}
+                    className="cursor-pointer rounded-lg px-3 py-2 text-sm text-gray-700 outline-none data-[highlighted]:bg-blue-50 data-[highlighted]:text-blue-700 data-[state=checked]:bg-blue-100 data-[state=checked]:font-semibold data-[state=checked]:text-blue-800"
+                  >
+                    {opt.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
 
           {/* Status Dropdown */}
-          <Select value={selectedStatus} onValueChange={setSelectedStatus}>
-            <SelectTrigger className="flex items-center justify-between w-full h-11 px-4 bg-white border border-gray-200 rounded-xl shadow-sm text-sm font-medium text-gray-700 hover:border-blue-400 transition-all min-w-[160px]">
-              <SelectValue placeholder="Tất cả trạng thái" />
-            </SelectTrigger>
-            <SelectContent className="absolute z-[100] mt-2 w-full bg-white rounded-xl shadow-[0_10px_25px_-5px_rgba(0,0,0,0.1),0_8px_10px_-6px_rgba(0,0,0,0.1)] border border-gray-100 py-1.5 overflow-hidden">
-              <SelectItem value="all" className="relative w-full cursor-default select-none py-2.5 pl-10 pr-4 text-sm text-gray-600 hover:bg-blue-50 hover:text-blue-700 transition-colors data-[state=checked]:text-blue-700 data-[state=checked]:font-semibold [&>span:first-child]:absolute [&>span:first-child]:left-3 [&>span:first-child]:top-1/2 [&>span:first-child]:-translate-y-1/2 [&>span:first-child]:flex [&>span:first-child]:items-center [&>span:first-child]:justify-center [&>span:first-child]:text-blue-600">
-                Tất cả trạng thái
-              </SelectItem>
-              <SelectItem value="Thường trú" className="relative w-full cursor-default select-none py-2.5 pl-10 pr-4 text-sm text-gray-600 hover:bg-blue-50 hover:text-blue-700 transition-colors data-[state=checked]:text-blue-700 data-[state=checked]:font-semibold [&>span:first-child]:absolute [&>span:first-child]:left-3 [&>span:first-child]:top-1/2 [&>span:first-child]:-translate-y-1/2 [&>span:first-child]:flex [&>span:first-child]:items-center [&>span:first-child]:justify-center [&>span:first-child]:text-blue-600">
-                Thường trú
-              </SelectItem>
-              <SelectItem value="Tạm vắng" className="relative w-full cursor-default select-none py-2.5 pl-10 pr-4 text-sm text-gray-600 hover:bg-blue-50 hover:text-blue-700 transition-colors data-[state=checked]:text-blue-700 data-[state=checked]:font-semibold [&>span:first-child]:absolute [&>span:first-child]:left-3 [&>span:first-child]:top-1/2 [&>span:first-child]:-translate-y-1/2 [&>span:first-child]:flex [&>span:first-child]:items-center [&>span:first-child]:justify-center [&>span:first-child]:text-blue-600">
-                Tạm vắng
-              </SelectItem>
-            </SelectContent>
-          </Select>
+          <div style={{ width: statusSelectWidth }}>
+            <Select value={selectedStatus} onValueChange={setSelectedStatus}>
+              <SelectTrigger className="flex items-center justify-between w-full h-11 px-4 bg-white border border-gray-200 rounded-xl shadow-sm text-sm font-medium text-gray-700 hover:border-blue-400 transition-all">
+                <SelectValue placeholder="Tất cả trạng thái" />
+              </SelectTrigger>
+              <SelectContent
+                align="start"
+                style={{ width: statusSelectWidth }}
+                className="z-[100] rounded-xl border border-gray-200 !bg-white shadow-xl ring-1 ring-gray-200/70"
+              >
+                {statusOptions.map((opt) => (
+                  <SelectItem
+                    key={opt.value}
+                    value={opt.value}
+                    className="cursor-pointer rounded-lg px-3 py-2 text-sm text-gray-700 outline-none data-[highlighted]:bg-blue-50 data-[highlighted]:text-blue-700 data-[state=checked]:bg-blue-100 data-[state=checked]:font-semibold data-[state=checked]:text-blue-800"
+                  >
+                    {opt.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
 
           {/* Export Button */}
           <button className="h-12 bg-blue-600 text-white rounded-xl font-semibold text-sm flex items-center justify-center gap-2 hover:bg-blue-700 active:scale-[0.98] transition-all shadow-lg shadow-blue-500/25 whitespace-nowrap px-4">

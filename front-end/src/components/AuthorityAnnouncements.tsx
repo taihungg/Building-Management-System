@@ -253,30 +253,42 @@ export function AuthorityAnnouncements() {
         {/* Right: Filters & Button (Grouped) */}
         <div className="flex items-center gap-4">
           {/* Status Filter Dropdown */}
-          <Select value={selectedStatus} onValueChange={setSelectedStatus}>
-            <SelectTrigger className="h-12 px-4 bg-white border border-gray-200 rounded-xl text-sm hover:border-blue-400 transition-all min-w-[140px]">
-              <SelectValue placeholder="Lọc trạng thái" />
-            </SelectTrigger>
-            <SelectContent className="bg-white border border-gray-100 rounded-xl shadow-xl z-50">
-              <SelectItem value="all">Tất cả</SelectItem>
-              <SelectItem value="in_progress">Đang xử lý</SelectItem>
-              <SelectItem value="handled">Đã xử lý</SelectItem>
-              <SelectItem value="not_found">Không tìm thấy</SelectItem>
-            </SelectContent>
-          </Select>
+          <div style={{ width: 'calc(13ch + 5.5rem)' }}>
+            <Select value={selectedStatus} onValueChange={setSelectedStatus}>
+              <SelectTrigger className="h-12 px-4 bg-white border border-gray-200 rounded-xl text-sm hover:border-blue-400 transition-all w-full">
+                <SelectValue placeholder="Lọc trạng thái" />
+              </SelectTrigger>
+              <SelectContent
+                align="start"
+                style={{ width: 'calc(13ch + 5.5rem)' }}
+                className="rounded-xl border border-gray-200 !bg-white shadow-xl ring-1 ring-gray-200/70 z-50"
+              >
+                <SelectItem className="cursor-pointer rounded-lg px-3 py-2 text-sm text-gray-700 outline-none data-[highlighted]:bg-blue-50 data-[highlighted]:text-blue-700 data-[state=checked]:bg-blue-100 data-[state=checked]:font-semibold data-[state=checked]:text-blue-800" value="all">Tất cả</SelectItem>
+                <SelectItem className="cursor-pointer rounded-lg px-3 py-2 text-sm text-gray-700 outline-none data-[highlighted]:bg-blue-50 data-[highlighted]:text-blue-700 data-[state=checked]:bg-blue-100 data-[state=checked]:font-semibold data-[state=checked]:text-blue-800" value="in_progress">Đang xử lý</SelectItem>
+                <SelectItem className="cursor-pointer rounded-lg px-3 py-2 text-sm text-gray-700 outline-none data-[highlighted]:bg-blue-50 data-[highlighted]:text-blue-700 data-[state=checked]:bg-blue-100 data-[state=checked]:font-semibold data-[state=checked]:text-blue-800" value="handled">Đã xử lý</SelectItem>
+                <SelectItem className="cursor-pointer rounded-lg px-3 py-2 text-sm text-gray-700 outline-none data-[highlighted]:bg-blue-50 data-[highlighted]:text-blue-700 data-[state=checked]:bg-blue-100 data-[state=checked]:font-semibold data-[state=checked]:text-blue-800" value="not_found">Không tìm thấy</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
 
           {/* Date Range Dropdown */}
-          <Select value={selectedDateRange} onValueChange={setSelectedDateRange}>
-            <SelectTrigger className="h-12 px-4 bg-white border border-gray-200 rounded-xl text-sm hover:border-blue-400 transition-all min-w-[140px]">
-              <SelectValue placeholder="Lọc ngày tháng" />
-            </SelectTrigger>
-            <SelectContent className="bg-white border border-gray-100 rounded-xl shadow-xl z-50">
-              <SelectItem value="all">Tất cả</SelectItem>
-              <SelectItem value="today">Hôm nay</SelectItem>
-              <SelectItem value="7days">7 ngày qua</SelectItem>
-              <SelectItem value="month">Tháng này</SelectItem>
-            </SelectContent>
-          </Select>
+          <div style={{ width: 'calc(12ch + 5.5rem)' }}>
+            <Select value={selectedDateRange} onValueChange={setSelectedDateRange}>
+              <SelectTrigger className="h-12 px-4 bg-white border border-gray-200 rounded-xl text-sm hover:border-blue-400 transition-all w-full">
+                <SelectValue placeholder="Lọc ngày tháng" />
+              </SelectTrigger>
+              <SelectContent
+                align="start"
+                style={{ width: 'calc(12ch + 5.5rem)' }}
+                className="rounded-xl border border-gray-200 !bg-white shadow-xl ring-1 ring-gray-200/70 z-50"
+              >
+                <SelectItem className="cursor-pointer rounded-lg px-3 py-2 text-sm text-gray-700 outline-none data-[highlighted]:bg-blue-50 data-[highlighted]:text-blue-700 data-[state=checked]:bg-blue-100 data-[state=checked]:font-semibold data-[state=checked]:text-blue-800" value="all">Tất cả</SelectItem>
+                <SelectItem className="cursor-pointer rounded-lg px-3 py-2 text-sm text-gray-700 outline-none data-[highlighted]:bg-blue-50 data-[highlighted]:text-blue-700 data-[state=checked]:bg-blue-100 data-[state=checked]:font-semibold data-[state=checked]:text-blue-800" value="today">Hôm nay</SelectItem>
+                <SelectItem className="cursor-pointer rounded-lg px-3 py-2 text-sm text-gray-700 outline-none data-[highlighted]:bg-blue-50 data-[highlighted]:text-blue-700 data-[state=checked]:bg-blue-100 data-[state=checked]:font-semibold data-[state=checked]:text-blue-800" value="7days">7 ngày qua</SelectItem>
+                <SelectItem className="cursor-pointer rounded-lg px-3 py-2 text-sm text-gray-700 outline-none data-[highlighted]:bg-blue-50 data-[highlighted]:text-blue-700 data-[state=checked]:bg-blue-100 data-[state=checked]:font-semibold data-[state=checked]:text-blue-800" value="month">Tháng này</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
 
           {/* Add Button (Wider) */}
           <button 
