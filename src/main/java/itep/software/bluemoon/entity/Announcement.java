@@ -1,9 +1,6 @@
 package itep.software.bluemoon.entity;
 
-import java.time.LocalDateTime;
 import java.util.UUID;
-
-import org.hibernate.annotations.CreationTimestamp;
 
 import itep.software.bluemoon.entity.person.Staff;
 import itep.software.bluemoon.enumeration.AnnouncementTargetType;
@@ -31,7 +28,7 @@ import lombok.Setter;
 @Builder
 @Entity
 @Table(name = "announcement")
-public class Announcement {
+public class Announcement extends BaseEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     @Column(
@@ -51,10 +48,6 @@ public class Announcement {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "sender_id", nullable = false)
     private Staff sender;
-
-    @CreationTimestamp
-    @Column(name = "created_at", nullable = false, updatable = false)
-    private LocalDateTime createdAt;
     
     @Column(name = "target_type", length = 20)
     @Enumerated(EnumType.STRING)

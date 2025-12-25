@@ -4,7 +4,10 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.UUID;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
+
 import itep.software.bluemoon.entity.Apartment;
+import itep.software.bluemoon.entity.BaseEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -27,7 +30,7 @@ import lombok.Setter;
 @AllArgsConstructor
 @Entity
 @Table(name = "extra_fee")
-public class ExtraFee {
+public class ExtraFee extends BaseEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     @Column(
@@ -64,7 +67,4 @@ public class ExtraFee {
     @Column(name = "is_billed")
     @Builder.Default
     private boolean isBilled = false;
-    
-    @Column(name = "created_by", length = 20)
-    private String createdBy;
 }

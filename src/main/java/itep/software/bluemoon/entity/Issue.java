@@ -29,7 +29,7 @@ import lombok.Setter;
 @Builder
 @Entity
 @Table(name = "issue")
-public class Issue {
+public class Issue extends BaseEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     @Column(
