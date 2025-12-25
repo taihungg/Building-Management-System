@@ -33,6 +33,8 @@ export function AccountingDashboard() {
     setIsLoading(true);
     try {
       const year = new Date().getFullYear();
+      const currentMonth = new Date().getMonth() + 1; // Lấy tháng hiện tại
+
       const [resMetrics, resBar] = await Promise.all([
         fetch('http://localhost:8081/api/v1/accounting/dashboard/fourmetrics').then(r => r.json()),
         fetch(`http://localhost:8081/api/v1/accounting/dashboard/barchart?year=${year}`).then(r => r.json()),
@@ -41,11 +43,19 @@ export function AccountingDashboard() {
       if (resMetrics.statusCode === 200) setMetrics(resMetrics.data);
 
       if (resBar.statusCode === 200) {
-        const mappedBar = resBar.data.map((item: any) => ({
-          month: `Tháng ${item.month}`,
-          revenue: item.totalRevenue,
-          paid: item.paidRevenue
-        }));
+        // --- SỬA LOGIC HIỂN THỊ 6 THÁNG GẦN NHẤT TẠI ĐÂY ---
+        const mappedBar = resBar.data
+          .map((item: any) => ({
+            month: `Tháng ${item.month}`,
+            monthNum: item.month,
+            revenue: item.totalRevenue,
+            paid: item.paidRevenue
+          }))
+          // Lọc lấy các tháng <= tháng hiện tại và > (tháng hiện tại - 6)
+          .filter((item: any) => item.monthNum <= currentMonth && item.monthNum > currentMonth - 6)
+          // Sắp xếp theo thứ tự tháng tăng dần
+          .sort((a: any, b: any) => a.monthNum - b.monthNum);
+          
         setMonthlyRevenueData(mappedBar);
       }
     } catch (error) {
@@ -171,7 +181,7 @@ export function AccountingDashboard() {
       <div className="grid grid-cols-3 gap-6">
         {/* Bar Chart */}
         <div className="col-span-2 bg-white rounded-xl p-6 border border-gray-200 shadow-sm">
-          <h3 className="text-lg font-bold text-gray-900 mb-4">Thực thu theo tháng</h3>
+          <h3 className="text-lg font-bold text-gray-900 mb-4">Thực thu 6 tháng gần nhất</h3>
           {isLoading ? (
             <div className="flex justify-center items-center h-[280px]"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div></div>
           ) : (
@@ -191,12 +201,10 @@ export function AccountingDashboard() {
           )}
         </div>
 
-        {/* Pie Chart với Select bình thường */}
+        {/* Pie Chart giữ nguyên UI */}
         <div className="bg-white rounded-xl p-6 border border-gray-200 shadow-sm">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-bold text-gray-900">Nguồn thu</h3>
-            
-            {/* Sử dụng SELECT HTML chuẩn */}
             <select 
               value={selectedPieMonth} 
               onChange={(e) => setSelectedPieMonth(parseInt(e.target.value))}
@@ -237,7 +245,6 @@ export function AccountingDashboard() {
                 </ResponsiveContainer>
               </div>
 
-              {/* Danh sách chi tiết */}
               <div className="flex flex-col gap-2 mt-4 max-h-[150px] overflow-y-auto pr-1">
                 {filteredBillStatusData.length > 0 ? (
                   filteredBillStatusData.map((item) => (
