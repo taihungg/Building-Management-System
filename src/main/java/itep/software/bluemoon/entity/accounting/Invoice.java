@@ -1,16 +1,13 @@
 package itep.software.bluemoon.entity.accounting;
 
 import java.math.BigDecimal;
-import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
-import org.springframework.data.annotation.CreatedDate;
-
-import com.fasterxml.jackson.annotation.JsonFormat;
-
 import itep.software.bluemoon.entity.Apartment;
+import itep.software.bluemoon.entity.BaseEntity;
 import itep.software.bluemoon.enumeration.InvoiceStatus;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
@@ -45,7 +42,7 @@ import lombok.Setter;
                columnNames = {"apartment_id", "month", "year"}
            )
        })
-public class Invoice {
+public class Invoice extends BaseEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     @Column(
@@ -86,13 +83,7 @@ public class Invoice {
     )
     @Builder.Default
     private List<InvoiceDetail> details = new ArrayList<>();
-    
-    @Column(name = "created_date")
-    @CreatedDate
-    @JsonFormat(pattern = "yyyy-MM-dd")
-    private LocalDate createdDate;
 
     @Column(name = "overdue_date")
-    @JsonFormat(pattern = "yyyy-MM-dd")
-    private LocalDate overdueDate;
+    private LocalDateTime overdueDate;
 }
