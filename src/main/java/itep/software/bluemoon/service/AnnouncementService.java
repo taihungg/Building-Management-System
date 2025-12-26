@@ -47,10 +47,11 @@ public class AnnouncementService {
                 .targetDetail(request.getTargetDetail()) 
                 .build();
         announcement = announcementRepository.save(announcement);
-
-
+        
         List<Resident> targets = getTargetResidents(request);
-
+        if (targets.isEmpty()) {
+            throw new RuntimeException("Không tìm thấy cư dân nào phù hợp với tiêu chí!");
+        }
         saveInBatches(targets, announcement);
     }
 
