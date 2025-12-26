@@ -15,12 +15,13 @@ import itep.software.bluemoon.model.DTO.accounting.AccountingDashboardResponseDT
 import itep.software.bluemoon.model.DTO.accounting.MonthlyRevenueDTO;
 import itep.software.bluemoon.model.DTO.accounting.RevenueDistributionDTO;
 import itep.software.bluemoon.repository.InvoiceRepository;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
+@Transactional
 public class AccountingService {
-
     private final InvoiceRepository invoiceRepository;
 
     public AccountingDashboardResponseDTO getDashboardMetrics() {
@@ -120,13 +121,13 @@ public class AccountingService {
 
     private String convertToVietnamese(ServiceCode code) {
         if (code == null) return "Khác";
-        switch (code) {
-            case ServiceCode.ELECTRONIC: return "Tiền điện";
-            case ServiceCode.WATER: return "Tiền nước";
-            case ServiceCode.PARKING: return "Phí gửi xe";
-            case ServiceCode.MANAGEMENT: return "Phí quản lý";
-            case ServiceCode.PENALTY: return "Tiền phạt";
-            default: return code.name();
-        }
+        return switch (code) {
+            case ServiceCode.ELECTRICITY -> "Tiền điện";
+            case ServiceCode.WATER -> "Tiền nước";
+            case ServiceCode.PARKING -> "Phí gửi xe";
+            case ServiceCode.MANAGEMENT -> "Phí quản lý";
+            case ServiceCode.OTHER -> "Phí dịch vụ khác";
+            default -> code.name();
+        };
     }
 }

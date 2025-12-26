@@ -4,9 +4,11 @@ import java.util.List;
 import java.util.UUID;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import itep.software.bluemoon.entity.Apartment;
 import itep.software.bluemoon.entity.accounting.ExtraFee;
 import itep.software.bluemoon.model.projection.ExtraFeeSummary;
 
@@ -24,4 +26,10 @@ public interface ExtraFeeRepository extends JpaRepository<ExtraFee, UUID> {
         "LOWER(e.description) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
         "LOWER(a.roomNumber) LIKE LOWER(CONCAT('%', :keyword, '%')))")
     List<ExtraFeeSummary> searchGeneral(@Param("keyword") String keyword);
+
+    List<ExtraFee> findByApartmentAndIsBilledFalse(Apartment apartment);
+
+    @Modifying
+    @Query("UPDATE ExtraFee e SET e.isBilled = :status WHERE e.id IN :ids")
+    void updateStatusByIds(@Param("status") boolean status, @Param("ids") List<UUID> ids);
 }

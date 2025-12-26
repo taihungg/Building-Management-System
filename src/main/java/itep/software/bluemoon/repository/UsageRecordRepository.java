@@ -33,4 +33,15 @@ public interface UsageRecordRepository extends JpaRepository<UsageRecord, UUID>{
             int month, 
             int year
     );
+
+    @Query("SELECT u FROM UsageRecord u " +
+       "JOIN u.serviceType s " +        // Chỉ JOIN để lọc, không có chữ FETCH
+       "WHERE s.code = :code " +
+       "AND u.month = :month " +
+       "AND u.year = :year")
+    List<UsageRecord> findAllByServiceCodeAndMonthAndYear(
+        @Param("code") ServiceCode code,
+        @Param("month") int month,
+        @Param("year") int year
+    );
 }
