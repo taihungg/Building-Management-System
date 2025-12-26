@@ -14,18 +14,17 @@ import itep.software.bluemoon.model.projection.ExtraFeeSummary;
 
 public interface ExtraFeeRepository extends JpaRepository<ExtraFee, UUID> {
     @Query("SELECT e.id AS id, " +
-        "e.title AS title, " +
-        "e.amount AS amount, " +
-        "e.feeDate AS feeDate, " +
-        "e.isBilled AS billed, " +
-        "a.roomNumber AS apartmentLabel " +
-        "FROM ExtraFee e " +
-        "JOIN e.apartment a " +
-        "WHERE (:keyword IS NULL OR :keyword = '' OR " +
-        "LOWER(e.title) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
-        "LOWER(e.description) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
-        "LOWER(a.roomNumber) LIKE LOWER(CONCAT('%', :keyword, '%')))")
-    List<ExtraFeeSummary> searchGeneral(@Param("keyword") String keyword);
+       "e.title AS title, " +
+       "e.amount AS amount, " +
+       "e.feeDate AS feeDate, " +
+       "e.isBilled AS isBilled, " + // Khớp với boolean isBilled()
+       "cast(a.roomNumber as String) AS apartmentLabel " + // Ép kiểu về String để khớp với getApartmentLabel()
+       "FROM ExtraFee e JOIN e.apartment a " +
+       "WHERE (:keyword IS NULL OR :keyword = '' " +
+       "OR LOWER(e.title) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
+       "OR LOWER(e.description) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
+       "OR cast(a.roomNumber as String) LIKE CONCAT('%', :keyword, '%'))")
+List<ExtraFeeSummary> searchGeneral(@Param("keyword") String keyword);
 
     List<ExtraFee> findByApartmentAndIsBilledFalse(Apartment apartment);
 

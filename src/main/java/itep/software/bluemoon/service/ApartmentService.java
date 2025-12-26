@@ -4,21 +4,25 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
-import itep.software.bluemoon.entity.Building;
-import itep.software.bluemoon.entity.person.Resident;
-import itep.software.bluemoon.enumeration.InvoiceStatus;
-import itep.software.bluemoon.model.DTO.apartment.ApartmentCreationDTO;
-import itep.software.bluemoon.model.DTO.apartment.ApartmentResidentUpdateDTO;
-import itep.software.bluemoon.model.projection.ResidentSummary;
-import itep.software.bluemoon.repository.*;
-
 import org.springframework.stereotype.Service;
 
 import itep.software.bluemoon.entity.Apartment;
+import itep.software.bluemoon.entity.Building;
+import itep.software.bluemoon.entity.person.Resident;
+import itep.software.bluemoon.enumeration.InvoiceStatus;
 import itep.software.bluemoon.enumeration.IssueStatus;
+import itep.software.bluemoon.model.DTO.apartment.ApartmentCreationDTO;
 import itep.software.bluemoon.model.DTO.apartment.ApartmentDetailDTO;
-import itep.software.bluemoon.model.projection.Dropdown;
+import itep.software.bluemoon.model.DTO.apartment.ApartmentResidentUpdateDTO;
 import itep.software.bluemoon.model.projection.ApartmentSummary;
+import itep.software.bluemoon.model.projection.Dropdown;
+import itep.software.bluemoon.model.projection.ResidentSummary;
+import itep.software.bluemoon.repository.ApartmentRepository;
+import itep.software.bluemoon.repository.BuildingRepository;
+import itep.software.bluemoon.repository.InvoiceRepository;
+import itep.software.bluemoon.repository.IssueRepository;
+import itep.software.bluemoon.repository.ResidentRepository;
+import itep.software.bluemoon.repository.VehicleRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 
@@ -42,7 +46,9 @@ public class ApartmentService {
     }
 
     public List<ApartmentSummary> searchByAllInformation(String keyword, UUID buildingId, Integer floor){
-        return apartmentRepository.searchGeneral(keyword.trim(), buildingId, floor);
+        keyword = (keyword == null || keyword.isBlank()) ? null : keyword.trim();
+        
+        return apartmentRepository.searchGeneral(keyword, buildingId, floor);
     }
 
     @SuppressWarnings("null")

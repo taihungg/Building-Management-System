@@ -10,6 +10,5 @@ public interface InvoiceSummary {
     String getApartmentLabel();
     Double getTotalAmount();
     InvoiceStatus getStatus();
-    LocalDateTime getPaymentDate();
-    LocalDateTime getCreatedTime();
+    LocalDateTime getCreatedDate();
 }

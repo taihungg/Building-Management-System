@@ -26,22 +26,22 @@ public interface ApartmentRepository extends JpaRepository<Apartment, UUID> {
     List<Dropdown> searchForDropdown(@Param("keyword") String keyword);
 
     @Query("SELECT a.id AS id, " +
-            "CONCAT(b.name, ' - ', a.roomNumber) AS label, " +
-            "a.floor AS floor, " +
-            "a.area AS area, " +
-            "(SELECT COUNT(r) FROM Resident r WHERE r.apartment.id = a.id) AS residentNumber " +
-            "FROM Apartment a " +
-            "LEFT JOIN a.building b " +
-            "WHERE " +
-            "(:buildingId IS NULL OR b.id = :buildingId) " +
-            "AND (:floor IS NULL OR a.floor = :floor) " +
-            "AND (:keyword IS NULL OR :keyword = '' " +
-            "OR CAST(a.roomNumber AS string) LIKE CONCAT('%', :keyword, '%') " +
-            "OR LOWER(b.name) LIKE LOWER(CONCAT('%', :keyword, '%'))) " +
-            "ORDER BY b.name ASC, a.floor ASC, a.roomNumber ASC")
+           "CAST(a.roomNumber AS String) AS label, " + // Ép kiểu int -> String
+           "a.floor AS floor, " +
+           "CAST(a.area AS double) AS area, " + // Ép kiểu BigDecimal -> Double (cho chắc chắn khớp Interface)
+           // SUBQUERY: Đếm số cư dân thuộc căn hộ này từ bảng Resident
+           "(SELECT CAST(COUNT(r) AS int) FROM Resident r WHERE r.apartment.id = a.id) AS residentNumber " + 
+           "FROM Apartment a " +
+           "WHERE " +
+           // 1. Logic Keyword (Nếu null lấy hết, nếu có thì tìm theo số phòng)
+           "(:keyword IS NULL OR :keyword = '' OR CAST(a.roomNumber AS String) LIKE CONCAT('%', :keyword, '%')) " +
+           // 2. Logic Building (Optional)
+           "AND (:buildingId IS NULL OR a.building.id = :buildingId) " +
+           // 3. Logic Floor (Optional)
+           "AND (:floor IS NULL OR a.floor = :floor)")
     List<ApartmentSummary> searchGeneral(@Param("keyword") String keyword, @Param("buildingId") UUID buildingId, @Param("floor") Integer floor);
 
-    @Query("SELECT DISTINCT a FROM Apartment a JOIN a.residents r")
+    @Query("SELECT DISTINCT r.apartment FROM Resident r")
     List<Apartment> findApartmentsWithResidents();
     
     List<Apartment> findByBuildingId(UUID buildingId);

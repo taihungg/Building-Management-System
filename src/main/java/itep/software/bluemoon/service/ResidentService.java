@@ -40,7 +40,9 @@ public class ResidentService {
     }
 
     public List<ResidentSummary> searchByAllInformation(String keyword, boolean includeInactive){
-        return residentRepository.searchGeneral(keyword.trim(), includeInactive);
+        keyword = (keyword == null || keyword.isBlank()) ? null : keyword.trim();
+
+        return residentRepository.searchGeneral(keyword, includeInactive);
     }
 
     public ResidentDetailDTO getResidentDetail(UUID id) {
