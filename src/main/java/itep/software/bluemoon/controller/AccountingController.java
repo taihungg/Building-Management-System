@@ -46,12 +46,12 @@ public class AccountingController {
 
     @PostMapping("/invoices/generation")
     public ResponseEntity<Object> generateInvoices(@RequestParam(value = "month", required = true) Integer month, @RequestParam(value = "year", required = true) Integer year){
-        int count = invoiceService.generateBatchInvoice(month, year);
+        List<InvoiceSummary> data = invoiceService.generateBatchInvoice(month, year);
 
         return ApiResponse.responseBuilder(
                 HttpStatus.OK,
-                "Generate " + count + " draft invoices (PENDING). Please double check before publish!",
-                null
+                "Generate draft invoices (PENDING). Please double check before publish!",
+                data
         );
     }
 

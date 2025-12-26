@@ -1,6 +1,5 @@
 package itep.software.bluemoon.service;
 
-import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -202,7 +201,6 @@ public class ResidentService {
         User newAccount = User.builder()
                 .username(generatedUsername)
                 .password("12345")
-                .createDate(LocalDate.now())
                 .person(resident)
                 .build();
 
