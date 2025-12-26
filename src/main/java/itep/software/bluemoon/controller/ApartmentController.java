@@ -3,7 +3,6 @@ package itep.software.bluemoon.controller;
 import java.util.List;
 import java.util.UUID;
 
-import itep.software.bluemoon.entity.Apartment;
 import itep.software.bluemoon.model.DTO.apartment.ApartmentCreationDTO;
 import itep.software.bluemoon.model.DTO.apartment.ApartmentResidentUpdateDTO;
 import itep.software.bluemoon.model.projection.ApartmentSummary;
@@ -62,7 +61,7 @@ public class ApartmentController {
 
     @PostMapping
     public ResponseEntity<Object> createApartment(@RequestBody ApartmentCreationDTO request){
-        Apartment data = apartmentService.createResident(request);
+        ApartmentDetailDTO data = apartmentService.createApartment(request);
 
         return ApiResponse.responseBuilder(
                 HttpStatus.OK,
@@ -72,7 +71,7 @@ public class ApartmentController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<Object> changeApartmentOwner(@PathVariable(value = "id") UUID apartmentId, @RequestParam(value = "new_owner_id",  required = false) UUID ownerId){
+    public ResponseEntity<Object> changeApartmentOwner(@PathVariable(value = "id") UUID apartmentId, @RequestParam(value = "new_owner_id",  required = true) UUID ownerId){
         apartmentService.changeApartmentOwner(apartmentId, ownerId);
 
         return ApiResponse.responseBuilder(
@@ -83,7 +82,7 @@ public class ApartmentController {
     }
 
     @DeleteMapping
-    public ResponseEntity<Object> deleteResident(@RequestParam(value = "id", required = true) UUID id){
+    public ResponseEntity<Object> deleteApartment(@RequestParam(value = "id", required = true) UUID id){
         apartmentService.deleteApartment(id);
 
         return ApiResponse.responseBuilder(
@@ -93,27 +92,27 @@ public class ApartmentController {
         );
     }
     
-     //Thêm/Gán cư dân vào căn hộ
-     @PutMapping("/{apartmentId}/residents/add")
-     public ResponseEntity<Object> addResidents(@PathVariable UUID apartmentId, @RequestBody ApartmentResidentUpdateDTO request){
-         apartmentService.addResidentsToApartment(apartmentId, request);
+    // Thêm cư dân vào căn hộ
+    @PutMapping("/{apartmentId}/residents/add")
+    public ResponseEntity<Object> addResidents(@PathVariable UUID apartmentId, @RequestBody ApartmentResidentUpdateDTO request){
+        ApartmentDetailDTO data = apartmentService.addResidentsToApartment(apartmentId, request);
 
-         return ApiResponse.responseBuilder(
-                 HttpStatus.OK,
-                 "Residents added to apartment successfully!",
-                 null
-         );
-     }
+        return ApiResponse.responseBuilder(
+                HttpStatus.OK,
+                "Residents added to apartment successfully!",
+                data
+        );
+    }
 
-     //Xóa/Loại bỏ cư dân khỏi căn hộ (thiết lập Apartment = null)
-     @PutMapping("/{apartmentId}/residents/remove")
-     public ResponseEntity<Object> removeResidents(@PathVariable UUID apartmentId, @RequestBody ApartmentResidentUpdateDTO request){
-         apartmentService.removeResidentsFromApartment(apartmentId, request);
+    // Xóa cư dân khỏi căn hộ
+    @PutMapping("/{apartmentId}/residents/remove")
+    public ResponseEntity<Object> removeResidents(@PathVariable UUID apartmentId, @RequestBody ApartmentResidentUpdateDTO request){
+        ApartmentDetailDTO data = apartmentService.removeResidentsFromApartment(apartmentId, request);
 
-         return ApiResponse.responseBuilder(
-                 HttpStatus.OK,
-                 "Residents removed from apartment successfully!",
-                 null
-         );
-     }
+        return ApiResponse.responseBuilder(
+                HttpStatus.OK,
+                "Residents removed from apartment successfully!",
+                data
+        );
+    }
 }

@@ -7,8 +7,22 @@ import java.util.List;
 import java.util.UUID;
 
 import itep.software.bluemoon.entity.Apartment;
+import itep.software.bluemoon.entity.BaseEntity;
 import itep.software.bluemoon.enumeration.InvoiceStatus;
-import jakarta.persistence.*;
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -21,8 +35,14 @@ import lombok.Setter;
 @AllArgsConstructor
 @Builder
 @Entity
-@Table(name = "invoice")
-public class Invoice {
+@Table(name = "invoice", 
+       uniqueConstraints = {
+           @UniqueConstraint(
+               name = "uk_invoice_apartment_month",
+               columnNames = {"apartment_id", "month", "year"}
+           )
+       })
+public class Invoice extends BaseEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     @Column(
@@ -33,39 +53,37 @@ public class Invoice {
     )
     private UUID id;
 
-    @Column(name = "month")
-    private int month;
-
-    @Column(name = "year")
-    private int year;
-
-    @Column(name = "total_amount")
-    private BigDecimal totalAmount;
-
     @ManyToOne
     @JoinColumn(name = "apartment_id", nullable = false)
     private Apartment apartment;
+    
+    @Column(name = "month", nullable = false)
+    private int month;
+
+    @Column(name = "year", nullable = false)
+    private int year;
+
+    @Column(name = "total_amount", precision = 20, scale = 2)
+    private BigDecimal totalAmount;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "status", nullable = false)
+    @Column(name = "status", nullable = false, length = 10)
     @Builder.Default
     private InvoiceStatus status = InvoiceStatus.UNPAID;
 
-    @Column(name = "paid_amount")
+    @Column(name = "paid_amount", precision = 20, scale = 2)
     @Builder.Default
-    private BigDecimal paidAmount = BigDecimal.ZERO; // Số tiền đã đóng
+    private BigDecimal paidAmount = BigDecimal.ZERO;
 
-    private LocalDateTime paymentDate;
-
-    @OneToMany(mappedBy = "invoice", cascade = CascadeType.ALL)
+    @OneToMany(
+        mappedBy = "invoice", 
+        cascade = CascadeType.ALL,
+        orphanRemoval = true,
+        fetch = FetchType.LAZY
+    )
     @Builder.Default
     private List<InvoiceDetail> details = new ArrayList<>();
-    
-    @Column(name = "created_time")
-    private LocalDateTime createdTime;
 
-    @PrePersist
-    protected void onCreate() {
-        createdTime = LocalDateTime.now();
-    }
+    @Column(name = "overdue_date")
+    private LocalDateTime overdueDate;
 }

@@ -1,24 +1,18 @@
 package itep.software.bluemoon.entity;
 
-import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.UUID;
 
-import itep.software.bluemoon.entity.person.Resident;
-import org.hibernate.annotations.CreationTimestamp;
-
-import com.fasterxml.jackson.annotation.JsonFormat;
-
 import itep.software.bluemoon.entity.person.Staff;
+import itep.software.bluemoon.enumeration.AnnouncementTargetType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToMany;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
@@ -34,7 +28,7 @@ import lombok.Setter;
 @Builder
 @Entity
 @Table(name = "announcement")
-public class Announcement {
+public class Announcement extends BaseEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     @Column(
@@ -45,7 +39,7 @@ public class Announcement {
     )
     private UUID id;
 
-    @Column(name = "title", nullable = false)
+    @Column(name = "title", nullable = false, length = 100)
     private String title;
 
     @Column(name = "message", columnDefinition = "TEXT", nullable = false)
@@ -54,15 +48,11 @@ public class Announcement {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "sender_id", nullable = false)
     private Staff sender;
+    
+    @Column(name = "target_type", length = 20)
+    @Enumerated(EnumType.STRING)
+    private AnnouncementTargetType targetType;
 
-    @ManyToMany(
-        mappedBy = "receivedAnnouncements",
-        fetch = FetchType.LAZY
-    )
-    @Builder.Default
-    private List<Resident> receiver = new ArrayList<>();
-
-    @CreationTimestamp
-    @Column(name = "created_at", nullable = false, updatable = false)
-    private LocalDateTime createdAt;
+    @Column(name = "target_detail") 
+    private String targetDetail;
 }

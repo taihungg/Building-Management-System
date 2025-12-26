@@ -1,5 +1,6 @@
 package itep.software.bluemoon.model.DTO.apartment;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.UUID;
 
@@ -27,7 +28,7 @@ public class ApartmentDetailDTO {
     public static class ApartmentInfoDTO {
         private Integer roomNumber;
         private Integer floor;
-        private Double area;
+        private BigDecimal area;
         private String buildingName;
         private Integer numberOfResidents;
     }
@@ -39,7 +40,7 @@ public class ApartmentDetailDTO {
     public static class OwnerInfoDTO {
         private UUID id;
         private String fullName;
-        private String phoneNumber;
+        private String phone;
         private String email;
     }
     
@@ -49,7 +50,7 @@ public class ApartmentDetailDTO {
     @NoArgsConstructor
     public static class SummaryDTO {
         private Integer unpaidInvoicesCount;
-        private Integer pendingIssuesCount;
         private Integer vehicleCount;
+        private Integer pendingIssuesCount;
     }
 }
