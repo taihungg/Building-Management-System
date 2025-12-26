@@ -33,7 +33,7 @@ export function AuthorityResidentManagement() {
   const fetchResidents = async () => {
     setIsLoading(true);
     try {
-      const response = await fetch('http://localhost:8080/api/v1/residents');
+      const response = await fetch('http://localhost:8081/api/v1/residents');
       if (!response.ok) throw new Error("Không thể lấy danh sách cư dân");
       const res = await response.json();
       setResidents(res.data || []);
@@ -50,7 +50,7 @@ export function AuthorityResidentManagement() {
     setIsViewModalOpen(true);
     setSelectedResident(null); 
     try {
-      const response = await fetch(`http://localhost:8080/api/v1/residents/${residentId}`);
+      const response = await fetch(`http://localhost:8081/api/v1/residents/${residentId}`);
       if (!response.ok) throw new Error("Không thể tải thông tin chi tiết cư dân");
       
       const res = await response.json();
