@@ -47,10 +47,11 @@ public class AnnouncementService {
                 .targetDetail(request.getTargetDetail()) 
                 .build();
         announcement = announcementRepository.save(announcement);
-
-
+        
         List<Resident> targets = getTargetResidents(request);
-
+        if (targets.isEmpty()) {
+            throw new RuntimeException("Không tìm thấy cư dân nào phù hợp với tiêu chí!");
+        }
         saveInBatches(targets, announcement);
     }
 
@@ -121,7 +122,7 @@ public class AnnouncementService {
     
    // Staff xem toàn bộ danh sách thông báo đã gửi
     public Page<Announcement> getAllAnnouncements(Pageable pageable) {
-        return announcementRepository.findAll(pageable);
+        return announcementRepository.findAllWithSender(pageable);
     }
 
     // Staff xem danh sách người nhận và trạng thái đọc của 1 thông báo
