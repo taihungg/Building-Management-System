@@ -2,10 +2,9 @@ import { useState, useEffect, useCallback } from "react";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { 
-  Search, Plus, Edit, Trash2, MoreVertical, MapPin, ShieldCheck, HomeIcon, 
-  Contact, Phone, UserCircle, Mail, Eye, Home, Fingerprint, Globe, 
-  Building2, Clock, AlertCircle, Users, Key, UserCheck, UserMinus, 
-  Download, ChevronDown 
+  Search, ShieldCheck, HomeIcon, 
+  Phone, UserCircle, Fingerprint, Users, UserMinus, 
+  Download
 } from "lucide-react";
 import { Label } from "./ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
@@ -13,53 +12,8 @@ import { Dropdown } from "./Dropdown";
 import { Modal } from "./Modal";
 import React from 'react';
 import { Toaster, toast } from 'sonner';
+import * as XLSX from 'xlsx';
 
-type ResidenceType = 'thuongTru' | 'tamTru' | 'nguoiNuocNgoai';
-
-// --- LOGIC PHÂN LOẠI CƯ TRÚ ---
-const getResidenceType = (resident: any): ResidenceType => {
-  if (!resident) return 'thuongTru';
-  const idCard = String(resident.idCard || '');
-  const homeTown = (resident.homeTown || '').toLowerCase();
-  
-  if ((idCard.length > 0 && idCard.length < 8) || homeTown.includes('foreign') || homeTown.includes('nước ngoài')) {
-       return 'nguoiNuocNgoai';
-  }
-  if (idCard.length === 9 || idCard.length === 12) {
-    return 'thuongTru';
-  }
-  const idValue = resident.id ? parseInt(String(resident.id).slice(-1)) : 0;
-  if (idValue % 5 === 0) return 'nguoiNuocNgoai'; 
-  if (idValue % 5 === 1 || idValue % 5 === 2) return 'tamTru'; 
-  return 'thuongTru';
-};
-
-const getResidenceTypeLabel = (type: ResidenceType): string => {
-  switch (type) {
-    case 'thuongTru': return 'Thường trú';
-    case 'tamTru': return 'Tạm trú';
-    case 'nguoiNuocNgoai': return 'Người nước ngoài';
-    default: return '-';
-  }
-};
-
-const getResidenceTypeColor = (type: ResidenceType): string => {
-  switch (type) {
-    case 'thuongTru': return 'bg-green-100 text-green-800 border-green-200';
-    case 'tamTru': return 'bg-orange-100 text-orange-800 border-orange-200';
-    case 'nguoiNuocNgoai': return 'bg-blue-100 text-blue-800 border-blue-200';
-    default: return 'bg-gray-100 text-gray-800 border-gray-200';
-  }
-};
-
-const getResidenceTypeIcon = (type: ResidenceType) => {
-  switch (type) {
-    case 'thuongTru': return Building2;
-    case 'tamTru': return Clock;
-    case 'nguoiNuocNgoai': return Globe;
-    default: return UserCircle;
-  }
-};
 
 export function AuthorityResidentManagement() {
   const [residents, setResidents] = useState<any[]>([]); 
@@ -79,7 +33,7 @@ export function AuthorityResidentManagement() {
   const fetchResidents = async () => {
     setIsLoading(true);
     try {
-      const response = await fetch('http://localhost:8081/api/v1/residents');
+      const response = await fetch('http://localhost:8080/api/v1/residents');
       if (!response.ok) throw new Error("Không thể lấy danh sách cư dân");
       const res = await response.json();
       setResidents(res.data || []);
@@ -96,19 +50,13 @@ export function AuthorityResidentManagement() {
     setIsViewModalOpen(true);
     setSelectedResident(null); 
     try {
-      const response = await fetch(`http://localhost:8081/api/v1/residents/${residentId}`);
+      const response = await fetch(`http://localhost:8080/api/v1/residents/${residentId}`);
       if (!response.ok) throw new Error("Không thể tải thông tin chi tiết cư dân");
       
       const res = await response.json();
       const data = res.data;
-
-      // Áp dụng logic residenceType dựa trên dữ liệu thật trả về
-      const type = getResidenceType(data);
       
-      setSelectedResident({
-        ...data,
-        residenceType: type
-      });
+      setSelectedResident(data);
     } catch (err: any) {
       toast.error("Lỗi tải dữ liệu", { description: err.message });
       setIsViewModalOpen(false);
@@ -127,6 +75,27 @@ export function AuthorityResidentManagement() {
   const getInitials = (name: string) => {
     if (!name) return 'U';
     return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+  };
+
+  const handleExportExcel = () => {
+    try {
+      const exportData = residents.map((resident) => ({
+        'Họ và tên': resident.fullName || '',
+        'Email': resident.email || '',
+        'Số điện thoại': resident.phone || '',
+        'Căn hộ': resident.roomNumber || '',
+        'Trạng thái': resident.status || '',
+      }));
+
+      const worksheet = XLSX.utils.json_to_sheet(exportData);
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, 'Danh sách cư dân');
+      XLSX.writeFile(workbook, 'Danh_sach_cu_dan.xlsx');
+      
+      toast.success("Đã xuất Excel thành công", { description: "File Danh_sach_cu_dan.xlsx đã được tải xuống" });
+    } catch (error) {
+      toast.error("Lỗi xuất Excel", { description: "Không thể xuất file Excel" });
+    }
   };
 
   return (
@@ -170,14 +139,17 @@ export function AuthorityResidentManagement() {
 
         <div className="flex items-center gap-3">
             <div className="flex items-center gap-2 px-4 py-2 border-2 border-blue-50 rounded-xl bg-white">
-                <span className="text-xs font-bold text-blue-800 uppercase">Tòa nhà</span>
+                <span className="text-xs font-bold text-blue-800">Tòa nhà</span>
                 <select className="text-sm font-semibold outline-none bg-transparent" value={selectedBuilding} onChange={(e)=>setSelectedBuilding(e.target.value)}>
                     <option value="all">Tất cả</option>
                     <option value="A">Tòa A</option>
                     <option value="B">Tòa B</option>
                 </select>
             </div>
-            <Button className="bg-blue-600 hover:bg-blue-700 text-white rounded-xl h-11 px-6 shadow-md">
+            <Button 
+              onClick={handleExportExcel}
+              className="bg-blue-600 hover:bg-blue-700 text-white rounded-xl h-11 px-6 shadow-md"
+            >
                 <Download className="w-4 h-4 mr-2" /> Xuất Excel
             </Button>
         </div>
@@ -188,7 +160,7 @@ export function AuthorityResidentManagement() {
         {/* tableLayout: fixed là bắt buộc để các cột th và td thẳng hàng theo % width */}
         <table className="w-full text-sm" style={{ tableLayout: 'fixed' }}>
           <thead className="bg-gray-50 border-b border-gray-100">
-            <tr className="text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
+            <tr className="text-left text-xs font-semibold text-gray-500 tracking-wider">
               <th className="px-6 py-4" style={{ width: '35%' }}>Cư dân</th>
               <th className="px-6 py-4" style={{ width: '20%' }}>Căn hộ</th>
               <th className="px-6 py-4" style={{ width: '30%' }}>Trạng thái</th>
@@ -231,12 +203,12 @@ export function AuthorityResidentManagement() {
                     </span>
                   </td>
 
-                  {/* Cột 3: Trạng thái (Đã sửa nội dung theo yêu cầu) */}
+                  {/* Cột 3: Trạng thái */}
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-2 overflow-hidden">
-                      <div className={`w-2 h-2 rounded-full flex-shrink-0 ${resident.status === 'ACTIVE' ? 'bg-green-500' : 'bg-gray-300'}`} />
+                      <div className={`w-2 h-2 rounded-full flex-shrink-0 ${resident.status === 'INACTIVE' ? 'bg-gray-300' : 'bg-green-500'}`} />
                       <span className="font-medium text-gray-600 truncate">
-                        Đợi API trả về trường dlieu này
+                        {resident.status || 'N/A'}
                       </span>
                     </div>
                   </td>
@@ -273,12 +245,12 @@ export function AuthorityResidentManagement() {
                     <UserCircle className="w-10 h-10" />
                 </div>
                 <div>
-                  <p className="text-xs font-bold text-blue-600 uppercase tracking-widest">Họ và tên cư dân</p>
+                  <p className="text-xs font-bold text-blue-600 tracking-widest">Họ và tên cư dân</p>
                   <h2 className="text-3xl font-extrabold text-blue-900">{selectedResident.fullName}</h2>
                 </div>
               </div>
               <div className="text-right">
-                <p className="text-xs font-bold text-orange-600 uppercase">Căn hộ</p>
+                <p className="text-xs font-bold text-orange-600">Căn hộ</p>
                 <div className="flex items-center gap-2 text-3xl font-black text-orange-700 justify-end">
                   <HomeIcon className="w-7 h-7" /> {selectedResident.roomNumber}
                 </div>
@@ -294,15 +266,15 @@ export function AuthorityResidentManagement() {
                   </h3>
                   <div className="grid grid-cols-2 gap-6">
                     <div>
-                      <p className="text-xs font-bold text-gray-400 uppercase">CMND/CCCD</p>
+                      <p className="text-xs font-bold text-gray-400">CMND/CCCD</p>
                       <p className="text-lg font-bold text-gray-900">{selectedResident.idCard || 'N/A'}</p>
                     </div>
                     <div>
-                      <p className="text-xs font-bold text-gray-400 uppercase">Ngày sinh</p>
+                      <p className="text-xs font-bold text-gray-400">Ngày sinh</p>
                       <p className="text-lg font-bold text-gray-900">{selectedResident.dob || 'N/A'}</p>
                     </div>
                     <div className="col-span-2">
-                      <p className="text-xs font-bold text-gray-400 uppercase">Quê quán</p>
+                      <p className="text-xs font-bold text-gray-400">Quê quán</p>
                       <p className="text-lg font-bold text-gray-900">{selectedResident.homeTown || 'N/A'}</p>
                     </div>
                   </div>
@@ -314,11 +286,11 @@ export function AuthorityResidentManagement() {
                   </h3>
                   <div className="grid grid-cols-2 gap-6">
                     <div>
-                      <p className="text-xs font-bold text-gray-400 uppercase">Số điện thoại</p>
+                      <p className="text-xs font-bold text-gray-400">Số điện thoại</p>
                       <p className="text-lg font-bold text-green-700">{selectedResident.phoneNumber || 'N/A'}</p>
                     </div>
                     <div>
-                      <p className="text-xs font-bold text-gray-400 uppercase">Email</p>
+                      <p className="text-xs font-bold text-gray-400">Email</p>
                       <p className="text-lg font-bold text-blue-600 underline">{selectedResident.email || 'N/A'}</p>
                     </div>
                   </div>
@@ -333,10 +305,9 @@ export function AuthorityResidentManagement() {
                   </h3>
                   <div className="space-y-8">
                     <div>
-                        <p className="text-xs font-bold text-gray-400 uppercase mb-3">Loại cư dân</p>
-                        <span className={`flex items-center gap-2 w-fit px-4 py-2 rounded-xl text-sm font-black border shadow-sm ${getResidenceTypeColor(selectedResident.residenceType)}`}>
-                            {React.createElement(getResidenceTypeIcon(selectedResident.residenceType), { className: "w-4 h-4" })}
-                            {getResidenceTypeLabel(selectedResident.residenceType).toUpperCase()}
+                        <p className="text-xs font-bold text-gray-400 mb-3">Trạng thái cư trú</p>
+                        <span className="inline-flex px-4 py-2 rounded-xl text-sm font-bold border shadow-sm bg-gray-100 text-gray-800 border-gray-200">
+                            {selectedResident.status || 'N/A'}
                         </span>
                     </div>
                   </div>
