@@ -34,6 +34,7 @@ public class AnnouncementService {
     private final ResidentRepository residentRepository;
     private final StaffRepository staffRepository;
 
+    @SuppressWarnings("null")
     @Transactional
     public void createAnnouncement(AnnouncementCreateRequestDTO request) {
     	Staff sender = staffRepository.findById(request.getSenderId())

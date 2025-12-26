@@ -14,8 +14,6 @@ import itep.software.bluemoon.enumeration.IssueType;
 import itep.software.bluemoon.model.DTO.issue.IssueCreateRequestDTO;
 import itep.software.bluemoon.model.DTO.issue.IssueResponseDTO;
 import itep.software.bluemoon.model.projection.IssueSummary;
-//import itep.software.bluemoon.enumeration.IssueLevel;
-//import itep.software.bluemoon.enumeration.EscalationRequest;
 import itep.software.bluemoon.repository.ApartmentRepository;
 import itep.software.bluemoon.repository.IssueRepository;
 import itep.software.bluemoon.repository.ResidentRepository;
@@ -30,6 +28,7 @@ public class IssueService {
     private final ResidentRepository residentRepository;
     
     //tạo Issue
+    @SuppressWarnings("null")
     public Issue createIssue(IssueCreateRequestDTO request) {
 
         Apartment apartment = apartmentRepository.findById(request.getApartmentId())
@@ -60,6 +59,7 @@ public class IssueService {
     */
 
     
+    @SuppressWarnings("null")
     public IssueResponseDTO updateStatus(UUID issueId, IssueStatus newStatus) {
         Issue issue = issueRepository.findById(issueId)
             .orElseThrow(() -> new RuntimeException("Issue not found"));
