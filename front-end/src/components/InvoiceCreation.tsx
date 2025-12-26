@@ -1,5 +1,5 @@
 import React, { useState, useRef, useMemo, useEffect } from 'react';
-import { Upload, FileSpreadsheet, CheckCircle2, X, Save, Receipt, AlertCircle, Loader2, Download, FileText, Calendar, ChevronDown, Plus } from 'lucide-react';
+import { Upload, FileSpreadsheet, CheckCircle2, X, Save, Receipt, AlertCircle, Loader2, Download, FileText, Calendar, ChevronDown, Plus, Pencil } from 'lucide-react';
 import { toast } from 'sonner';
 import * as XLSX from 'xlsx';
 
@@ -33,21 +33,25 @@ export function InvoiceCreation() {
   const [allUploadedData, setAllUploadedData] = useState<any[]>([]); // Lưu tất cả dữ liệu đã upload
   const [tableData, setTableData] = useState<any[]>([]); // Dữ liệu hiện tại sau khi filter
   const [isDataLoaded, setIsDataLoaded] = useState<boolean>(false);
-  const [editingCell, setEditingCell] = useState<{ row: number; col: string } | null>(null);
-  const [editingValue, setEditingValue] = useState<string>('');
+  const [editingRowIdx, setEditingRowIdx] = useState<number | null>(null);
+  const [editingRowDraft, setEditingRowDraft] = useState<Record<string, any> | null>(null);
+  const [editingRowKey, setEditingRowKey] = useState<string | null>(null);
 
   // State cho Save action
   const [isSaving, setIsSaving] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   
   // State cho Custom Toast Notification
   const [showToast, setShowToast] = useState(false);
+  const [saveBanner, setSaveBanner] = useState<{ type: 'success' | 'error'; title: string; description?: string } | null>(null);
 
   // Kiểm tra dữ liệu trong database dựa trên bộ lọc (cần tháng, năm và loại dịch vụ)
   const checkDataInDB = async () => {
     if (!selectedMonth || !selectedYear) {
       setHasDataInDB(null);
       setDbData([]);
+      setHasUnsavedChanges(false);
       return;
     }
 
@@ -77,6 +81,7 @@ export function InvoiceCreation() {
         setTableData(data);
         setIsDataLoaded(true);
         setIsSaved(true); // Đánh dấu là đã lưu vì có trong DB
+        setHasUnsavedChanges(false);
         
         console.log('checkDataInDB - Setting isSaved to:', true);
         console.log('checkDataInDB - Setting hasDataInDB to:', true);
@@ -94,18 +99,6 @@ export function InvoiceCreation() {
             });
             return [...prev, ...newData];
           });
-        } else if (tempData.length > 0) {
-          // Nếu chỉ có temp data, cũng cập nhật allUploadedData
-          setAllUploadedData(prev => {
-            const existingIds = new Set(prev.map((row: any) => 
-              `${row['Căn hộ'] || ''}_${row['Tháng'] || ''}_${row['Năm'] || ''}_${row['Mã dịch vụ'] || ''}`
-            ));
-            const newData = tempData.filter((row: any) => {
-              const id = `${row['Căn hộ'] || ''}_${row['Tháng'] || ''}_${row['Năm'] || ''}_${row['Mã dịch vụ'] || ''}`;
-              return !existingIds.has(id);
-            });
-            return [...prev, ...newData];
-          });
         }
       } else {
         console.log('checkDataInDB - No data found');
@@ -116,6 +109,7 @@ export function InvoiceCreation() {
           setTableData([]);
         }
         setIsSaved(false);
+        setHasUnsavedChanges(false);
       }
     } catch (error) {
       console.error('Lỗi kiểm tra dữ liệu:', error);
@@ -126,6 +120,7 @@ export function InvoiceCreation() {
       setTableData([]);
       setIsDataLoaded(false);
       setIsSaved(false);
+      setHasUnsavedChanges(false);
     } finally {
       setIsCheckingData(false);
     }
@@ -138,7 +133,9 @@ export function InvoiceCreation() {
     if (!hasDataInDB) {
       setIsDataLoaded(false);
       setIsSaved(false);
+      setHasUnsavedChanges(false);
     }
+    setSaveBanner(null);
   }, [selectedMonth, selectedYear]);
 
   // Hàm trigger file input khi click vào button
@@ -178,6 +175,7 @@ export function InvoiceCreation() {
 
     setIsUploading(true);
     setUploadedFile(file);
+    setSaveBanner(null);
 
     try {
       const reader = new FileReader();
@@ -252,6 +250,8 @@ export function InvoiceCreation() {
           setIsDataLoaded(true);
           setUploadedData(enrichedData);
           setIsSaved(false); // Reset saved status when uploading new file
+          setHasUnsavedChanges(true);
+          setSaveBanner(null);
           
           toast.success("Upload thành công", { description: `Đã tải lên ${enrichedData.length} dòng dữ liệu cho tháng ${selectedMonth}/${selectedYear}. Vui lòng kiểm tra và nhấn "Lưu vào Database" để lưu.` });
           
@@ -389,6 +389,7 @@ export function InvoiceCreation() {
 
   // Hàm lưu dữ liệu vào Database
   const handleSave = async () => {
+    setSaveBanner(null);
     if (filteredTableData.length === 0) {
       toast.error("Vui lòng upload file trước", { description: "Chưa có dữ liệu để lưu" });
       return;
@@ -399,8 +400,8 @@ export function InvoiceCreation() {
       return;
     }
 
-    if (isSaved) {
-      toast.info("Dữ liệu đã được lưu", { description: "Dữ liệu này đã được lưu trước đó" });
+    if (!hasUnsavedChanges) {
+      toast.info("Không có thay đổi", { description: "Không có dữ liệu mới để lưu" });
       return;
     }
 
@@ -441,12 +442,19 @@ export function InvoiceCreation() {
         }
         throw new Error(errorMessage);
       }
-      
-      const res = await response.json();
-      console.log('Data saved to Database:', res);
 
       setIsSaved(true);
       setHasDataInDB(true); // Sau khi lưu, đánh dấu là đã có dữ liệu trong DB
+      setHasUnsavedChanges(false);
+
+      try {
+        const res = await response.json();
+        console.log('Data saved to Database:', res);
+      } catch (e) {
+        console.log('Data saved to Database: (no JSON body)');
+      }
+
+      await checkDataInDB();
       
       // Cập nhật allUploadedData để giữ lại dữ liệu đã lưu
       setAllUploadedData(prev => {
@@ -474,6 +482,7 @@ export function InvoiceCreation() {
       }, 3000);
       
       toast.success("Lưu thành công", { description: "Dữ liệu đã được lưu vào database" });
+      setSaveBanner({ type: 'success', title: 'Lưu thành công', description: `Đã lưu dữ liệu tháng ${selectedMonth}/${selectedYear} vào database.` });
     } catch (error) {
       console.error("Lỗi lưu dữ liệu:", error);
       const errorMessage = error instanceof Error ? error.message : 'Không thể lưu dữ liệu. Vui lòng thử lại.';
@@ -483,50 +492,83 @@ export function InvoiceCreation() {
         toast.error("Lỗi kết nối", { 
           description: "Không thể kết nối đến server. Vui lòng kiểm tra kết nối mạng hoặc đảm bảo backend đang chạy." 
         });
+        setSaveBanner({ type: 'error', title: 'Lưu thất bại', description: 'Không thể kết nối đến server. Vui lòng kiểm tra backend và thử lại.' });
       } else {
         toast.error("Lỗi lưu dữ liệu", { description: errorMessage });
+        setSaveBanner({ type: 'error', title: 'Lưu thất bại', description: errorMessage });
       }
     } finally {
       setIsSaving(false);
     }
   };
 
-  // Hàm xử lý inline editing
-  const handleCellEdit = (rowIdx: number, colKey: string, currentValue: any) => {
-    setEditingCell({ row: rowIdx, col: colKey });
-    setEditingValue(String(currentValue || ''));
+  const buildRowKey = (row: any) => {
+    return `${row?.['Căn hộ'] ?? ''}__${row?.['Tòa nhà'] ?? ''}__${row?.['Tháng'] ?? ''}__${row?.['Năm'] ?? ''}__${String(row?.['Mã dịch vụ'] ?? '').toUpperCase()}`;
   };
 
-  const handleCellSave = (rowIdx: number, colKey: string) => {
-    if (editingCell) {
-      // Tìm row trong allUploadedData dựa trên rowIdx từ filteredTableData
-      const filteredRow = filteredTableData[rowIdx];
-      if (!filteredRow) return;
-      
-      // Tìm index trong allUploadedData
-      const allDataIndex = allUploadedData.findIndex(row => 
-        row['Căn hộ'] === filteredRow['Căn hộ'] && 
-        row['Tòa nhà'] === filteredRow['Tòa nhà'] &&
-        row['Tháng'] === filteredRow['Tháng'] &&
-        row['Năm'] === filteredRow['Năm'] &&
-        (row['Mã dịch vụ'] || '').toUpperCase() === (filteredRow['Mã dịch vụ'] || '').toUpperCase()
-      );
-      
-      if (allDataIndex >= 0) {
-        const newAllData = [...allUploadedData];
-        const value = isNaN(Number(editingValue)) ? editingValue : Number(editingValue);
-        newAllData[allDataIndex] = { ...newAllData[allDataIndex], [colKey]: value };
-        setAllUploadedData(newAllData);
-        setIsSaved(false); // Reset saved status khi chỉnh sửa
-      }
-      setEditingCell(null);
-      setEditingValue('');
+  const normalizeServiceCode = (value: any) => {
+    const raw = String(value ?? '').trim();
+    const upper = raw.toUpperCase();
+    if (upper === 'ELECTRICITY' || upper === 'ELECTRONIC' || upper === 'ĐIỆN' || upper === 'DIEN' || upper === 'ĐIEN') return 'ELECTRICITY';
+    if (upper === 'WATER' || upper === 'NƯỚC' || upper === 'NUOC') return 'WATER';
+    return upper;
+  };
+
+  const toServiceLabel = (value: any) => {
+    const upper = String(value ?? '').toUpperCase();
+    if (upper === 'ELECTRICITY' || upper === 'ELECTRONIC') return 'Điện';
+    if (upper === 'WATER') return 'Nước';
+    return String(value ?? '');
+  };
+
+  const openRowEdit = (rowIdx: number) => {
+    const row = filteredTableData[rowIdx];
+    if (!row) return;
+    setEditingRowIdx(rowIdx);
+    setEditingRowDraft({ ...row });
+    setEditingRowKey(buildRowKey(row));
+  };
+
+  const closeRowEdit = () => {
+    setEditingRowIdx(null);
+    setEditingRowDraft(null);
+    setEditingRowKey(null);
+  };
+
+  const saveRowEdit = () => {
+    if (editingRowIdx === null || !editingRowDraft || !editingRowKey) return;
+
+    const allDataIndex = allUploadedData.findIndex(row => buildRowKey(row) === editingRowKey);
+    if (allDataIndex < 0) {
+      toast.error("Không tìm thấy dòng dữ liệu", { description: "Vui lòng tải lại trang và thử lại." });
+      closeRowEdit();
+      return;
     }
-  };
 
-  const handleCellCancel = () => {
-    setEditingCell(null);
-    setEditingValue('');
+    const updatedRow = { ...editingRowDraft };
+    updatedRow['Tháng'] = Number(selectedMonth);
+    updatedRow['Năm'] = Number(selectedYear);
+    if (updatedRow['Mã dịch vụ'] !== undefined) {
+      updatedRow['Mã dịch vụ'] = normalizeServiceCode(updatedRow['Mã dịch vụ']);
+    }
+
+    const numericKeys = new Set(['Chỉ số cũ', 'Chỉ số mới', 'Chi so cu', 'Chi so moi', 'oldIndex', 'newIndex']);
+    Object.keys(updatedRow).forEach((key) => {
+      if (numericKeys.has(key)) {
+        const v = updatedRow[key];
+        const n = Number(v);
+        updatedRow[key] = Number.isFinite(n) ? n : v;
+      }
+    });
+
+    setAllUploadedData(prev => {
+      const next = [...prev];
+      next[allDataIndex] = updatedRow;
+      return next;
+    });
+    setIsSaved(false);
+    setHasUnsavedChanges(true);
+    closeRowEdit();
   };
 
 
@@ -571,6 +613,7 @@ export function InvoiceCreation() {
     console.log('Final filteredTableData:', filtered.length);
     return filtered;
   }, [allUploadedData, selectedMonth, selectedYear]);
+  const isSaveDisabled = !isFilterComplete || filteredTableData.length === 0 || isUploading || isSaving || !hasUnsavedChanges;
 
   // Cập nhật tableData từ filteredTableData để tính summary stats
   useEffect(() => {
@@ -670,37 +713,69 @@ export function InvoiceCreation() {
             )}
           </button>
 
-          {/* Lưu vào Database Button - Hiển thị khi có preview data chưa lưu */}
-          {filteredTableData.length > 0 && (hasDataInDB === false || hasDataInDB === null) && (
-            <button
-              onClick={handleSave}
-              disabled={isUploading || isSaved || isSaving || filteredTableData.length === 0}
-              className={`h-12 flex items-center gap-2 px-6 py-2 rounded-xl font-medium transition-all shadow-sm ${
-                isUploading || isSaved || isSaving || filteredTableData.length === 0
-                  ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                  : 'bg-blue-600 text-white hover:bg-blue-700'
-              }`}
-            >
-              {isSaving ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  <span>Đang lưu...</span>
-                </>
-              ) : isSaved ? (
-                <>
-                  <CheckCircle2 className="w-4 h-4" />
-                  <span>Đã lưu</span>
-                </>
-              ) : (
-                <>
-                  <Save className="w-4 h-4" />
-                  <span>Lưu</span>
-                </>
-              )}
-            </button>
-          )}
+          <button
+            onClick={handleSave}
+            disabled={isSaveDisabled}
+            className={`h-12 flex items-center gap-2 px-6 py-2 rounded-xl font-medium transition-all shadow-sm ${
+              isSaveDisabled
+                ? 'bg-slate-800 text-slate-200 cursor-not-allowed'
+                : 'bg-blue-600 text-white hover:bg-blue-700'
+            }`}
+          >
+            {isSaving ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                <span>Đang lưu...</span>
+              </>
+            ) : isSaved ? (
+              <>
+                <CheckCircle2 className="w-4 h-4" />
+                <span>Đã lưu</span>
+              </>
+            ) : (
+              <>
+                <Save className="w-4 h-4" />
+                <span>Lưu</span>
+              </>
+            )}
+          </button>
         </div>
       </div>
+
+      {saveBanner && (
+        <div
+          className={`flex items-start justify-between gap-4 rounded-xl border p-4 ${
+            saveBanner.type === 'success'
+              ? 'bg-green-50 border-green-200'
+              : 'bg-red-50 border-red-200'
+          }`}
+        >
+          <div className="flex items-start gap-3">
+            {saveBanner.type === 'success' ? (
+              <CheckCircle2 className="w-5 h-5 text-green-600 mt-0.5 flex-shrink-0" />
+            ) : (
+              <AlertCircle className="w-5 h-5 text-red-600 mt-0.5 flex-shrink-0" />
+            )}
+            <div>
+              <div className={`text-sm font-semibold ${saveBanner.type === 'success' ? 'text-green-900' : 'text-red-900'}`}>
+                {saveBanner.title}
+              </div>
+              {saveBanner.description && (
+                <div className={`text-sm ${saveBanner.type === 'success' ? 'text-green-800' : 'text-red-800'}`}>
+                  {saveBanner.description}
+                </div>
+              )}
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => setSaveBanner(null)}
+            className="p-2 rounded-lg hover:bg-black/5 text-gray-700"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+      )}
 
       {/* Hiển thị thông báo nếu chưa chọn đủ bộ lọc */}
       {!isFilterComplete && (
@@ -764,7 +839,10 @@ export function InvoiceCreation() {
               <table className="w-full border-collapse">
                 <thead className="bg-slate-100 sticky top-0 z-10">
                   <tr>
-                    {filteredTableData.length > 0 && Object.keys(filteredTableData[0]).map((col, idx) => (
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 tracking-wider border-b border-gray-200 bg-slate-100">
+                      Thao tác
+                    </th>
+                    {filteredTableData.length > 0 && Object.keys(filteredTableData[0]).filter(col => !['Tháng', 'Năm', 'Thang', 'Nam', 'month', 'year'].includes(col)).map((col, idx) => (
                       <th
                         key={idx}
                         className="px-4 py-3 text-left text-xs font-semibold text-gray-700 tracking-wider border-b border-gray-200 bg-slate-100"
@@ -776,21 +854,51 @@ export function InvoiceCreation() {
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
                   {filteredTableData.map((row, rowIdx) => {
-                    const columns = filteredTableData.length > 0 ? Object.keys(filteredTableData[0]) : [];
+                    const columns = filteredTableData.length > 0
+                      ? Object.keys(filteredTableData[0]).filter(col => !['Tháng', 'Năm', 'Thang', 'Nam', 'month', 'year'].includes(col))
+                      : [];
+                    const rowKey = buildRowKey(row);
+                    const isEditingRow = editingRowKey !== null && rowKey === editingRowKey;
                     return (
                     <tr key={rowIdx} className="hover:bg-blue-50 transition-colors duration-200">
+                      <td className="px-4 py-3 text-sm text-gray-900 border-b border-gray-100">
+                        {isEditingRow ? (
+                          <div className="flex items-center gap-2">
+                            <button
+                              type="button"
+                              onClick={saveRowEdit}
+                              className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium"
+                            >
+                              <CheckCircle2 className="w-4 h-4" />
+                              Lưu
+                            </button>
+                            <button
+                              type="button"
+                              onClick={closeRowEdit}
+                              className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border border-gray-200 bg-white hover:bg-gray-50 text-gray-700 text-sm font-medium"
+                            >
+                              <X className="w-4 h-4" />
+                              Huỷ
+                            </button>
+                          </div>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => openRowEdit(rowIdx)}
+                            className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border border-gray-200 bg-white hover:bg-gray-50 text-gray-700 text-sm font-medium"
+                          >
+                            <Pencil className="w-4 h-4" />
+                            Chỉnh sửa
+                          </button>
+                        )}
+                      </td>
                       {columns.map((col, colIdx) => {
-                        let value = row[col];
+                        let value = isEditingRow && editingRowDraft ? editingRowDraft[col] : row[col];
                         const colLower = col.toLowerCase();
                         
                         // Chuyển đổi Mã dịch vụ từ ELECTRICITY/WATER sang Điện/Nước
                         if (colLower.includes('mã dịch vụ') || colLower.includes('ma dich vu') || colLower.includes('servicecode') || colLower.includes('service code')) {
-                          const serviceCode = String(value || '').toUpperCase();
-                          if (serviceCode === 'ELECTRICITY') {
-                            value = 'Điện';
-                          } else if (serviceCode === 'WATER') {
-                            value = 'Nước';
-                          }
+                          value = toServiceLabel(value);
                         }
                         
                         const isNumber = typeof value === 'number';
@@ -798,8 +906,8 @@ export function InvoiceCreation() {
                                                 colLower.includes('tiền') || 
                                                 colLower.includes('cost') || 
                                                 colLower.includes('price');
-                        const isNumericField = isNumber || (!isNaN(Number(value)) && value !== '');
-                        const isEditing = editingCell?.row === rowIdx && editingCell?.col === col;
+                        const isService = colLower.includes('mã dịch vụ') || colLower.includes('ma dich vu') || colLower.includes('servicecode') || colLower.includes('service code');
+                        const isNumericKey = ['Chỉ số cũ', 'Chỉ số mới', 'Chi so cu', 'Chi so moi', 'oldIndex', 'newIndex'].includes(col);
                         
                         // Debug log
                         if (rowIdx === 0 && colIdx === 0) {
@@ -812,27 +920,27 @@ export function InvoiceCreation() {
                           <td
                             key={colIdx}
                             className="px-4 py-3 text-sm text-gray-900 border-b border-gray-100"
-                            onClick={() => isNumericField && !isEditing && handleCellEdit(rowIdx, col, value)}
-                            style={{ cursor: isNumericField ? 'pointer' : 'default' }}
                           >
-                            {isEditing ? (
-                              <input
-                                type="number"
-                                value={editingValue}
-                                onChange={(e) => setEditingValue(e.target.value)}
-                                onBlur={() => handleCellSave(rowIdx, col)}
-                                onKeyDown={(e) => {
-                                  if (e.key === 'Enter') {
-                                    handleCellSave(rowIdx, col);
-                                  } else if (e.key === 'Escape') {
-                                    handleCellCancel();
-                                  }
-                                }}
-                                className="w-full px-2 py-1 border border-blue-500 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                autoFocus
-                              />
+                            {isEditingRow && editingRowDraft ? (
+                              isService ? (
+                                <select
+                                  value={value ?? ''}
+                                  onChange={(e) => setEditingRowDraft((prev) => prev ? { ...prev, [col]: e.target.value } : prev)}
+                                  className="w-full h-10 px-3 rounded-lg border border-gray-200 bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                >
+                                  <option value="Điện">Điện</option>
+                                  <option value="Nước">Nước</option>
+                                </select>
+                              ) : (
+                                <input
+                                  type={isNumericKey ? 'number' : 'text'}
+                                  value={value ?? ''}
+                                  onChange={(e) => setEditingRowDraft((prev) => prev ? { ...prev, [col]: e.target.value } : prev)}
+                                  className="w-full h-10 px-3 rounded-lg border border-gray-200 bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                />
+                              )
                             ) : (
-                              <span className={isNumericField ? 'hover:bg-blue-100 px-2 py-1 rounded' : ''}>
+                              <span>
                                 {isNumber && isCurrencyField ? formatCurrency(value) : value}
                               </span>
                             )}
