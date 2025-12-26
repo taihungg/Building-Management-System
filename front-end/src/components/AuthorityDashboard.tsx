@@ -36,7 +36,7 @@ export function AuthorityDashboard() {
 
   const fetchResidents = async () => {
     try {
-      const response = await fetch('http://localhost:8080/api/v1/residents');
+      const response = await fetch('http://localhost:8081/api/v1/residents');
       if (!response.ok) throw new Error("Không thể lấy dữ liệu cư dân");
       const res = await response.json();
       setResidents(res.data || []);
@@ -47,7 +47,7 @@ export function AuthorityDashboard() {
 
   const fetchIssues = useCallback(async () => {
     try {
-      const response = await fetch('http://localhost:8080/api/issues');
+      const response = await fetch('http://localhost:8081/api/issues');
       if (!response.ok) throw new Error("Không thể tải danh sách sự cố.");
       const rawData = await response.json();
       const filteredIssue = rawData.filter((e: any) => e?.type === 'AUTHORITY');
