@@ -23,8 +23,7 @@ public interface InvoiceRepository extends JpaRepository<Invoice, UUID> {
            "CONCAT('P.', a.roomNumber) AS apartmentLabel, " + 
            "b.totalAmount AS totalAmount, " + 
            "b.status AS status, " +
-           "b.paymentDate AS paymentDate, " +
-           "b.createdTime AS createdTime " + 
+           "b.createdDate AS createdDate " + 
            "FROM Invoice b " +
            "LEFT JOIN b.apartment a " +
            "WHERE " +
@@ -45,12 +44,12 @@ public interface InvoiceRepository extends JpaRepository<Invoice, UUID> {
     BigDecimal sumTotalAmountByStatus(@Param("status") InvoiceStatus status);
 
     @Query("SELECT " +
-        "   EXTRACT(MONTH FROM i.createdTime) as month, " +
+        "   EXTRACT(MONTH FROM i.createdDate) as month, " +
         "   SUM(i.totalAmount) as totalRevenue, " +
         "   SUM(CASE WHEN i.status = 'PAID' THEN i.totalAmount ELSE 0 END) as paidRevenue " +
         "FROM Invoice i " +
-        "WHERE EXTRACT(YEAR FROM i.createdTime) = :year " +
-        "GROUP BY EXTRACT(MONTH FROM i.createdTime)")
+        "WHERE EXTRACT(YEAR FROM i.createdDate) = :year " +
+        "GROUP BY EXTRACT(MONTH FROM i.createdDate)")
     List<Object[]> findMonthlyRevenueByYear(@Param("year") int year);
 
     @Query("SELECT st.code, SUM(d.amount) " +

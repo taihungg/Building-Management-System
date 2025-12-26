@@ -28,38 +28,37 @@ public interface ResidentRepository extends JpaRepository<Resident, UUID> {
     List<Dropdown> searchForDropdown(@Param("keyword") String keyword);
 
     @Query("SELECT r.id AS id, " +
-        "r.fullName AS fullName, " +
-        "r.email AS email, " +
-        "r.phone AS phone, " +
-        "a.roomNumber AS roomNumber, " +
-        "r.status AS status " +
-        "FROM Resident r " +
-        "LEFT JOIN r.apartment a " +
-        "WHERE " +
-        "((:keyword IS NULL OR :keyword = '') " +
-        "OR (LOWER(r.fullName) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
-        "OR r.phone LIKE CONCAT('%', :keyword, '%') " +
-        "OR LOWER(r.email) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
-        "OR CAST(a.roomNumber AS string) LIKE CONCAT('%', :keyword, '%'))) " +
-        "AND (:includeInactive = true OR r.status != 'INACTIVE')")
+            "r.fullName AS fullName, " +
+            "r.email AS email, " +
+            "r.phone AS phone, " +
+            "a.roomNumber AS roomNumber, " +
+            "r.status AS status " +
+            "FROM Resident r " +
+            "LEFT JOIN r.apartment a " +
+            "WHERE " +
+            "(:keyword IS NULL OR :keyword = '' " +
+            " OR LOWER(r.fullName) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
+            " OR LOWER(r.email) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
+            " OR LOWER(r.phone) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
+            " OR CONCAT(a.roomNumber, '') LIKE CONCAT('%', :keyword, '%')) " +
+            "AND " +
+            "(:includeInactive = true OR r.status != 'INACTIVE')")
     List<ResidentSummary> searchGeneral(@Param("keyword") String keyword, @Param("includeInactive") boolean includeInactive);
 
     @Query("SELECT r FROM Resident r " +
-        "LEFT JOIN FETCH r.apartment a " +
-        "LEFT JOIN FETCH a.building " +
-        "WHERE r.id = :id")
+       "LEFT JOIN FETCH r.apartment " +
+       "WHERE r.id = :id")
     Optional<Resident> findResidentWithDetails(@Param("id") UUID id);
 
     @Query("SELECT r.id AS id, " +
-        "r.fullName AS fullName, " +
-        "u.phone AS phone, " +
-        "u.email AS email, " +
-        "a.roomNumber AS roomNumber, " +
-        "r.status AS status " +
-        "FROM Resident r " +
-        "LEFT JOIN r.account u " +
-        "LEFT JOIN r.apartment a " +
-        "WHERE a.id = :apartmentId")
+       "r.fullName AS fullName, " +
+       "r.email AS email, " +
+       "r.phone AS phone, " +
+       "a.roomNumber AS roomNumber, " +
+       "r.status AS status " +
+       "FROM Resident r " +
+       "LEFT JOIN r.apartment a " +
+       "WHERE a.id = :apartmentId")
     List<ResidentSummary> findByApartment_Id(@Param("apartmentId") UUID apartmentId);
 
     boolean existsByApartment_Id(UUID apartmentId);
