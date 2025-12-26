@@ -37,59 +37,56 @@ public class AnnouncementService {
     @SuppressWarnings("null")
     @Transactional
     public void createAnnouncement(AnnouncementCreateRequestDTO request) {
-    	Staff sender = staffRepository.findById(request.getSenderId())
+        Staff sender = staffRepository.findById(request.getSenderId())
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy nhân viên"));
-    	
+        
+        // Tự động tạo mô tả cho targetDetail
+        String description = (request.getTargetDetail() == null || request.getTargetDetail().isEmpty()) 
+                             ? generateTargetDescription(request) 
+                             : request.getTargetDetail();
+
         Announcement announcement = Announcement.builder()
                 .title(request.getTitle())
                 .message(request.getMessage())
                 .sender(sender)
                 .targetType(request.getTargetType())
-                .targetDetail(request.getTargetDetail()) 
+                .targetDetail(description) // Lưu mô tả dễ đọc vào DB
                 .build();
+                
         announcement = announcementRepository.save(announcement);
         
         List<Resident> targets = getTargetResidents(request);
         if (targets.isEmpty()) {
             throw new RuntimeException("Không tìm thấy cư dân nào phù hợp với tiêu chí!");
         }
+        
         saveInBatches(targets, announcement);
     }
 
     private List<Resident> getTargetResidents(AnnouncementCreateRequestDTO request) {
-        String detail = request.getTargetDetail();
-        
-        try {
-            return switch (request.getTargetType()) {
-                case BY_BUILDING -> residentRepository.findByBuildingName(detail);
+        return switch (request.getTargetType()) {
+            case BY_BUILDING -> 
+                residentRepository.findByBuildingId(request.getBuildingId());
                 
-                case BY_FLOOR -> {
-                    String[] parts = detail.split("-");
-                    if (parts.length < 2) throw new IllegalArgumentException("Định dạng tầng sai (VD: 12 - Block A)");
-                    int floor = Integer.parseInt(parts[0].trim()); //
-                    String buildingName = parts[1].trim(); //
-                    yield residentRepository.findByFloorAndBuildingName(floor, buildingName);
-                }
+            case BY_FLOOR -> 
+                // Gọi hàm xử lý danh sách tầng mới
+                residentRepository.findByBuildingAndFloors(request.getBuildingId(), request.getFloors());
                 
-                case SPECIFIC_APARTMENTS -> {
-                    String[] parts = detail.split("-"); 
-                    if (parts.length < 2) throw new IllegalArgumentException("Định dạng căn hộ sai (VD: 101, 102 - Block A)");
+            case SPECIFIC_APARTMENTS -> 
+                residentRepository.findByApartmentIds(request.getApartmentIds());
+                
+            case ALL -> 
+                residentRepository.findAll();
+        };
+    }
 
-                    List<Integer> roomNumbers = Arrays.stream(parts[0].split(","))
-                            .map(String::trim)
-                            .map(Integer::parseInt) 
-                            .toList();
-
-                    String buildingName = parts[1].trim(); 
-                    yield residentRepository.findByRoomNumbersAndBuilding(roomNumbers, buildingName);
-                }
-                default -> residentRepository.findAll(); 
-            };
-        } catch (NumberFormatException e) {
-            throw new RuntimeException("Lỗi nhập liệu: Số phòng hoặc số tầng phải là chữ số!");
-        } catch (IllegalArgumentException e) {
-            throw new RuntimeException(e.getMessage());
-        }
+    private String generateTargetDescription(AnnouncementCreateRequestDTO request) {
+        return switch (request.getTargetType()) {
+            case BY_BUILDING -> "Toa nha ID: " + request.getBuildingId();
+            case BY_FLOOR -> "Toa ID: " + request.getBuildingId() + " - Tang: " + request.getFloors();
+            case SPECIFIC_APARTMENTS -> "Gui cho " + (request.getApartmentIds() != null ? request.getApartmentIds().size() : 0) + " can ho cu the";
+            case ALL -> "Toan bo cu dan";
+        };
     }
 
     private void saveInBatches(List<Resident> residents, Announcement announcement) {
@@ -112,6 +109,8 @@ public class AnnouncementService {
             residentAnnouncementRepository.saveAll(batchList);
         }
     }
+    
+    
     public Page<AnnouncementResponseDTO> getResidentAnnouncements(UUID residentId, Pageable pageable) {
         return residentAnnouncementRepository.findByResidentId(residentId, pageable);
     }

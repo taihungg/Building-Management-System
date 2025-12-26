@@ -10,6 +10,7 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.MapsId;
 import jakarta.persistence.Table;
+import org.springframework.data.domain.Persistable;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -23,7 +24,7 @@ import lombok.Setter;
 @Builder
 @Entity
 @Table(name = "resident_announcement")
-public class ResidentAnnouncement {
+public class ResidentAnnouncement implements Persistable<ResidentAnnouncementId> {
     @EmbeddedId
     private ResidentAnnouncementId id;
 
@@ -40,4 +41,9 @@ public class ResidentAnnouncement {
     @Column(name = "is_read")
     @Builder.Default
     private Boolean isRead = false;
+    
+    @Override
+    public boolean isNew() {
+        return true;
+    }
 }
