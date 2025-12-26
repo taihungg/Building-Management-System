@@ -36,7 +36,7 @@ export function AuthorityDashboard() {
 
   const fetchResidents = async () => {
     try {
-      const response = await fetch('http://localhost:8081/api/v1/residents');
+      const response = await fetch('http://localhost:8080/api/v1/residents');
       if (!response.ok) throw new Error("Không thể lấy dữ liệu cư dân");
       const res = await response.json();
       setResidents(res.data || []);
@@ -47,7 +47,7 @@ export function AuthorityDashboard() {
 
   const fetchIssues = useCallback(async () => {
     try {
-      const response = await fetch('http://localhost:8081/api/issues');
+      const response = await fetch('http://localhost:8080/api/issues');
       if (!response.ok) throw new Error("Không thể tải danh sách sự cố.");
       const rawData = await response.json();
       const filteredIssue = rawData.filter((e: any) => e?.type === 'AUTHORITY');
@@ -74,23 +74,19 @@ export function AuthorityDashboard() {
   // Lấy 3 thông báo mới nhất có trạng thái UNPROCESSED cho bảng
   const urgentIssues = issues
     .filter(e => e.status === 'UNPROCESSED')
-    .sort((a, b) => b.id - a.id)
     .slice(0, 3);
 
+  // Tính toán dữ liệu từ API (không có API trả về dữ liệu theo tháng, nên chỉ hiển thị tổng số)
   const residentTypeData = [
-    { month: 'Tháng 1', nguoiNuocNgoai: 15, thuongTru: 120, tamTru: 25 },
-    { month: 'Tháng 2', nguoiNuocNgoai: 18, thuongTru: 125, tamTru: 28 },
-    { month: 'Tháng 3', nguoiNuocNgoai: 20, thuongTru: 130, tamTru: 30 },
-    { month: 'Tháng 4', nguoiNuocNgoai: 22, thuongTru: 135, tamTru: 32 },
-    { month: 'Tháng 5', nguoiNuocNgoai: 25, thuongTru: 140, tamTru: 35 },
-    { month: 'Tháng 6', nguoiNuocNgoai: 28, thuongTru: 145, tamTru: 38 },
+    { 
+      month: 'Tổng số', 
+      PERMANENT_RESIDENCE: residents.filter(r => r.status === 'PERMANENT_RESIDENCE').length,
+      TEMPORARY_RESIDENCE: residents.filter(r => r.status === 'TEMPORARY_RESIDENCE').length,
+      ACCOMMODATION: residents.filter(r => r.status === 'ACCOMMODATION').length,
+      TEMPORARY_ABSENCE: residents.filter(r => r.status === 'TEMPORARY_ABSENCE').length,
+      INACTIVE: residents.filter(r => r.status === 'INACTIVE').length,
+    }
   ];
-
-  const residenceLabels: Record<string, string> = {
-    nguoiNuocNgoai: 'Người nước ngoài',
-    thuongTru: 'Thường trú',
-    tamTru: 'Tạm trú',
-  };
 
   return (
     <div className="space-y-6">
@@ -176,7 +172,7 @@ export function AuthorityDashboard() {
             </ResponsiveContainer>
             <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
               <span className="text-2xl font-bold text-gray-900">{totalLostItems}</span>
-              <span className="text-xs text-gray-500 mt-1">tổng tin báo</span>
+              <span className="text-xs text-gray-500 mt-1">Tổng tin báo</span>
             </div>
           </div>
         </div>
@@ -190,9 +186,11 @@ export function AuthorityDashboard() {
               <YAxis />
               <Tooltip />
               <Legend />
-              <Bar dataKey="nguoiNuocNgoai" stackId="a" fill="#3B82F6" name="Nước ngoài" radius={[4, 4, 0, 0]} />
-              <Bar dataKey="thuongTru" stackId="a" fill="#10B981" name="Thường trú" radius={[4, 4, 0, 0]} />
-              <Bar dataKey="tamTru" stackId="a" fill="#F59E0B" name="Tạm trú" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="PERMANENT_RESIDENCE" stackId="a" fill="#10B981" name="PERMANENT_RESIDENCE" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="TEMPORARY_RESIDENCE" stackId="a" fill="#F59E0B" name="TEMPORARY_RESIDENCE" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="ACCOMMODATION" stackId="a" fill="#3B82F6" name="ACCOMMODATION" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="TEMPORARY_ABSENCE" stackId="a" fill="#FBBF24" name="TEMPORARY_ABSENCE" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="INACTIVE" stackId="a" fill="#9CA3AF" name="INACTIVE" radius={[4, 4, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </div>
@@ -245,14 +243,14 @@ export function AuthorityDashboard() {
                       </div>
                     </td>
                     <td className="py-4 px-6">
-                      <span className="px-3 py-1 rounded-full text-[10px] font-extrabold bg-red-100 text-red-700 border border-red-200 uppercase">
+                      <span className="px-3 py-1 rounded-full text-[10px] font-extrabold bg-red-100 text-red-700 border border-red-200">
                         Chưa xử lý
                       </span>
                     </td>
                     <td className="py-4 px-6 text-right">
                       <button 
                         onClick={() => navigate('/authority/announcements')}
-                        className="text-xs font-bold text-blue-600 hover:text-blue-800 underline uppercase"
+                        className="text-xs font-bold text-blue-600 hover:text-blue-800 underline"
                       >
                         Xử lý ngay
                       </button>
