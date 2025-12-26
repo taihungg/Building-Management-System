@@ -13,7 +13,7 @@ export function AuthorityAnnouncements() {
   const fetchIssues = useCallback(async () => {
     setIsLoading(true);
     try {
-      const response = await fetch('http://localhost:8080/api/issues');
+      const response = await fetch('http://localhost:8081/api/issues');
       if (!response.ok) throw new Error("Không thể tải danh sách sự cố.");
       const rawData = await response.json();
 
@@ -40,7 +40,7 @@ export function AuthorityAnnouncements() {
   const updateIssueStatusApi = async (issueId: string, newStatus: string) => {
     const promise = new Promise(async (resolve, reject) => {
       try {
-        const response = await fetch(`http://localhost:8080/api/issues/${issueId}/status`, {
+        const response = await fetch(`http://localhost:8081/api/issues/${issueId}/status`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ status: newStatus }),
