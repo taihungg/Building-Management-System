@@ -1,5 +1,5 @@
 import React, { useState, useRef, useMemo, useEffect } from 'react';
-import { Upload, FileSpreadsheet, CheckCircle2, X, Save, Receipt, AlertCircle, Loader2, Download, FileText, Home, Zap, Droplet, Clock, Calendar, ChevronDown, Plus } from 'lucide-react';
+import { Upload, FileSpreadsheet, CheckCircle2, X, Save, Receipt, AlertCircle, Loader2, Download, FileText, Calendar, ChevronDown, Plus } from 'lucide-react';
 import { toast } from 'sonner';
 import * as XLSX from 'xlsx';
 
@@ -19,7 +19,6 @@ export function InvoiceCreation() {
   // State cho bộ lọc (Bắt buộc phải chọn trước khi hiển thị dữ liệu)
   const [selectedMonth, setSelectedMonth] = useState<number | null>(null);
   const [selectedYear, setSelectedYear] = useState<number>(currentDate.getFullYear());
-  const [dataType, setDataType] = useState<'electricity' | 'water' | null>(null);
   const [isCheckingData, setIsCheckingData] = useState(false);
   const [hasDataInDB, setHasDataInDB] = useState<boolean | null>(null);
   const [dbData, setDbData] = useState<any[]>([]);
@@ -546,64 +545,10 @@ export function InvoiceCreation() {
     }).format(amount);
   };
 
-  // Calculate summary statistics from tableData (tính từ tất cả dữ liệu, không filter)
-  const summaryStats = useMemo(() => {
-    if (tableData.length === 0) {
-      return {
-        totalRooms: 0,
-        totalElectricity: 0,
-        totalWater: 0,
-        status: 'Chờ duyệt'
-      };
-    }
-
-    // Calculate total rooms (unique apartment numbers)
-    const totalRooms = new Set(
-      tableData.map(row => {
-        return row['Căn hộ'] || row['Can ho'] || row['apartmentNumber'] || row['roomNumber'] || '';
-      }).filter(Boolean)
-    ).size || tableData.length;
-
-    // Calculate total electricity consumption (theo Mã dịch vụ = ELECTRICITY)
-    let totalElectricity = 0;
-    tableData.forEach(row => {
-      const maDichVu = (row['Mã dịch vụ'] || row['Ma dich vu'] || row['serviceCode'] || '').toUpperCase();
-      if (maDichVu === 'ELECTRICITY') {
-        const chiSoMoi = Number(row['Chỉ số mới'] || row['Chi so moi'] || row['newIndex'] || 0);
-        const chiSoCu = Number(row['Chỉ số cũ'] || row['Chi so cu'] || row['oldIndex'] || 0);
-        const consumption = chiSoMoi - chiSoCu;
-        if (!isNaN(consumption) && consumption >= 0) {
-          totalElectricity += consumption;
-        }
-      }
-    });
-
-    // Calculate total water consumption (theo Mã dịch vụ = WATER)
-    let totalWater = 0;
-    tableData.forEach(row => {
-      const maDichVu = (row['Mã dịch vụ'] || row['Ma dich vu'] || row['serviceCode'] || '').toUpperCase();
-      if (maDichVu === 'WATER') {
-        const chiSoMoi = Number(row['Chỉ số mới'] || row['Chi so moi'] || row['newIndex'] || 0);
-        const chiSoCu = Number(row['Chỉ số cũ'] || row['Chi so cu'] || row['oldIndex'] || 0);
-        const consumption = chiSoMoi - chiSoCu;
-        if (!isNaN(consumption) && consumption >= 0) {
-          totalWater += consumption;
-        }
-      }
-    });
-
-    return {
-      totalRooms,
-      totalElectricity,
-      totalWater,
-      status: isSaved ? 'Đã lưu' : 'Chờ lưu'
-    };
-  }, [tableData, isSaved]);
-
   // Kiểm tra xem đã chọn đủ bộ lọc chưa (chỉ bắt buộc có tháng và năm)
   const isFilterComplete = selectedMonth !== null && selectedYear !== null;
 
-  // Lọc dữ liệu theo Tháng/Năm và Mã dịch vụ từ allUploadedData (dataType là tùy chọn)
+  // Lọc dữ liệu theo Tháng/Năm từ allUploadedData
   const filteredTableData = useMemo(() => {
     if (allUploadedData.length === 0 || !selectedMonth || !selectedYear) {
       console.log('FilteredTableData: Empty - allUploadedData:', allUploadedData.length, 'selectedMonth:', selectedMonth, 'selectedYear:', selectedYear);
@@ -623,28 +568,9 @@ export function InvoiceCreation() {
     
     console.log('After month/year filter:', filtered.length);
     
-    // Nếu đã chọn Điện hoặc Nước, lọc theo Mã dịch vụ
-    if (dataType) {
-      const serviceCode = dataType === 'electricity' ? 'ELECTRICITY' : 'WATER';
-      const serviceCodeVietnamese = dataType === 'electricity' ? 'ĐIỆN' : 'NƯỚC';
-      filtered = filtered.filter(row => {
-        const maDichVu = String(row['Mã dịch vụ'] || row['Ma dich vu'] || row['serviceCode'] || '').toUpperCase();
-        // Kiểm tra cả tiếng Anh và tiếng Việt
-        const match = maDichVu === serviceCode || maDichVu === serviceCodeVietnamese || 
-                      maDichVu === 'ĐIỆN' || maDichVu === 'DIEN' || 
-                      maDichVu === 'NƯỚC' || maDichVu === 'NUOC';
-        if (!match) {
-          console.log('Row not matching service code:', { maDichVu, serviceCode, serviceCodeVietnamese, row });
-        }
-        return match;
-      });
-      console.log('After service code filter:', filtered.length);
-    }
-    // Nếu chưa chọn Điện/Nước, hiển thị tất cả dữ liệu của tháng/năm đó
-    
     console.log('Final filteredTableData:', filtered.length);
     return filtered;
-  }, [allUploadedData, dataType, selectedMonth, selectedYear]);
+  }, [allUploadedData, selectedMonth, selectedYear]);
 
   // Cập nhật tableData từ filteredTableData để tính summary stats
   useEffect(() => {
@@ -657,97 +583,6 @@ export function InvoiceCreation() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Dữ liệu sử dụng</h1>
-        </div>
-      </div>
-
-      {/* Summary Statistics Section - Luôn hiển thị */}
-      <div className="grid grid-cols-4 gap-4">
-        {/* Card 1: Tổng số phòng - Navy theme */}
-        <div 
-          className="h-32 rounded-2xl p-6 shadow-md relative overflow-hidden"
-          style={{ backgroundColor: '#1e293b' }}
-        >
-          {/* Watermark Icon */}
-          <Home 
-            className="absolute right-4 top-1/2 -translate-y-1/2 w-12 h-12 opacity-20"
-            style={{ color: 'white' }}
-          />
-          
-          {/* Content - Perfectly vertically centered */}
-          <div className="relative z-10 h-full flex flex-col justify-center gap-1 pr-16">
-            <p className="text-sm font-medium tracking-wide text-white opacity-90">
-              Tổng số phòng
-            </p>
-            <p className="text-4xl font-extrabold text-white">
-              {summaryStats.totalRooms > 0 ? summaryStats.totalRooms : '-'}
-            </p>
-          </div>
-        </div>
-
-        {/* Card 2: Tổng điện tiêu thụ - Amber theme */}
-        <div 
-          className="h-32 rounded-2xl p-6 shadow-md relative overflow-hidden"
-          style={{ backgroundColor: '#d97706' }}
-        >
-          {/* Watermark Icon */}
-          <Zap 
-            className="absolute right-4 top-1/2 -translate-y-1/2 w-12 h-12 opacity-20"
-            style={{ color: 'white' }}
-          />
-          
-          {/* Content - Perfectly vertically centered */}
-          <div className="relative z-10 h-full flex flex-col justify-center gap-1 pr-16">
-            <p className="text-sm font-medium tracking-wide text-white opacity-90">
-              Tổng điện tiêu thụ
-            </p>
-            <p className="text-4xl font-extrabold text-white">
-              {summaryStats.totalElectricity > 0 ? summaryStats.totalElectricity.toLocaleString('vi-VN') : '-'}
-            </p>
-          </div>
-        </div>
-
-        {/* Card 3: Tổng nước tiêu thụ - Blue theme */}
-        <div 
-          className="h-32 rounded-2xl p-6 shadow-md relative overflow-hidden"
-          style={{ backgroundColor: '#2563eb' }}
-        >
-          {/* Watermark Icon */}
-          <Droplet 
-            className="absolute right-4 top-1/2 -translate-y-1/2 w-12 h-12 opacity-20"
-            style={{ color: 'white' }}
-          />
-          
-          {/* Content - Perfectly vertically centered */}
-          <div className="relative z-10 h-full flex flex-col justify-center gap-1 pr-16">
-            <p className="text-sm font-medium tracking-wide text-white opacity-90">
-              Tổng nước tiêu thụ
-            </p>
-            <p className="text-4xl font-extrabold text-white">
-              {summaryStats.totalWater > 0 ? summaryStats.totalWater.toLocaleString('vi-VN') : '-'}
-            </p>
-          </div>
-        </div>
-
-        {/* Card 4: Trạng thái - Green theme */}
-        <div 
-          className="h-32 rounded-2xl p-6 shadow-md relative overflow-hidden"
-          style={{ backgroundColor: '#059669' }}
-        >
-          {/* Watermark Icon */}
-          <Clock 
-            className="absolute right-4 top-1/2 -translate-y-1/2 w-12 h-12 opacity-20"
-            style={{ color: 'white' }}
-          />
-          
-          {/* Content - Perfectly vertically centered */}
-          <div className="relative z-10 h-full flex flex-col justify-center gap-1 pr-16">
-            <p className="text-sm font-medium tracking-wide text-white opacity-90">
-              Trạng thái
-            </p>
-            <p className="text-4xl font-extrabold text-white">
-              {summaryStats.status}
-            </p>
-          </div>
         </div>
       </div>
 
@@ -781,33 +616,6 @@ export function InvoiceCreation() {
               ))}
             </select>
           </div>
-
-          {/* Điện Button */}
-          <button
-            onClick={() => setDataType('electricity')}
-            className={`h-12 flex items-center justify-center gap-2 px-6 rounded-xl shadow-sm text-sm font-semibold transition-all ${
-              dataType === 'electricity'
-                ? 'text-white hover:opacity-90'
-                : 'bg-white border border-gray-200 text-gray-700 hover:bg-gray-50'
-            }`}
-            style={dataType === 'electricity' ? { backgroundColor: '#d97706' } : {}}
-          >
-            <Zap className={`w-4 h-4 ${dataType === 'electricity' ? 'text-white' : 'text-gray-700'}`} strokeWidth={2} />
-            <span>Điện</span>
-          </button>
-
-          {/* Nước Button */}
-          <button
-            onClick={() => setDataType('water')}
-            className={`h-12 flex items-center justify-center gap-2 px-6 rounded-xl shadow-sm text-sm font-semibold transition-all ${
-              dataType === 'water'
-                ? 'bg-blue-600 text-white hover:bg-blue-700'
-                : 'bg-white border border-gray-200 text-gray-700 hover:bg-gray-50'
-            }`}
-          >
-            <Droplet className={`w-4 h-4 ${dataType === 'water' ? 'text-white' : 'text-gray-700'}`} strokeWidth={2} />
-            <span>Nước</span>
-          </button>
 
           {isCheckingData && (
             <div className="flex items-center gap-2 text-sm text-gray-600 h-12">
