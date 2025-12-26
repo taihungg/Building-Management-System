@@ -4,7 +4,7 @@ import {
   Users, Car, FileText, AlertCircle, Save, Phone, Mail, 
   User,
   UserCircle,
-  MapPin
+  MapPin,UserPlus, UserMinus, Trash
 } from 'lucide-react';
 
 // Import các component UI của bạn
@@ -76,7 +76,10 @@ export function ApartmentManagement() {
   const [apartmentToDelete, setApartmentToDelete] = useState(null); 
   const [isDeleting, setIsDeleting] = useState(false);
 
-  // --- API CALLS ---
+  // --- STATE CHO ADD, REMOVE RESIDENT
+  const [residentToAdd, setResidentToAdd] = useState("");
+  const [isProcessingResident, setIsProcessingResident] = useState(false);
+  
 
   // 1. Fetch Danh sách căn hộ
   const fetchApartments = async () => {
@@ -115,7 +118,7 @@ export function ApartmentManagement() {
         const jsonOwner = await resOwner.json();
         setPotentialOwners(jsonOwner.data || []);
 
-        const resBuild = await fetch('http://localhost:8081/api/v1/buildings/dropdown?keyword=B');
+        const resBuild = await fetch('http://localhost:8081/api/v1/buildings/dropdown?keyword=C');
         if (resBuild.ok) {
            const jsonBuild = await resBuild.json();
            setBuildingList(jsonBuild.data || []);
@@ -285,6 +288,89 @@ export function ApartmentManagement() {
     });
   };
 
+  const handleAddResident = async () => {
+    if (!residentToAdd || residentToAdd === "none") {
+        toast.warning("Vui lòng chọn cư dân để thêm");
+        return;
+    }
+    if (!selectedApartment) return;
+
+    const addAction = async () => {
+        setIsProcessingResident(true);
+        const payload = {
+            residentIds: [residentToAdd] // Gửi mảng ID theo ApartmentResidentUpdateDTO
+        };
+
+        const response = await fetch(`http://localhost:8081/api/v1/apartments/${selectedApartment.id}/residents/add`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.message || "Không thể thêm cư dân");
+        }
+        
+        // Refresh lại dữ liệu modal chi tiết
+        await handleViewDetail(selectedApartment.id); 
+        await fetchApartments(); // Refresh danh sách ngoài grid
+        setResidentToAdd("");
+        return "Đã thêm cư dân vào căn hộ!";
+    };
+
+    toast.promise(addAction(), {
+        loading: 'Đang thêm cư dân...',
+        success: (msg) => {
+            setIsProcessingResident(false);
+            return msg;
+        },
+        error: (err) => {
+            setIsProcessingResident(false);
+            return `Lỗi: ${err.message}`;
+        }
+    });
+  };
+
+  // --- 🔥 HÀM 2: LOẠI BỎ CƯ DÂN KHỎI CĂN HỘ ---
+  const handleRemoveResident = async (residentId, residentName) => {
+    if (!selectedApartment) return;
+
+    const removeAction = async () => {
+        setIsProcessingResident(true);
+        const payload = {
+            residentIds: [residentId]
+        };
+
+        const response = await fetch(`http://localhost:8081/api/v1/apartments/${selectedApartment.id}/residents/remove`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.message || "Không thể xóa cư dân");
+        }
+        
+        await handleViewDetail(selectedApartment.id);
+        await fetchApartments();
+        return `Đã loại bỏ ${residentName} khỏi căn hộ!`;
+    };
+
+    toast.promise(removeAction(), {
+        loading: 'Đang loại bỏ cư dân...',
+        success: (msg) => {
+            setIsProcessingResident(false);
+            return msg;
+        },
+        error: (err) => {
+            setIsProcessingResident(false);
+            return `Lỗi: ${err.message}`;
+        }
+    });
+  };
+
 
   return (
     <div className="space-y-6">
@@ -307,21 +393,17 @@ export function ApartmentManagement() {
         </Button>
       </div>
 
-{/* --- FILTERS - ĐÃ LÀM NHỎ GỌN --- */}
 <div 
     className="w-full" 
-    style={{ maxWidth: '50%', marginBottom: '1.5rem' }} // Ép buộc 50% và mb-6 (1.5rem)
+    style={{ maxWidth: '50%', marginBottom: '1.5rem' }} 
 >
-    {/* --- FILTERS - SIÊU GỌN GÀNG VÀ CÙNG DÒNG (Đã xóa đổ bóng) --- */}
     <div className="bg-white rounded-lg p-3 border border-gray-100"> 
         
-        {/* SỬ DỤNG INLINE STYLE CHO FLEXBOX VÀ GAP */}
         <div 
             className="flex items-end"
             style={{ display: 'flex', gap: '0.5rem' }} // Ép buộc gap-2 (0.5rem)
         > 
             
-            {/* 1. INPUT TÌM KIẾM PHÒNG (Flex 2/3) - GIỮ NGUYÊN */}
             <div 
                 className="w-full group" 
                 style={{ flexGrow: 2, flexShrink: 1 }}
@@ -335,7 +417,6 @@ export function ApartmentManagement() {
                 />
             </div>
             
-            {/* 2. INPUT TẦNG (Flex 1/3) - GIỮ NGUYÊN */}
             <div 
                 className="w-full group" 
                 style={{ flexGrow: 1, flexShrink: 1 }} 
@@ -640,244 +721,208 @@ export function ApartmentManagement() {
 
       {/* --- MODAL 2: VIEW DETAILS & EDIT OWNER (ĐÃ DỊCH) --- */}
       <Modal
-        isOpen={isViewModalOpen}
-        onClose={() => setIsViewModalOpen(false)}
-        title="Chi Tiết & Quản Lý Chủ Sở Hữu Căn Hộ"
-      >
-        {selectedApartment && selectedApartment.info ? (
-            <div className="flex flex-col h-full">
-                
-                {/* 1. CUSTOM HEADER: Gradient Banner */}
-                <div className="-mx-6 -mt-6 mb-6 bg-gradient-to-r from-blue-600 to-indigo-700 p-6 text-white rounded-t-lg shadow-md relative overflow-hidden">
-                    <div className="absolute top-0 right-0 p-4 opacity-10">
-                        <Home className="w-32 h-32" />
+    isOpen={isViewModalOpen}
+    onClose={() => setIsViewModalOpen(false)}
+    title="Chi Tiết & Quản Lý Căn Hộ" // Giữ nguyên title của bạn
+>
+    {selectedApartment && selectedApartment.info ? (
+        <div className="flex flex-col h-full">
+            
+            {/* 1. CUSTOM HEADER: Giữ nguyên của bạn */}
+            <div className="-mx-6 -mt-6 mb-6 bg-gradient-to-r from-blue-600 to-indigo-700 p-6 text-white rounded-t-lg shadow-md relative overflow-hidden">
+                <div className="absolute top-0 right-0 p-4 opacity-10">
+                    <Home className="w-32 h-32" />
+                </div>
+                <div className="relative z-10 flex justify-between items-start">
+                    <div>
+                        <div className="flex items-center gap-2 opacity-90 text-sm font-medium mb-1">
+                            <span className="uppercase tracking-wider">{selectedApartment.info.buildingName}</span>
+                            <span>•</span>
+                            <span>Tầng {selectedApartment.info.floor}</span>
+                        </div>
+                        <h2 className="text-4xl font-extrabold tracking-tight">
+                            Phòng {selectedApartment.info.roomNumber}
+                        </h2>
+                    </div>
+                    <div className={`px-4 py-2 rounded-full text-sm font-bold backdrop-blur-md border border-white/20 shadow-sm ${
+                        (selectedApartment.residents && selectedApartment.residents.length > 0)
+                            ? 'bg-emerald-500/20 text-emerald-50 border-emerald-300/30' 
+                            : 'bg-white/10 text-white/80'
+                    }`}>
+                        <span className="flex items-center gap-2">
+                            <span className={`w-2 h-2 rounded-full ${(selectedApartment.residents && selectedApartment.residents.length > 0) ? 'bg-emerald-400' : 'bg-gray-400'}`}></span>
+                            {(selectedApartment.residents && selectedApartment.residents.length > 0) ? 'ĐÃ CÓ NGƯỜI' : 'CÒN TRỐNG'}
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            <div className="space-y-6 px-1">
+                {/* 2. MAIN GRID: Giữ nguyên phần Thông số và Chủ sở hữu */}
+                <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
+                    {/* LEFT COL: Giữ nguyên */}
+                    <div className="md:col-span-5 space-y-4">
+                        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 space-y-4">
+                            <h3 className="text-gray-500 text-xs font-bold uppercase tracking-wider mb-2">Thông Số Kỹ Thuật</h3>
+                            <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                                <div className="flex items-center gap-3">
+                                    <div className="p-2 bg-blue-100 text-blue-600 rounded-md"><Maximize className="w-5 h-5" /></div>
+                                    <span className="text-sm text-gray-600 font-medium">Diện Tích</span>
+                                </div>
+                                <span className="text-gray-900 font-bold">{selectedApartment.info.area?.toFixed(2)} m²</span>
+                            </div>
+                            <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                                <div className="flex items-center gap-3">
+                                    <div className="p-2 bg-purple-100 text-purple-600 rounded-md"><Users className="w-5 h-5" /></div>
+                                    <span className="text-sm text-gray-600 font-medium">Số Lượng Cư Dân</span>
+                                </div>
+                                <span className="text-gray-900 font-bold">{selectedApartment.info.numberOfResidents} Người</span>
+                            </div>
+                        </div>
+                        {/* Stats Cards: Giữ nguyên */}
+                        <div className="grid grid-cols-2 gap-3">
+                            <div className="bg-gradient-to-br from-sky-50 to-blue-50 border border-blue-100 rounded-xl p-4 flex flex-col items-center justify-center text-center shadow-sm">
+                                <Car className="w-6 h-6 text-blue-500 mb-2" />
+                                <span className="text-3xl font-bold text-blue-700">{selectedApartment.summary?.vehicleCount || 0}</span>
+                                <span className="text-xs text-blue-600 font-medium uppercase mt-1">Phương Tiện</span>
+                            </div>
+                            <div className={`rounded-xl p-4 flex flex-col items-center justify-center text-center shadow-sm border ${
+                                selectedApartment.summary?.unpaidBillsCount > 0 ? 'bg-gradient-to-br from-rose-50 to-red-50 border-red-100' : 'bg-gradient-to-br from-emerald-50 to-green-50 border-green-100'
+                            }`}>
+                                {selectedApartment.summary?.unpaidBillsCount > 0 ? <AlertCircle className="w-6 h-6 text-red-500 mb-2" /> : <FileText className="w-6 h-6 text-emerald-500 mb-2" />}
+                                <span className={`text-3xl font-bold ${selectedApartment.summary?.unpaidBillsCount > 0 ? 'text-red-700' : 'text-emerald-700'}`}>{selectedApartment.summary?.unpaidBillsCount || 0}</span>
+                                <span className={`text-xs font-medium uppercase mt-1 ${selectedApartment.summary?.unpaidBillsCount > 0 ? 'text-red-600' : 'text-emerald-600'}`}>Hóa Đơn</span>
+                            </div>
+                        </div>
                     </div>
 
-                    <div className="relative z-10 flex justify-between items-start">
-                        <div>
-                            <div className="flex items-center gap-2 opacity-90 text-sm font-medium mb-1">
-                                <span className="uppercase tracking-wider">{selectedApartment.info.buildingName}</span>
-                                <span>•</span>
-                                <span>Tầng {selectedApartment.info.floor}</span>
+                    {/* RIGHT COL: Giữ nguyên Thông tin chủ sở hữu */}
+                    <div className="md:col-span-7">
+                        <div className="bg-white border border-indigo-100 rounded-xl shadow-sm h-full flex flex-col overflow-hidden relative">
+                            <div className="h-1.5 w-full bg-gradient-to-r from-indigo-400 to-purple-400"></div>
+                            <div className="p-5 flex flex-col h-full gap-5">
+                                <div className="flex justify-between items-center">
+                                    <h3 className="text-indigo-900 font-bold text-lg flex items-center gap-2"><User className="w-5 h-5" /> Thông Tin Chủ Sở Hữu</h3>
+                                    <span className="text-[10px] font-bold bg-indigo-50 text-indigo-600 px-2 py-1 rounded border border-indigo-100 uppercase tracking-wide">Sửa</span>
+                                </div>
+                                <div className="bg-slate-50 rounded-lg p-4 border border-slate-200">
+                                    <p className="text-xs font-semibold text-slate-400 uppercase mb-3">Chủ sở hữu hiện tại</p>
+                                    {selectedApartment.owner ? (
+                                        <div className="flex items-center gap-4">
+                                            <div className="w-12 h-12 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold text-lg shadow-md">{selectedApartment.owner.fullName.charAt(0)}</div>
+                                            <div className="flex-1">
+                                                <p className="font-bold text-gray-900 text-lg leading-tight">{selectedApartment.owner.fullName}</p>
+                                                <div className="flex flex-col gap-0.5 mt-1">
+                                                    <div className="flex items-center gap-2 text-xs text-gray-500"><Phone className="w-3 h-3" /> {selectedApartment.owner.phoneNumber}</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <div className="text-gray-400 italic py-2 text-sm">Chưa có chủ sở hữu</div>
+                                    )}
+                                </div>
+                                <div className="mt-auto pt-4 border-t border-dashed border-gray-200">
+                                    <Label className="text-xs font-medium text-gray-500 mb-2 block uppercase">Chỉ định chủ mới</Label>
+                                    <Select value={editingOwnerId} onValueChange={setEditingOwnerId}>
+                                        <SelectTrigger className="w-full h-10 border-indigo-100"><SelectValue placeholder="Chọn người..." /></SelectTrigger>
+                                        <SelectContent position="popper">
+                                            <SelectItem value="none">-- Gỡ chủ sở hữu --</SelectItem>
+                                            {potentialOwners.map(res => (
+                                                <SelectItem key={res.id} value={res.id}>{res.fullName}</SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
                             </div>
-                            <h2 className="text-4xl font-extrabold tracking-tight">
-                                Phòng {selectedApartment.info.roomNumber}
-                            </h2>
-                        </div>
-                        
-                        <div className={`px-4 py-2 rounded-full text-sm font-bold backdrop-blur-md border border-white/20 shadow-sm ${
-                            (selectedApartment.residents && selectedApartment.residents.length > 0)
-                                ? 'bg-emerald-500/20 text-emerald-50 border-emerald-300/30' 
-                                : 'bg-white/10 text-white/80'
-                        }`}>
-                            <span className="flex items-center gap-2">
-                                <span className={`w-2 h-2 rounded-full ${(selectedApartment.residents && selectedApartment.residents.length > 0) ? 'bg-emerald-400' : 'bg-gray-400'}`}></span>
-                                {(selectedApartment.residents && selectedApartment.residents.length > 0) ? 'ĐÃ CÓ NGƯỜI' : 'CÒN TRỐNG'}
-                            </span>
                         </div>
                     </div>
                 </div>
 
-                <div className="space-y-6 px-1">
-                    {/* 2. MAIN GRID */}
-                    <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
-                        
-                        {/* LEFT COL (5 phần): Info & Stats */}
-                        <div className="md:col-span-5 space-y-4">
-                            {/* Property Specs */}
-                            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 space-y-4">
-                                <h3 className="text-gray-500 text-xs font-bold uppercase tracking-wider mb-2">Thông Số Kỹ Thuật</h3>
-                                
-                                <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                                    <div className="flex items-center gap-3">
-                                        <div className="p-2 bg-blue-100 text-blue-600 rounded-md">
-                                            <Maximize className="w-5 h-5" />
-                                        </div>
-                                        <span className="text-sm text-gray-600 font-medium">Diện Tích</span>
-                                    </div>
-                                    <span className="text-gray-900 font-bold">{selectedApartment.info.area?.toFixed(2)} m²</span>
-                                </div>
+                {/* 3. RESIDENTS LIST: PHẦN CÓ THAY ĐỔI */}
+                <div className="pt-2">
+                    <div className="flex items-center justify-between mb-3">
+                        <h3 className="font-bold text-gray-900 flex items-center gap-2 text-sm uppercase tracking-wide">
+                            <Users className="w-4 h-4 text-gray-500" /> 
+                            Danh Sách Cư Dân 
+                            <span className="bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full text-xs">
+                                {selectedApartment.residents?.length || 0}
+                            </span>
+                        </h3>
 
-                                <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                                    <div className="flex items-center gap-3">
-                                        <div className="p-2 bg-purple-100 text-purple-600 rounded-md">
-                                            <Users className="w-5 h-5" />
-                                        </div>
-                                        <span className="text-sm text-gray-600 font-medium">Số Lượng Cư Dân</span>
-                                    </div>
-                                    <span className="text-gray-900 font-bold">{selectedApartment.info.numberOfResidents} Người</span>
-                                </div>
-                            </div>
-
-                            {/* Stats Cards (Colorful) */}
-                            <div className="grid grid-cols-2 gap-3">
-                                {/* Card Xe */}
-                                <div className="bg-gradient-to-br from-sky-50 to-blue-50 border border-blue-100 rounded-xl p-4 flex flex-col items-center justify-center text-center shadow-sm">
-                                    <Car className="w-6 h-6 text-blue-500 mb-2" />
-                                    <span className="text-3xl font-bold text-blue-700">{selectedApartment.summary?.vehicleCount || 0}</span>
-                                    <span className="text-xs text-blue-600 font-medium uppercase mt-1">Phương Tiện</span>
-                                </div>
-
-                                {/* Card Hóa đơn */}
-                                <div className={`rounded-xl p-4 flex flex-col items-center justify-center text-center shadow-sm border ${
-                                    selectedApartment.summary?.unpaidBillsCount > 0 
-                                    ? 'bg-gradient-to-br from-rose-50 to-red-50 border-red-100' 
-                                    : 'bg-gradient-to-br from-emerald-50 to-green-50 border-green-100'
-                                }`}>
-                                    {selectedApartment.summary?.unpaidBillsCount > 0 
-                                        ? <AlertCircle className="w-6 h-6 text-red-500 mb-2" />
-                                        : <FileText className="w-6 h-6 text-emerald-500 mb-2" />
-                                    }
-                                    <span className={`text-3xl font-bold ${selectedApartment.summary?.unpaidBillsCount > 0 ? 'text-red-700' : 'text-emerald-700'}`}>
-                                        {selectedApartment.summary?.unpaidBillsCount || 0}
-                                    </span>
-                                    <span className={`text-xs font-medium uppercase mt-1 ${selectedApartment.summary?.unpaidBillsCount > 0 ? 'text-red-600' : 'text-emerald-600'}`}>
-                                        Hóa Đơn Chưa Thanh Toán
-                                    </span>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* RIGHT COL (7 phần): Owner Settings */}
-                        <div className="md:col-span-7">
-                            <div className="bg-white border border-indigo-100 rounded-xl shadow-sm h-full flex flex-col overflow-hidden relative">
-                                {/* Decor stripe */}
-                                <div className="h-1.5 w-full bg-gradient-to-r from-indigo-400 to-purple-400"></div>
-                                
-                                <div className="p-5 flex flex-col h-full gap-5">
-                                    <div className="flex justify-between items-center">
-                                        <h3 className="text-indigo-900 font-bold text-lg flex items-center gap-2">
-                                            <User className="w-5 h-5" /> Thông Tin Chủ Sở Hữu
-                                        </h3>
-                                        <span className="text-[10px] font-bold bg-indigo-50 text-indigo-600 px-2 py-1 rounded border border-indigo-100 uppercase tracking-wide">
-                                            Chế Độ Chỉnh Sửa
-                                        </span>
-                                    </div>
-
-                                    {/* Current Owner Card */}
-                                    <div className="bg-slate-50 rounded-lg p-4 border border-slate-200">
-                                        <p className="text-xs font-semibold text-slate-400 uppercase mb-3">Hiện Đang Giao Cho</p>
-                                        
-                                        {selectedApartment.owner ? (
-                                            <div className="flex items-center gap-4">
-                                                <div className="w-12 h-12 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold text-lg shadow-md">
-                                                    {selectedApartment.owner.fullName.charAt(0)}
-                                                </div>
-                                                <div className="flex-1">
-                                                    <p className="font-bold text-gray-900 text-lg leading-tight">{selectedApartment.owner.fullName}</p>
-                                                    <div className="flex flex-col gap-0.5 mt-1">
-                                                        <div className="flex items-center gap-2 text-xs text-gray-500">
-                                                            <Phone className="w-3 h-3" /> {selectedApartment.owner.phoneNumber}
-                                                        </div>
-                                                        {selectedApartment.owner.email && (
-                                                            <div className="flex items-center gap-2 text-xs text-gray-500">
-                                                                <Mail className="w-3 h-3" /> {selectedApartment.owner.email}
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        ) : (
-                                            <div className="flex items-center gap-3 text-gray-400 italic py-2">
-                                                <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center">?</div>
-                                                <span>Chưa có chủ sở hữu được chỉ định (Trống)</span>
-                                            </div>
-                                        )}
-                                    </div>
-
-                                    {/* Change Owner Action */}
-                                    <div className="mt-auto pt-4 border-t border-dashed border-gray-200">
-                                        <Label className="text-sm font-medium text-gray-700 mb-2 block">Thay Đổi / Chỉ Định Chủ Sở Hữu Mới</Label>
-                                        <Select value={editingOwnerId} onValueChange={setEditingOwnerId}>
-                                            <SelectTrigger className="w-full h-11 border-indigo-200 focus:ring-indigo-500">
-                                                <SelectValue placeholder="Chọn Chủ Sở Hữu từ Danh Sách" />
-                                            </SelectTrigger>
-                                            <SelectContent position="popper" className="max-h-60 overflow-y-auto">
-                                                <SelectItem value="none" className="text-gray-500 italic">-- Gỡ Chủ Sở Hữu Hiện Tại --</SelectItem>
-                                                {potentialOwners.map(res => (
-                                                    <SelectItem key={res.id} value={res.id}>
-                                                        <div className="flex flex-col text-left py-1">
-                                                            <span className="font-medium text-gray-900">{res.fullName}</span>
-                                                            <span className="text-xs text-gray-500">{res.phoneNumber}</span>
-                                                        </div>
-                                                    </SelectItem>
-                                                ))}
-                                            </SelectContent>
-                                        </Select>
-                                    </div>
-                                </div>
-                            </div>
+                        <div className="flex gap-2 items-center">
+                            <select
+                                value={residentToAdd}
+                                onChange={(e) => setResidentToAdd(e.target.value)}
+                                className="text-xs border border-gray-300 rounded-lg px-2 py-1.5 h-6 min-w-[150px] focus:ring-1 focus:ring-blue-500 outline-none shadow-sm"
+                            >
+                                <option value="none">-- Thêm cư dân --</option>
+                                {potentialOwners.map(res => (
+                                    <option key={res.id} value={res.id}>{res.fullName}</option>
+                                ))}
+                            </select>
+                            <Button 
+                                onClick={handleAddResident}
+                                disabled={isProcessingResident || !residentToAdd || residentToAdd === "none"}
+                                className="h-6 px-4 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-bold"
+                            >
+                                <Plus className="w-3.5 h-3.5 mr-1" /> THÊM
+                            </Button>
                         </div>
                     </div>
-
-                    {/* 3. RESIDENTS LIST */}
-                    <div className="pt-2">
-                        <h3 className="font-bold text-gray-900 mb-3 flex items-center gap-2 text-sm uppercase tracking-wide">
-                            <Users className="w-4 h-4 text-gray-500" /> 
-                            Danh Sách Cư Dân <span className="bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full text-xs">{selectedApartment.residents?.length || 0}</span>
-                        </h3>
-                        
-                        <div className="border border-gray-200 rounded-xl overflow-hidden shadow-sm">
-                            <div className="max-h-40 overflow-y-auto custom-scrollbar">
-                                <table className="w-full text-sm text-left">
-                                    <thead className="bg-gray-50 text-gray-500 font-semibold text-xs uppercase sticky top-0 z-10">
-                                        <tr>
-                                            <th className="px-4 py-3">Họ và Tên</th>
-                                            <th className="px-4 py-3">Số Điện Thoại</th>
-                                            <th className="px-4 py-3">Trạng Thái</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody className="divide-y divide-gray-100 bg-white">
-                                        {selectedApartment.residents && selectedApartment.residents.length > 0 ? (
-                                            selectedApartment.residents.map((res) => (
-                                                <tr key={res.id} className="hover:bg-blue-50/50 transition-colors">
-                                                    <td className="px-4 py-3 font-medium text-gray-900">{res.fullName}</td>
-                                                    <td className="px-4 py-3 text-gray-500 font-mono">{res.phoneNumber}</td>
-                                                    <td className="px-4 py-3">
-                                                        <span className="inline-flex px-2.5 py-1 rounded-full text-[10px] font-bold bg-green-100 text-green-700 border border-green-200">
-                                                            ĐANG CƯ TRÚ
-                                                        </span>
-                                                    </td>
-                                                </tr>
-                                            ))
-                                        ) : (
-                                            <tr>
-                                                <td colSpan={3} className="px-4 py-8 text-center text-gray-400 italic">
-                                                    <div className="flex flex-col items-center gap-2">
-                                                        <Users className="w-8 h-8 opacity-20" />
-                                                        <span>Hiện tại không có cư dân nào được đăng ký.</span>
-                                                    </div>
+                    
+                    <div className="border border-gray-200 rounded-xl overflow-hidden shadow-sm">
+                        <div className="max-h-48 overflow-y-auto custom-scrollbar">
+                            <table className="w-full text-sm text-left">
+                                <thead className="bg-gray-50 text-gray-500 font-semibold text-[10px] uppercase sticky top-0 z-10">
+                                    <tr>
+                                        <th className="px-4 py-3">Họ và Tên</th>
+                                        <th className="px-4 py-3">Số Điện Thoại</th>
+                                        <th className="px-4 py-3 text-center">Hành động</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-gray-100 bg-white">
+                                    {selectedApartment.residents && selectedApartment.residents.length > 0 ? (
+                                        selectedApartment.residents.map((res) => (
+                                            <tr key={res.id} className="hover:bg-blue-50/50 transition-colors group">
+                                                <td className="px-4 py-3 font-medium text-gray-900">{res.fullName}</td>
+                                                <td className="px-4 py-3 text-gray-500 font-mono text-xs">{res.phoneNumber}</td>
+                                                <td className="px-4 py-3 text-center">
+                                                    {/* 🔥 THÊM: NÚT XÓA CƯ DÂN */}
+                                                    <button 
+                                                        onClick={() => handleRemoveResident(res.id, res.fullName)}
+                                                        disabled={isProcessingResident}
+                                                        className="p-1.5 text-red-500 hover:bg-red-50 rounded-lg transition-all opacity-0 group-hover:opacity-100"
+                                                        title="Loại bỏ cư dân"
+                                                    >
+                                                        <Trash2 className="w-4 h-4" />
+                                                    </button>
                                                 </td>
                                             </tr>
-                                        )}
-                                    </tbody>
-                                </table>
-                            </div>
+                                        ))
+                                    ) : (
+                                        <tr>
+                                            <td colSpan={3} className="px-4 py-8 text-center text-gray-400 italic">Trống</td>
+                                        </tr>
+                                    )}
+                                </tbody>
+                            </table>
                         </div>
                     </div>
+                </div>
 
-                    {/* 4. FOOTER ACTIONS */}
-                    <div className="flex justify-end pt-4 border-t gap-3 mt-2">
-                        <Button variant="outline" onClick={() => setIsViewModalOpen(false)} className="rounded-full px-6 border-gray-300">
-                            Hủy Bỏ
-                        </Button>
-                        <Button 
-                            onClick={handleUpdateOwner} 
-                            disabled={isSaving} 
-                            className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-full px-6 shadow-lg shadow-blue-500/30 transition-all"
-                        >
-                            {isSaving ? "Đang Lưu..." : <><Save className="w-4 h-4 mr-2" /> Lưu Thay Đổi</>}
-                        </Button>
-                    </div>
+                {/* 4. FOOTER ACTIONS: Giữ nguyên */}
+                <div className="flex justify-end pt-4 border-t gap-3 mt-2">
+                    <Button variant="outline" onClick={() => setIsViewModalOpen(false)} className="rounded-full px-6 border-gray-300">Hủy Bỏ</Button>
+                    <Button onClick={handleUpdateOwner} disabled={isSaving} className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-full px-6 shadow-lg">
+                        {isSaving ? "Đang Lưu..." : <><Save className="w-4 h-4 mr-2" /> Lưu Thay Đổi</>}
+                    </Button>
                 </div>
             </div>
-        ) : (
-            <div className="flex flex-col items-center justify-center py-16 text-gray-400">
-                <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-indigo-600 mb-4"></div>
-                <p className="font-medium animate-pulse">Đang tải chi tiết...</p>
-            </div>
-        )}
-      </Modal>
+        </div>
+    ) : (
+        <div className="flex flex-col items-center justify-center py-16"><div className="animate-spin rounded-full h-10 w-10 border-b-2 border-indigo-600 mb-4"></div></div>
+    )}
+</Modal>
 
       {/* --- MODAL 3: CONFIRM DELETE (ĐÃ DỊCH) --- */}
       <Modal

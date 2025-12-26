@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
-import { Search, Plus, Edit, Trash2, MoreVertical, MapPin, Phone, UserCircle, Mail, Eye, Home, Fingerprint, Globe, Users } from "lucide-react"; 
+import { Search, Plus, Edit, Trash2, MoreVertical, MapPin, Phone, UserCircle, Mail, Eye, Home, Fingerprint, Globe, Users, Filter } from "lucide-react"; 
 import { Label } from "./ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
 import { Dropdown } from "./Dropdown";
@@ -414,28 +414,63 @@ const [includeInactive, setIncludeInactive] = useState(false);
     </div>
 
     {/* Stats */}
-    <div className="grid grid-cols-2 gap-4">
-      {[
-        { label: "Tổng số cư dân", value: residents.length, accent: "bg-blue-500" },
-        { label: "Kết quả lọc", value: filteredResidents.length, accent: "bg-emerald-500" }
-      ].map(({ label, value, accent }) => (
-        <div
-          key={label}
-          className="
-            relative bg-white rounded-xl border border-gray-200
-            px-6 py-5 shadow-sm
-          "
-        >
-          <span className={`absolute left-0 top-0 h-full w-1 rounded-l-xl ${accent}`} />
-          <p className="text-sm text-gray-500">{label}</p>
-          <p className="mt-1 text-2xl font-extrabold text-gray-900">
-            {value}
-          </p>
-        </div>
-      ))}
-    </div>
+    
 
   </div>
+</div>
+
+<div className="grid grid-cols-2 gap-6">
+  {[
+    { 
+      label: "Tổng số cư dân", 
+      value: residents.length, 
+      icon: Users,
+      color: "#3b82f6", // Blue-500
+      bgColor: "#eff6ff" // Blue-50
+    },
+    { 
+      label: "Kết quả lọc", 
+      value: filteredResidents.length, 
+      icon: Filter,
+      color: "#10b981", // Emerald-500
+      bgColor: "#ecfdf5" // Emerald-50
+    }
+  ].map(({ label, value, icon: Icon, color, bgColor }) => (
+    <div
+      key={label}
+      className="relative bg-white p-6 shadow-sm transition-all hover:shadow-md border border-gray-100"
+      style={{ borderRadius: '24px' }} // Bo tròn lớn đồng bộ với style của bạn
+    >
+      <div className="flex items-center gap-4">
+        {/* Cụm Icon với nền Gradient nhẹ */}
+        <div 
+          className="flex items-center justify-center w-14 h-14 rounded-2xl shadow-inner"
+          style={{ backgroundColor: bgColor }}
+        >
+          <Icon size={26} style={{ color: color }} strokeWidth={2.5} />
+        </div>
+
+        {/* Cụm Text */}
+        <div className="flex flex-col">
+          <p className="text-sm font-bold text-gray-400 uppercase tracking-wider">
+            {label}
+          </p>
+          <div className="flex items-baseline gap-1">
+            <p className="text-3xl font-black text-slate-800">
+              {value.toLocaleString()}
+            </p>
+            <span className="text-[10px] font-bold text-gray-400">Người</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Trang trí: Một dải màu mỏng ở góc dưới để tăng nhận diện */}
+      <div 
+        className="absolute bottom-4 right-6 w-12 h-1 rounded-full opacity-30"
+        style={{ backgroundColor: color }}
+      />
+    </div>
+  ))}
 </div>
 
 

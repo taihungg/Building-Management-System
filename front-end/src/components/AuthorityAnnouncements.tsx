@@ -1,198 +1,201 @@
-import React, { useState, useEffect } from 'react';
-import { Bell, AlertCircle, Search, FileText, Clock, CheckCircle, Loader } from 'lucide-react';
-// import { getAnnouncements, subscribe as subscribeAnnouncements, type Announcement } from '../utils/announcements'; 
-// import { formatRelativeTime } from '../utils/timeUtils'; // Giả định hàm này được định nghĩa
-
-// --- MOCK DATA TYPE (Nếu bạn đang sử dụng TypeScript) ---
-interface Announcement {
-  id: string;
-  title: string;
-  message: string;
-  type: 'lost_item'; // Chỉ lọc loại này
-  status: 'handled' | 'in_progress' | 'not_found'; // Thêm trường status để phân loại
-  createdAt: Date;
-  date: string; // Ngày sự kiện (mất đồ)
-}
-// -----------------------------------------------------------
-
-
-// --- MOCK DATA THÔNG BÁO MẤT ĐỒ CHI TIẾT DỰA TRÊN THỐNG KÊ DASHBOARD ---
-const MOCK_LOST_ITEMS_DATA: Announcement[] = [
-  // Đã xử lý (handled): 8 mục
-  { id: '1', title: 'Mất ví da đen', message: 'Mất ví da màu đen tại khu vực sảnh tầng 1 vào chiều thứ 6.', type: 'lost_item', status: 'handled', createdAt: new Date('2025-12-05T10:00:00Z'), date: '04/12/2025' },
-  { id: '2', title: 'Thất lạc chìa khóa', message: 'Chùm chìa khóa có móc hình cá heo bị rơi gần khu vực thang máy.', type: 'lost_item', status: 'handled', createdAt: new Date('2025-12-04T15:30:00Z'), date: '04/12/2025' },
-  { id: '3', title: 'Mất điện thoại Samsung', message: 'Điện thoại Samsung S21 màu tím bị mất ở khu vực phòng gym.', type: 'lost_item', status: 'handled', createdAt: new Date('2025-12-03T11:45:00Z'), date: '03/12/2025' },
-  { id: '4', title: 'Thẻ cư dân bị rơi', message: 'Mất thẻ cư dân A101.', type: 'lost_item', status: 'handled', createdAt: new Date('2025-12-01T08:00:00Z'), date: '01/12/2025' },
-  { id: '5', title: 'Đồng hồ thông minh', message: 'Mất đồng hồ Fitbit màu xanh trong bãi giữ xe.', type: 'lost_item', status: 'handled', createdAt: new Date('2025-11-28T16:00:00Z'), date: '28/11/2025' },
-  { id: '6', title: 'Tai nghe AirPods', message: 'Mất hộp tai nghe AirPods Pro tại khu vực hồ bơi.', type: 'lost_item', status: 'handled', createdAt: new Date('2025-11-25T14:30:00Z'), date: '25/11/2025' },
-  { id: '7', title: 'Cặp sách học sinh', message: 'Mất cặp sách màu hồng, bên trong có sách vở lớp 3.', type: 'lost_item', status: 'handled', createdAt: new Date('2025-11-22T09:00:00Z'), date: '22/11/2025' },
-  { id: '8', title: 'Mất thẻ ngân hàng', message: 'Mất thẻ Vietcombank tại sảnh tòa nhà B.', type: 'lost_item', status: 'handled', createdAt: new Date('2025-11-20T18:00:00Z'), date: '20/11/2025' },
-  
-  // Đang xử lý (in_progress): 3 mục (Mới hơn)
-  { id: '9', title: 'Mất ô tô đồ chơi', message: 'Ô tô điều khiển từ xa màu đỏ bị mất ở khu vực sân chơi trẻ em.', type: 'lost_item', status: 'in_progress', createdAt: new Date('2025-12-12T19:00:00Z'), date: '12/12/2025' },
-  { id: '10', title: 'Mất kính cận', message: 'Kính cận gọng màu bạc, bị rơi trên đường đi bộ tầng 3.', type: 'lost_item', status: 'in_progress', createdAt: new Date('2025-12-11T17:40:00Z'), date: '11/12/2025' },
-  { id: '11', title: 'Ba lô laptop', message: 'Mất ba lô đựng laptop màu xám, có logo công ty X.', type: 'lost_item', status: 'in_progress', createdAt: new Date('2025-12-09T09:30:00Z'), date: '09/12/2025' },
-
-  // Không tìm thấy (not_found): 2 mục
-  { id: '12', title: 'Nhẫn vàng trắng', message: 'Mất nhẫn cưới vàng trắng, không có khắc tên.', type: 'lost_item', status: 'not_found', createdAt: new Date('2025-11-15T10:00:00Z'), date: '15/11/2025' },
-  { id: '13', title: 'Giấy tờ tùy thân', message: 'Mất toàn bộ giấy tờ cá nhân bao gồm CCCD và Bằng lái xe.', type: 'lost_item', status: 'not_found', createdAt: new Date('2025-11-10T12:00:00Z'), date: '10/11/2025' },
-];
-// -----------------------------------------------------------
-
-// --- Hàm giả lập formatRelativeTime (Nếu bạn chưa định nghĩa) ---
-const formatRelativeTime = (date: Date): string => {
-  const now = new Date();
-  const diffInMinutes = Math.floor((now.getTime() - date.getTime()) / (1000 * 60));
-
-  if (diffInMinutes < 60) {
-    return `${diffInMinutes} phút trước`;
-  }
-  if (diffInMinutes < 24 * 60) {
-    const hours = Math.floor(diffInMinutes / 60);
-    return `${hours} giờ trước`;
-  }
-  const days = Math.floor(diffInMinutes / (24 * 60));
-  return `${days} ngày trước`;
-};
-// -----------------------------------------------------------
-
+import React, { useState, useEffect, useCallback } from 'react';
+import { Bell, Search, Plus, CheckCircle2, ChevronDown, Download, Search as SearchIcon, Clock, ShieldCheck } from 'lucide-react';
+import { Toaster, toast } from 'sonner';
 
 export function AuthorityAnnouncements() {
-  const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
+  const [selectedStatus, setSelectedStatus] = useState('all');
   const [isLoading, setIsLoading] = useState(true);
+  const [issues, setIssues] = useState<any[]>([]);
 
-  useEffect(() => {
-    // 🔥 SỬ DỤNG MOCK DATA VÀ GIẢ LẬP ĐỘ TRỄ KHI TẢI DỮ LIỆU
+  // 1. Hàm lấy danh sách sự cố (Chỉ lấy loại AUTHORITY)
+  const fetchIssues = useCallback(async () => {
     setIsLoading(true);
-    setTimeout(() => {
-        // Lọc theo type (Lost_item) và Sắp xếp theo ngày tạo mới nhất
-        const sortedData = MOCK_LOST_ITEMS_DATA
-            .filter(ann => ann.type === 'lost_item')
-            .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
-            
-        setAnnouncements(sortedData);
-        setIsLoading(false);
-    }, 500); // Giả lập độ trễ 0.5 giây
+    try {
+      const response = await fetch('http://localhost:8081/api/issues');
+      if (!response.ok) throw new Error("Không thể tải danh sách sự cố.");
+      const rawData = await response.json();
+
+      const transformedData = rawData.map((issue: any) => ({
+        id: issue.id,
+        title: issue.title,
+        message: issue.description,
+        type: issue.type,
+        rawStatus: issue.status, // ENUM gốc: UNPROCESSED, PROCESSING, PROCESSED
+        roomNumber: issue.roomNumber,
+        reporterName: issue.reporterName,
+      }));
+
+      // Chỉ lọc lấy các tin báo từ Cơ quan chức năng/An ninh
+      setIssues(transformedData.filter((i: any) => i.type === 'AUTHORITY'));
+    } catch (err: any) {
+      toast.error("Lỗi: " + err.message);
+    } finally {
+      setIsLoading(false);
+    }
   }, []);
 
-  const filteredAnnouncements = announcements.filter(ann => {
-    const searchLower = searchTerm.toLowerCase();
-    return (
-      ann.title.toLowerCase().includes(searchLower) ||
-      ann.message.toLowerCase().includes(searchLower)
-    );
+  // 2. Hàm cập nhật trạng thái (Lấy từ ServiceManagement sang)
+  const updateIssueStatusApi = async (issueId: string, newStatus: string) => {
+    const promise = new Promise(async (resolve, reject) => {
+      try {
+        const response = await fetch(`http://localhost:8081/api/issues/${issueId}/status`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ status: newStatus }),
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}));
+          throw new Error(errorData.message || "Lỗi cập nhật trạng thái.");
+        }
+
+        await fetchIssues(); // Load lại bảng
+        resolve("Cập nhật trạng thái thành công!");
+      } catch (err: any) {
+        reject(err.message);
+      }
+    });
+
+    toast.promise(promise, {
+      loading: 'Đang cập nhật...',
+      success: (data: any) => data,
+      error: (err) => `Thất bại: ${err}`,
+    });
+  };
+
+  useEffect(() => { fetchIssues(); }, []);
+
+  // 3. Logic lọc dữ liệu tại local
+  const filteredAnnouncements = issues.filter(ann => {
+    const matchesSearch = ann.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                          ann.reporterName.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    // Ánh xạ logic filter UI sang ENUM API
+    const matchesStatus = selectedStatus === 'all' || 
+                         (selectedStatus === 'not_found' && ann.rawStatus === 'UNPROCESSED') ||
+                         (selectedStatus === 'in_progress' && ann.rawStatus === 'PROCESSING') ||
+                         (selectedStatus === 'handled' && ann.rawStatus === 'PROCESSED');
+    
+    return matchesSearch && matchesStatus;
   });
-
-  // 🔥 CẬP NHẬT LOGIC: Get Color dựa trên STATUS thay vì TYPE
-  const getStatusColor = (status: Announcement['status']) => {
-    switch (status) {
-      case 'handled':
-        return 'bg-green-100 text-green-800 border-green-200'; // Đã xử lý (Xanh lá)
-      case 'in_progress':
-        return 'bg-orange-100 text-orange-800 border-orange-200'; // Đang xử lý (Cam)
-      case 'not_found':
-        return 'bg-red-100 text-red-800 border-red-200'; // Không tìm thấy (Đỏ)
-      default:
-        return 'bg-gray-100 text-gray-800 border-gray-200';
-    }
-  };
-
-  // 🔥 CẬP NHẬT LOGIC: Get Label và Icon dựa trên STATUS
-  const getStatusLabel = (status: Announcement['status']) => {
-    switch (status) {
-      case 'handled':
-        return { label: 'ĐÃ XỬ LÝ', Icon: CheckCircle, cardBorder: 'hover:border-green-400' };
-      case 'in_progress':
-        return { label: 'ĐANG XỬ LÝ', Icon: AlertCircle, cardBorder: 'hover:border-orange-400' };
-      case 'not_found':
-        return { label: 'KHÔNG TÌM THẤY', Icon: AlertCircle, cardBorder: 'hover:border-red-400' };
-      default:
-        return { label: 'CHƯA XỬ LÝ', Icon: Bell, cardBorder: 'hover:border-gray-400' };
-    }
-  };
-
 
   return (
     <div className="space-y-6">
+      <Toaster position="top-right" />
+      
+      {/* Header đồng bộ trang Resident */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Thông Báo Mất Đồ</h1>
-          <p className="text-gray-600 mt-1">Theo dõi, phân loại và xử lý các thông báo về đồ vật bị mất</p>
+          <h1 className="text-3xl font-bold text-gray-900">Quản lý an ninh & Tin báo</h1>
         </div>
       </div>
 
-      <div className="bg-white rounded-2xl p-6 border-2 border-gray-200">
-        <div className="relative">
-          <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+      {/* Stats Cards - Màu xanh Navy & Royal Blue */}
+      <div className="grid grid-cols-3 gap-4">
+        {[
+          { label: 'Tổng tin báo', count: issues.length, color: '#1e3a8a', icon: Bell },
+          { label: 'Đang xử lý', count: issues.filter(e => e.rawStatus === 'PROCESSING').length, color: '#2563eb', icon: SearchIcon },
+          { label: 'Hoàn tất', count: issues.filter(e => e.rawStatus === 'PROCESSED').length, color: '#3b82f6', icon: CheckCircle2 },
+        ].map((item, idx) => (
+          <div key={idx} className="flex justify-between items-center p-6 rounded-xl shadow-md h-32 relative overflow-hidden" style={{ backgroundColor: item.color }}>
+            <div className="flex flex-col">
+              <p className="text-4xl font-bold text-white">{item.count}</p>
+              <p className="text-sm font-medium mt-1 opacity-90 text-white uppercase">{item.label}</p>
+            </div>
+            <item.icon className="h-12 w-12 text-white opacity-80" />
+          </div>
+        ))}
+      </div>
+
+      {/* Toolbar - Nhỏ gọn, màu Xanh nước biển */}
+      <div className="flex items-center justify-between gap-6 w-full bg-white p-2 rounded-2xl shadow-sm border border-gray-100 mb-6">
+        <div className="relative w-1/3">
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
           <input
             type="text"
-            placeholder="Tìm kiếm theo tiêu đề hoặc nội dung..."
+            placeholder="Tìm người báo, sự vụ..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-12 pr-4 py-3 bg-gray-50 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            className="w-full h-12 pl-12 pr-4 bg-gray-50/50 border-none rounded-xl text-sm focus:ring-2 focus:ring-blue-500/20 outline-none transition-all"
           />
+        </div>
+
+        <div className="flex items-center gap-3 pr-2">
+          {/* Dropdown Trạng thái (UI Inline Style cho chuyên nghiệp) */}
+          <div style={{ position: 'relative', minWidth: '160px' }}>
+            <label style={{ position: 'absolute', top: '-8px', left: '12px', backgroundColor: '#ffffff', padding: '0 6px', fontSize: '10px', fontWeight: '800', color: '#1e40af', textTransform: 'uppercase', zIndex: 10 }}>Trạng thái</label>
+            <select 
+              value={selectedStatus} 
+              onChange={(e) => setSelectedStatus(e.target.value)}
+              style={{ width: '100%', height: '42px', paddingLeft: '14px', border: '2px solid #dbeafe', borderRadius: '8px', fontSize: '13px', fontWeight: '600', color: '#1e3a8a', appearance: 'none', outline: 'none' }}
+            >
+              <option value="all">Tất cả</option>
+              <option value="not_found">Chưa xử lý</option>
+              <option value="in_progress">Đang xử lý</option>
+              <option value="handled">Đã xử lý</option>
+            </select>
+            <ChevronDown size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-blue-400 pointer-events-none" />
+          </div>
+
+          <button className="min-w-[180px] py-3 px-6 bg-blue-600 text-white rounded-lg text-xs font-extrabold flex items-center gap-2 hover:bg-blue-700 transition-all shadow-[0_3px_0_0_#1e40af]">
+            <Download size={16} strokeWidth={3} /> Xuất excel
+          </button>
         </div>
       </div>
 
-      {isLoading ? (
-        <div className="bg-white rounded-2xl p-12 border-2 border-gray-200 text-center">
-            <Loader className="w-16 h-16 text-blue-500 mx-auto mb-4 animate-spin" />
-            <p className="text-gray-600 text-lg">Đang tải dữ liệu thông báo...</p>
-        </div>
-      ) : filteredAnnouncements.length === 0 ? (
-        <div className="bg-white rounded-2xl p-12 border-2 border-gray-200 text-center">
-          <FileText className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-          <p className="text-gray-600 text-lg">Không có thông báo mất đồ nào khớp với tìm kiếm.</p>
-        </div>
-      ) : (
-        <div className="space-y-4">
-          {filteredAnnouncements.map((announcement) => {
-            const statusInfo = getStatusLabel(announcement.status);
-            const StatusIcon = statusInfo.Icon;
-            
-            return (
-              <div
-                key={announcement.id}
-                // 🔥 Cập nhật border theo trạng thái
-                className={`bg-white rounded-2xl p-6 border-2 border-gray-200 ${statusInfo.cardBorder} transition-all shadow-sm hover:shadow-lg`}
-              >
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-3 mb-3">
-                      {/* 🔥 Cập nhật màu nền và Icon theo trạng thái */}
-                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${getStatusColor(announcement.status)}`}>
-                        <StatusIcon className={`w-5 h-5 ${getStatusColor(announcement.status).replace('bg', 'text').replace('-100', '-600')}`} />
-                      </div>
-                      <div>
-                        <h3 className="text-lg font-semibold text-gray-900">{announcement.title}</h3>
-                        <p className="text-sm text-gray-500 flex items-center gap-1">
-                            <Clock className="w-4 h-4" /> {formatRelativeTime(announcement.createdAt)}
-                        </p>
-                      </div>
-                    </div>
-                    <p className="text-gray-700 leading-relaxed">{announcement.message}</p>
-                    <div className="mt-4 flex flex-wrap items-center gap-3">
-                      {/* 🔥 Hiển thị Status Tag */}
-                      <span className={`px-3 py-1 rounded-full text-xs font-bold border ${getStatusColor(announcement.status)}`}>
-                        {statusInfo.label}
-                      </span>
-                      {/* Ngày sự kiện */}
-                      <span className="text-xs text-gray-500">
-                        Ngày xảy ra: <span className="font-medium text-gray-700">{announcement.date}</span>
-                      </span>
-                      {/* Thêm nút hành động (Mock) */}
-                      <button className="text-sm font-medium text-blue-600 hover:text-blue-800 transition-colors">
-                            Xem chi tiết & Xử lý →
-                      </button>
-                    </div>
+      {/* Table - Header nổi bật */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+        <table className="w-full text-sm">
+          <thead className="bg-slate-100 border-b-2 border-slate-300 shadow-sm">
+            <tr>
+              <th className="px-6 py-4 text-left text-[11px] font-extrabold text-slate-700 uppercase tracking-widest">Người báo</th>
+              <th className="px-6 py-4 text-left text-[11px] font-extrabold text-slate-700 uppercase tracking-widest">Căn hộ</th>
+              <th className="px-6 py-4 text-left text-[11px] font-extrabold text-slate-700 uppercase tracking-widest">Sự vụ</th>
+              <th className="px-6 py-4 text-left text-[11px] font-extrabold text-slate-700 uppercase tracking-widest">Trạng thái</th>
+            </tr>
+          </thead>
+          <tbody className="bg-white divide-y divide-gray-100">
+            {isLoading ? (
+              <tr><td colSpan={5} className="text-center py-10 text-slate-400">Đang tải dữ liệu...</td></tr>
+            ) : filteredAnnouncements.map((ann) => (
+              <tr key={ann.id} className="hover:bg-blue-50/30 transition-colors">
+                <td className="px-6 py-4 font-bold text-gray-900">{ann.reporterName}</td>
+                <td className="px-6 py-4">
+                  <span className="inline-flex px-3 py-1 rounded-full text-xs font-bold bg-gray-100 text-gray-700 border border-gray-200">
+                    Phòng {ann.roomNumber}
+                  </span>
+                </td>
+                <td className="px-6 py-4 text-gray-600 font-medium">{ann.title}</td>
+                <td className="px-6 py-4">
+                  <div className="flex items-center gap-2">
+                    {/* Chấm tròn đổi màu */}
+                    <div className={`w-2 h-2 rounded-full ${
+                      ann.rawStatus === 'PROCESSED' ? 'bg-green-500' : 
+                      ann.rawStatus === 'PROCESSING' ? 'bg-blue-500' : 'bg-red-500'
+                    }`}></div>
+                    
+                    {/* Select đổi trạng thái tại chỗ */}
+                    <select
+                      value={ann.rawStatus}
+                      onChange={(e) => updateIssueStatusApi(ann.id, e.target.value)}
+                      className={`text-sm font-bold bg-transparent border-none focus:ring-0 cursor-pointer p-0 h-auto ${
+                        ann.rawStatus === 'PROCESSED' ? 'text-green-600' : 
+                        ann.rawStatus === 'PROCESSING' ? 'text-blue-600' : 'text-red-600'
+                      }`}
+                    >
+                      <option value="UNPROCESSED">Chưa xử lý</option>
+                      <option value="PROCESSING">Đang xử lý</option>
+                      <option value="PROCESSED">Đã xử lý</option>
+                    </select>
                   </div>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      )}
+                </td>
+                
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }

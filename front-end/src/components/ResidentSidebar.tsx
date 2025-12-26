@@ -20,18 +20,18 @@ interface ResidentSidebarProps {
 
 // 🛠️ ĐÃ SỬA: Thay đổi 'to' để khớp với cấu trúc /resident/path trong App.tsx
 const menuItems = [
-  { to: '/resident/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { to: '/resident/announcements', label: 'Thông Báo', icon: Bell },
+  { to: '/resident/dashboard', label: 'Quản lý căn hộ', icon: LayoutDashboard },
+  { to: '/resident/announcements', label: 'Thông báo', icon: Bell },
   // Dùng '/invoice' vì trong App.tsx Route là /invoice
-  { to: '/resident/invoice', label: 'Hóa Đơn', icon: Receipt }, 
-  { to: '/resident/rules', label: 'Nội Quy', icon: FileText },
+  { to: '/resident/invoice', label: 'Hóa đơn', icon: Receipt }, 
+  { to: '/resident/rules', label: 'Nội quy', icon: FileText },
 ];
 
 const bottomItems = [
-  { to: '/resident/settings', label: 'Cài Đặt', icon: Settings },
-  { to: '/resident/profile', label: 'Hồ Sơ', icon: User },
+  { to: '/resident/settings', label: 'Cài đặt', icon: Settings },
+  { to: '/resident/profile', label: 'Hồ sơ', icon: User },
   // Mục logout không cần NavLink
-  { id: 'logout', label: 'Đăng Xuất', icon: LogOut }, 
+  { id: 'logout', label: 'Đăng xuất', icon: LogOut }, 
 ];
 
 // Hàm cấu hình NavLink class

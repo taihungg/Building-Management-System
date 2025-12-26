@@ -1,4 +1,4 @@
-import { FileText, AlertCircle, CheckCircle, Info, BookOpen } from 'lucide-react';
+import { FileText, AlertCircle, CheckCircle, Info, BookOpen, ShieldAlert, Leaf, LayoutGrid, Clock } from 'lucide-react';
 import { useState } from 'react';
 
 interface Rule {
@@ -12,17 +12,10 @@ interface Rule {
 const buildingRules: Rule[] = [
   {
     id: 1,
-    category: 'An toàn & Bảo mật',
+    category: 'An toàn & PCCC',
     title: 'Quy định về an toàn cháy nổ',
     description: 'Cư dân không được để các vật dụng dễ cháy ở hành lang, cầu thang. Không hút thuốc trong khu vực chung. Phải tuân thủ các quy định về phòng cháy chữa cháy.',
     icon: 'alert'
-  },
-  {
-    id: 2,
-    category: 'Giờ giấc',
-    title: 'Quy định về giờ giấc sinh hoạt',
-    description: 'Từ 22:00 - 06:00, cư dân cần giữ yên tĩnh, không gây tiếng ồn ảnh hưởng đến hàng xóm. Các hoạt động sửa chữa chỉ được thực hiện từ 08:00 - 18:00 trong ngày thường.',
-    icon: 'info'
   },
   {
     id: 3,
@@ -32,29 +25,22 @@ const buildingRules: Rule[] = [
     icon: 'check'
   },
   {
-    id: 4,
-    category: 'Giao thông',
-    title: 'Quy định về đỗ xe',
-    description: 'Xe phải đỗ đúng vị trí được phân bổ. Không đỗ xe ở lối đi, cửa thoát hiểm. Tốc độ trong khu vực chung không quá 10km/h. Tuân thủ biển báo giao thông.',
-    icon: 'alert'
-  },
-  {
     id: 5,
-    category: 'Sử dụng dịch vụ',
+    category: 'Tiện ích',
     title: 'Quy định về sử dụng thang máy',
     description: 'Ưu tiên người già, trẻ em, phụ nữ có thai. Không sử dụng thang máy để vận chuyển hàng hóa cồng kềnh trong giờ cao điểm. Báo ngay khi phát hiện sự cố.',
     icon: 'info'
   },
   {
     id: 6,
-    category: 'An toàn & Bảo mật',
+    category: 'An toàn & PCCC',
     title: 'Quy định về khách đến thăm',
     description: 'Khách đến thăm phải đăng ký tại bảo vệ. Không cho người lạ vào tòa nhà. Cư dân chịu trách nhiệm về hành vi của khách mời.',
     icon: 'alert'
   },
   {
     id: 7,
-    category: 'Sử dụng dịch vụ',
+    category: 'Tiện ích',
     title: 'Quy định về sử dụng điện nước',
     description: 'Sử dụng tiết kiệm điện, nước. Không tự ý sửa chữa hệ thống điện nước chung. Báo ngay khi phát hiện rò rỉ hoặc sự cố.',
     icon: 'check'
@@ -74,11 +60,67 @@ const iconMap = {
   check: CheckCircle,
 };
 
+// Shared icon mapping to ensure consistency between summary cards and list items
+const CATEGORY_ICON_MAP = {
+  'An toàn & PCCC': {
+    Icon: ShieldAlert,
+    bgColor: 'bg-red-500',
+    textColor: 'text-red-600',
+    bgLight: 'bg-red-50',
+    cardBgColor: '#dc2626'
+  },
+  'Vệ sinh & Môi trường': {
+    Icon: Leaf,
+    bgColor: 'bg-emerald-500',
+    textColor: 'text-emerald-600',
+    bgLight: 'bg-emerald-50',
+    cardBgColor: '#059669'
+  },
+  'Tiện ích': {
+    Icon: LayoutGrid,
+    bgColor: 'bg-indigo-600',
+    textColor: 'text-indigo-600',
+    bgLight: 'bg-indigo-50',
+    cardBgColor: '#4f46e5'
+  }
+};
+
+// Helper function to get icon and color based on category (matching summary cards)
+const getCategoryIconAndColor = (category: string) => {
+  // Check exact matches first
+  if (category === 'An toàn & PCCC' || category.includes('An toàn')) {
+    return CATEGORY_ICON_MAP['An toàn & PCCC'];
+  }
+  if (category === 'Vệ sinh & Môi trường' || category.includes('Vệ sinh')) {
+    return CATEGORY_ICON_MAP['Vệ sinh & Môi trường'];
+  }
+  if (category === 'Tiện ích' || category.includes('Sử dụng dịch vụ')) {
+    return CATEGORY_ICON_MAP['Tiện ích'];
+  }
+  // Default fallback
+  return {
+    Icon: FileText,
+    bgColor: 'bg-gray-500',
+    textColor: 'text-gray-600',
+    bgLight: 'bg-gray-50',
+    cardBgColor: '#1e293b'
+  };
+};
+
 export function BuildingRules() {
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [selectedRule, setSelectedRule] = useState<Rule | null>(null);
 
   const categories = ['all', ...Array.from(new Set(buildingRules.map(rule => rule.category)))];
+  
+  // Calculate stats for summary cards
+  const totalRules = buildingRules.length;
+  const safetyRules = buildingRules.filter(r => r.category.includes('An toàn')).length;
+  const environmentRules = buildingRules.filter(r => r.category.includes('Vệ sinh')).length;
+  const serviceRules = buildingRules.filter(r => 
+    r.category.includes('Tiện ích') ||
+    r.category.includes('Sử dụng dịch vụ')
+  ).length;
   
   const filteredRules = selectedCategory === 'all' 
     ? buildingRules 
@@ -86,59 +128,67 @@ export function BuildingRules() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl text-gray-900">Nội Quy Chung Cư</h1>
-          <p className="text-gray-600 mt-1">Các quy định và nội quy cần tuân thủ khi sinh sống tại tòa nhà</p>
+      <div className="mb-8">
+        <h1 className="text-3xl text-gray-900">Quy định và tiện ích</h1>
+      </div>
+
+      {/* Summary Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        {/* Card 1: Tổng quy định - Navy */}
+        <div className="h-32 rounded-2xl p-6 flex justify-between items-center text-white shadow-sm relative overflow-hidden" style={{ backgroundColor: '#1e293b' }}>
+          <div className="flex flex-col">
+            <p className="text-3xl font-bold">{totalRules}</p>
+            <p className="text-sm font-medium opacity-80 mt-1">Tổng quy định</p>
+          </div>
+          <FileText className="w-12 h-12 opacity-20 flex-shrink-0" />
+        </div>
+
+        {/* Card 2: An toàn & PCCC - Red */}
+        <div className="h-32 rounded-2xl p-6 flex justify-between items-center text-white shadow-sm relative overflow-hidden" style={{ backgroundColor: '#dc2626' }}>
+          <div className="flex flex-col">
+            <p className="text-3xl font-bold">{safetyRules}</p>
+            <p className="text-sm font-medium opacity-80 mt-1">An toàn & PCCC</p>
+          </div>
+          <ShieldAlert className="w-12 h-12 opacity-20 flex-shrink-0" />
+        </div>
+
+        {/* Card 3: Vệ sinh & Môi trường - Green */}
+        <div className="h-32 rounded-2xl p-6 flex justify-between items-center text-white shadow-sm relative overflow-hidden" style={{ backgroundColor: '#059669' }}>
+          <div className="flex flex-col">
+            <p className="text-3xl font-bold">{environmentRules}</p>
+            <p className="text-sm font-medium opacity-80 mt-1">Vệ sinh & Môi trường</p>
+          </div>
+          <Leaf className="w-12 h-12 opacity-20 flex-shrink-0" />
+        </div>
+
+        {/* Card 4: Tiện ích chung - Indigo */}
+        <div className="h-32 rounded-2xl p-6 flex justify-between items-center text-white shadow-sm relative overflow-hidden" style={{ backgroundColor: '#4f46e5' }}>
+          <div className="flex flex-col">
+            <p className="text-3xl font-bold">{serviceRules}</p>
+            <p className="text-sm font-medium opacity-80 mt-1">Tiện ích chung</p>
+          </div>
+          <LayoutGrid className="w-12 h-12 opacity-20 flex-shrink-0" />
         </div>
       </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-3 gap-6">
-        <div className="bg-white rounded-xl p-6 border-2 border-gray-200">
-          <div className="flex items-center gap-3 mb-2">
-            <div className="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center">
-              <FileText className="w-5 h-5 text-blue-600" />
-            </div>
-            <p className="text-gray-600 text-sm">Tổng số quy định</p>
-          </div>
-          <p className="text-2xl text-gray-900">{buildingRules.length}</p>
-        </div>
-
-        <div className="bg-white rounded-xl p-6 border-2 border-gray-200">
-          <div className="flex items-center gap-3 mb-2">
-            <div className="w-10 h-10 rounded-lg bg-orange-100 flex items-center justify-center">
-              <AlertCircle className="w-5 h-5 text-orange-600" />
-            </div>
-            <p className="text-gray-600 text-sm">Quy định an toàn</p>
-          </div>
-          <p className="text-2xl text-gray-900">{buildingRules.filter(r => r.category.includes('An toàn')).length}</p>
-        </div>
-
-        <div className="bg-white rounded-xl p-6 border-2 border-gray-200">
-          <div className="flex items-center gap-3 mb-2">
-            <div className="w-10 h-10 rounded-lg bg-emerald-100 flex items-center justify-center">
-              <BookOpen className="w-5 h-5 text-emerald-600" />
-            </div>
-            <p className="text-gray-600 text-sm">Danh mục</p>
-          </div>
-          <p className="text-2xl text-gray-900">{categories.length - 1}</p>
-        </div>
-      </div>
-
-      {/* Category Filter */}
-      <div className="flex gap-2 flex-wrap">
+      {/* Filter Tabs */}
+      <div className="flex gap-2 mb-8">
         {categories.map((category) => (
           <button
             key={category}
             onClick={() => setSelectedCategory(category)}
-            className={`px-6 py-3 rounded-xl transition-all ${
+            className={`px-6 py-3 rounded-full transition-all ${
               selectedCategory === category
-                ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-lg'
-                : 'bg-white text-gray-700 border-2 border-gray-200 hover:bg-gray-50'
+                ? 'bg-blue-600 text-white shadow-lg'
+                : 'bg-white text-gray-700 border border-gray-200 hover:bg-gray-50'
             }`}
           >
-            {category === 'all' ? 'Tất cả' : category}
+            {category === 'all' ? 'Tất cả' : 
+             category === 'An toàn & PCCC' ? 'An toàn' :
+             category === 'Vệ sinh & Môi trường' ? 'Vệ sinh' :
+             category === 'Tiện ích' ? 'Tiện ích' :
+             category === 'Sử dụng dịch vụ' ? 'Tiện ích' :
+             category}
           </button>
         ))}
       </div>
@@ -146,32 +196,27 @@ export function BuildingRules() {
       {/* Rules List */}
       <div className="space-y-3">
         {filteredRules.map((rule) => {
-          const Icon = iconMap[rule.icon];
+          const { Icon, bgColor, textColor, bgLight } = getCategoryIconAndColor(rule.category);
+          const isUtility = rule.category === 'Tiện ích' || rule.category.includes('Tiện ích') || rule.category.includes('Sử dụng dịch vụ');
           
           return (
             <div 
               key={rule.id} 
               onClick={() => setSelectedRule(rule)}
-              className="bg-white rounded-2xl p-6 border-2 border-gray-200 transition-all hover:shadow-md cursor-pointer"
+              className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 hover:shadow-md transition-shadow cursor-pointer"
             >
-              <div className="flex items-start gap-4">
-                <div className={`w-12 h-12 rounded-xl bg-gradient-to-br flex items-center justify-center flex-shrink-0 ${
-                  rule.icon === 'alert' ? 'from-orange-400 to-orange-600' :
-                  rule.icon === 'check' ? 'from-emerald-400 to-emerald-600' :
-                  'from-blue-400 to-blue-600'
-                }`}>
-                  <Icon className="w-6 h-6 text-white" />
+              <div className="flex items-center gap-4">
+                <div className={`w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 ${bgColor}`} style={isUtility ? { backgroundColor: '#4f46e5' } : undefined}>
+                  {isUtility ? (
+                    // Tiện ích: dùng trực tiếp LayoutGrid giống style trước đó
+                    <LayoutGrid size={22} strokeWidth={2} style={{ color: '#ffffff', stroke: '#ffffff' }} />
+                  ) : (
+                    <Icon size={22} className="text-white" style={{ color: 'white', stroke: 'white' }} />
+                  )}
                 </div>
                 
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-start justify-between gap-4 mb-2">
-                    <div>
-                      <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-lg mb-2 inline-block">
-                        {rule.category}
-                      </span>
-                      <h3 className="text-lg text-gray-900 font-semibold">{rule.title}</h3>
-                    </div>
-                  </div>
+                <div className="flex-1 min-w-0 flex flex-col space-y-1">
+                  <h3 className="text-lg text-gray-900 font-bold">{rule.title}</h3>
                   <p className="text-gray-600 line-clamp-2">{rule.description}</p>
                 </div>
               </div>
@@ -192,22 +237,24 @@ export function BuildingRules() {
           >
             <div className="flex items-start justify-between mb-6">
               <div className="flex items-start gap-4 flex-1">
-                <div className={`w-12 h-12 rounded-xl bg-gradient-to-br flex items-center justify-center flex-shrink-0 ${
-                  selectedRule.icon === 'alert' ? 'from-orange-400 to-orange-600' :
-                  selectedRule.icon === 'check' ? 'from-emerald-400 to-emerald-600' :
-                  'from-blue-400 to-blue-600'
-                }`}>
-                  {(() => {
-                    const Icon = iconMap[selectedRule.icon];
-                    return <Icon className="w-6 h-6 text-white" />;
-                  })()}
-                </div>
-                <div className="flex-1">
-                  <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-lg mb-2 inline-block">
-                    {selectedRule.category}
-                  </span>
-                  <h2 className="text-2xl font-bold text-gray-900 mb-2">{selectedRule.title}</h2>
-                </div>
+                {(() => {
+                  const { Icon, bgColor, textColor, bgLight } = getCategoryIconAndColor(selectedRule.category);
+                  const isUtility = selectedRule.category === 'Tiện ích' || selectedRule.category.includes('Tiện ích') || selectedRule.category.includes('Sử dụng dịch vụ');
+                  return (
+                    <>
+                      <div className={`w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 ${bgColor}`} style={isUtility ? { backgroundColor: '#4f46e5' } : undefined}>
+                        {isUtility ? (
+                          <LayoutGrid size={22} strokeWidth={2} style={{ color: '#ffffff', stroke: '#ffffff' }} />
+                        ) : (
+                          <Icon size={22} className="text-white" style={{ color: 'white', stroke: 'white' }} />
+                        )}
+                      </div>
+                      <div className="flex-1">
+                        <h2 className="text-2xl font-bold text-gray-900 mb-2">{selectedRule.title}</h2>
+                      </div>
+                    </>
+                  );
+                })()}
               </div>
               <button
                 onClick={() => setSelectedRule(null)}

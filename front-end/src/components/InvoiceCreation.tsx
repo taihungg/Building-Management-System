@@ -1,5 +1,5 @@
-import React, { useState, useRef, useMemo } from 'react';
-import { Upload, FileSpreadsheet, CheckCircle2, X, Save, Receipt, AlertCircle, Loader2, Download, FileText, Home, Zap, Droplet, Clock } from 'lucide-react';
+import React, { useState, useRef, useMemo, useEffect } from 'react';
+import { Upload, FileSpreadsheet, CheckCircle2, X, Save, Receipt, AlertCircle, Loader2, Download, FileText, Calendar, ChevronDown, Plus, Pencil } from 'lucide-react';
 import { toast } from 'sonner';
 import * as XLSX from 'xlsx';
 
@@ -14,44 +14,168 @@ interface UsageData {
 }
 
 export function InvoiceCreation() {
+  const currentDate = new Date();
+  
+  // State cho bộ lọc (Bắt buộc phải chọn trước khi hiển thị dữ liệu)
+  const [selectedMonth, setSelectedMonth] = useState<number | null>(null);
+  const [selectedYear, setSelectedYear] = useState<number>(currentDate.getFullYear());
+  const [isCheckingData, setIsCheckingData] = useState(false);
+  const [hasDataInDB, setHasDataInDB] = useState<boolean | null>(null);
+  const [dbData, setDbData] = useState<any[]>([]);
+
   // State cho upload Excel
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const [uploadedData, setUploadedData] = useState<UsageData[]>([]);
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // State cho Data Preview Table
-  const [tableData, setTableData] = useState<any[]>([]);
+  // State cho Data Preview Table (lưu tất cả dữ liệu đã upload, không lưu vào localStorage)
+  const [allUploadedData, setAllUploadedData] = useState<any[]>([]); // Lưu tất cả dữ liệu đã upload
+  const [tableData, setTableData] = useState<any[]>([]); // Dữ liệu hiện tại sau khi filter
   const [isDataLoaded, setIsDataLoaded] = useState<boolean>(false);
+  const [editingRowIdx, setEditingRowIdx] = useState<number | null>(null);
+  const [editingRowDraft, setEditingRowDraft] = useState<Record<string, any> | null>(null);
+  const [editingRowKey, setEditingRowKey] = useState<string | null>(null);
 
   // State cho Save action
   const [isSaving, setIsSaving] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   
   // State cho Custom Toast Notification
   const [showToast, setShowToast] = useState(false);
+  const [saveBanner, setSaveBanner] = useState<{ type: 'success' | 'error'; title: string; description?: string } | null>(null);
 
+  // Kiểm tra dữ liệu trong database dựa trên bộ lọc (cần tháng, năm và loại dịch vụ)
+  const checkDataInDB = async () => {
+    if (!selectedMonth || !selectedYear) {
+      setHasDataInDB(null);
+      setDbData([]);
+      setHasUnsavedChanges(false);
+      return;
+    }
 
-  // Hàm trigger file input khi click vào button
-  const handleUploadClick = () => {
-    if (fileInputRef.current && !isUploading) {
-      fileInputRef.current.click();
+    setIsCheckingData(true);
+    try {
+      // Gọi API để check data
+      const response = await fetch(
+        `http://localhost:8081/api/v1/accounting/usage-data?year=${selectedYear}&month=${selectedMonth}`
+      );
+      
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+      
+      const res = await response.json();
+      const data = res.data || [];
+      
+      console.log('checkDataInDB - data from API:', data.length);
+      
+      if (data.length > 0) {
+        const hasDataInDatabase = true;
+        
+        console.log('checkDataInDB - hasDataInDatabase:', hasDataInDatabase);
+        
+        setHasDataInDB(true); // Có dữ liệu trong DB
+        setDbData(data);
+        setTableData(data);
+        setIsDataLoaded(true);
+        setIsSaved(true); // Đánh dấu là đã lưu vì có trong DB
+        setHasUnsavedChanges(false);
+        
+        console.log('checkDataInDB - Setting isSaved to:', true);
+        console.log('checkDataInDB - Setting hasDataInDB to:', true);
+        
+        // Cập nhật allUploadedData để filteredTableData có thể filter
+        if (data.length > 0) {
+          setAllUploadedData(prev => {
+            // Merge với dữ liệu hiện có, tránh trùng lặp
+            const existingIds = new Set(prev.map((row: any) => 
+              `${row['Căn hộ'] || ''}_${row['Tháng'] || ''}_${row['Năm'] || ''}_${row['Mã dịch vụ'] || ''}`
+            ));
+            const newData = data.filter((row: any) => {
+              const id = `${row['Căn hộ'] || ''}_${row['Tháng'] || ''}_${row['Năm'] || ''}_${row['Mã dịch vụ'] || ''}`;
+              return !existingIds.has(id);
+            });
+            return [...prev, ...newData];
+          });
+        }
+      } else {
+        console.log('checkDataInDB - No data found');
+        setHasDataInDB(false);
+        setDbData([]);
+        // Không reset tableData nếu đã có preview data
+        if (!isDataLoaded) {
+          setTableData([]);
+        }
+        setIsSaved(false);
+        setHasUnsavedChanges(false);
+      }
+    } catch (error) {
+      console.error('Lỗi kiểm tra dữ liệu:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Không thể kiểm tra dữ liệu trong database';
+      toast.error("Lỗi kiểm tra dữ liệu", { description: errorMessage });
+      setHasDataInDB(false);
+      setDbData([]);
+      setTableData([]);
+      setIsDataLoaded(false);
+      setIsSaved(false);
+      setHasUnsavedChanges(false);
+    } finally {
+      setIsCheckingData(false);
     }
   };
 
-  // Hàm xử lý upload Excel
+  // Khi bộ lọc thay đổi, kiểm tra lại dữ liệu (khi thay đổi tháng/năm)
+  useEffect(() => {
+    checkDataInDB();
+    // Reset isDataLoaded khi thay đổi tháng/năm (filteredTableData sẽ tự động filter)
+    if (!hasDataInDB) {
+      setIsDataLoaded(false);
+      setIsSaved(false);
+      setHasUnsavedChanges(false);
+    }
+    setSaveBanner(null);
+  }, [selectedMonth, selectedYear]);
+
+  // Hàm trigger file input khi click vào button
+  const handleUploadClick = () => {
+    if (isUploading) {
+      return;
+    }
+    if (fileInputRef.current) {
+      fileInputRef.current.click();
+    } else {
+      console.error('File input ref is not available');
+      toast.error("Lỗi", { description: "Không thể mở file picker. Vui lòng thử lại." });
+    }
+  };
+
+  // Hàm xử lý upload Excel (chỉ hiển thị preview, không lưu vào DB)
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    if (!file) return;
+    if (!file) {
+      // Reset file input để có thể chọn lại file cùng tên
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+      return;
+    }
+
 
     // Kiểm tra định dạng file
     if (!file.name.match(/\.(xlsx|xls)$/i)) {
       toast.error("Định dạng file không hợp lệ", { description: "Vui lòng chọn file Excel (.xlsx hoặc .xls)" });
+      // Reset file input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
       return;
     }
 
     setIsUploading(true);
     setUploadedFile(file);
+    setSaveBanner(null);
 
     try {
       const reader = new FileReader();
@@ -75,20 +199,76 @@ export function InvoiceCreation() {
             return;
           }
 
-          // Set data for preview table
-          setTableData(jsonData);
-          setIsDataLoaded(true);
+          // Gán Tháng, Năm từ filter và giữ nguyên Mã dịch vụ từ file (có thể là ELECTRICITY hoặc WATER)
+          const enrichedData = jsonData.map(row => {
+            // Lấy mã dịch vụ từ file, hỗ trợ nhiều format
+            let maDichVuRaw = String(row['Mã dịch vụ'] || row['Ma dich vu'] || row['serviceCode'] || '').trim();
+            let maDichVu = '';
+            
+            // Chuyển đổi sang uppercase để so sánh
+            const maDichVuUpper = maDichVuRaw.toUpperCase();
+            
+            // Kiểm tra các format khác nhau
+            if (maDichVuUpper === 'ELECTRICITY' || maDichVuUpper === 'ĐIỆN' || maDichVuUpper === 'DIEN' || maDichVuUpper === 'ĐIEN') {
+              maDichVu = 'ELECTRICITY';
+            } else if (maDichVuUpper === 'WATER' || maDichVuUpper === 'NƯỚC' || maDichVuUpper === 'NUOC' || maDichVuUpper === 'NƯỚC') {
+              maDichVu = 'WATER';
+            } else if (maDichVuRaw) {
+              // Nếu có giá trị nhưng không nhận diện được, giữ nguyên và chuẩn hóa
+              maDichVu = maDichVuUpper;
+            } else {
+              // Chỉ gán mặc định khi thực sự không có giá trị
+              maDichVu = 'ELECTRICITY';
+            }
+            
+            const enrichedRow = {
+              ...row,
+              'Tháng': Number(selectedMonth),
+              'Năm': Number(selectedYear),
+              'Mã dịch vụ': maDichVu
+            };
+            
+            console.log('Original row:', row);
+            console.log('Enriched row:', enrichedRow);
+            return enrichedRow;
+          });
           
-          // Keep uploadedData for backward compatibility
-          setUploadedData(jsonData);
-          setIsSaved(false);
-          toast.success("Upload thành công", { description: `Đã tải lên ${jsonData.length} dòng dữ liệu` });
+          // Lưu vào allUploadedData (tất cả dữ liệu đã upload)
+          setAllUploadedData(prev => {
+            // Xóa dữ liệu cũ của tháng/năm này nếu có (không phân biệt mã dịch vụ)
+            const filtered = prev.filter(row => {
+              const rowMonth = Number(row['Tháng'] || row['Thang'] || row['month'] || 0);
+              const rowYear = Number(row['Năm'] || row['Nam'] || row['year'] || 0);
+              return !(rowMonth === selectedMonth && rowYear === selectedYear);
+            });
+            const newData = [...filtered, ...enrichedData];
+            console.log('Uploaded data:', enrichedData);
+            console.log('All uploaded data:', newData);
+            return newData;
+          });
+          
+          setIsDataLoaded(true);
+          setUploadedData(enrichedData);
+          setIsSaved(false); // Reset saved status when uploading new file
+          setHasUnsavedChanges(true);
+          setSaveBanner(null);
+          
+          toast.success("Upload thành công", { description: `Đã tải lên ${enrichedData.length} dòng dữ liệu cho tháng ${selectedMonth}/${selectedYear}. Vui lòng kiểm tra và nhấn "Lưu vào Database" để lưu.` });
+          
+          // Reset file input để có thể upload lại file
+          if (fileInputRef.current) {
+            fileInputRef.current.value = '';
+          }
         } catch (error) {
           console.error("Lỗi đọc file Excel:", error);
           toast.error("Lỗi đọc file", { description: "Không thể đọc file Excel. Vui lòng kiểm tra lại định dạng." });
           setUploadedFile(null);
           setTableData([]);
           setIsDataLoaded(false);
+          // Reset file input
+          if (fileInputRef.current) {
+            fileInputRef.current.value = '';
+          }
         } finally {
           setIsUploading(false);
         }
@@ -100,6 +280,10 @@ export function InvoiceCreation() {
         setUploadedFile(null);
         setTableData([]);
         setIsDataLoaded(false);
+        // Reset file input
+        if (fileInputRef.current) {
+          fileInputRef.current.value = '';
+        }
       };
 
       reader.readAsArrayBuffer(file);
@@ -110,6 +294,10 @@ export function InvoiceCreation() {
       setUploadedFile(null);
       setTableData([]);
       setIsDataLoaded(false);
+      // Reset file input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
     }
   };
 
@@ -118,8 +306,20 @@ export function InvoiceCreation() {
     // Kiểm tra nếu có dữ liệu trong table, export dữ liệu thực tế
     if (tableData && tableData.length > 0) {
       try {
-        // Tạo worksheet từ dữ liệu hiện tại
-        const worksheet = XLSX.utils.json_to_sheet(tableData);
+        // Chuyển đổi dữ liệu: Mã dịch vụ từ ELECTRICITY/WATER sang Điện/Nước
+        const exportData = tableData.map((row: any) => {
+          const rowCopy = { ...row };
+          const maDichVu = String(rowCopy['Mã dịch vụ'] || rowCopy['Ma dich vu'] || rowCopy['serviceCode'] || '').toUpperCase();
+          if (maDichVu === 'ELECTRICITY' || maDichVu === 'ĐIỆN' || maDichVu === 'DIEN') {
+            rowCopy['Mã dịch vụ'] = 'Điện';
+          } else if (maDichVu === 'WATER' || maDichVu === 'NƯỚC' || maDichVu === 'NUOC') {
+            rowCopy['Mã dịch vụ'] = 'Nước';
+          }
+          return rowCopy;
+        });
+        
+        // Tạo worksheet từ dữ liệu đã chuyển đổi
+        const worksheet = XLSX.utils.json_to_sheet(exportData);
         
         // Tạo workbook và thêm worksheet
         const workbook = XLSX.utils.book_new();
@@ -138,82 +338,237 @@ export function InvoiceCreation() {
 
     // Nếu không có dữ liệu, tải template mẫu (fallback)
     const headers = [
-      'STT',
-      'Số phòng',
-      'Tên tòa nhà',
+      'Căn hộ',
+      'Tòa nhà',
       'Tháng',
       'Năm',
-      'Chỉ số điện cũ',
-      'Chỉ số điện mới',
-      'Chỉ số nước cũ',
-      'Chỉ số nước mới',
-      'Ghi chú'
+      'Mã dịch vụ',
+      'Chỉ số cũ',
+      'Chỉ số mới'
     ];
 
-    // Tạo dữ liệu mẫu (3 dòng ví dụ)
+    // Tạo dữ liệu mẫu (2 dòng ví dụ: Điện và Nước) - dùng tiếng Việt
     const sampleData = [
-      ['1', '101', 'Tòa A', '12', '2024', '100', '150', '50', '75', ''],
-      ['2', '102', 'Tòa A', '12', '2024', '200', '250', '100', '125', ''],
-      ['3', '201', 'Tòa B', '12', '2024', '150', '200', '80', '100', '']
+      {
+        'Căn hộ': '101',
+        'Tòa nhà': 'CT7H',
+        'Tháng': '1',
+        'Năm': '2025',
+        'Mã dịch vụ': 'Điện',
+        'Chỉ số cũ': '753',
+        'Chỉ số mới': '788'
+      },
+      {
+        'Căn hộ': '101',
+        'Tòa nhà': 'CT7H',
+        'Tháng': '1',
+        'Năm': '2025',
+        'Mã dịch vụ': 'Nước',
+        'Chỉ số cũ': '35',
+        'Chỉ số mới': '54'
+      }
     ];
 
-    // Kết hợp headers và data
-    const csvContent = [
-      headers.join(','),
-      ...sampleData.map(row => row.join(','))
-    ].join('\n');
-
-    // Tạo Blob với BOM để Excel hiển thị tiếng Việt đúng
-    const BOM = '\uFEFF';
-    const blob = new Blob([BOM + csvContent], { type: 'text/csv;charset=utf-8;' });
-
-    // Tạo link download
-    const link = document.createElement('a');
-    const url = URL.createObjectURL(blob);
-    link.setAttribute('href', url);
-    link.setAttribute('download', 'template_mau.csv');
-    link.style.visibility = 'hidden';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
-
-    toast.success("Đã tải mẫu data", { description: "File template_mau.csv đã được tải xuống" });
+    try {
+      // Tạo worksheet từ dữ liệu mẫu
+      const worksheet = XLSX.utils.json_to_sheet(sampleData);
+      
+      // Tạo workbook và thêm worksheet
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, 'Template');
+      
+      // Xuất file Excel
+      XLSX.writeFile(workbook, 'template_mau.xlsx');
+      
+      toast.success("Đã tải mẫu", { description: "File template_mau.xlsx đã được tải xuống" });
+    } catch (error) {
+      console.error("Lỗi tải template:", error);
+      toast.error("Lỗi tải template", { description: "Không thể tải template. Vui lòng thử lại." });
+    }
   };
 
-  // Hàm lưu dữ liệu (Mock Save Logic)
+  // Hàm lưu dữ liệu vào Database
   const handleSave = async () => {
-    if (!isDataLoaded || tableData.length === 0) {
+    setSaveBanner(null);
+    if (filteredTableData.length === 0) {
       toast.error("Vui lòng upload file trước", { description: "Chưa có dữ liệu để lưu" });
       return;
     }
 
-    if (isSaved) {
-      toast.info("Dữ liệu đã được lưu", { description: "Dữ liệu này đã được lưu trước đó" });
+    if (!selectedMonth || !selectedYear) {
+      toast.error("Vui lòng chọn bộ lọc", { description: "Cần chọn Tháng và Năm trước khi lưu" });
+      return;
+    }
+
+    if (!hasUnsavedChanges) {
+      toast.info("Không có thay đổi", { description: "Không có dữ liệu mới để lưu" });
       return;
     }
 
     setIsSaving(true);
     
     try {
-      // Mock save - Log to console to simulate API call
-      console.log('Saving data to Database:', tableData);
-
-      // Simulate API call delay
-      await new Promise(resolve => setTimeout(resolve, 800));
+      // Lưu dữ liệu của tháng/năm hiện tại (filteredTableData)
+      const dataToSave = filteredTableData;
+      
+      console.log('handleSave - dataToSave:', dataToSave);
+      console.log('handleSave - selectedYear:', selectedYear, 'selectedMonth:', selectedMonth);
+      console.log('handleSave - dataToSave length:', dataToSave.length);
+      
+      if (!dataToSave || dataToSave.length === 0) {
+        throw new Error('Không có dữ liệu để lưu');
+      }
+      
+      // Gọi API để lưu dữ liệu vào database
+      const response = await fetch('http://localhost:8081/api/v1/accounting/usage-data', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          year: selectedYear,
+          month: selectedMonth,
+          data: dataToSave
+        })
+      });
+      
+      if (!response.ok) {
+        let errorMessage = 'Lỗi lưu dữ liệu';
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.message || errorData.error || errorMessage;
+        } catch (e) {
+          errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+        }
+        throw new Error(errorMessage);
+      }
 
       setIsSaved(true);
+      setHasDataInDB(true); // Sau khi lưu, đánh dấu là đã có dữ liệu trong DB
+      setHasUnsavedChanges(false);
+
+      try {
+        const res = await response.json();
+        console.log('Data saved to Database:', res);
+      } catch (e) {
+        console.log('Data saved to Database: (no JSON body)');
+      }
+
+      await checkDataInDB();
+      
+      // Cập nhật allUploadedData để giữ lại dữ liệu đã lưu
+      setAllUploadedData(prev => {
+        // Merge với dữ liệu hiện có, tránh trùng lặp
+        const existingIds = new Set(prev.map((row: any) => 
+          `${row['Căn hộ'] || ''}_${row['Tháng'] || ''}_${row['Năm'] || ''}_${row['Mã dịch vụ'] || ''}`
+        ));
+        const newData = dataToSave.filter((row: any) => {
+          const id = `${row['Căn hộ'] || ''}_${row['Tháng'] || ''}_${row['Năm'] || ''}_${row['Mã dịch vụ'] || ''}`;
+          return !existingIds.has(id);
+        });
+        return [...prev, ...newData];
+      });
+      
+      // Cập nhật dbData và tableData
+      setDbData(dataToSave);
+      setTableData(dataToSave);
+      
+      console.log('handleSave - Saved successfully, isSaved:', true, 'hasDataInDB:', true);
+      
       // Show custom toast notification
       setShowToast(true);
       setTimeout(() => {
         setShowToast(false);
       }, 3000);
+      
+      toast.success("Lưu thành công", { description: "Dữ liệu đã được lưu vào database" });
+      setSaveBanner({ type: 'success', title: 'Lưu thành công', description: `Đã lưu dữ liệu tháng ${selectedMonth}/${selectedYear} vào database.` });
     } catch (error) {
       console.error("Lỗi lưu dữ liệu:", error);
-      toast.error("Lỗi lưu dữ liệu", { description: "Không thể lưu dữ liệu. Vui lòng thử lại." });
+      const errorMessage = error instanceof Error ? error.message : 'Không thể lưu dữ liệu. Vui lòng thử lại.';
+      
+      // Kiểm tra xem có phải lỗi network không
+      if (error instanceof TypeError && error.message.includes('fetch')) {
+        toast.error("Lỗi kết nối", { 
+          description: "Không thể kết nối đến server. Vui lòng kiểm tra kết nối mạng hoặc đảm bảo backend đang chạy." 
+        });
+        setSaveBanner({ type: 'error', title: 'Lưu thất bại', description: 'Không thể kết nối đến server. Vui lòng kiểm tra backend và thử lại.' });
+      } else {
+        toast.error("Lỗi lưu dữ liệu", { description: errorMessage });
+        setSaveBanner({ type: 'error', title: 'Lưu thất bại', description: errorMessage });
+      }
     } finally {
       setIsSaving(false);
     }
+  };
+
+  const buildRowKey = (row: any) => {
+    return `${row?.['Căn hộ'] ?? ''}__${row?.['Tòa nhà'] ?? ''}__${row?.['Tháng'] ?? ''}__${row?.['Năm'] ?? ''}__${String(row?.['Mã dịch vụ'] ?? '').toUpperCase()}`;
+  };
+
+  const normalizeServiceCode = (value: any) => {
+    const raw = String(value ?? '').trim();
+    const upper = raw.toUpperCase();
+    if (upper === 'ELECTRICITY' || upper === 'ELECTRONIC' || upper === 'ĐIỆN' || upper === 'DIEN' || upper === 'ĐIEN') return 'ELECTRICITY';
+    if (upper === 'WATER' || upper === 'NƯỚC' || upper === 'NUOC') return 'WATER';
+    return upper;
+  };
+
+  const toServiceLabel = (value: any) => {
+    const upper = String(value ?? '').toUpperCase();
+    if (upper === 'ELECTRICITY' || upper === 'ELECTRONIC') return 'Điện';
+    if (upper === 'WATER') return 'Nước';
+    return String(value ?? '');
+  };
+
+  const openRowEdit = (rowIdx: number) => {
+    const row = filteredTableData[rowIdx];
+    if (!row) return;
+    setEditingRowIdx(rowIdx);
+    setEditingRowDraft({ ...row });
+    setEditingRowKey(buildRowKey(row));
+  };
+
+  const closeRowEdit = () => {
+    setEditingRowIdx(null);
+    setEditingRowDraft(null);
+    setEditingRowKey(null);
+  };
+
+  const saveRowEdit = () => {
+    if (editingRowIdx === null || !editingRowDraft || !editingRowKey) return;
+
+    const allDataIndex = allUploadedData.findIndex(row => buildRowKey(row) === editingRowKey);
+    if (allDataIndex < 0) {
+      toast.error("Không tìm thấy dòng dữ liệu", { description: "Vui lòng tải lại trang và thử lại." });
+      closeRowEdit();
+      return;
+    }
+
+    const updatedRow = { ...editingRowDraft };
+    updatedRow['Tháng'] = Number(selectedMonth);
+    updatedRow['Năm'] = Number(selectedYear);
+    if (updatedRow['Mã dịch vụ'] !== undefined) {
+      updatedRow['Mã dịch vụ'] = normalizeServiceCode(updatedRow['Mã dịch vụ']);
+    }
+
+    const numericKeys = new Set(['Chỉ số cũ', 'Chỉ số mới', 'Chi so cu', 'Chi so moi', 'oldIndex', 'newIndex']);
+    Object.keys(updatedRow).forEach((key) => {
+      if (numericKeys.has(key)) {
+        const v = updatedRow[key];
+        const n = Number(v);
+        updatedRow[key] = Number.isFinite(n) ? n : v;
+      }
+    });
+
+    setAllUploadedData(prev => {
+      const next = [...prev];
+      next[allDataIndex] = updatedRow;
+      return next;
+    });
+    setIsSaved(false);
+    setHasUnsavedChanges(true);
+    closeRowEdit();
   };
 
 
@@ -232,61 +587,38 @@ export function InvoiceCreation() {
     }).format(amount);
   };
 
-  // Calculate summary statistics from tableData
-  const summaryStats = useMemo(() => {
-    if (tableData.length === 0) {
-      return {
-        totalRooms: 0,
-        totalElectricity: 0,
-        totalWater: 0,
-        status: 'Chờ duyệt'
-      };
+  // Kiểm tra xem đã chọn đủ bộ lọc chưa (chỉ bắt buộc có tháng và năm)
+  const isFilterComplete = selectedMonth !== null && selectedYear !== null;
+
+  // Lọc dữ liệu theo Tháng/Năm từ allUploadedData
+  const filteredTableData = useMemo(() => {
+    if (allUploadedData.length === 0 || !selectedMonth || !selectedYear) {
+      console.log('FilteredTableData: Empty - allUploadedData:', allUploadedData.length, 'selectedMonth:', selectedMonth, 'selectedYear:', selectedYear);
+      return [];
     }
-
-    // Calculate total rooms (unique apartment numbers or row count)
-    const totalRooms = new Set(
-      tableData.map(row => {
-        // Try different possible column names for apartment/room
-        return row['Số phòng'] || row['Phòng'] || row['Căn hộ'] || row['apartmentNumber'] || row['roomNumber'] || '';
-      }).filter(Boolean)
-    ).size || tableData.length;
-
-    // Calculate total electricity consumption
-    // Tổng điện tiêu thụ = tổng của tất cả các hiệu (mới - cũ) cho từng dòng
-    let totalElectricity = 0;
-    tableData.forEach(row => {
-      const electricityNew = row['Chỉ số điện mới'] || row['Điện mới'] || row['Điện cuối'] ||
-                             row['electricityNew'] || row['electricity'] || 0;
-      const electricityOld = row['Chỉ số điện cũ'] || row['Điện cũ'] || row['Điện đầu'] ||
-                             row['electricityOld'] || 0;
-      // Tính hiệu (mới - cũ) cho từng dòng
-      const consumption = Number(electricityNew) - Number(electricityOld);
-      // Cộng vào tổng nếu giá trị hợp lệ
-      if (!isNaN(consumption) && consumption >= 0) {
-        totalElectricity += consumption;
+    
+    // Lọc theo Tháng và Năm đã chọn
+    let filtered = allUploadedData.filter(row => {
+      const rowMonth = Number(row['Tháng'] || row['Thang'] || row['month'] || 0);
+      const rowYear = Number(row['Năm'] || row['Nam'] || row['year'] || 0);
+      const match = rowMonth === selectedMonth && rowYear === selectedYear;
+      if (!match) {
+        console.log('Row not matching:', { rowMonth, rowYear, selectedMonth, selectedYear, row });
       }
+      return match;
     });
+    
+    console.log('After month/year filter:', filtered.length);
+    
+    console.log('Final filteredTableData:', filtered.length);
+    return filtered;
+  }, [allUploadedData, selectedMonth, selectedYear]);
+  const isSaveDisabled = !isFilterComplete || filteredTableData.length === 0 || isUploading || isSaving || !hasUnsavedChanges;
 
-    // Calculate total water consumption
-    // Look for columns like 'Chỉ số nước mới', 'Nước mới', 'waterNew', etc.
-    // and subtract 'Chỉ số nước cũ', 'Nước cũ', 'waterOld', etc.
-    let totalWater = 0;
-    tableData.forEach(row => {
-      const waterNew = row['Chỉ số nước mới'] || row['Nước mới'] || row['waterNew'] || row['water'] || 0;
-      const waterOld = row['Chỉ số nước cũ'] || row['Nước cũ'] || row['waterOld'] || row['waterOld'] || 0;
-      const consumption = Number(waterNew) - Number(waterOld);
-      if (!isNaN(consumption) && consumption > 0) {
-        totalWater += consumption;
-      }
-    });
-
-    return {
-      totalRooms,
-      totalElectricity,
-      totalWater,
-      status: isSaved ? 'Đã lưu' : 'Chờ lưu'
-    };
-  }, [tableData, isSaved]);
+  // Cập nhật tableData từ filteredTableData để tính summary stats
+  useEffect(() => {
+    setTableData(filteredTableData);
+  }, [filteredTableData]);
 
   return (
     <div className="space-y-6">
@@ -297,56 +629,174 @@ export function InvoiceCreation() {
         </div>
       </div>
 
-      {/* Summary Statistics Section */}
-      <div className="grid grid-cols-4 gap-4">
-        {/* Card 1: Tổng số phòng - Blue theme */}
-        <div className="rounded-xl p-4 shadow-sm" style={{ backgroundColor: '#eff6ff', border: '2px solid #bfdbfe' }}>
-          <div className="flex items-center justify-between mb-2">
-            <p className="text-xs font-medium tracking-wide" style={{ color: '#1d4ed8' }}>Tổng số phòng</p>
-            <Home className="w-5 h-5" style={{ color: '#1d4ed8' }} />
+      {/* Bộ lọc - Premium Design */}
+      <div className="flex items-center justify-between gap-4 mb-8">
+        {/* Left Side: Filters */}
+        <div className="flex items-center gap-4">
+          {/* Chọn Tháng */}
+          <div className="flex items-center w-36 h-12 bg-white border border-gray-200 rounded-xl shadow-sm px-4">
+            <select
+              value={selectedMonth || ''}
+              onChange={(e) => setSelectedMonth(e.target.value ? Number(e.target.value) : null)}
+              className="text-sm font-semibold text-gray-700 bg-transparent border-none focus:ring-0 cursor-pointer outline-none appearance-none w-full"
+            >
+              <option value="">Chọn tháng</option>
+              {Array.from({ length: 12 }, (_, i) => i + 1).map(month => (
+                <option key={month} value={month}>Tháng {month}</option>
+              ))}
+            </select>
           </div>
-          <p className="text-2xl font-bold" style={{ color: '#1d4ed8' }}>
-            {summaryStats.totalRooms > 0 ? summaryStats.totalRooms : '-'}
-          </p>
+
+          {/* Chọn Năm */}
+          <div className="flex items-center w-36 h-12 bg-white border border-gray-200 rounded-xl shadow-sm px-4">
+            <select
+              value={selectedYear}
+              onChange={(e) => setSelectedYear(Number(e.target.value))}
+              className="text-sm font-semibold text-gray-700 bg-transparent border-none focus:ring-0 cursor-pointer outline-none appearance-none w-full"
+            >
+              {[currentDate.getFullYear() - 1, currentDate.getFullYear(), currentDate.getFullYear() + 1].map(year => (
+                <option key={year} value={year}>Năm {year}</option>
+              ))}
+            </select>
+          </div>
+
+          {isCheckingData && (
+            <div className="flex items-center gap-2 text-sm text-gray-600 h-12">
+              <Loader2 className="w-4 h-4 animate-spin" />
+              <span>Đang kiểm tra dữ liệu...</span>
+            </div>
+          )}
         </div>
 
-        {/* Card 2: Tổng điện tiêu thụ - Amber theme */}
-        <div className="rounded-xl p-4 shadow-sm" style={{ backgroundColor: '#fffbeb', border: '2px solid #fde68a' }}>
-          <div className="flex items-center justify-between mb-2">
-            <p className="text-xs font-medium tracking-wide" style={{ color: '#b45309' }}>Tổng điện tiêu thụ</p>
-            <Zap className="w-5 h-5" style={{ color: '#b45309' }} />
-          </div>
-          <p className="text-2xl font-bold" style={{ color: '#b45309' }}>
-            {summaryStats.totalElectricity > 0 ? summaryStats.totalElectricity.toLocaleString('vi-VN') : '-'}
-          </p>
-        </div>
+        {/* Right Side: Action Buttons */}
+        <div className="flex items-center gap-3">
+          {/* Hidden file input */}
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".xlsx,.xls"
+            onChange={handleFileUpload}
+            style={{ display: 'none' }}
+            disabled={isUploading}
+          />
 
-        {/* Card 3: Tổng nước tiêu thụ - Cyan theme */}
-        <div className="rounded-xl p-4 shadow-sm" style={{ backgroundColor: '#ecfeff', border: '2px solid #a5f3fc' }}>
-          <div className="flex items-center justify-between mb-2">
-            <p className="text-xs font-medium tracking-wide" style={{ color: '#0e7490' }}>Tổng nước tiêu thụ</p>
-            <Droplet className="w-5 h-5" style={{ color: '#0e7490' }} />
-          </div>
-          <p className="text-2xl font-bold" style={{ color: '#0e7490' }}>
-            {summaryStats.totalWater > 0 ? summaryStats.totalWater.toLocaleString('vi-VN') : '-'}
-          </p>
-        </div>
+          {/* Tải xuống mẫu Button */}
+          <button
+            onClick={handleDownloadTemplate}
+            className="h-12 flex items-center gap-2 px-4 py-2 rounded-xl font-medium transition-all border border-gray-300 text-gray-700 bg-white hover:bg-gray-50 shadow-sm"
+          >
+            <Download className="w-4 h-4" />
+            <span>Tải xuống mẫu</span>
+          </button>
 
-        {/* Card 4: Trạng thái - Emerald theme */}
-        <div className="rounded-xl p-4 shadow-sm" style={{ backgroundColor: '#ecfdf5', border: '2px solid #a7f3d0' }}>
-          <div className="flex items-center justify-between mb-2">
-            <p className="text-xs font-medium tracking-wide" style={{ color: '#047857' }}>Trạng thái</p>
-            <Clock className="w-5 h-5" style={{ color: '#047857' }} />
-          </div>
-          <p className="text-2xl font-bold" style={{ color: '#047857' }}>
-            {summaryStats.status}
-          </p>
+          {/* Upload Excel Button - Primary */}
+          <button
+            onClick={handleUploadClick}
+            disabled={isUploading}
+            type="button"
+            className={`h-12 flex items-center gap-2 px-6 rounded-xl font-semibold transition-all shadow-sm ${
+              isUploading
+                ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                : 'bg-purple-600 text-white hover:bg-purple-700 hover:shadow-md cursor-pointer'
+            }`}
+          >
+            {isUploading ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                <span>Đang tải...</span>
+              </>
+            ) : (
+              <>
+                <Upload className="w-4 h-4" />
+                <span>Tải lên</span>
+              </>
+            )}
+          </button>
+
+          <button
+            onClick={handleSave}
+            disabled={isSaveDisabled}
+            className={`h-12 flex items-center gap-2 px-6 py-2 rounded-xl font-medium transition-all shadow-sm ${
+              isSaveDisabled
+                ? 'bg-slate-800 text-slate-200 cursor-not-allowed'
+                : 'bg-blue-600 text-white hover:bg-blue-700'
+            }`}
+          >
+            {isSaving ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                <span>Đang lưu...</span>
+              </>
+            ) : isSaved ? (
+              <>
+                <CheckCircle2 className="w-4 h-4" />
+                <span>Đã lưu</span>
+              </>
+            ) : (
+              <>
+                <Save className="w-4 h-4" />
+                <span>Lưu</span>
+              </>
+            )}
+          </button>
         </div>
       </div>
 
-      {/* Card chính - Upload và Actions */}
-      <div className="bg-white rounded-xl p-6 border border-gray-200 shadow-md">
-        {/* Header with Action Buttons */}
+      {saveBanner && (
+        <div
+          className={`flex items-start justify-between gap-4 rounded-xl border p-4 ${
+            saveBanner.type === 'success'
+              ? 'bg-green-50 border-green-200'
+              : 'bg-red-50 border-red-200'
+          }`}
+        >
+          <div className="flex items-start gap-3">
+            {saveBanner.type === 'success' ? (
+              <CheckCircle2 className="w-5 h-5 text-green-600 mt-0.5 flex-shrink-0" />
+            ) : (
+              <AlertCircle className="w-5 h-5 text-red-600 mt-0.5 flex-shrink-0" />
+            )}
+            <div>
+              <div className={`text-sm font-semibold ${saveBanner.type === 'success' ? 'text-green-900' : 'text-red-900'}`}>
+                {saveBanner.title}
+              </div>
+              {saveBanner.description && (
+                <div className={`text-sm ${saveBanner.type === 'success' ? 'text-green-800' : 'text-red-800'}`}>
+                  {saveBanner.description}
+                </div>
+              )}
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => setSaveBanner(null)}
+            className="p-2 rounded-lg hover:bg-black/5 text-gray-700"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+      )}
+
+      {/* Hiển thị thông báo nếu chưa chọn đủ bộ lọc */}
+      {!isFilterComplete && (
+        <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-6 text-center">
+          <AlertCircle className="w-12 h-12 text-yellow-600 mx-auto mb-3" />
+          <h3 className="text-lg font-semibold text-yellow-900">Vui lòng chọn tháng và năm</h3>
+        </div>
+      )}
+
+      {/* Hiển thị thông báo nếu chưa có dữ liệu trong DB và chưa upload */}
+      {isFilterComplete && hasDataInDB === false && filteredTableData.length === 0 && (
+        <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-6 text-center">
+          <AlertCircle className="w-12 h-12 text-yellow-600 mx-auto mb-3" />
+          <h3 className="text-lg font-semibold text-yellow-900 mb-2">Tháng {selectedMonth}/{selectedYear} chưa có dữ liệu</h3>
+        </div>
+      )}
+
+      {/* Card chính - Upload và Actions - Hiển thị khi có dữ liệu từ DB hoặc đã upload */}
+      {isFilterComplete && (hasDataInDB || filteredTableData.length > 0) && (
+      <div className="p-6">
+        {/* Header */}
         <div className="flex items-center justify-between mb-6">
           {/* Left: Title */}
           <div className="flex items-center gap-3">
@@ -358,84 +808,10 @@ export function InvoiceCreation() {
               </span>
             )}
           </div>
-
-          {/* Right: Action Buttons */}
-          <div className="flex items-center gap-3">
-            {/* Hidden file input - Completely hidden */}
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept=".xlsx,.xls"
-              onChange={handleFileUpload}
-              className="hidden"
-              style={{ display: 'none' }}
-              disabled={isUploading}
-            />
-
-            {/* Tải xuống mẫu Button */}
-            <button
-              onClick={handleDownloadTemplate}
-              className="h-10 flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all active:scale-95 border border-gray-300 text-gray-700 bg-white hover:bg-gray-50"
-            >
-              <Download className="w-4 h-4" />
-              <span>Tải xuống mẫu</span>
-            </button>
-
-            {/* Upload Excel Button - Primary */}
-            <button
-              onClick={handleUploadClick}
-              disabled={isUploading}
-              className={`h-10 flex items-center gap-2 px-6 rounded-lg font-bold transition-all shadow-sm active:scale-95 ${
-                isUploading
-                  ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                  : 'bg-purple-600 text-white hover:bg-purple-700 hover:shadow-md'
-              }`}
-            >
-              {isUploading ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  <span>Đang tải...</span>
-                </>
-              ) : (
-                <>
-                  <Upload className="w-4 h-4" />
-                  <span>Tải lên</span>
-                </>
-              )}
-            </button>
-
-            {/* Lưu Button - Save Action */}
-            <button
-              onClick={handleSave}
-              disabled={!isDataLoaded || isUploading || isSaved}
-              className={`h-10 flex items-center gap-2 px-6 py-2 rounded-lg font-medium transition-all shadow-sm active:scale-95 ${
-                !isDataLoaded || isUploading || isSaved
-                  ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                  : 'bg-blue-600 text-white hover:bg-blue-700'
-              }`}
-            >
-              {isSaving ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  <span>Đang lưu...</span>
-                </>
-              ) : isSaved ? (
-                <>
-                  <CheckCircle2 className="w-4 h-4" />
-                  <span>Đã lưu</span>
-                </>
-              ) : (
-                <>
-                  <Save className="w-4 h-4" />
-                  <span>Lưu</span>
-                </>
-              )}
-            </button>
-          </div>
         </div>
 
-        {/* Data Preview Table Section - Only render when data exists */}
-        {tableData.length > 0 && (
+        {/* Data Preview Table Section - Hiển thị khi có dữ liệu */}
+        {filteredTableData.length > 0 && (
           <div className="mt-6 bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden animate-fade-slide-up">
             <div 
               className="overflow-x-auto overflow-y-auto max-h-[500px]"
@@ -463,7 +839,10 @@ export function InvoiceCreation() {
               <table className="w-full border-collapse">
                 <thead className="bg-slate-100 sticky top-0 z-10">
                   <tr>
-                    {Object.keys(tableData[0]).map((col, idx) => (
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 tracking-wider border-b border-gray-200 bg-slate-100">
+                      Thao tác
+                    </th>
+                    {filteredTableData.length > 0 && Object.keys(filteredTableData[0]).filter(col => !['Tháng', 'Năm', 'Thang', 'Nam', 'month', 'year'].includes(col)).map((col, idx) => (
                       <th
                         key={idx}
                         className="px-4 py-3 text-left text-xs font-semibold text-gray-700 tracking-wider border-b border-gray-200 bg-slate-100"
@@ -474,27 +853,103 @@ export function InvoiceCreation() {
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {tableData.map((row, rowIdx) => (
-                    <tr key={rowIdx} className="hover:bg-blue-50 cursor-pointer transition-colors duration-200">
-                      {Object.keys(tableData[0]).map((col, colIdx) => {
-                        const value = row[col];
-                        const isNumber = typeof value === 'number';
+                  {filteredTableData.map((row, rowIdx) => {
+                    const columns = filteredTableData.length > 0
+                      ? Object.keys(filteredTableData[0]).filter(col => !['Tháng', 'Năm', 'Thang', 'Nam', 'month', 'year'].includes(col))
+                      : [];
+                    const rowKey = buildRowKey(row);
+                    const isEditingRow = editingRowKey !== null && rowKey === editingRowKey;
+                    return (
+                    <tr key={rowIdx} className="hover:bg-blue-50 transition-colors duration-200">
+                      <td className="px-4 py-3 text-sm text-gray-900 border-b border-gray-100">
+                        {isEditingRow ? (
+                          <div className="flex items-center gap-2">
+                            <button
+                              type="button"
+                              onClick={saveRowEdit}
+                              className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium"
+                            >
+                              <CheckCircle2 className="w-4 h-4" />
+                              Lưu
+                            </button>
+                            <button
+                              type="button"
+                              onClick={closeRowEdit}
+                              className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border border-gray-200 bg-white hover:bg-gray-50 text-gray-700 text-sm font-medium"
+                            >
+                              <X className="w-4 h-4" />
+                              Huỷ
+                            </button>
+                          </div>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => openRowEdit(rowIdx)}
+                            className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border border-gray-200 bg-white hover:bg-gray-50 text-gray-700 text-sm font-medium"
+                          >
+                            <Pencil className="w-4 h-4" />
+                            Chỉnh sửa
+                          </button>
+                        )}
+                      </td>
+                      {columns.map((col, colIdx) => {
+                        let value = isEditingRow && editingRowDraft ? editingRowDraft[col] : row[col];
                         const colLower = col.toLowerCase();
+                        
+                        // Chuyển đổi Mã dịch vụ từ ELECTRICITY/WATER sang Điện/Nước
+                        if (colLower.includes('mã dịch vụ') || colLower.includes('ma dich vu') || colLower.includes('servicecode') || colLower.includes('service code')) {
+                          value = toServiceLabel(value);
+                        }
+                        
+                        const isNumber = typeof value === 'number';
                         const isCurrencyField = colLower.includes('amount') || 
                                                 colLower.includes('tiền') || 
                                                 colLower.includes('cost') || 
                                                 colLower.includes('price');
+                        const isService = colLower.includes('mã dịch vụ') || colLower.includes('ma dich vu') || colLower.includes('servicecode') || colLower.includes('service code');
+                        const isNumericKey = ['Chỉ số cũ', 'Chỉ số mới', 'Chi so cu', 'Chi so moi', 'oldIndex', 'newIndex'].includes(col);
+                        
+                        // Debug log
+                        if (rowIdx === 0 && colIdx === 0) {
+                          console.log('Rendering table - filteredTableData.length:', filteredTableData.length);
+                          console.log('Rendering table - row:', row);
+                          console.log('Rendering table - columns:', columns);
+                        }
+                        
                         return (
                           <td
                             key={colIdx}
                             className="px-4 py-3 text-sm text-gray-900 border-b border-gray-100"
                           >
-                            {isNumber && isCurrencyField ? formatCurrency(value) : value}
+                            {isEditingRow && editingRowDraft ? (
+                              isService ? (
+                                <select
+                                  value={value ?? ''}
+                                  onChange={(e) => setEditingRowDraft((prev) => prev ? { ...prev, [col]: e.target.value } : prev)}
+                                  className="w-full h-10 px-3 rounded-lg border border-gray-200 bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                >
+                                  <option value="Điện">Điện</option>
+                                  <option value="Nước">Nước</option>
+                                </select>
+                              ) : (
+                                <input
+                                  type={isNumericKey ? 'number' : 'text'}
+                                  value={value ?? ''}
+                                  onChange={(e) => setEditingRowDraft((prev) => prev ? { ...prev, [col]: e.target.value } : prev)}
+                                  className="w-full h-10 px-3 rounded-lg border border-gray-200 bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                />
+                              )
+                            ) : (
+                              <span>
+                                {isNumber && isCurrencyField ? formatCurrency(value) : value}
+                              </span>
+                            )}
                           </td>
                         );
                       })}
                     </tr>
-                  ))}
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
@@ -502,6 +957,7 @@ export function InvoiceCreation() {
         )}
 
       </div>
+      )}
 
       {/* Custom Toast Notification */}
       {showToast && (

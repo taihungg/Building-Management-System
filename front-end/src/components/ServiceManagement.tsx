@@ -129,7 +129,6 @@ export function ServiceManagement() {
                     case 'PROCESSING': return 'Đang Xử Lý';
                     // Đảm bảo cả RESOLVED và PROCESSED đều map thành Đã Xử Lý trên UI
                     case 'PROCESSED': 
-                    case 'RESOLVED': // Giả định PROCESSED tương đương với RESOLVED
                         return 'Đã Xử Lý'; 
                     default: return 'Chưa Xử Lý';
                 }

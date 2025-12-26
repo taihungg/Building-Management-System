@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Search, Download, Clock, CheckCircle, AlertCircle, DollarSign, Receipt, Calendar, CheckCircle2 } from 'lucide-react';
+import { Search, Download, Clock, CheckCircle, AlertCircle, DollarSign, Receipt, Calendar, CheckCircle2, Wallet, Banknote, AlertTriangle } from 'lucide-react';
 import { getBills, payBill, subscribe, exportToCSV, type Bill } from '../utils/bills';
 import { addAnnouncement } from '../utils/announcements';
 
@@ -21,7 +21,17 @@ export function ResidentBills() {
   const filteredBills = bills.filter(bill => {
     const matchesSearch = bill.type.toLowerCase().includes(searchTerm.toLowerCase()) ||
       bill.period.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = statusFilter === 'All' || bill.status === statusFilter;
+    
+    let matchesStatus = false;
+    if (statusFilter === 'All') {
+      matchesStatus = true;
+    } else if (statusFilter === 'Overdue') {
+      // Hóa đơn trễ hạn: status là Pending và dueDate đã qua
+      matchesStatus = bill.status === 'Pending' && new Date(bill.dueDate) < new Date();
+    } else {
+      matchesStatus = bill.status === statusFilter;
+    }
+    
     return matchesSearch && matchesStatus;
   });
 
@@ -65,107 +75,87 @@ export function ResidentBills() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl text-gray-900">Tra Cứu Hóa Đơn</h1>
-          <p className="text-gray-600 mt-1">Lịch sử và chi tiết các khoản phí dịch vụ</p>
+      <div>
+        <h1 className="text-3xl text-gray-900">Quản lý tài chính</h1>
+      </div>
+
+      {/* Stats Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        {/* Card 1: Đã thanh toán - Green */}
+        <div className="h-32 rounded-2xl p-6 flex justify-between items-center text-white shadow-sm relative overflow-hidden" style={{ backgroundColor: '#059669' }}>
+          <div className="flex flex-col">
+            <p className="text-3xl font-bold">{totalPaid.toLocaleString('vi-VN')} đ</p>
+            <p className="text-sm font-medium opacity-80 mt-1">Đã thanh toán</p>
+          </div>
+          <CheckCircle className="w-12 h-12 opacity-20 flex-shrink-0" />
         </div>
-        <div className="flex gap-3">
-          <button 
-            onClick={handleExport}
-            className="flex items-center gap-2 px-6 py-3 bg-white text-gray-700 border-2 border-gray-200 rounded-xl hover:bg-gray-50 transition-colors"
-          >
-            <Download className="w-5 h-5" />
-            Xuất file
-          </button>
+
+        {/* Card 2: Phí cần đóng - Navy */}
+        <div className="h-32 rounded-2xl p-6 flex justify-between items-center text-white shadow-sm relative overflow-hidden" style={{ backgroundColor: '#1e293b' }}>
+          <div className="flex flex-col">
+            <p className="text-3xl font-bold">{totalPending.toLocaleString('vi-VN')} đ</p>
+            <p className="text-sm font-medium opacity-80 mt-1">Phí cần đóng</p>
+          </div>
+          <Wallet className="w-12 h-12 opacity-20 flex-shrink-0" />
+        </div>
+
+        {/* Card 3: Hóa đơn trễ hạn - Red */}
+        <div className="h-32 rounded-2xl p-6 flex justify-between items-center text-white shadow-sm relative overflow-hidden" style={{ backgroundColor: '#dc2626' }}>
+          <div className="flex flex-col">
+            <p className="text-3xl font-bold">{totalOverdue.toLocaleString('vi-VN')} đ</p>
+            <p className="text-sm font-medium opacity-80 mt-1">Hóa đơn trễ hạn</p>
+          </div>
+          <AlertTriangle className="w-12 h-12 opacity-20 flex-shrink-0" />
+        </div>
+
+        {/* Card 4: Sổ chi tiêu - Indigo */}
+        <div className="h-32 rounded-2xl p-6 flex justify-between items-center text-white shadow-sm relative overflow-hidden" style={{ backgroundColor: '#4f46e5' }}>
+          <div className="flex flex-col">
+            <p className="text-3xl font-bold">{(totalPaid + totalPending).toLocaleString('vi-VN')} đ</p>
+            <p className="text-sm font-medium opacity-80 mt-1">Sổ chi tiêu</p>
+          </div>
+          <Banknote className="w-12 h-12 opacity-20 flex-shrink-0" />
         </div>
       </div>
 
       {/* Search Bar */}
-      <div className="bg-white rounded-2xl p-6 border-2 border-gray-200">
-        <div className="relative">
-          <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-          <input
-            type="text"
-            placeholder="Tìm kiếm theo loại hóa đơn hoặc kỳ..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-12 pr-4 py-3 bg-gray-50 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
-          />
-        </div>
+      <div className="relative">
+        <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+        <input
+          type="text"
+          placeholder="Tìm kiếm theo loại hóa đơn hoặc kỳ..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="w-full pl-12 pr-4 py-3 bg-white border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
+        />
       </div>
 
-      {/* Stats Grid */}
-      <div className="grid grid-cols-4 gap-6">
-        <div className="bg-white rounded-xl p-6 border-2 border-gray-200">
-          <div className="flex items-center gap-3 mb-2">
-            <div className="w-10 h-10 rounded-lg bg-emerald-500 flex items-center justify-center">
-              <CheckCircle className="w-5 h-5 text-white" />
-            </div>
-            <p className="text-gray-600 text-sm">Đã thanh toán</p>
-          </div>
-          <p className="text-2xl text-gray-900">{totalPaid.toLocaleString('vi-VN')} đ</p>
-          <p className="text-sm text-emerald-700 mt-1">{bills.filter(b => b.status === 'Paid').length} hóa đơn</p>
+      {/* Actions Row: Filter Tabs & Export Button */}
+      <div className="flex justify-between items-center mb-6">
+        <div className="flex gap-2">
+          {['All', 'Paid', 'Pending', 'Overdue'].map((status) => (
+            <button
+              key={status}
+              onClick={() => setStatusFilter(status as typeof statusFilter)}
+              className={`px-6 py-3 rounded-xl transition-all ${
+                statusFilter === status
+                  ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-lg'
+                  : 'bg-white text-gray-700 border-2 border-gray-200 hover:bg-gray-50'
+              }`}
+            >
+              {status === 'All' ? 'Tất cả' : 
+               status === 'Paid' ? 'Đã thanh toán' :
+               status === 'Pending' ? 'Chưa thanh toán' : 'Quá hạn'}
+            </button>
+          ))}
         </div>
-
-        <div className="bg-white rounded-xl p-6 border-2 border-gray-200">
-          <div className="flex items-center gap-3 mb-2">
-            <div className="w-10 h-10 rounded-lg bg-blue-500 flex items-center justify-center">
-              <Clock className="w-5 h-5 text-white" />
-            </div>
-            <p className="text-gray-600 text-sm">Chưa thanh toán</p>
-          </div>
-          <p className="text-2xl text-gray-900">{totalPending.toLocaleString('vi-VN')} đ</p>
-          <p className="text-sm text-blue-700 mt-1">{bills.filter(b => b.status === 'Pending').length} hóa đơn</p>
-        </div>
-
-        <div className="bg-white rounded-xl p-6 border-2 border-gray-200">
-          <div className="flex items-center gap-3 mb-2">
-            <div className="w-10 h-10 rounded-lg bg-red-500 flex items-center justify-center">
-              <AlertCircle className="w-5 h-5 text-white" />
-            </div>
-            <p className="text-gray-600 text-sm">Quá hạn</p>
-          </div>
-          <p className="text-2xl text-gray-900">{totalOverdue.toLocaleString('vi-VN')} đ</p>
-          <p className="text-sm text-red-700 mt-1">{bills.filter(b => {
-            if (b.status === 'Pending') {
-              const dueDate = new Date(b.dueDate);
-              const today = new Date();
-              return dueDate < today;
-            }
-            return false;
-          }).length} hóa đơn</p>
-        </div>
-
-        <div className="bg-white rounded-xl p-6 border-2 border-gray-200">
-          <div className="flex items-center gap-3 mb-2">
-            <div className="w-10 h-10 rounded-lg bg-purple-500 flex items-center justify-center">
-              <DollarSign className="w-5 h-5 text-white" />
-            </div>
-            <p className="text-gray-600 text-sm">Tổng chi phí</p>
-          </div>
-          <p className="text-2xl text-gray-900">{(totalPaid + totalPending).toLocaleString('vi-VN')} đ</p>
-          <p className="text-sm text-purple-700 mt-1">Tất cả hóa đơn</p>
-        </div>
-      </div>
-
-      {/* Status Filter Tabs */}
-      <div className="flex gap-2">
-        {['All', 'Paid', 'Pending', 'Overdue'].map((status) => (
-          <button
-            key={status}
-            onClick={() => setStatusFilter(status as typeof statusFilter)}
-            className={`px-6 py-3 rounded-xl transition-all ${
-              statusFilter === status
-                ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-lg'
-                : 'bg-white text-gray-700 border-2 border-gray-200 hover:bg-gray-50'
-            }`}
-          >
-            {status === 'All' ? 'Tất cả' : 
-             status === 'Paid' ? 'Đã thanh toán' :
-             status === 'Pending' ? 'Chưa thanh toán' : 'Quá hạn'}
-          </button>
-        ))}
+        <button 
+          onClick={handleExport}
+          className="flex items-center gap-2 px-6 py-3 bg-white text-gray-700 border-2 border-gray-200 rounded-xl hover:bg-gray-50 transition-colors"
+        >
+          <Download className="w-5 h-5" />
+          Xuất file
+        </button>
       </div>
 
       {/* Bills List */}
