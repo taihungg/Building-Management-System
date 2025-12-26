@@ -77,7 +77,7 @@ export function AuthorityHeader({ onMenuClick, onLogout }: AuthorityHeaderProps)
             </div>
             <div className="text-left">
               <h1 className="text-xl text-gray-900 font-semibold">BuildingHub</h1>
-              <p className="text-xs text-gray-600">Quản lý Cư trú và an ninh</p>
+              <p className="text-xs text-gray-600">Quản lý cư trú và an ninh</p>
             </div>
           </button>
         </div>
@@ -124,7 +124,7 @@ export function AuthorityHeader({ onMenuClick, onLogout }: AuthorityHeaderProps)
                 <div className="absolute right-0 mt-2 w-64 bg-white rounded-2xl shadow-xl border border-gray-200 overflow-hidden z-50">
                   {/* Cải thiện hiển thị dropdown */}
                   <div className="p-4 border-b border-gray-100">
-                    <h3 className="text-lg font-semibold text-gray-900">Tài Khoản Cơ Quan</h3>
+                    <h3 className="text-lg font-semibold text-gray-900">Tài khoản cơ quan</h3>
                     <p className="text-sm text-gray-500">authority@hub.vn</p>
                   </div>
                   <div className="py-1">
@@ -132,13 +132,13 @@ export function AuthorityHeader({ onMenuClick, onLogout }: AuthorityHeaderProps)
                       onClick={() => handleProfileItemClick('profile')}
                       className="w-full px-4 py-3 text-left text-gray-700 hover:bg-gray-50 transition-colors flex items-center gap-2"
                     >
-                      <User className="w-4 h-4 text-gray-500"/> Hồ Sơ
+                      <User className="w-4 h-4 text-gray-500"/> Hồ sơ
                     </button>
                     <button 
                       onClick={() => handleProfileItemClick('settings')}
                       className="w-full px-4 py-3 text-left text-gray-700 hover:bg-gray-50 transition-colors flex items-center gap-2"
                     >
-                      <Settings className="w-4 h-4 text-gray-500"/> Cài Đặt
+                      <Settings className="w-4 h-4 text-gray-500"/> Cài đặt
                     </button>
                   </div>
                   <div className="border-t border-gray-100">
@@ -146,7 +146,7 @@ export function AuthorityHeader({ onMenuClick, onLogout }: AuthorityHeaderProps)
                       onClick={() => handleProfileItemClick('logout')}
                       className="w-full px-4 py-3 text-left text-red-600 hover:bg-red-50 transition-colors font-medium flex items-center gap-2"
                     >
-                      <LogOut className="w-4 h-4 text-red-600"/> Đăng Xuất
+                      <LogOut className="w-4 h-4 text-red-600"/> Đăng xuất
                     </button>
                   </div>
                 </div>

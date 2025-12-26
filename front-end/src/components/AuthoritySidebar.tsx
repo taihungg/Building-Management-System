@@ -30,15 +30,15 @@ interface AuthoritySidebarProps {
 // --- Dữ Liệu Menu (Đã dùng Đường dẫn Tuyệt đối) ---
 
 const menuItems: MenuItem[] = [
-  { to: '/authority/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { to: '/authority/residents', label: 'Quản Lý Cư Dân', icon: Users },
-  { to: '/authority/announcements', label: 'Thông Báo Mất Đồ', icon: Bell },
+  { to: '/authority/dashboard', label: 'An ninh và cư trú', icon: LayoutDashboard },
+  { to: '/authority/residents', label: 'Quản lý cư dân', icon: Users },
+  { to: '/authority/announcements', label: 'Thông báo mất đồ', icon: Bell },
 ];
 
 const bottomItems: MenuItem[] = [
-  { to: '/authority/settings', label: 'Cài Đặt', icon: Settings },
-  { to: '/authority/profile', label: 'Hồ Sơ', icon: User },
-  { id: 'logout', label: 'Đăng Xuất', icon: LogOut }, 
+  { to: '/authority/settings', label: 'Cài đặt', icon: Settings },
+  { to: '/authority/profile', label: 'Hồ sơ', icon: User },
+  { id: 'logout', label: 'Đăng xuất', icon: LogOut }, 
 ];
 
 // --- Hàm Tiện Ích: Định nghĩa Class cho NavLink ---

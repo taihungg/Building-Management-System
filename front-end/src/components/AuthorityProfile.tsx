@@ -24,7 +24,7 @@ export function AuthorityProfile() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Hồ Sơ Cơ Quan Chức Năng</h1>
+          <h1 className="text-3xl font-bold text-gray-900">Hồ sơ cơ quan chức năng</h1>
           <p className="text-gray-600 mt-1">Quản lý thông tin cá nhân của bạn</p>
         </div>
         {!isEditing ? (
@@ -86,7 +86,7 @@ export function AuthorityProfile() {
                   </div>
                   <div className="flex items-center gap-3 text-sm text-gray-600">
                     <Shield className="w-4 h-4" />
-                    <span>Cơ Quan Chức Năng</span>
+                    <span>Cơ quan chức năng</span>
                   </div>
                 </div>
               </div>
