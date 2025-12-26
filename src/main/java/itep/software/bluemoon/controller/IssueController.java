@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.RequestParam;
 
 import itep.software.bluemoon.entity.Issue;
 import itep.software.bluemoon.enumeration.IssueType;
@@ -56,7 +57,12 @@ public class IssueController {
     }
     
     @GetMapping
-    public ResponseEntity<List<IssueSummary>> getAllIssues() {
+    public ResponseEntity<List<IssueSummary>> getAllIssues(
+            @RequestParam(required = false) IssueType type
+    ) {
+        if (type != null) {
+            return ResponseEntity.ok(issueService.getIssuesByType(type));
+        }
         return ResponseEntity.ok(issueService.getAllIssues());
     }
     
