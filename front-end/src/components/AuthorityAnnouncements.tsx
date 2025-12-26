@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Bell, Search, Plus, CheckCircle2, ChevronDown, Download, Search as SearchIcon, Clock, ShieldCheck } from 'lucide-react';
 import { Toaster, toast } from 'sonner';
+import * as XLSX from 'xlsx';
 
 export function AuthorityAnnouncements() {
   const [searchTerm, setSearchTerm] = useState('');
@@ -12,7 +13,7 @@ export function AuthorityAnnouncements() {
   const fetchIssues = useCallback(async () => {
     setIsLoading(true);
     try {
-      const response = await fetch('http://localhost:8081/api/issues');
+      const response = await fetch('http://localhost:8080/api/issues');
       if (!response.ok) throw new Error("Không thể tải danh sách sự cố.");
       const rawData = await response.json();
 
@@ -39,7 +40,7 @@ export function AuthorityAnnouncements() {
   const updateIssueStatusApi = async (issueId: string, newStatus: string) => {
     const promise = new Promise(async (resolve, reject) => {
       try {
-        const response = await fetch(`http://localhost:8081/api/issues/${issueId}/status`, {
+        const response = await fetch(`http://localhost:8080/api/issues/${issueId}/status`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ status: newStatus }),
@@ -65,6 +66,29 @@ export function AuthorityAnnouncements() {
   };
 
   useEffect(() => { fetchIssues(); }, []);
+
+  // 4. Hàm xuất Excel
+  const handleExportExcel = () => {
+    try {
+      const exportData = issues.map((issue) => ({
+        'Người báo': issue.reporterName || '',
+        'Căn hộ': issue.roomNumber || '',
+        'Tiêu đề': issue.title || '',
+        'Mô tả': issue.message || '',
+        'Loại': issue.type || '',
+        'Trạng thái': issue.rawStatus || '',
+      }));
+
+      const worksheet = XLSX.utils.json_to_sheet(exportData);
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, 'Danh sách tin báo');
+      XLSX.writeFile(workbook, 'Danh_sach_tin_bao.xlsx');
+      
+      toast.success("Đã xuất Excel thành công", { description: "File Danh_sach_tin_bao.xlsx đã được tải xuống" });
+    } catch (error) {
+      toast.error("Lỗi xuất Excel", { description: "Không thể xuất file Excel" });
+    }
+  };
 
   // 3. Logic lọc dữ liệu tại local
   const filteredAnnouncements = issues.filter(ann => {
@@ -101,7 +125,7 @@ export function AuthorityAnnouncements() {
           <div key={idx} className="flex justify-between items-center p-6 rounded-xl shadow-md h-32 relative overflow-hidden" style={{ backgroundColor: item.color }}>
             <div className="flex flex-col">
               <p className="text-4xl font-bold text-white">{item.count}</p>
-              <p className="text-sm font-medium mt-1 opacity-90 text-white uppercase">{item.label}</p>
+              <p className="text-sm font-medium mt-1 opacity-90 text-white">{item.label}</p>
             </div>
             <item.icon className="h-12 w-12 text-white opacity-80" />
           </div>
@@ -124,7 +148,7 @@ export function AuthorityAnnouncements() {
         <div className="flex items-center gap-3 pr-2">
           {/* Dropdown Trạng thái (UI Inline Style cho chuyên nghiệp) */}
           <div style={{ position: 'relative', minWidth: '160px' }}>
-            <label style={{ position: 'absolute', top: '-8px', left: '12px', backgroundColor: '#ffffff', padding: '0 6px', fontSize: '10px', fontWeight: '800', color: '#1e40af', textTransform: 'uppercase', zIndex: 10 }}>Trạng thái</label>
+            <label style={{ position: 'absolute', top: '-8px', left: '12px', backgroundColor: '#ffffff', padding: '0 6px', fontSize: '10px', fontWeight: '800', color: '#1e40af', zIndex: 10 }}>Trạng thái</label>
             <select 
               value={selectedStatus} 
               onChange={(e) => setSelectedStatus(e.target.value)}
@@ -138,8 +162,11 @@ export function AuthorityAnnouncements() {
             <ChevronDown size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-blue-400 pointer-events-none" />
           </div>
 
-          <button className="min-w-[180px] py-3 px-6 bg-blue-600 text-white rounded-lg text-xs font-extrabold flex items-center gap-2 hover:bg-blue-700 transition-all shadow-[0_3px_0_0_#1e40af]">
-            <Download size={16} strokeWidth={3} /> Xuất excel
+          <button 
+            onClick={handleExportExcel}
+            className="min-w-[180px] py-3 px-6 bg-blue-600 text-white rounded-lg text-xs font-extrabold flex items-center gap-2 hover:bg-blue-700 transition-all shadow-[0_3px_0_0_#1e40af]"
+          >
+            <Download size={16} strokeWidth={3} /> Xuất Excel
           </button>
         </div>
       </div>
@@ -149,10 +176,10 @@ export function AuthorityAnnouncements() {
         <table className="w-full text-sm">
           <thead className="bg-slate-100 border-b-2 border-slate-300 shadow-sm">
             <tr>
-              <th className="px-6 py-4 text-left text-[11px] font-extrabold text-slate-700 uppercase tracking-widest">Người báo</th>
-              <th className="px-6 py-4 text-left text-[11px] font-extrabold text-slate-700 uppercase tracking-widest">Căn hộ</th>
-              <th className="px-6 py-4 text-left text-[11px] font-extrabold text-slate-700 uppercase tracking-widest">Sự vụ</th>
-              <th className="px-6 py-4 text-left text-[11px] font-extrabold text-slate-700 uppercase tracking-widest">Trạng thái</th>
+              <th className="px-6 py-4 text-left text-[11px] font-extrabold text-slate-700 tracking-widest">Người báo</th>
+              <th className="px-6 py-4 text-left text-[11px] font-extrabold text-slate-700 tracking-widest">Căn hộ</th>
+              <th className="px-6 py-4 text-left text-[11px] font-extrabold text-slate-700 tracking-widest">Sự vụ</th>
+              <th className="px-6 py-4 text-left text-[11px] font-extrabold text-slate-700 tracking-widest">Trạng thái</th>
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-100">
@@ -184,9 +211,9 @@ export function AuthorityAnnouncements() {
                         ann.rawStatus === 'PROCESSING' ? 'text-blue-600' : 'text-red-600'
                       }`}
                     >
-                      <option value="UNPROCESSED">Chưa xử lý</option>
-                      <option value="PROCESSING">Đang xử lý</option>
-                      <option value="PROCESSED">Đã xử lý</option>
+                      <option value="UNPROCESSED">UNPROCESSED</option>
+                      <option value="PROCESSING">PROCESSING</option>
+                      <option value="PROCESSED">PROCESSED</option>
                     </select>
                   </div>
                 </td>
