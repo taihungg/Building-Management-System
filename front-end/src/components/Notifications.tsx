@@ -135,7 +135,7 @@ export function Notifications() {
     setIsLoading(true);
     setError(null);
     try {
-        const response = await fetch('http://localhost:8081/api/v1/announcements/staff/all?page=0&size=1000'); 
+        const response = await fetch('http://localhost:8081/api/v1/announcements/staff/all?page=0&size=1000&sort=createdDate,desc'); 
         
         if (!response.ok) {
             throw new Error("Không thể lấy danh sách thông báo đã gửi.");
@@ -244,7 +244,6 @@ export function Notifications() {
         buildingId: null,
         floors: null,
         apartmentIds: null,
-        residentIds: null,
         targetDetail: '',
     };
 
@@ -254,7 +253,9 @@ export function Notifications() {
         payload.buildingId = newAnnouncement.buildingId;
         payload.floors = [newAnnouncement.floor];
     } else if (mappedTargetType === 'SPECIFIC_APARTMENTS') {
-        payload.residentIds = newAnnouncement.residentIds;
+        toast.warning("Chưa hỗ trợ gửi theo cá nhân với backend hiện tại.");
+        setIsSubmitting(false);
+        return;
     }
 
     const submitPromise = new Promise(async (resolve, reject) => {

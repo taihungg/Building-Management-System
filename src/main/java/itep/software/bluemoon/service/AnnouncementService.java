@@ -72,19 +72,8 @@ public class AnnouncementService {
                 // Gọi hàm xử lý danh sách tầng mới
                 residentRepository.findByBuildingAndFloors(request.getBuildingId(), request.getFloors());
                 
-            case SPECIFIC_APARTMENTS -> {
-                if (request.getResidentIds() != null && !request.getResidentIds().isEmpty()) {
-                    List<Resident> residents = residentRepository.findAllById(request.getResidentIds());
-                    if (residents.size() != request.getResidentIds().size()) {
-                        throw new RuntimeException("Một hoặc nhiều cư dân không tồn tại!");
-                    }
-                    yield residents;
-                }
-                if (request.getApartmentIds() != null && !request.getApartmentIds().isEmpty()) {
-                    yield residentRepository.findByApartmentIds(request.getApartmentIds());
-                }
-                yield List.of();
-            }
+            case SPECIFIC_APARTMENTS -> 
+                residentRepository.findByApartmentIds(request.getApartmentIds());
                 
             case ALL -> 
                 residentRepository.findAll();
@@ -95,12 +84,7 @@ public class AnnouncementService {
         return switch (request.getTargetType()) {
             case BY_BUILDING -> "Toa nha ID: " + request.getBuildingId();
             case BY_FLOOR -> "Toa ID: " + request.getBuildingId() + " - Tang: " + request.getFloors();
-            case SPECIFIC_APARTMENTS -> {
-                if (request.getResidentIds() != null && !request.getResidentIds().isEmpty()) {
-                    yield "Gui cho " + request.getResidentIds().size() + " cu dan cu the";
-                }
-                yield "Gui cho " + (request.getApartmentIds() != null ? request.getApartmentIds().size() : 0) + " can ho cu the";
-            }
+            case SPECIFIC_APARTMENTS -> "Gui cho " + (request.getApartmentIds() != null ? request.getApartmentIds().size() : 0) + " can ho cu the";
             case ALL -> "Toan bo cu dan";
         };
     }

@@ -16,7 +16,6 @@ public class AnnouncementCreateRequestDTO {
     private UUID buildingId;         // Bắt buộc khi chọn BY_BUILDING hoặc BY_FLOOR
     private List<Integer> floors;    // Danh sách tầng, ví dụ: [10, 11, 12]
     private List<UUID> apartmentIds; // Danh sách ID căn hộ cụ thể
-    private List<UUID> residentIds;  // Danh sách ID cư dân cụ thể (tuỳ chọn)
     
     private String targetDetail;
 }

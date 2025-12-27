@@ -49,7 +49,7 @@ public class AnnouncementController {
     		@ParameterObject 
             @PageableDefault(
                 size = 10, 
-                sort = "createdDate", 
+                sort = "a.createdDate", 
                 direction = Sort.Direction.DESC
             ) Pageable pageable) {
         return ResponseEntity.ok(announcementService.getAllAnnouncements(pageable));
