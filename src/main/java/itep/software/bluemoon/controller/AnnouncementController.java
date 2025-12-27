@@ -3,6 +3,7 @@ package itep.software.bluemoon.controller;
 import java.util.List;
 import java.util.UUID;
 
+import org.springframework.data.domain.Sort;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
@@ -14,6 +15,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springdoc.core.annotations.ParameterObject;
 
 import itep.software.bluemoon.entity.Announcement;
 import itep.software.bluemoon.model.DTO.announcement.AnnouncementCreateRequestDTO;
@@ -44,7 +46,12 @@ public class AnnouncementController {
      */
     @GetMapping("/staff/all")
     public ResponseEntity<Page<Announcement>> getAllAnnouncements(
-            @PageableDefault(size = 10, sort = "id") Pageable pageable) {
+    		@ParameterObject 
+            @PageableDefault(
+                size = 10, 
+                sort = "a.createdDate", 
+                direction = Sort.Direction.DESC
+            ) Pageable pageable) {
         return ResponseEntity.ok(announcementService.getAllAnnouncements(pageable));
     }
 
@@ -65,7 +72,11 @@ public class AnnouncementController {
     @GetMapping("/resident/{residentId}")
     public ResponseEntity<Page<AnnouncementResponseDTO>> getMyAnnouncements(
             @PathVariable UUID residentId,
-            @PageableDefault(size = 10) Pageable pageable) {
+            @ParameterObject@PageableDefault(
+                    size = 10, 
+                    sort = "announcement.createdDate", 
+                    direction = Sort.Direction.DESC
+                ) Pageable pageable) {
         return ResponseEntity.ok(announcementService.getResidentAnnouncements(residentId, pageable));
     }
 

@@ -41,6 +41,8 @@ import { AuthorityResidentManagement } from './components/AuthorityResidentManag
 import { AuthorityAnnouncements } from './components/AuthorityAnnouncements';
 import { AuthorityProfile } from './components/AuthorityProfile';
 import { Login } from './components/Login'; 
+import { ExtraServiceManagement } from './components/ExtraServiceManagement';
+import { VoluntaryContribution } from './components/VoluntaryContribution';
 
 
 // === Định nghĩa kiểu và Maps ===
@@ -57,6 +59,8 @@ const adminTabToPath: Record<string, string> = {
   'notifications': '/admin/notifications',
   'profile': '/admin/profile',
   'settings': '/admin/settings',
+  'extra-services': '/admin/extra-services', 
+  'voluntary-contributions': '/admin/voluntary-contributions'
 };
 
 const residentTabToPath: Record<string, string> = {
@@ -134,6 +138,8 @@ const adminRoutes = (
         <Route path="/notifications" element={<Notifications />} />
         <Route path="/profile" element={<Profile />} />
         <Route path="/settings" element={<Settings />} />
+        <Route path="/extra-services" element={<ExtraServiceManagement />} />
+        <Route path="/voluntary-contributions" element ={<VoluntaryContribution/>} />
     </>
 );
 

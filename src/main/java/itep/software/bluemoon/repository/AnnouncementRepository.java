@@ -26,7 +26,6 @@ public interface AnnouncementRepository extends JpaRepository<Announcement, UUID
     @Query(value = """
         SELECT DISTINCT a FROM Announcement a
         LEFT JOIN FETCH a.sender
-        ORDER BY a.createdDate DESC
         """,
         countQuery = "SELECT COUNT(a) FROM Announcement a")
     Page<Announcement> findAllWithSender(Pageable pageable);
