@@ -63,6 +63,7 @@ export function AuthorityDashboard() {
 
   useEffect(() => {
       fetchResidents();
+      fetchUrgentIssues();
     }, []);
 
   // Cập nhật thời gian thực mỗi phút để hiển thị thời gian tương đối chính xác
@@ -98,24 +99,110 @@ export function AuthorityDashboard() {
       const res = await response.json();
       setResidents(res.data);
     }
-    catch (err) {
+    catch (err: any) {
       setError(err.message);
-      // Không cần toast lỗi ở đây nếu muốn hiển thị lỗi tĩnh trên UI, 
-      // nhưng nếu muốn có thể dùng toast.error("Lỗi tải dữ liệu");
+      console.error('Error fetching residents:', err);
     }
   }
 
-  // Dữ liệu mẫu cho biểu đồ tỉ lệ cư dân
-  // Trong thực tế, cần lấy từ API với thông tin trạng thái cư trú
-  const residentStatusData = [
-    { name: 'Thường trú', value: 145, color: '#10B981' },
-    { name: 'Tạm trú', value: 38, color: '#F59E0B' },
-    { name: 'Tạm vắng', value: 12, color: '#3B82F6' },
-    { name: 'Vãng lai', value: 8, color: '#8B5CF6' },
-  ];
+  const fetchUrgentIssues = async () => {
+    try {
+      // Fetch issues với type SECURITY hoặc AUTHORITY (ưu tiên SECURITY vì có data)
+      const response = await fetch('http://localhost:8081/api/issues?type=SECURITY');
+      if (!response.ok) {
+        throw new Error('Không thể tải danh sách tin báo');
+      }
+      const issues = await response.json();
+      
+      // Filter chỉ lấy các tin báo chưa xử lý (UNPROCESSED)
+      const unprocessedIssues = issues.filter((issue: any) => issue.status === 'UNPROCESSED');
+      
+      // Map IssueSummary to Announcement format
+      // Note: IssueSummary không có createdDate, nên dùng thời gian hiện tại trừ đi index để tạo thời gian tương đối
+      const mappedAnnouncements = unprocessedIssues.slice(0, 5).map((issue: any, index: number) => {
+        // Tạo thời gian giả lập (mới nhất trừ đi index phút để có thời gian khác nhau)
+        const now = new Date();
+        const createdAt = new Date(now.getTime() - index * 5 * 60 * 1000); // Mỗi item cách nhau 5 phút
+        
+        return {
+          id: issue.id,
+          title: issue.title,
+          message: issue.description || '',
+          type: 'lost_item',
+          status: mapIssueStatus(issue.status),
+          createdAt: createdAt,
+          date: createdAt.toISOString().split('T')[0],
+          reporterName: issue.reporterName || '',
+          reporterAvatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(issue.reporterName || '')}&background=3b82f6&color=fff`,
+          roomNumber: issue.roomNumber
+        };
+      });
+      
+      // Sort by createdAt descending
+      const sortedData = mappedAnnouncements.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+      setAnnouncements(sortedData);
+    } catch (err: any) {
+      console.error('Error fetching urgent issues:', err);
+      setAnnouncements([]);
+    }
+  };
 
-  const totalResidents = residentStatusData.reduce((sum, item) => sum + item.value, 0);
-  const totalLostItems = 13; // Giữ lại cho card summary
+  // Map IssueStatus to display status
+  const mapIssueStatus = (status: string): 'pending' | 'in_progress' | 'handled' => {
+    switch (status) {
+      case 'UNPROCESSED':
+        return 'pending';
+      case 'PROCESSING':
+        return 'in_progress';
+      case 'PROCESSED':
+        return 'handled';
+      default:
+        return 'pending';
+    }
+  };
+
+  // Get status color and label
+  const getStatusInfo = (status: 'pending' | 'in_progress' | 'handled') => {
+    switch (status) {
+      case 'pending':
+        return { color: 'bg-red-100 text-red-800 border-red-300', label: 'Chưa xử lý' };
+      case 'in_progress':
+        return { color: 'bg-orange-100 text-orange-800 border-orange-300', label: 'Đang xử lý' };
+      case 'handled':
+        return { color: 'bg-green-100 text-green-800 border-green-300', label: 'Đã xử lý' };
+      default:
+        return { color: 'bg-gray-100 text-gray-800 border-gray-300', label: 'Chưa xử lý' };
+    }
+  };
+
+  // Tính toán dữ liệu cho biểu đồ tỉ lệ cư dân từ residents thật
+  const getResidentStatusData = () => {
+    const statusCounts = {
+      'PERMANENT_RESIDENCE': 0, // Thường trú
+      'TEMPORARY_RESIDENCE': 0, // Tạm trú
+      'TEMPORARY_ABSENCE': 0,   // Tạm vắng
+      'VISITOR': 0              // Vãng lai
+    };
+
+    residents.forEach((resident: any) => {
+      const status = resident.status;
+      if (status === 'PERMANENT_RESIDENCE') statusCounts.PERMANENT_RESIDENCE++;
+      else if (status === 'TEMPORARY_RESIDENCE') statusCounts.TEMPORARY_RESIDENCE++;
+      else if (status === 'TEMPORARY_ABSENCE') statusCounts.TEMPORARY_ABSENCE++;
+      else if (status === 'VISITOR') statusCounts.VISITOR++;
+    });
+
+    return [
+      { name: 'Thường trú', value: statusCounts.PERMANENT_RESIDENCE, color: '#10B981' },
+      { name: 'Tạm trú', value: statusCounts.TEMPORARY_RESIDENCE, color: '#F59E0B' },
+      { name: 'Tạm vắng', value: statusCounts.TEMPORARY_ABSENCE, color: '#3B82F6' },
+      { name: 'Vãng lai', value: statusCounts.VISITOR, color: '#8B5CF6' },
+    ];
+  };
+
+  const residentStatusData = getResidentStatusData();
+  const totalResidents = residents.length;
+  const totalLostItems = announcements.length; // Số lượng issues/announcements
 
   return (
     <div className="space-y-6">
@@ -286,107 +373,68 @@ export function AuthorityDashboard() {
               </tr>
             </thead>
             <tbody>
-              {/* Row 1 */}
-              <tr className="border-b border-gray-100 last:border-0 hover:bg-gray-50 transition-colors duration-150">
-                <td className="py-4 px-6 align-top">
-                  <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-full bg-blue-100 flex items-center justify-center text-xs font-semibold text-blue-700">
-                      TN
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium text-gray-800">Trần Nam</p>
-                      <p className="text-xs text-gray-500">Căn hộ B-1203</p>
-                    </div>
-                  </div>
-                </td>
-                <td className="py-4 px-6 align-top">
-                  <p className="text-sm font-medium text-gray-900">Mất ví tại sảnh A</p>
-                  <p className="mt-1 text-xs text-gray-500 line-clamp-2">
-                    Cần rà soát camera khu vực lễ tân
-                  </p>
-                </td>
-                <td className="py-4 px-6 align-top text-gray-700 whitespace-nowrap">
-                  2 phút trước
-                </td>
-                <td className="py-4 px-6 align-top">
-                  <span className="inline-flex px-3 py-1 rounded-full text-xs font-semibold bg-orange-100 text-orange-800 border border-orange-300">
-                    Đang xử lý
-                  </span>
-                </td>
-                <td className="py-4 px-6 align-top text-right">
-                  <button className="text-sm font-semibold text-indigo-600 hover:text-indigo-900 hover:underline cursor-pointer">
-                    Xử lý ngay
-                  </button>
-                </td>
-              </tr>
-
-              {/* Row 2 */}
-              <tr className="border-b border-gray-100 last:border-0 hover:bg-gray-50 transition-colors duration-150">
-                <td className="py-4 px-6 align-top">
-                  <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-full bg-emerald-100 flex items-center justify-center text-xs font-semibold text-emerald-700">
-                      HH
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium text-gray-800">Hoàng Huy</p>
-                      <p className="text-xs text-gray-500">Căn hộ C-1208</p>
-                    </div>
-                  </div>
-                </td>
-                <td className="py-4 px-6 align-top">
-                  <p className="text-sm font-medium text-gray-900">Tiếng ồn lớn tầng 12</p>
-                  <p className="mt-1 text-xs text-gray-500 line-clamp-2">
-                    Khả năng do sửa chữa trái giờ quy định
-                  </p>
-                </td>
-                <td className="py-4 px-6 align-top text-gray-700 whitespace-nowrap">
-                  {formatTime(getTodayAtTime(10, 30))}
-                </td>
-                <td className="py-4 px-6 align-top">
-                  <span className="inline-flex px-3 py-1 rounded-full text-xs font-semibold bg-red-100 text-red-800 border border-red-300">
-                    Chưa xử lý
-                  </span>
-                </td>
-                <td className="py-4 px-6 align-top text-right">
-                  <button className="text-sm font-semibold text-indigo-600 hover:text-indigo-900 hover:underline cursor-pointer">
-                    Xử lý ngay
-                  </button>
-                </td>
-              </tr>
-
-              {/* Row 3 */}
-              <tr className="border-b border-gray-100 last:border-0 hover:bg-gray-50 transition-colors duration-150">
-                <td className="py-4 px-6 align-top">
-                  <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-full bg-indigo-100 flex items-center justify-center text-xs font-semibold text-indigo-700">
-                      LT
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium text-gray-800">Lê Trang</p>
-                      <p className="text-xs text-gray-500">Căn hộ B-0905</p>
-                    </div>
-                  </div>
-                </td>
-                <td className="py-4 px-6 align-top">
-                  <p className="text-sm font-medium text-gray-900">Người lạ vào thang máy khu B</p>
-                  <p className="mt-1 text-xs text-gray-500 line-clamp-2">
-                    Không có thẻ cư dân, cần kiểm tra lại camera
-                  </p>
-                </td>
-                <td className="py-4 px-6 align-top text-gray-700 whitespace-nowrap">
-                  35 phút trước
-                </td>
-                <td className="py-4 px-6 align-top">
-                  <span className="inline-flex px-3 py-1 rounded-full text-xs font-semibold bg-orange-100 text-orange-800 border border-orange-300">
-                    Đang xử lý
-                  </span>
-                </td>
-                <td className="py-4 px-6 align-top text-right">
-                  <button className="text-sm font-semibold text-indigo-600 hover:text-indigo-900 hover:underline cursor-pointer">
-                    Xử lý ngay
-                  </button>
-                </td>
-              </tr>
+              {announcements.length > 0 ? (
+                announcements.map((announcement: any, index: number) => {
+                  const statusInfo = getStatusInfo(announcement.status);
+                  const initials = announcement.reporterName
+                    ? announcement.reporterName.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2)
+                    : 'NN';
+                  
+                  // Color mapping với style inline
+                  const colorConfigs = [
+                    { bg: 'bg-blue-100', text: 'text-blue-700' },
+                    { bg: 'bg-emerald-100', text: 'text-emerald-700' },
+                    { bg: 'bg-indigo-100', text: 'text-indigo-700' },
+                    { bg: 'bg-purple-100', text: 'text-purple-700' },
+                    { bg: 'bg-pink-100', text: 'text-pink-700' }
+                  ];
+                  const colorConfig = colorConfigs[index % colorConfigs.length];
+                  
+                  return (
+                    <tr key={announcement.id} className="border-b border-gray-100 last:border-0 hover:bg-gray-50 transition-colors duration-150">
+                      <td className="py-4 px-6 align-top">
+                        <div className="flex items-center gap-3">
+                          <div className={`w-9 h-9 rounded-full ${colorConfig.bg} flex items-center justify-center text-xs font-semibold ${colorConfig.text}`}>
+                            {initials}
+                          </div>
+                          <div>
+                            <p className="text-sm font-medium text-gray-800">{announcement.reporterName || 'Chưa có'}</p>
+                            <p className="text-xs text-gray-500">Căn hộ {announcement.roomNumber || 'N/A'}</p>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="py-4 px-6 align-top">
+                        <p className="text-sm font-medium text-gray-900">{announcement.title}</p>
+                        <p className="mt-1 text-xs text-gray-500 line-clamp-2">
+                          {announcement.message || announcement.description || ''}
+                        </p>
+                      </td>
+                      <td className="py-4 px-6 align-top text-gray-700 whitespace-nowrap">
+                        {formatTime(announcement.createdAt)}
+                      </td>
+                      <td className="py-4 px-6 align-top">
+                        <span className={`inline-flex px-3 py-1 rounded-full text-xs font-semibold border ${statusInfo.color}`}>
+                          {statusInfo.label}
+                        </span>
+                      </td>
+                      <td className="py-4 px-6 align-top text-right">
+                        <button 
+                          onClick={() => navigate('/authority/announcements')}
+                          className="text-sm font-semibold text-indigo-600 hover:text-indigo-900 hover:underline cursor-pointer"
+                        >
+                          Xử lý ngay
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })
+              ) : (
+                <tr>
+                  <td colSpan={5} className="py-8 text-center text-gray-500">
+                    Không có tin báo nào
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>

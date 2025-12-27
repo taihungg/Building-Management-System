@@ -10,7 +10,7 @@ interface Announcement {
   title: string;
   message: string;
   type: 'lost_item'; // Chỉ lọc loại này
-  status: 'handled' | 'in_progress' | 'not_found' | 'pending'; // Thêm trường status để phân loại
+  status: 'pending' | 'in_progress' | 'handled'; // 3 trạng thái theo API: UNPROCESSED, PROCESSING, PROCESSED
   createdAt: Date;
   date: string; // Ngày sự kiện (mất đồ)
   reporterName?: string; // Tên người báo
@@ -19,28 +19,6 @@ interface Announcement {
 // -----------------------------------------------------------
 
 
-// --- MOCK DATA THÔNG BÁO MẤT ĐỒ CHI TIẾT DỰA TRÊN THỐNG KÊ DASHBOARD ---
-const MOCK_LOST_ITEMS_DATA: Announcement[] = [
-  // Đã xử lý (handled): 8 mục
-  { id: '1', title: 'Mất ví da đen', message: 'Mất ví da màu đen tại khu vực sảnh tầng 1 vào chiều thứ 6.', type: 'lost_item', status: 'handled', createdAt: new Date('2025-12-05T10:00:00Z'), date: '04/12/2025', reporterName: 'Nguyễn Văn A', reporterAvatar: 'https://ui-avatars.com/api/?name=Nguyen+Van+A&background=3b82f6&color=fff' },
-  { id: '2', title: 'Thất lạc chìa khóa', message: 'Chùm chìa khóa có móc hình cá heo bị rơi gần khu vực thang máy.', type: 'lost_item', status: 'handled', createdAt: new Date('2025-12-04T15:30:00Z'), date: '04/12/2025', reporterName: 'Trần Thị B', reporterAvatar: 'https://ui-avatars.com/api/?name=Tran+Thi+B&background=10b981&color=fff' },
-  { id: '3', title: 'Mất điện thoại Samsung', message: 'Điện thoại Samsung S21 màu tím bị mất ở khu vực phòng gym.', type: 'lost_item', status: 'handled', createdAt: new Date('2025-12-03T11:45:00Z'), date: '03/12/2025', reporterName: 'Lê Văn C', reporterAvatar: 'https://ui-avatars.com/api/?name=Le+Van+C&background=f97316&color=fff' },
-  { id: '4', title: 'Thẻ cư dân bị rơi', message: 'Mất thẻ cư dân A101.', type: 'lost_item', status: 'handled', createdAt: new Date('2025-12-01T08:00:00Z'), date: '01/12/2025', reporterName: 'Phạm Thị D', reporterAvatar: 'https://ui-avatars.com/api/?name=Pham+Thi+D&background=8b5cf6&color=fff' },
-  { id: '5', title: 'Đồng hồ thông minh', message: 'Mất đồng hồ Fitbit màu xanh trong bãi giữ xe.', type: 'lost_item', status: 'handled', createdAt: new Date('2025-11-28T16:00:00Z'), date: '28/11/2025', reporterName: 'Hoàng Văn E', reporterAvatar: 'https://ui-avatars.com/api/?name=Hoang+Van+E&background=ec4899&color=fff' },
-  { id: '6', title: 'Tai nghe AirPods', message: 'Mất hộp tai nghe AirPods Pro tại khu vực hồ bơi.', type: 'lost_item', status: 'handled', createdAt: new Date('2025-11-25T14:30:00Z'), date: '25/11/2025', reporterName: 'Vũ Thị F', reporterAvatar: 'https://ui-avatars.com/api/?name=Vu+Thi+F&background=06b6d4&color=fff' },
-  { id: '7', title: 'Cặp sách học sinh', message: 'Mất cặp sách màu hồng, bên trong có sách vở lớp 3.', type: 'lost_item', status: 'handled', createdAt: new Date('2025-11-22T09:00:00Z'), date: '22/11/2025', reporterName: 'Đỗ Văn G', reporterAvatar: 'https://ui-avatars.com/api/?name=Do+Van+G&background=14b8a6&color=fff' },
-  { id: '8', title: 'Mất thẻ ngân hàng', message: 'Mất thẻ Vietcombank tại sảnh tòa nhà B.', type: 'lost_item', status: 'handled', createdAt: new Date('2025-11-20T18:00:00Z'), date: '20/11/2025', reporterName: 'Bùi Thị H', reporterAvatar: 'https://ui-avatars.com/api/?name=Bui+Thi+H&background=f59e0b&color=fff' },
-  
-  // Đang xử lý (in_progress): 3 mục (Mới hơn)
-  { id: '9', title: 'Mất ô tô đồ chơi', message: 'Ô tô điều khiển từ xa màu đỏ bị mất ở khu vực sân chơi trẻ em.', type: 'lost_item', status: 'in_progress', createdAt: new Date('2025-12-12T19:00:00Z'), date: '12/12/2025', reporterName: 'Ngô Văn I', reporterAvatar: 'https://ui-avatars.com/api/?name=Ngo+Van+I&background=ef4444&color=fff' },
-  { id: '10', title: 'Mất kính cận', message: 'Kính cận gọng màu bạc, bị rơi trên đường đi bộ tầng 3.', type: 'lost_item', status: 'in_progress', createdAt: new Date('2025-12-11T17:40:00Z'), date: '11/12/2025', reporterName: 'Đinh Thị K', reporterAvatar: 'https://ui-avatars.com/api/?name=Dinh+Thi+K&background=6366f1&color=fff' },
-  { id: '11', title: 'Ba lô laptop', message: 'Mất ba lô đựng laptop màu xám, có logo công ty X.', type: 'lost_item', status: 'in_progress', createdAt: new Date('2025-12-09T09:30:00Z'), date: '09/12/2025', reporterName: 'Lý Văn L', reporterAvatar: 'https://ui-avatars.com/api/?name=Ly+Van+L&background=84cc16&color=fff' },
-
-  // Không tìm thấy (not_found): 2 mục
-  { id: '12', title: 'Nhẫn vàng trắng', message: 'Mất nhẫn cưới vàng trắng, không có khắc tên.', type: 'lost_item', status: 'not_found', createdAt: new Date('2025-11-15T10:00:00Z'), date: '15/11/2025', reporterName: 'Vương Thị M', reporterAvatar: 'https://ui-avatars.com/api/?name=Vuong+Thi+M&background=a855f7&color=fff' },
-  { id: '13', title: 'Giấy tờ tùy thân', message: 'Mất toàn bộ giấy tờ cá nhân bao gồm CCCD và Bằng lái xe.', type: 'lost_item', status: 'not_found', createdAt: new Date('2025-11-10T12:00:00Z'), date: '10/11/2025', reporterName: 'Tôn Văn N', reporterAvatar: 'https://ui-avatars.com/api/?name=Ton+Van+N&background=0ea5e9&color=fff' },
-];
-// -----------------------------------------------------------
 
 // --- Hàm giả lập formatRelativeTime (Nếu bạn chưa định nghĩa) ---
 const formatRelativeTime = (date: Date, currentTime: Date = new Date()): string => {
@@ -85,18 +63,85 @@ export function AuthorityAnnouncements() {
   });
 
   useEffect(() => {
-    // 🔥 SỬ DỤNG MOCK DATA VÀ GIẢ LẬP ĐỘ TRỄ KHI TẢI DỮ LIỆU
-    setIsLoading(true);
-    setTimeout(() => {
-        // Lọc theo type (Lost_item) và Sắp xếp theo ngày tạo mới nhất
-        const sortedData = MOCK_LOST_ITEMS_DATA
-            .filter(ann => ann.type === 'lost_item')
-            .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
-            
-        setAnnouncements(sortedData);
-        setIsLoading(false);
-    }, 500); // Giả lập độ trễ 0.5 giây
+    fetchAnnouncements();
   }, []);
+
+  const fetchAnnouncements = async () => {
+    setIsLoading(true);
+    try {
+      // Fetch all issues (vì type AUTHORITY chưa có data, dùng tất cả hoặc SECURITY)
+      // Có thể thay đổi thành ?type=SECURITY nếu chỉ muốn security issues
+      const response = await fetch('http://localhost:8081/api/issues');
+      if (!response.ok) {
+        throw new Error('Không thể tải danh sách tin báo');
+      }
+      const issues = await response.json();
+      
+      // Filter để chỉ lấy SECURITY hoặc AUTHORITY issues (nếu có)
+      // Hoặc có thể bỏ filter để hiển thị tất cả
+      const filteredIssues = issues.filter((issue: any) => 
+        issue.type === 'SECURITY' || issue.type === 'AUTHORITY'
+      );
+      
+      // Map IssueSummary to Announcement format
+      // Note: IssueSummary không có createdDate, nên dùng thời gian hiện tại trừ đi index để tạo thời gian tương đối
+      const mappedAnnouncements: Announcement[] = filteredIssues.map((issue: any, index: number) => {
+        // Tạo thời gian giả lập (mới nhất trừ đi index giờ để có thời gian khác nhau)
+        const now = new Date();
+        const createdAt = new Date(now.getTime() - index * 60 * 60 * 1000); // Mỗi item cách nhau 1 giờ
+        
+        return {
+          id: issue.id,
+          title: issue.title,
+          message: issue.description || '',
+          type: 'lost_item',
+          status: mapIssueStatusToAnnouncementStatus(issue.status),
+          createdAt: createdAt,
+          date: createdAt.toISOString().split('T')[0],
+          reporterName: issue.reporterName || '',
+          reporterAvatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(issue.reporterName || '')}&background=3b82f6&color=fff`,
+          roomNumber: issue.roomNumber
+        };
+      });
+      
+      // Sort by createdAt descending
+      const sortedData = mappedAnnouncements.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+        setAnnouncements(sortedData);
+    } catch (err: any) {
+      console.error('Error fetching announcements:', err);
+      setAnnouncements([]);
+    } finally {
+        setIsLoading(false);
+    }
+  };
+
+  // Map IssueStatus to Announcement status
+  const mapIssueStatusToAnnouncementStatus = (issueStatus: string): 'pending' | 'in_progress' | 'handled' => {
+    switch (issueStatus) {
+      case 'UNPROCESSED':
+        return 'pending';
+      case 'PROCESSING':
+        return 'in_progress';
+      case 'PROCESSED':
+        return 'handled';
+      default:
+        return 'pending';
+    }
+  };
+
+  // Map Announcement status to IssueStatus
+  const mapAnnouncementStatusToIssueStatus = (announcementStatus: 'pending' | 'in_progress' | 'handled'): string => {
+    switch (announcementStatus) {
+      case 'pending':
+        return 'UNPROCESSED';
+      case 'in_progress':
+        return 'PROCESSING';
+      case 'handled':
+        return 'PROCESSED';
+      default:
+        return 'UNPROCESSED';
+    }
+  };
 
   // Cập nhật thời gian thực mỗi phút để hiển thị thời gian tương đối chính xác
   useEffect(() => {
@@ -126,12 +171,11 @@ export function AuthorityAnnouncements() {
     }
   }, [editingStatusId]);
 
-  // Calculate statistics - 4 trạng thái
+  // Calculate statistics - 3 trạng thái
   const stats = {
-    pending: announcements.filter(a => a.status === 'pending').length || 0,
-    inProgress: announcements.filter(a => a.status === 'in_progress').length || 3,
-    handled: announcements.filter(a => a.status === 'handled').length || 8,
-    notFound: announcements.filter(a => a.status === 'not_found').length || 2,
+    pending: announcements.filter(a => a.status === 'pending').length,
+    inProgress: announcements.filter(a => a.status === 'in_progress').length,
+    handled: announcements.filter(a => a.status === 'handled').length,
   };
 
   const filteredAnnouncements = announcements.filter(ann => {
@@ -145,8 +189,7 @@ export function AuthorityAnnouncements() {
     const matchesStatus = selectedStatus === 'all' || 
       (selectedStatus === 'pending' && ann.status === 'pending') ||
       (selectedStatus === 'in_progress' && ann.status === 'in_progress') ||
-      (selectedStatus === 'handled' && ann.status === 'handled') ||
-      (selectedStatus === 'not_found' && ann.status === 'not_found');
+      (selectedStatus === 'handled' && ann.status === 'handled');
     
     // Date range filter
     const now = new Date();
@@ -172,12 +215,10 @@ export function AuthorityAnnouncements() {
     switch (status) {
       case 'pending':
         return 'bg-gray-100 text-gray-800 border-gray-300'; // Chưa xử lý (Xám)
-      case 'handled':
-        return 'bg-green-100 text-green-800 border-green-300'; // Đã xử lý (Xanh lá)
       case 'in_progress':
         return 'bg-orange-100 text-orange-800 border-orange-300'; // Đang xử lý (Cam)
-      case 'not_found':
-        return 'bg-red-100 text-red-800 border-red-300'; // Không tìm thấy (Đỏ)
+      case 'handled':
+        return 'bg-green-100 text-green-800 border-green-300'; // Đã xử lý (Xanh lá)
       default:
         return 'bg-gray-100 text-gray-800 border-gray-300';
     }
@@ -188,19 +229,17 @@ export function AuthorityAnnouncements() {
     switch (status) {
       case 'pending':
         return { label: 'Chưa xử lý', Icon: Bell, cardBorder: 'hover:border-gray-400' };
-      case 'handled':
-        return { label: 'Đã xử lý', Icon: CheckCircle, cardBorder: 'hover:border-green-400' };
       case 'in_progress':
         return { label: 'Đang xử lý', Icon: Loader, cardBorder: 'hover:border-orange-400' };
-      case 'not_found':
-        return { label: 'Không tìm thấy', Icon: AlertCircle, cardBorder: 'hover:border-red-400' };
+      case 'handled':
+        return { label: 'Đã xử lý', Icon: CheckCircle, cardBorder: 'hover:border-green-400' };
       default:
         return { label: 'Chưa xử lý', Icon: Bell, cardBorder: 'hover:border-gray-400' };
     }
   };
 
 
-  // Get category for each item (mock)
+  // Get category for each item
   const getCategory = (title: string) => {
     if (title.includes('điện thoại') || title.includes('AirPods') || title.includes('đồng hồ') || title.includes('laptop')) return 'Đồ điện tử';
     if (title.includes('ví') || title.includes('thẻ')) return 'Ví & Thẻ';
@@ -216,7 +255,7 @@ export function AuthorityAnnouncements() {
     return Package;
   };
 
-  // Get location from message (mock)
+  // Get location from message
   const getLocation = (message: string) => {
     if (message.includes('sảnh')) return 'Sảnh';
     if (message.includes('sân chơi')) return 'Sân chơi';
@@ -227,15 +266,34 @@ export function AuthorityAnnouncements() {
   };
 
   // Handle status update
-  const handleStatusUpdate = (announcementId: string, newStatus: 'pending' | 'handled' | 'in_progress' | 'not_found') => {
-    setAnnouncements(prev => 
-      prev.map(ann => 
-        ann.id === announcementId 
-          ? { ...ann, status: newStatus }
-          : ann
-      )
-    );
-    setEditingStatusId(null);
+  const handleStatusUpdate = async (announcementId: string, newStatus: 'pending' | 'in_progress' | 'handled') => {
+    try {
+      const issueStatus = mapAnnouncementStatusToIssueStatus(newStatus);
+      const response = await fetch(`http://localhost:8081/api/issues/${announcementId}/status`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ status: issueStatus }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Không thể cập nhật trạng thái');
+      }
+
+      // Update local state
+      setAnnouncements(prev => 
+        prev.map(ann => 
+          ann.id === announcementId 
+            ? { ...ann, status: newStatus }
+            : ann
+        )
+      );
+      setEditingStatusId(null);
+    } catch (err: any) {
+      console.error('Error updating status:', err);
+      alert('Không thể cập nhật trạng thái: ' + (err.message || 'Lỗi không xác định'));
+    }
   };
 
   return (
@@ -246,8 +304,8 @@ export function AuthorityAnnouncements() {
         </div>
       </div>
 
-      {/* Stats Header - 4 Cards */}
-      <div className="grid grid-cols-4 gap-4">
+      {/* Stats Header - 3 Cards */}
+      <div className="grid grid-cols-3 gap-4">
         {/* Card 1: Chưa xử lý (Gray) */}
         <div className="flex justify-between items-center p-6 rounded-xl shadow-md h-32 relative overflow-hidden" style={{ backgroundColor: '#6b7280' }}>
           <div className="flex flex-col">
@@ -273,15 +331,6 @@ export function AuthorityAnnouncements() {
             <p className="text-sm font-medium mt-1 text-white">Đã xử lý</p>
           </div>
           <CheckCircle2 className="h-12 w-12 text-white opacity-80" />
-        </div>
-
-        {/* Card 4: Không tìm thấy (Red) */}
-        <div className="flex justify-between items-center p-6 rounded-xl shadow-md h-32 relative overflow-hidden" style={{ backgroundColor: '#ef4444' }}>
-          <div className="flex flex-col">
-            <p className="text-4xl font-bold text-white">{stats.notFound}</p>
-            <p className="text-sm font-medium mt-1 text-white">Không tìm thấy</p>
-          </div>
-          <AlertCircle className="h-12 w-12 text-white opacity-80" />
         </div>
       </div>
 
@@ -316,7 +365,6 @@ export function AuthorityAnnouncements() {
                 <SelectItem className="cursor-pointer rounded-lg px-3 py-2 text-sm text-gray-700 outline-none data-[highlighted]:bg-blue-50 data-[highlighted]:text-blue-700 data-[state=checked]:bg-blue-100 data-[state=checked]:font-semibold data-[state=checked]:text-blue-800" value="pending">Chưa xử lý</SelectItem>
                 <SelectItem className="cursor-pointer rounded-lg px-3 py-2 text-sm text-gray-700 outline-none data-[highlighted]:bg-blue-50 data-[highlighted]:text-blue-700 data-[state=checked]:bg-blue-100 data-[state=checked]:font-semibold data-[state=checked]:text-blue-800" value="in_progress">Đang xử lý</SelectItem>
                 <SelectItem className="cursor-pointer rounded-lg px-3 py-2 text-sm text-gray-700 outline-none data-[highlighted]:bg-blue-50 data-[highlighted]:text-blue-700 data-[state=checked]:bg-blue-100 data-[state=checked]:font-semibold data-[state=checked]:text-blue-800" value="handled">Đã xử lý</SelectItem>
-                <SelectItem className="cursor-pointer rounded-lg px-3 py-2 text-sm text-gray-700 outline-none data-[highlighted]:bg-blue-50 data-[highlighted]:text-blue-700 data-[state=checked]:bg-blue-100 data-[state=checked]:font-semibold data-[state=checked]:text-blue-800" value="not_found">Không tìm thấy</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -435,12 +483,12 @@ export function AuthorityAnnouncements() {
                                 ? 'bg-gray-100 text-gray-800 border border-gray-300'
                                 : announcement.status === 'in_progress' 
                                 ? 'bg-orange-100 text-orange-800 border border-orange-300'
-                                : announcement.status === 'handled'
+                            : announcement.status === 'handled'
                                 ? 'bg-green-100 text-green-800 border border-green-300'
                                 : 'bg-red-100 text-red-800 border border-red-300'
                             }`}
                           >
-                            {statusInfo.label}
+                          {statusInfo.label}
                           </button>
                           
                           {/* Dropdown Menu */}
@@ -462,7 +510,7 @@ export function AuthorityAnnouncements() {
                               }}
                             >
                               <div style={{ backgroundColor: '#ffffff', width: '100%', height: '100%' }}>
-                              <button
+                        <button 
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   handleStatusUpdate(announcement.id, 'pending');
@@ -490,7 +538,7 @@ export function AuthorityAnnouncements() {
                                 <span className={announcement.status === 'pending' ? 'font-semibold text-gray-800' : 'text-gray-700'} style={{ opacity: 1 }}>
                                   Chưa xử lý
                                 </span>
-                              </button>
+                        </button>
                               <button
                                 onClick={(e) => {
                                   e.stopPropagation();
@@ -547,35 +595,6 @@ export function AuthorityAnnouncements() {
                                 <span className="w-2 h-2 rounded-full bg-green-500" style={{ backgroundColor: '#22c55e', opacity: 1 }}></span>
                                 <span className={announcement.status === 'handled' ? 'font-semibold text-green-800' : 'text-gray-700'} style={{ opacity: 1 }}>
                                   Đã xử lý
-                                </span>
-                              </button>
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleStatusUpdate(announcement.id, 'not_found');
-                                }}
-                                className="w-full text-left px-4 py-2.5 text-sm transition-colors flex items-center gap-2"
-                                style={{ 
-                                  backgroundColor: announcement.status === 'not_found' ? '#fef2f2' : '#ffffff',
-                                  opacity: 1,
-                                  background: announcement.status === 'not_found' ? '#fef2f2' : '#ffffff'
-                                }}
-                                onMouseEnter={(e) => {
-                                  if (announcement.status !== 'not_found') {
-                                    e.currentTarget.style.backgroundColor = '#fef2f2';
-                                    e.currentTarget.style.background = '#fef2f2';
-                                  }
-                                }}
-                                onMouseLeave={(e) => {
-                                  if (announcement.status !== 'not_found') {
-                                    e.currentTarget.style.backgroundColor = '#ffffff';
-                                    e.currentTarget.style.background = '#ffffff';
-                                  }
-                                }}
-                              >
-                                <span className="w-2 h-2 rounded-full bg-red-500" style={{ backgroundColor: '#ef4444', opacity: 1 }}></span>
-                                <span className={announcement.status === 'not_found' ? 'font-semibold text-red-800' : 'text-gray-700'} style={{ opacity: 1 }}>
-                                  Không tìm thấy
                                 </span>
                               </button>
                               </div>
@@ -967,29 +986,51 @@ export function AuthorityAnnouncements() {
                     return;
                   }
 
-                  // Handle form submission - thêm tin báo mới với status 'pending'
-                  const newAnnouncement: Announcement = {
-                    id: Date.now().toString(),
-                    title: newNotification.title.trim(),
-                    message: newNotification.description?.trim() || '',
-                    type: 'lost_item',
-                    status: 'pending', // Trạng thái mặc định là 'pending'
-                    createdAt: new Date(),
-                    date: newNotification.date,
-                    reporterName: newNotification.reporterName.trim(),
-                    reporterAvatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(newNotification.reporterName.trim())}&background=6b7280&color=fff`
-                  };
+                  // TODO: Cần thêm apartmentId và reporterId (UUID) để tạo issue
+                  // Tạm thời thông báo cần cập nhật form
+                  alert('Vui lòng cập nhật form để thêm apartmentId và reporterId (UUID) trước khi tạo tin báo qua API.');
                   
-                  setAnnouncements(prev => [newAnnouncement, ...prev]);
-                  alert('Đăng tin báo thành công!');
-                  setIsAddModalOpen(false);
-                  setNewNotification({
-                    title: '',
-                    reporterName: '',
-                    location: '',
-                    date: '',
-                    description: ''
-                  });
+                  // TODO: Uncomment khi đã có apartmentId và reporterId
+                  // try {
+                  //   const issueData = {
+                  //     apartmentId: newNotification.apartmentId, // TODO: Thêm field này vào form
+                  //     title: newNotification.title.trim(),
+                  //     description: newNotification.description?.trim() || '',
+                  //     type: 'AUTHORITY',
+                  //     reporterId: newNotification.reporterId // TODO: Thêm field này vào form (tìm từ reporterName)
+                  //   };
+                  //   
+                  //   const response = await fetch('http://localhost:8081/api/issues', {
+                  //     method: 'POST',
+                  //     headers: {
+                  //       'Content-Type': 'application/json',
+                  //     },
+                  //     body: JSON.stringify(issueData),
+                  //   });
+                  //   
+                  //   if (!response.ok) {
+                  //     const errorData = await response.json().catch(() => ({}));
+                  //     throw new Error(errorData.message || 'Không thể tạo tin báo');
+                  //   }
+                  //   
+                  //   const createdIssue = await response.json();
+                  //   
+                  //   // Refresh danh sách
+                  //   await fetchAnnouncements();
+                  //   
+                  //   alert('Đăng tin báo thành công!');
+                  //   setIsAddModalOpen(false);
+                  //   setNewNotification({
+                  //     title: '',
+                  //     reporterName: '',
+                  //     location: '',
+                  //     date: '',
+                  //     description: ''
+                  //   });
+                  // } catch (err: any) {
+                  //   console.error('Error creating announcement:', err);
+                  //   alert('Lỗi tạo tin báo: ' + (err.message || 'Lỗi không xác định'));
+                  // }
                 }}
                 className="flex-1 bg-blue-600 text-white py-3 rounded-xl font-bold hover:bg-blue-700 active:scale-[0.98] transition-all shadow-lg shadow-blue-500/30"
               >

@@ -111,83 +111,9 @@ const getResidenceTypeIcon = (type: ResidenceType | string) => {
   }
 };
 
-// Mock data for development
-const MOCK_RESIDENTS = [
-  {
-    id: 1,
-    fullName: 'Nguyễn Văn A',
-    roomNumber: 'L81-12.05',
-    phoneNumber: '0987654321',
-    email: 'nguyenvana@example.com',
-    type: 'Chủ hộ',
-    status: 'Thường trú',
-    avatar: 'https://ui-avatars.com/api/?name=Nguyễn+Văn+A&background=3b82f6&color=fff'
-  },
-  {
-    id: 2,
-    fullName: 'Trần Thị B',
-    roomNumber: 'L81-20.01',
-    phoneNumber: '0912345678',
-    email: 'tranthib@example.com',
-    type: 'Khách thuê',
-    status: 'Thường trú',
-    avatar: 'https://ui-avatars.com/api/?name=Trần+Thị+B&background=10b981&color=fff'
-  },
-  {
-    id: 3,
-    fullName: 'Lê Văn C',
-    roomNumber: 'L81-15.08',
-    phoneNumber: '0923456789',
-    email: 'levanc@example.com',
-    type: 'Chủ hộ',
-    status: 'Tạm vắng',
-    avatar: 'https://ui-avatars.com/api/?name=Lê+Văn+C&background=f59e0b&color=fff'
-  },
-  {
-    id: 4,
-    fullName: 'Phạm Thị D',
-    roomNumber: 'L81-08.12',
-    phoneNumber: '0934567890',
-    email: 'phamthid@example.com',
-    type: 'Khách thuê',
-    status: 'Tạm trú',
-    avatar: 'https://ui-avatars.com/api/?name=Phạm+Thị+D&background=8b5cf6&color=fff'
-  },
-  {
-    id: 5,
-    fullName: 'Hoàng Văn E',
-    roomNumber: 'L81-22.03',
-    phoneNumber: '0945678901',
-    email: 'hoangvane@example.com',
-    type: 'Chủ hộ',
-    status: 'Vãng lai',
-    avatar: 'https://ui-avatars.com/api/?name=Hoàng+Văn+E&background=ef4444&color=fff'
-  },
-  {
-    id: 6,
-    fullName: 'Vũ Thị F',
-    roomNumber: 'L81-11.07',
-    phoneNumber: '0956789012',
-    email: 'vuthif@example.com',
-    type: 'Khách thuê',
-    status: 'Tạm vắng',
-    avatar: 'https://ui-avatars.com/api/?name=Vũ+Thị+F&background=06b6d4&color=fff'
-  },
-  {
-    id: 7,
-    fullName: 'Đỗ Văn G',
-    roomNumber: 'L81-18.09',
-    phoneNumber: '0967890123',
-    email: 'dovang@example.com',
-    type: 'Chủ hộ',
-    status: 'Thường trú',
-    avatar: 'https://ui-avatars.com/api/?name=Đỗ+Văn+G&background=ec4899&color=fff'
-  }
-];
-
 export function AuthorityResidentManagement() {
-  // Temporarily use mock data instead of API
-  const [residents, setResidents] = useState<any[]>(MOCK_RESIDENTS); 
+  // TODO: Fetch residents from API
+  const [residents, setResidents] = useState<any[]>([]); 
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
@@ -198,13 +124,38 @@ export function AuthorityResidentManagement() {
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
   const [isLoadingDetail, setIsLoadingDetail] = useState(false);
 
-  // Calculate statistics from mock data - 4 trạng thái
+  // Map API status to Vietnamese
+  const mapStatusToVietnamese = (status: string): string => {
+    switch (status) {
+      case 'PERMANENT_RESIDENCE':
+        return 'Thường trú';
+      case 'TEMPORARY_RESIDENCE':
+        return 'Tạm trú';
+      case 'TEMPORARY_ABSENCE':
+        return 'Tạm vắng';
+      case 'VISITOR':
+        return 'Vãng lai';
+      default:
+        return status; // Fallback nếu không match
+    }
+  };
+
+  // Map status to residenceType (dùng chung)
+  const getResidenceTypeFromStatus = (status: string) => {
+    if (status === 'PERMANENT_RESIDENCE' || status === 'Thường trú' || status === 'THUONG_TRU') return 'thuongTru';
+    if (status === 'TEMPORARY_RESIDENCE' || status === 'Tạm trú' || status === 'TAM_TRU') return 'tamTru';
+    if (status === 'TEMPORARY_ABSENCE' || status === 'Tạm vắng' || status === 'TAM_VANG') return 'tamVang';
+    if (status === 'VISITOR' || status === 'Vãng lai' || status === 'VANG_LAI') return 'vangLai';
+    return 'thuongTru'; // default
+  };
+
+  // Calculate statistics - 4 trạng thái từ API
   const stats = {
     total: residents.length,
-    thuongTru: residents.filter(r => r.status === 'Thường trú').length,
-    tamTru: residents.filter(r => r.status === 'Tạm trú').length,
-    tamVang: residents.filter(r => r.status === 'Tạm vắng').length,
-    vangLai: residents.filter(r => r.status === 'Vãng lai').length,
+    thuongTru: residents.filter(r => r.status === 'PERMANENT_RESIDENCE').length,
+    tamTru: residents.filter(r => r.status === 'TEMPORARY_RESIDENCE').length,
+    tamVang: residents.filter(r => r.status === 'TEMPORARY_ABSENCE').length,
+    vangLai: residents.filter(r => r.status === 'VISITOR').length,
   };
 
   const buildingOptions = [
@@ -215,10 +166,10 @@ export function AuthorityResidentManagement() {
 
   const statusOptions = [
     { value: 'all', label: 'Tất cả trạng thái' },
-    { value: 'Thường trú', label: 'Thường trú' },
-    { value: 'Tạm trú', label: 'Tạm trú' },
-    { value: 'Tạm vắng', label: 'Tạm vắng' },
-    { value: 'Vãng lai', label: 'Vãng lai' },
+    { value: 'PERMANENT_RESIDENCE', label: 'Thường trú' },
+    { value: 'TEMPORARY_RESIDENCE', label: 'Tạm trú' },
+    { value: 'TEMPORARY_ABSENCE', label: 'Tạm vắng' },
+    { value: 'VISITOR', label: 'Vãng lai' },
   ];
 
   const getFixedSelectWidth = (options: { label: string }[]) => {
@@ -229,66 +180,67 @@ export function AuthorityResidentManagement() {
   const buildingSelectWidth = getFixedSelectWidth(buildingOptions);
   const statusSelectWidth = getFixedSelectWidth(statusOptions);
 
-  // Comment out API call temporarily
-  // useEffect(() => {
-  //   fetchResidents();
-  // }, []) 
+  useEffect(() => {
+    fetchResidents();
+  }, []);
 
-  // const fetchResidents = async () => {
-  //   setIsLoading(true);
-  //   setError(null);
-  //   
-  //   const controller = new AbortController();
-  //   const timeoutId = setTimeout(() => controller.abort(), 10000); 
-  //   
-  //   try {
-  //     let url = 'http://localhost:8081/api/v1/residents';
+  const fetchResidents = async () => {
+    setIsLoading(true);
+    setError(null);
+    
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 10000); 
+    
+    try {
+      let url = 'http://localhost:8081/api/v1/residents';
 
-  //     const response = await fetch(url, {
-  //       method: 'GET',
-  //       headers: {
-  //         'Content-Type': 'application/json',
-  //       },
-  //       signal: controller.signal,
-  //     });
-  //     
-  //     clearTimeout(timeoutId);
-  //     
-  //     if (!response.ok) {
-  //       throw new Error(`Không thể tải danh sách cư dân. Mã lỗi: ${response.status}`);
-  //     }
-  //     
-  //     const res = await response.json();
-  //     
-  //     // Gắn kèm ResidenceType đã tính toán vào dữ liệu khi fetch thành công
-  //     const residentsWithTypes = (res.data || []).map((resident: any) => ({
-  //       ...resident,
-  //       residenceType: getResidenceType(resident) 
-  //     }));
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        signal: controller.signal,
+      });
+      
+      clearTimeout(timeoutId);
+      
+      if (!response.ok) {
+        throw new Error(`Không thể tải danh sách cư dân. Mã lỗi: ${response.status}`);
+      }
+      
+      const res = await response.json();
+      
+      // Gắn kèm ResidenceType đã tính toán vào dữ liệu khi fetch thành công
+      const residentsWithTypes = (res.data || []).map((resident: any) => ({
+        ...resident,
+        residenceType: getResidenceType(resident),
+        // Generate avatar URL từ tên nếu không có avatar
+        avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(resident.fullName || '')}&background=3b82f6&color=fff`
+      }));
 
-  //     setResidents(residentsWithTypes);
-  //     setError(null); 
-  //   }
-  //   catch (err: any) {
-  //     clearTimeout(timeoutId);
-  //     console.error('Error fetching residents:', err);
-  //     
-  //     let errorMessage = 'Không thể kết nối đến server.';
-  //     
-  //     if (err.name === 'AbortError') {
-  //       errorMessage = 'Kết nối quá thời gian. Vui lòng thử lại.';
-  //     } else if (err.message && (err.message.includes('Failed to fetch') || err.message.includes('NetworkError'))) {
-  //       errorMessage = 'Lỗi kết nối mạng: Không thể truy cập API.';
-  //     } else if (err.message) {
-  //       errorMessage = err.message;
-  //     }
-  //     
-  //     setError(errorMessage);
-  //     setResidents([]);
-  //   } finally {
-  //     setIsLoading(false);
-  //   }
-  // }
+      setResidents(residentsWithTypes);
+      setError(null); 
+    }
+    catch (err: any) {
+      clearTimeout(timeoutId);
+      console.error('Error fetching residents:', err);
+      
+      let errorMessage = 'Không thể kết nối đến server.';
+      
+      if (err.name === 'AbortError') {
+        errorMessage = 'Kết nối quá thời gian. Vui lòng thử lại.';
+      } else if (err.message && (err.message.includes('Failed to fetch') || err.message.includes('NetworkError'))) {
+        errorMessage = 'Lỗi kết nối mạng: Không thể truy cập API.';
+      } else if (err.message) {
+        errorMessage = err.message;
+      }
+      
+      setError(errorMessage);
+      setResidents([]);
+    } finally {
+      setIsLoading(false);
+    }
+  }
 
   const filteredResidents = (residents || []).filter(resident => {
     if (!resident) return false;
@@ -305,43 +257,71 @@ export function AuthorityResidentManagement() {
       email.includes(searchLower)
     );
 
-    const matchesBuilding = selectedBuilding === 'all' || true; // Mock: all buildings
+    const matchesBuilding = selectedBuilding === 'all' || true; // TODO: Filter by building from API
     const matchesStatus = selectedStatus === 'all' || resident.status === selectedStatus;
 
     return matchesSearch && matchesBuilding && matchesStatus;
   });
+
+  // Export CSV function
+  const handleExportReport = () => {
+    try {
+      // Prepare CSV data
+      const headers = ['Tên cư dân', 'Email', 'Số điện thoại', 'Căn hộ', 'Trạng thái'];
+      const csvRows = [
+        headers.join(','),
+        ...filteredResidents.map((resident: any) => {
+          const statusVi = mapStatusToVietnamese(resident.status || '');
+          return [
+            `"${resident.fullName || ''}"`,
+            `"${resident.email || ''}"`,
+            `"${resident.phone || ''}"`,
+            `"${resident.roomNumber || ''}"`,
+            `"${statusVi}"`
+          ].join(',');
+        })
+      ];
+
+      // Create blob and download
+      const csvContent = csvRows.join('\n');
+      const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      const url = URL.createObjectURL(blob);
+      
+      link.setAttribute('href', url);
+      link.setAttribute('download', `danh_sach_cu_dan_${new Date().toISOString().split('T')[0]}.csv`);
+      link.style.visibility = 'hidden';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      toast.success('Xuất báo cáo thành công!');
+    } catch (err: any) {
+      toast.error('Lỗi xuất báo cáo', { description: err.message });
+    }
+  };
 
   const handleViewDetail = async (residentId) => {
     setIsLoadingDetail(true);
     setIsViewModalOpen(true);
     setSelectedResident(null); 
     try {
-      // Use mock data instead of API call
-      const resident = MOCK_RESIDENTS.find(r => r.id === residentId);
-      if (resident) {
-        // Map status to residenceType
-        const getResidenceTypeFromStatus = (status: string) => {
-          if (status === 'Thường trú') return 'thuongTru';
-          if (status === 'Tạm trú') return 'tamTru';
-          if (status === 'Tạm vắng') return 'tamVang';
-          if (status === 'Vãng lai') return 'vangLai';
-          return 'thuongTru'; // default
-        };
-        
-        // Add mock detail fields
-        const detailedResident = {
-          ...resident,
-          idCard: '001234567890',
-          dob: '01/01/1990',
-          homeTown: 'Hà Nội',
-          // Giữ nguyên status từ resident (đã có sẵn: Thường trú, Tạm trú, Tạm vắng, Vãng lai)
-          status: resident.status,
-          residenceType: getResidenceTypeFromStatus(resident.status)
-        };
-        setSelectedResident(detailedResident);
-      } else {
-        throw new Error("Không tìm thấy cư dân");
+      const response = await fetch(`http://localhost:8081/api/v1/residents/${residentId}`);
+      if (!response.ok) {
+        throw new Error("Không thể tải thông tin cư dân");
       }
+      const res = await response.json();
+      const data = res.data;
+      
+      // Map API response to component format
+      const apiStatus = data.status || data.residenceStatus || 'PERMANENT_RESIDENCE';
+      const detailedResident = {
+        ...data,
+        status: apiStatus, // Giữ nguyên API status (PERMANENT_RESIDENCE, etc.)
+        statusVi: mapStatusToVietnamese(apiStatus), // Thêm status tiếng Việt
+        residenceType: getResidenceTypeFromStatus(apiStatus)
+      };
+      setSelectedResident(detailedResident);
     } catch (err: any) {
       toast.error("Lỗi tải thông tin cư dân", { description: err.message });
       setIsViewModalOpen(false);
@@ -463,7 +443,11 @@ export function AuthorityResidentManagement() {
           </div>
 
           {/* Export Button */}
-          <button className="h-12 bg-blue-600 text-white rounded-xl font-semibold text-sm flex items-center justify-center gap-2 hover:bg-blue-700 active:scale-[0.98] transition-all shadow-lg shadow-blue-500/25 whitespace-nowrap px-4">
+          <button 
+            onClick={handleExportReport}
+            disabled={filteredResidents.length === 0}
+            className="h-12 bg-blue-600 text-white rounded-xl font-semibold text-sm flex items-center justify-center gap-2 hover:bg-blue-700 active:scale-[0.98] transition-all shadow-lg shadow-blue-500/25 whitespace-nowrap px-4 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
             <Download className="w-4 h-4" />
             Xuất báo cáo
           </button>
@@ -506,11 +490,11 @@ export function AuthorityResidentManagement() {
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-3">
                           <img 
-                            src={resident.avatar} 
+                            src={resident.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(resident.fullName || '')}&background=3b82f6&color=fff`}
                             alt={resident.fullName}
-                            className="w-10 h-10 rounded-full bg-gray-200"
+                            className="w-10 h-10 rounded-full bg-gray-200 object-cover"
                             onError={(e) => {
-                              e.currentTarget.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(resident.fullName)}&background=3b82f6&color=fff`;
+                              e.currentTarget.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(resident.fullName || '')}&background=3b82f6&color=fff`;
                             }}
                           />
                           <div className="flex flex-col">
@@ -529,19 +513,25 @@ export function AuthorityResidentManagement() {
                       
                       {/* Trạng thái: Badge với 4 trạng thái */}
                       <td className="px-6 py-4">
-                        <span className={`inline-flex items-center justify-center px-3 py-1 rounded-full text-xs font-medium min-w-[100px] ${
-                          resident.status === 'Thường trú'
-                            ? 'bg-green-100 text-green-800 border border-green-300'
-                            : resident.status === 'Tạm trú'
-                            ? 'bg-orange-100 text-orange-800 border border-orange-300'
-                            : resident.status === 'Tạm vắng'
-                            ? 'bg-blue-100 text-blue-800 border border-blue-300'
-                            : resident.status === 'Vãng lai'
-                            ? 'bg-purple-100 text-purple-800 border border-purple-300'
-                            : 'bg-gray-100 text-gray-700 border border-gray-300'
-                        }`}>
-                          {resident.status || '-'}
-                        </span>
+                        {(() => {
+                          const statusVi = mapStatusToVietnamese(resident.status || '');
+                          const statusApi = resident.status || '';
+                          return (
+                            <span className={`inline-flex items-center justify-center px-3 py-1 rounded-full text-xs font-medium min-w-[100px] ${
+                              statusApi === 'PERMANENT_RESIDENCE'
+                                ? 'bg-green-100 text-green-800 border border-green-300'
+                                : statusApi === 'TEMPORARY_RESIDENCE'
+                                ? 'bg-orange-100 text-orange-800 border border-orange-300'
+                                : statusApi === 'TEMPORARY_ABSENCE'
+                                ? 'bg-blue-100 text-blue-800 border border-blue-300'
+                                : statusApi === 'VISITOR'
+                                ? 'bg-purple-100 text-purple-800 border border-purple-300'
+                                : 'bg-gray-100 text-gray-700 border border-gray-300'
+                            }`}>
+                              {statusVi || '-'}
+                            </span>
+                          );
+                        })()}
                       </td>
                       
                       {/* Thao tác: Ghost button */}
@@ -693,13 +683,19 @@ export function AuthorityResidentManagement() {
                                     </dt>
                                     <div className="mt-2">
                                         {selectedResident && (() => {
-                                            // Ưu tiên lấy từ status, nếu không có thì lấy từ residenceType
-                                            const status = (selectedResident.status as string) || 
-                                                          (selectedResident.residenceType as string) || 
-                                                          '-';
-                                            const Icon = getResidenceTypeIcon(status);
-                                            const label = getResidenceTypeLabel(status);
-                                            const color = getResidenceTypeColor(status);
+                                            // Lấy status từ API (PERMANENT_RESIDENCE, etc.) hoặc residenceType
+                                            const apiStatus = (selectedResident.status as string) || 
+                                                             (selectedResident.residenceType as string) || 
+                                                             'PERMANENT_RESIDENCE';
+                                            
+                                            // Map API status sang tiếng Việt
+                                            const statusVi = mapStatusToVietnamese(apiStatus);
+                                            
+                                            // Dùng residenceType để lấy icon và color
+                                            const residenceType = selectedResident.residenceType || getResidenceTypeFromStatus(apiStatus);
+                                            const Icon = getResidenceTypeIcon(residenceType);
+                                            const label = statusVi || getResidenceTypeLabel(residenceType);
+                                            const color = getResidenceTypeColor(residenceType);
                                             
                                             return (
                                                 <span className={`inline-flex items-center justify-center gap-2 px-4 py-2 rounded-xl text-base font-bold border shadow-md transition-colors min-w-[120px] ${color}`}>
