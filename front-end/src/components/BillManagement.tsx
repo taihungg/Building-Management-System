@@ -11,14 +11,37 @@ const STATUS_OPTIONS = [
     { label: 'Chưa thanh toán', value: 'UNPAID', icon: AlertCircle, color: 'orange' }, 
 ];
 
-const formatDate = (dateString) => {
-    if (!dateString) return '—';
-    try {
-        const date = new Date(dateString); 
-        return date.toLocaleDateString('vi-VN', {
-            day: '2-digit', month: '2-digit', year: 'numeric',
-        });
-    } catch { return 'Ngày không hợp lệ'; }
+const parseLocalDateTime = (value) => {
+    if (!value) return null;
+    if (Array.isArray(value)) {
+        const [year, month, day, hour = 0, minute = 0, second = 0, nano = 0] = value;
+        const millisecond = Math.floor(nano / 1_000_000);
+        return new Date(year, month - 1, day, hour, minute, second, millisecond);
+    }
+    if (typeof value === 'string' || typeof value === 'number') {
+        const date = new Date(value);
+        return Number.isNaN(date.getTime()) ? null : date;
+    }
+    if (typeof value === 'object') {
+        const year = value.year;
+        const month = value.monthValue ?? value.month;
+        const day = value.dayOfMonth ?? value.day;
+        const hour = value.hour ?? 0;
+        const minute = value.minute ?? 0;
+        const second = value.second ?? 0;
+        const nano = value.nano ?? 0;
+        if (typeof year === 'number' && typeof month === 'number' && typeof day === 'number') {
+            const millisecond = Math.floor(nano / 1_000_000);
+            return new Date(year, month - 1, day, hour, minute, second, millisecond);
+        }
+    }
+    return null;
+};
+
+const formatDate = (value) => {
+    const date = parseLocalDateTime(value);
+    if (!date) return '—';
+    return date.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' });
 };
 
 export function BillManagement() {
@@ -73,7 +96,7 @@ export function BillManagement() {
   const calculateStats = (data) => {
     const calculated = data.reduce(
       (acc, bill) => {
-        const amount = bill.totalAmount || 0;
+        const amount = Number(bill.totalAmount) || 0;
         acc.totalRevenue += amount;
         acc.totalCount += 1; // Tăng tổng số bill
         
@@ -263,7 +286,7 @@ export function BillManagement() {
                       <span className="px-3 py-1 bg-indigo-50 text-indigo-800 rounded-lg font-medium text-sm">{bill.apartmentLabel}</span>
                     </td>
                     <td className="px-6 py-4 font-bold text-gray-900">{formatCurrency(bill.totalAmount)}</td>
-                    <td className="px-6 py-4 text-gray-600 font-medium text-sm">{formatDate(bill.createdTime)}</td>
+                    <td className="px-6 py-4 text-gray-600 font-medium text-sm">{formatDate(bill.createdDate)}</td>
                     <td className="px-6 py-4 text-gray-600 font-medium text-sm">{formatDate(bill.paymentDate)}</td>
                     <td className="px-6 py-4">
                       <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm font-medium
