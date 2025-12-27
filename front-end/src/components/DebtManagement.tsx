@@ -1,4 +1,4 @@
-import { Search, Plus, Download, Clock, CheckCircle, AlertCircle, DollarSign, Calendar, CreditCard, List, X, Loader2, Upload } from 'lucide-react';
+import { Search, Plus, Download, Clock, CheckCircle, AlertCircle, DollarSign, Calendar, CreditCard, List, X, Loader2, Upload, FileSpreadsheet } from 'lucide-react';
 import { Modal } from './Modal';
 import { Toaster, toast } from 'sonner';
 import { useState, useEffect, useRef } from 'react';
@@ -506,7 +506,41 @@ export function DebtManagement() {
       description: ''
     });
   };
+  // --- HÀM XỬ LÝ XUẤT EXCEL ---
+  const [isExporting, setIsExporting] = useState(false);
+  const handleExportExcel = async () => {
+    setIsExporting(true);
+    try {
+      // API đúng như chú gửi
+      const url = `http://localhost:8081/api/v1/accounting/invoices/export?month=${selectedMonth}&year=${selectedYear}`;
+      
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
 
+      if (!response.ok) throw new Error('Không thể xuất file hóa đơn');
+
+      // Xử lý nhận file (Blob) và tự động tải xuống
+      const blob = await response.blob();
+      const downloadUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = downloadUrl;
+      link.download = `Danh_Sach_Hoa_Don_T${selectedMonth}_${selectedYear}.xlsx`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(downloadUrl);
+
+      toast.success("Xuất file Excel thành công!");
+    } catch (error: any) {
+      toast.error("Lỗi xuất file", { description: error.message });
+    } finally {
+      setIsExporting(false);
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -684,6 +718,18 @@ export function DebtManagement() {
               Thanh toán
             </button>
           )}
+          <button
+            onClick={handleExportExcel}
+            disabled={isExporting}
+            className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-xl font-semibold hover:bg-gray-50 transition-all shadow-sm disabled:opacity-50"
+          >
+            {isExporting ? (
+              <Loader2 className="w-4 h-4 animate-spin text-indigo-600" />
+            ) : (
+              <FileSpreadsheet className="w-4 h-4 text-emerald-600" />
+            )}
+            <span>Xuất file Excel</span>
+          </button>
         </div>
       </div>
 
