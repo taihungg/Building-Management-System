@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { 
   Search, Plus, MoreVertical, Home, Maximize, Edit, Trash2, Eye, X, 
   Users, Car, FileText, AlertCircle, Save, Phone, Mail, 
@@ -18,6 +18,49 @@ import { Label } from "./ui/label";
 // 1. IMPORT SONNER
 import { Toaster, toast } from 'sonner';
 
+type ApiResponse<T> = {
+  statusCode?: number;
+  message?: string;
+  data?: T;
+};
+
+type BuildingOption = {
+  id: string;
+  label: string;
+};
+
+type ResidentOption = {
+  id: string;
+  fullName: string;
+  phoneNumber?: string | null;
+};
+
+type ApartmentSummary = {
+  id: string;
+  label: string;
+  floor: number;
+  area?: number | null;
+  size?: number | string | null;
+  residentNumber?: number | null;
+};
+
+type ApartmentDetail = {
+  id: string;
+  info?: {
+    buildingName: string;
+    floor: number;
+    roomNumber: string | number;
+    area?: number | null;
+    numberOfResidents?: number | null;
+  } | null;
+  summary?: {
+    vehicleCount?: number | null;
+    unpaidBillsCount?: number | null;
+  } | null;
+  owner?: ResidentOption | null;
+  residents?: ResidentOption[] | null;
+};
+
 export function ApartmentManagement() {
   
   // --- UTILS: MÀU SẮC ---
@@ -28,7 +71,7 @@ export function ApartmentManagement() {
     'bg-purple-600',
   ];
 
-  const getStableRandomColor = (idString) => {
+  const getStableRandomColor = (idString: string) => {
     if (!idString) return tailwindBgColors[0];
     let hash = 0;
     for (let i = 0; i < idString.length; i++) {
@@ -39,12 +82,14 @@ export function ApartmentManagement() {
   };
 
   // --- 1. STATE DỮ LIỆU & FILTER ---
-  const [apartments, setApartments] = useState([]);
+  const [apartments, setApartments] = useState<ApartmentSummary[]>([]);
   const [keyword, setKeyword] = useState("");
   const [selectedBuildingId, setSelectedBuildingId] = useState("");
   const [selectedFloor, setSelectedFloor] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState(null);
+  const [error, setError] = useState<string | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(9);
 
   // --- 2. STATE CHO MODAL "ADD NEW UNIT" ---
   const [isAddUnitOpen, setIsAddUnitOpen] = useState(false);
@@ -55,14 +100,14 @@ export function ApartmentManagement() {
   const [newOwnerId, setNewOwnerId] = useState("none"); 
 
   // --- 3. STATE CHO MODAL "VIEW & EDIT DETAILS" ---
-  const [selectedApartment, setSelectedApartment] = useState(null);
+  const [selectedApartment, setSelectedApartment] = useState<ApartmentDetail | null>(null);
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
   const [editingOwnerId, setEditingOwnerId] = useState(""); 
   const [isSaving, setIsSaving] = useState(false);
 
   // --- 4. DATA DEPENDENCIES (Dropdowns) ---
-  const [buildingList, setBuildingList] = useState([]); 
-  const [potentialOwners, setPotentialOwners] = useState([]); 
+  const [buildingList, setBuildingList] = useState<BuildingOption[]>([]); 
+  const [potentialOwners, setPotentialOwners] = useState<ResidentOption[]>([]); 
 
   // --- THỐNG KÊ ---
   const totalApartments = apartments.length;
@@ -73,7 +118,7 @@ export function ApartmentManagement() {
       
   // --- STATE CHO MODAL DELETE ---
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
-  const [apartmentToDelete, setApartmentToDelete] = useState(null); 
+  const [apartmentToDelete, setApartmentToDelete] = useState<ApartmentSummary | null>(null); 
   const [isDeleting, setIsDeleting] = useState(false);
 
   // --- STATE CHO ADD, REMOVE RESIDENT
@@ -99,11 +144,12 @@ export function ApartmentManagement() {
         const response = await fetch(finalUrl);
         if (!response.ok) throw new Error("Không thể tải danh sách căn hộ");
 
-        const res = await response.json();
+        const res = (await response.json()) as ApiResponse<ApartmentSummary[]>;
         setApartments(res.data || []); 
-    } catch (err) {
+        setCurrentPage(1);
+    } catch (err: unknown) {
         console.error(err);
-        setError(err.message);
+        setError(err instanceof Error ? err.message : "Không thể tải danh sách căn hộ");
         setApartments([]); 
         // Không cần toast lỗi ở đây để tránh spam khi load trang
     } finally {
@@ -111,19 +157,35 @@ export function ApartmentManagement() {
     }
   };
 
+  const totalItems = apartments.length;
+  const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
+  const pageStartIndex = (currentPage - 1) * pageSize;
+  const pageEndIndexExclusive = Math.min(pageStartIndex + pageSize, totalItems);
+  const paginatedApartments = apartments.slice(pageStartIndex, pageEndIndexExclusive);
+  const selectedVehicleCount = selectedApartment?.summary?.vehicleCount ?? 0;
+  const selectedUnpaidBillsCount = selectedApartment?.summary?.unpaidBillsCount ?? 0;
+
+  useEffect(() => {
+    setCurrentPage((p) => Math.min(Math.max(1, p), totalPages));
+  }, [totalPages]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [pageSize]);
+
   // 2. Fetch Dropdown Data (Buildings & Owners)
   const fetchFormDependencies = async () => {
     try {
         const resOwner = await fetch('http://localhost:8081/api/v1/residents');
-        const jsonOwner = await resOwner.json();
+        const jsonOwner = (await resOwner.json()) as ApiResponse<ResidentOption[]>;
         setPotentialOwners(jsonOwner.data || []);
 
         const resBuild = await fetch('http://localhost:8081/api/v1/buildings/dropdown?keyword=C');
         if (resBuild.ok) {
-           const jsonBuild = await resBuild.json();
+           const jsonBuild = (await resBuild.json()) as ApiResponse<BuildingOption[]>;
            setBuildingList(jsonBuild.data || []);
         }
-    } catch (err) {
+    } catch (err: unknown) {
         console.error("Lỗi tải dữ liệu dropdown:", err);
     }
   };
@@ -151,23 +213,26 @@ export function ApartmentManagement() {
     setKeyword("");
     setSelectedFloor("");
     setSelectedBuildingId("");
+    setCurrentPage(1);
     setTimeout(() => { fetchApartments(); }, 0);
     toast.info("Đã đặt lại bộ lọc");
   };
 
   // Mở Modal Xem chi tiết
-  const handleViewDetail = async (id) => {
+  const handleViewDetail = async (id: string) => {
     try {
         const response = await fetch(`http://localhost:8081/api/v1/apartments/${id}`);
-        const res = await response.json();
+        const res = (await response.json()) as ApiResponse<ApartmentDetail>;
 
         if (!response.ok) throw new Error(res.message || "Lỗi tải chi tiết");
 
-        setSelectedApartment(res.data);
+        setSelectedApartment(res.data || null);
         setIsViewModalOpen(true);
-    } catch (err) {
+    } catch (err: unknown) {
         console.error(err);
-        toast.error("Không thể xem chi tiết", { description: err.message });
+        toast.error("Không thể xem chi tiết", {
+          description: err instanceof Error ? err.message : "Không thể xem chi tiết",
+        });
     }
   };
 
@@ -248,7 +313,7 @@ export function ApartmentManagement() {
     });
   };
 
-  const onOpenDeleteModal = (apartment) => {
+  const onOpenDeleteModal = (apartment: ApartmentSummary) => {
     setApartmentToDelete(apartment);
     setIsDeleteModalOpen(true);
   };
@@ -333,7 +398,7 @@ export function ApartmentManagement() {
   };
 
   // --- 🔥 HÀM 2: LOẠI BỎ CƯ DÂN KHỎI CĂN HỘ ---
-  const handleRemoveResident = async (residentId, residentName) => {
+  const handleRemoveResident = async (residentId: string, residentName: string) => {
     if (!selectedApartment) return;
 
     const removeAction = async () => {
@@ -473,6 +538,63 @@ export function ApartmentManagement() {
         </div>
       </div>
 
+      <div className="mt-6 mb-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="text-sm text-gray-600">
+          {totalItems === 0 ? (
+            <span>Không có dữ liệu</span>
+          ) : (
+            <span>
+              Hiển thị {pageStartIndex + 1}-{pageEndIndexExclusive} / {totalItems}
+            </span>
+          )}
+        </div>
+
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-gray-600">Số dòng:</span>
+            <Select
+              value={String(pageSize)}
+              onValueChange={(v: string) => {
+                const next = Number(v);
+                setPageSize(Number.isFinite(next) && next > 0 ? next : 9);
+              }}
+            >
+              <SelectTrigger className="w-[110px] h-9">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="9">9</SelectItem>
+                <SelectItem value="18">18</SelectItem>
+                <SelectItem value="27">27</SelectItem>
+                <SelectItem value="54">54</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={currentPage <= 1 || totalItems === 0}
+              onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+            >
+              Trước
+            </Button>
+            <span className="text-sm text-gray-600">
+              Trang {currentPage}/{totalPages}
+            </span>
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={currentPage >= totalPages || totalItems === 0}
+              onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+            >
+              Sau
+            </Button>
+          </div>
+        </div>
+      </div>
+
       {/* --- ERROR MESSAGE --- */}
       {error && (
         <div className="bg-red-50 text-red-600 p-4 rounded-lg border border-red-200">
@@ -485,8 +607,8 @@ export function ApartmentManagement() {
           <div className="text-center py-10 text-gray-500">Đang tải danh sách căn hộ...</div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {apartments.length > 0 ? (
-                apartments.map((apt) => {
+            {totalItems > 0 ? (
+                paginatedApartments.map((apt) => {
                   const randomBgClass = getStableRandomColor(apt.id);
                   return (
                     <div key={apt.id} className="bg-white rounded-2xl p-6 shadow-md border border-gray-200 hover:shadow-xl transition-shadow">
@@ -783,15 +905,15 @@ export function ApartmentManagement() {
                         <div className="grid grid-cols-2 gap-3">
                             <div className="bg-gradient-to-br from-sky-50 to-blue-50 border border-blue-100 rounded-xl p-4 flex flex-col items-center justify-center text-center shadow-sm">
                                 <Car className="w-6 h-6 text-blue-500 mb-2" />
-                                <span className="text-3xl font-bold text-blue-700">{selectedApartment.summary?.vehicleCount || 0}</span>
+                                <span className="text-3xl font-bold text-blue-700">{selectedVehicleCount}</span>
                                 <span className="text-xs text-blue-600 font-medium uppercase mt-1">Phương Tiện</span>
                             </div>
                             <div className={`rounded-xl p-4 flex flex-col items-center justify-center text-center shadow-sm border ${
-                                selectedApartment.summary?.unpaidBillsCount > 0 ? 'bg-gradient-to-br from-rose-50 to-red-50 border-red-100' : 'bg-gradient-to-br from-emerald-50 to-green-50 border-green-100'
+                                selectedUnpaidBillsCount > 0 ? 'bg-gradient-to-br from-rose-50 to-red-50 border-red-100' : 'bg-gradient-to-br from-emerald-50 to-green-50 border-green-100'
                             }`}>
-                                {selectedApartment.summary?.unpaidBillsCount > 0 ? <AlertCircle className="w-6 h-6 text-red-500 mb-2" /> : <FileText className="w-6 h-6 text-emerald-500 mb-2" />}
-                                <span className={`text-3xl font-bold ${selectedApartment.summary?.unpaidBillsCount > 0 ? 'text-red-700' : 'text-emerald-700'}`}>{selectedApartment.summary?.unpaidBillsCount || 0}</span>
-                                <span className={`text-xs font-medium uppercase mt-1 ${selectedApartment.summary?.unpaidBillsCount > 0 ? 'text-red-600' : 'text-emerald-600'}`}>Hóa Đơn</span>
+                                {selectedUnpaidBillsCount > 0 ? <AlertCircle className="w-6 h-6 text-red-500 mb-2" /> : <FileText className="w-6 h-6 text-emerald-500 mb-2" />}
+                                <span className={`text-3xl font-bold ${selectedUnpaidBillsCount > 0 ? 'text-red-700' : 'text-emerald-700'}`}>{selectedUnpaidBillsCount}</span>
+                                <span className={`text-xs font-medium uppercase mt-1 ${selectedUnpaidBillsCount > 0 ? 'text-red-600' : 'text-emerald-600'}`}>Hóa Đơn</span>
                             </div>
                         </div>
                     </div>
@@ -944,11 +1066,11 @@ export function ApartmentManagement() {
                 </p>
             </div>
 
-            {apartmentToDelete?.residentNumber > 0 && (
+            {apartmentToDelete && (apartmentToDelete.residentNumber ?? 0) > 0 && (
                 <div className="bg-orange-50 border border-orange-200 text-orange-800 px-4 py-3 rounded-lg text-sm flex items-start gap-2 text-left w-full mt-2">
                     <AlertCircle className="w-5 h-5 shrink-0" />
                     <span>
-                        <strong>Cảnh báo:</strong> Căn hộ này hiện đang có {apartmentToDelete.residentNumber} cư dân. Việc xóa có thể ảnh hưởng đến dữ liệu của họ.
+                        <strong>Cảnh báo:</strong> Căn hộ này hiện đang có {apartmentToDelete.residentNumber ?? 0} cư dân. Việc xóa có thể ảnh hưởng đến dữ liệu của họ.
                     </span>
                 </div>
             )}

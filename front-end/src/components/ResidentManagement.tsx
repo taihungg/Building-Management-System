@@ -29,6 +29,8 @@ export function ResidentManagement() {
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
 const [includeInactive, setIncludeInactive] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
 
   // --- TẠO STATE CHO FORM "THÊM MỚI" ---
   const [newName, setNewName] = useState("");
@@ -102,6 +104,21 @@ const [includeInactive, setIncludeInactive] = useState(false);
       String(resident.email || "").toLowerCase().includes(keyword)
     );
   });
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, includeInactive, pageSize]);
+
+  const totalItems = filteredResidents.length;
+  const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
+
+  useEffect(() => {
+    setCurrentPage((p) => Math.min(Math.max(1, p), totalPages));
+  }, [totalPages]);
+
+  const pageStartIndex = (currentPage - 1) * pageSize;
+  const pageEndIndexExclusive = Math.min(pageStartIndex + pageSize, totalItems);
+  const paginatedResidents = filteredResidents.slice(pageStartIndex, pageEndIndexExclusive);
 
   // --- API CALL: CREATE RESIDENT ---
   const createResident = async (dataToCreate: any) => {
@@ -473,7 +490,62 @@ const [includeInactive, setIncludeInactive] = useState(false);
   ))}
 </div>
 
+      <div className="mt-6 mb-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="text-sm text-gray-600">
+          {totalItems === 0 ? (
+            <span>Không có dữ liệu</span>
+          ) : (
+            <span>
+              Hiển thị {pageStartIndex + 1}-{pageEndIndexExclusive} / {totalItems}
+            </span>
+          )}
+        </div>
 
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-gray-600">Số dòng:</span>
+            <Select
+              value={String(pageSize)}
+              onValueChange={(v: string) => {
+                const next = Number(v);
+                setPageSize(Number.isFinite(next) && next > 0 ? next : 10);
+              }}
+            >
+              <SelectTrigger className="w-[110px] h-9">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="10">10</SelectItem>
+                <SelectItem value="20">20</SelectItem>
+                <SelectItem value="50">50</SelectItem>
+                <SelectItem value="100">100</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={currentPage <= 1 || totalItems === 0}
+              onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+            >
+              Trước
+            </Button>
+            <span className="text-sm text-gray-600">
+              Trang {currentPage}/{totalPages}
+            </span>
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={currentPage >= totalPages || totalItems === 0}
+              onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+            >
+              Sau
+            </Button>
+          </div>
+        </div>
+      </div>
 
       {/* Residents Table */}
       <div className="bg-white rounded-xl border-2 border-gray-200 overflow-hidden">
@@ -489,7 +561,7 @@ const [includeInactive, setIncludeInactive] = useState(false);
               </tr>
             </thead>
             <tbody className="divide-y-2 divide-gray-200">
-              {filteredResidents.map((resident) => (
+              {paginatedResidents.map((resident) => (
                 <tr key={resident.id} className="hover:bg-gray-50 transition-colors">
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-3">
