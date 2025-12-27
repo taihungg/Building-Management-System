@@ -5,20 +5,62 @@ import React from 'react';
 import { Modal } from './Modal'; 
 
 // Định nghĩa các biểu tượng và màu sắc
-const typeColors = {
-  GENERAL: 'blue',
-  ALERT: 'orange',
-};
 const typeIcons = {
     GENERAL: Bell,
     ALERT: AlertCircle,
 };
 
+type TargetType = 'ALL' | 'BUILDING' | 'FLOOR' | 'RESIDENTS';
+
+type BuildingOption = {
+  id: string;
+  label: string;
+  value: string;
+};
+
+type ResidentOption = {
+  id: string;
+  name: string;
+};
+
+type AnnouncementListItem = {
+  id: string;
+  title: string;
+  message: string;
+  sender: string;
+  receiverCount: number | null;
+  time: string;
+  icon: React.ComponentType<{ className?: string }>;
+};
+
+type NewAnnouncementState = {
+  title: string;
+  message: string;
+  senderId: string;
+  targetType: TargetType;
+  buildingId: string;
+  floor: number;
+  residentIds: string[];
+};
+
 // --- MOCK Button Component ---
-const Button = ({ children, onClick, className, disabled = false }) => (
+const Button = ({
+  children,
+  onClick,
+  className,
+  disabled = false,
+  type = 'button',
+}: {
+  children: React.ReactNode;
+  onClick?: React.MouseEventHandler<HTMLButtonElement>;
+  className?: string;
+  disabled?: boolean;
+  type?: 'button' | 'submit' | 'reset';
+}) => (
     <button 
         onClick={onClick} 
         disabled={disabled}
+        type={type}
         className={`px-4 py-2 rounded-lg font-medium transition-colors ${className} ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
     >
         {children}
@@ -41,29 +83,29 @@ export function Notifications() {
   const DEFAULT_SENDER_ID = 'a2ca2e25-4443-496b-a457-46539af501cc'; 
   
   // State chung
-  const [announcements, setAnnouncements] = useState([]);
+  const [announcements, setAnnouncements] = useState<AnnouncementListItem[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState(null);
+  const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   
   // State cho Tòa nhà
-  const [buildings, setBuildings] = useState([]);
+  const [buildings, setBuildings] = useState<BuildingOption[]>([]);
   const [isBuildingsLoading, setIsBuildingsLoading] = useState(false);
 
   // 🔥 State cho Cư dân
-  const [residents, setResidents] = useState([]);
+  const [residents, setResidents] = useState<ResidentOption[]>([]);
   const [isResidentsLoading, setIsResidentsLoading] = useState(false);
   
   // State cho Modal và Form Tạo thông báo
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
-  const [newAnnouncement, setNewAnnouncement] = useState({
+  const [newAnnouncement, setNewAnnouncement] = useState<NewAnnouncementState>({
     title: '',
     message: '',
     senderId: DEFAULT_SENDER_ID, 
     targetType: 'ALL', 
     buildingId: '', 
     floor: 0,
-    residentIds: [], // Danh sách ID cư dân được chọn
+    residentIds: [],
   });
   
   // --- HÀM GỌI API LẤY DANH SÁCH TÒA NHÀ ---
@@ -80,7 +122,10 @@ export function Notifications() {
         const data = res.data || [];
         
         const allOption = { id: 'ALL', label: 'Tất cả Tòa nhà', value: 'ALL' }; 
-        const combinedBuildings = [allOption, ...data.map(b => ({ id: b.id, label: b.name, value: b.id }))];
+        const combinedBuildings: BuildingOption[] = [
+          allOption,
+          ...data.map((b: any) => ({ id: String(b.id), label: String(b.label), value: String(b.id) })),
+        ];
         
         setBuildings(combinedBuildings);
         
@@ -91,8 +136,9 @@ export function Notifications() {
             }));
         }
         
-    } catch (err) {
-        toast.error("Lỗi tải Tòa nhà", { description: err.message });
+    } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : String(err);
+        toast.error("Lỗi tải Tòa nhà", { description: message });
         setBuildings([]);
     } finally {
         setIsBuildingsLoading(false);
@@ -114,20 +160,53 @@ export function Notifications() {
         const data = res.data || [];
         
         // Chuyển đổi dữ liệu để sử dụng trong list chọn (giả định cấu trúc có id, fullName, apartmentLabel)
-        const residentList = data.map(r => ({
-            id: r.id, 
-            name: `${r.fullName} (${r.apartmentLabel || 'N/A'})` 
+        const residentList: ResidentOption[] = data.map((r: any) => ({
+          id: String(r.id),
+          name: `${String(r.fullName)} (${r.roomNumber ? `P.${r.roomNumber}` : 'N/A'})`,
         }));
         
         setResidents(residentList);
         
-    } catch (err) {
-        toast.error("Lỗi tải Cư dân", { description: err.message });
+    } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : String(err);
+        toast.error("Lỗi tải Cư dân", { description: message });
         setResidents([]);
     } finally {
         setIsResidentsLoading(false);
     }
   }, []);
+
+  const readErrorMessage = async (response: Response) => {
+    try {
+      const contentType = response.headers.get('content-type') || '';
+      if (contentType.includes('application/json')) {
+        const data = await response.json().catch(() => null);
+        const message =
+          data?.message ||
+          data?.error ||
+          data?.detail ||
+          data?.title ||
+          data?.msg ||
+          null;
+        if (message) return String(message);
+        return JSON.stringify(data);
+      }
+      const text = await response.text().catch(() => '');
+      return text || `${response.status} ${response.statusText}`;
+    } catch {
+      return `${response.status} ${response.statusText}`;
+    }
+  };
+
+  const formatAnnouncementTime = (raw: any) => {
+    const date = new Date(raw);
+    if (Number.isNaN(date.getTime())) return 'N/A';
+    return (
+      date.toLocaleDateString('vi-VN') +
+      ' ' +
+      date.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })
+    );
+  };
 
 
   // --- HÀM TẢI DỮ LIỆU LỊCH SỬ THÔNG BÁO ---
@@ -135,37 +214,37 @@ export function Notifications() {
     setIsLoading(true);
     setError(null);
     try {
-        const response = await fetch('http://localhost:8081/api/announcements'); 
+        const response = await fetch('http://localhost:8081/api/v1/announcements/staff/all?page=0&size=1000'); 
         
         if (!response.ok) {
-            throw new Error("Không thể lấy danh sách thông báo đã gửi.");
+            const detail = await readErrorMessage(response);
+            throw new Error(detail || "Không thể lấy danh sách thông báo đã gửi.");
         }
         
-        const rawData = await response.json();
+        const pageData = await response.json();
+        const rawData = pageData?.content || [];
         
-        const transformedData = rawData.map(announcement => {
+        const transformedData: AnnouncementListItem[] = rawData.map((announcement: any) => {
             const type = 'GENERAL'; 
             const Icon = typeIcons[type];
             
-            const dateTime = new Date(announcement.createdAt);
-            const timeFormatted = dateTime.toLocaleDateString('vi-VN') + ' ' + dateTime.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
-
             return {
-                id: announcement.id,
-                title: announcement.title,
-                message: announcement.message, 
-                sender: announcement.senderName || 'BQL Chung cư',
-                receiverCount: announcement.receiverCount || 'N/A',
-                time: timeFormatted,
+                id: String(announcement.id),
+                title: String(announcement.title),
+                message: String(announcement.message), 
+                sender: String(announcement.sender?.fullName || 'BQL Chung cư'),
+                receiverCount: null,
+                time: formatAnnouncementTime(announcement.createdDate),
                 icon: Icon,
             };
         });
 
         setAnnouncements(transformedData);
         
-    } catch (err) {
-        setError(err.message);
-        toast.error("Lỗi tải lịch sử thông báo", { description: err.message });
+    } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : String(err);
+        setError(message);
+        toast.error("Lỗi tải lịch sử thông báo", { description: message });
     } finally {
         setIsLoading(false);
     }
@@ -177,7 +256,7 @@ export function Notifications() {
   }, [fetchAnnouncements]); 
 
   // --- HÀM TẠO THÔNG BÁO MỚI ---
-  const handleCreateAnnouncement = async (e) => {
+  const handleCreateAnnouncement = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (isSubmitting) return;
 
@@ -192,36 +271,49 @@ export function Notifications() {
         return;
     }
 
+    if (newAnnouncement.targetType === 'RESIDENTS') {
+        toast.error("Chưa hỗ trợ gửi theo cá nhân trên API hiện tại.");
+        return;
+    }
+
     setIsSubmitting(true);
     
     // Xử lý payload trước khi gửi
-    let payload = {
+    const payload: {
+      title: string;
+      message: string;
+      senderId: string;
+      targetType: 'ALL' | 'BY_BUILDING' | 'BY_FLOOR' | 'SPECIFIC_APARTMENTS';
+      buildingId: string | null;
+      floors: number[] | null;
+      apartmentIds: string[] | null;
+      targetDetail: string | null;
+    } = {
         title: newAnnouncement.title,
         message: newAnnouncement.message,
         senderId: newAnnouncement.senderId,
-        targetType: newAnnouncement.targetType, 
+        targetType: 'ALL',
         buildingId: null,
-        floor: 0,
-        residentIds: [],
+        floors: null,
+        apartmentIds: null,
+        targetDetail: null,
     };
     
     // Áp dụng logic BuildingId, Floor và ResidentIds dựa trên TargetType
     if (newAnnouncement.targetType === 'ALL') {
-        // API Backend có thể yêu cầu buildingId là null hoặc ID của 'ALL'
-        payload.buildingId = null; 
+        payload.targetType = 'ALL';
     } else if (newAnnouncement.targetType === 'BUILDING') {
+        payload.targetType = 'BY_BUILDING';
         payload.buildingId = newAnnouncement.buildingId;
     } else if (newAnnouncement.targetType === 'FLOOR') {
+        payload.targetType = 'BY_FLOOR';
         payload.buildingId = newAnnouncement.buildingId;
-        payload.floor = newAnnouncement.floor;
-    } else if (newAnnouncement.targetType === 'RESIDENTS') {
-        payload.residentIds = newAnnouncement.residentIds;
-        // Các trường khác (buildingId, floor) là null/0
+        payload.floors = [newAnnouncement.floor];
     }
 
-    const submitPromise = new Promise(async (resolve, reject) => {
+    const submitPromise = new Promise<string>(async (resolve, reject) => {
         try {
-            const response = await fetch('http://localhost:8081/api/announcements', {
+            const response = await fetch('http://localhost:8081/api/v1/announcements/staff/create', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -230,16 +322,16 @@ export function Notifications() {
             });
             
             if (!response.ok) {
-                const errorData = await response.json().catch(() => ({}));
-                throw new Error(errorData.message || `Lỗi: ${response.status} khi gửi thông báo.`);
+                const detail = await readErrorMessage(response);
+                throw new Error(detail || `Lỗi: ${response.status} khi gửi thông báo.`);
             }
 
             await fetchAnnouncements();
             
             resolve("Thông báo đã được gửi thành công!");
             
-        } catch (error) {
-            reject(error);
+        } catch (error: unknown) {
+            reject(error instanceof Error ? error : new Error(String(error)));
         } finally {
             setIsSubmitting(false);
         }
@@ -247,7 +339,7 @@ export function Notifications() {
     
     toast.promise(submitPromise, {
         loading: 'Đang gửi thông báo...',
-        success: (message) => {
+        success: (message: string) => {
             setIsCreateModalOpen(false); 
             // Reset form
             setNewAnnouncement({
@@ -261,12 +353,12 @@ export function Notifications() {
             });
             return message;
         },
-        error: (err) => `Gửi thông báo thất bại: ${err.message}`,
+        error: (err: any) => `Gửi thông báo thất bại: ${err?.message || String(err)}`,
     });
   };
 
   // --- LOGIC CHỌN CƯ DÂN ---
-  const handleResidentSelect = (residentId) => {
+  const handleResidentSelect = (residentId: string) => {
     setNewAnnouncement(prev => {
         const selectedIds = new Set(prev.residentIds);
         if (selectedIds.has(residentId)) {
@@ -311,7 +403,7 @@ export function Notifications() {
   }
 
   // Lọc danh sách buildings chỉ hiển thị các tòa nhà cụ thể
-  const specificBuildings = buildings.filter(b => b.id !== 'ALL');
+  const specificBuildings = buildings.filter((b) => b.id !== 'ALL');
 
   return (
     <div className="space-y-6">
@@ -446,7 +538,7 @@ export function Notifications() {
                 <textarea
                     id="message"
                     required
-                    rows="4"
+                    rows={4}
                     value={newAnnouncement.message}
                     onChange={(e) => setNewAnnouncement({...newAnnouncement, message: e.target.value})}
                     placeholder="Nhập nội dung thông báo chi tiết..."
@@ -469,7 +561,7 @@ export function Notifications() {
                         onChange={(e) => {
                             setNewAnnouncement({
                                 ...newAnnouncement, 
-                                targetType: e.target.value,
+                                targetType: e.target.value as TargetType,
                                 buildingId: buildings[0]?.id || '', 
                                 floor: e.target.value !== 'FLOOR' ? 0 : newAnnouncement.floor,
                                 residentIds: e.target.value !== 'RESIDENTS' ? [] : newAnnouncement.residentIds
