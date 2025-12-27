@@ -17,13 +17,13 @@ public interface ExtraFeeRepository extends JpaRepository<ExtraFee, UUID> {
        "e.title AS title, " +
        "e.amount AS amount, " +
        "e.feeDate AS feeDate, " +
-       "e.isBilled AS isBilled, " + // Khớp với boolean isBilled()
-       "cast(a.roomNumber as String) AS apartmentLabel " + // Ép kiểu về String để khớp với getApartmentLabel()
+       "coalesce(e.isBilled, false) AS isBilled, " +
+       "concat('', a.roomNumber) AS apartmentLabel " +
        "FROM ExtraFee e JOIN e.apartment a " +
        "WHERE (:keyword IS NULL OR :keyword = '' " +
        "OR LOWER(e.title) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
        "OR LOWER(e.description) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
-       "OR cast(a.roomNumber as String) LIKE CONCAT('%', :keyword, '%'))")
+       "OR concat('', a.roomNumber) LIKE CONCAT('%', :keyword, '%'))")
 List<ExtraFeeSummary> searchGeneral(@Param("keyword") String keyword);
 
     List<ExtraFee> findByApartmentAndIsBilledFalse(Apartment apartment);

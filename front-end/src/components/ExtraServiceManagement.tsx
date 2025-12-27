@@ -1,97 +1,216 @@
-import { Search, Plus, Calendar, FileText, Trash2, Home, ArrowRight, X, Eye, Info } from 'lucide-react';
+import { Search, Plus, Calendar, Trash2, Home, ArrowRight, Eye } from 'lucide-react';
 import { Modal } from './Modal'; 
 import { Toaster, toast } from 'sonner';
 import { useState, useEffect, useCallback } from 'react';
-import React from 'react';
 
 export function ExtraServiceManagement() {
+    const API_BASE_URL = 'http://localhost:8081/api/v1/extrafee';
     const [searchTerm, setSearchTerm] = useState('');
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
     
     // STATE CHO CHI TIẾT
     const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
     const [selectedService, setSelectedService] = useState<any>(null);
+    const [isDetailLoading, setIsDetailLoading] = useState(false);
 
     const [isLoading, setIsLoading] = useState(false);
+    const [isSubmitting, setIsSubmitting] = useState(false);
     const [startDate, setStartDate] = useState('');
     const [endDate, setEndDate] = useState('');
-    const [services, setServices] = useState([
-        {
-            id: "SRV-001",
-            title: "Phí sử dụng Bể bơi tháng 12",
-            description: "Gói vé tháng cho gia đình 4 người, đăng ký từ ngày 01/12.",
-            quantity: "1",
-            unitPrice: "500000",
-            amount: "500000",
-            isBilled: true,
-            feeDate: "2023-12-01",
-            apartmentLabel: "A.101",
-            serviceType: "SWIMMING"
-        },
-        {
-            id: "SRV-002",
-            title: "Sửa chữa vòi hoa sen",
-            description: "Thay mới vòi hoa sen phòng tắm chính do bị rò rỉ nước. Bao gồm tiền công và vật tư.",
-            quantity: "1",
-            unitPrice: "250000",
-            amount: "250000",
-            isBilled: false,
-            feeDate: "2023-12-15",
-            apartmentLabel: "B.205",
-            serviceType: "REPAIR"
-        },
-        {
-            id: "SRV-003",
-            title: "Phí thẻ tập Gym - Anh Nam",
-            description: "Gia hạn thẻ tập Gym 3 tháng (giảm giá 10% cho cư dân).",
-            quantity: "3",
-            unitPrice: "300000",
-            amount: "900000",
-            isBilled: false,
-            feeDate: "2023-12-20",
-            apartmentLabel: "C.1502",
-            serviceType: "GYM"
-        },
-        {
-            id: "SRV-004",
-            title: "Vệ sinh máy lạnh",
-            description: "Bảo trì định kỳ 2 máy lạnh (Phòng khách và phòng ngủ).",
-            quantity: "2",
-            unitPrice: "150000",
-            amount: "300000",
-            isBilled: true,
-            feeDate: "2023-12-22",
-            apartmentLabel: "A.101",
-            serviceType: "REPAIR"
+    const [services, setServices] = useState<any[]>([]);
+
+    const [apartmentKeyword, setApartmentKeyword] = useState('');
+    const [apartmentOptions, setApartmentOptions] = useState<{ id: string; label: string }[]>([]);
+    const [isApartmentLoading, setIsApartmentLoading] = useState(false);
+
+    const [createTitle, setCreateTitle] = useState('');
+    const [createDescription, setCreateDescription] = useState('');
+    const [createQuantity, setCreateQuantity] = useState('');
+    const [createUnitPrice, setCreateUnitPrice] = useState('');
+    const [createFeeDate, setCreateFeeDate] = useState('');
+    const [createIsBilled, setCreateIsBilled] = useState(false);
+    const [selectedApartmentId, setSelectedApartmentId] = useState('');
+
+    const safeReadJson = async (response: Response) => {
+        try {
+            return await response.json();
+        } catch {
+            return null;
         }
-    ]);
+    };
+
+    const normalizeIsBilled = (value: any) => {
+        if (!value || typeof value !== 'object') return value;
+        const billed = (value as any).isBilled ?? (value as any).billed;
+        if (typeof billed === 'boolean') return { ...(value as any), isBilled: billed };
+        if (typeof billed === 'string') return { ...(value as any), isBilled: billed.toLowerCase() === 'true' };
+        if (typeof billed === 'number') return { ...(value as any), isBilled: billed !== 0 };
+        return value;
+    };
 
     const formatCurrency = (amount: any) => {
-        const val = Number(amount) || 0;
-        return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(val);
+        const raw = typeof amount === 'string' ? amount : String(amount ?? '');
+        const parsed = Number(raw.replace(/[^\d.-]/g, ''));
+        if (Number.isFinite(parsed)) {
+            return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(parsed);
+        }
+        return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(0);
+    };
+
+    const parseDateParts = (dateStr: string) => {
+        if (!dateStr) return null;
+        const [y, m, d] = dateStr.split('-').map((p) => Number(p));
+        if (!Number.isFinite(y) || !Number.isFinite(m) || !Number.isFinite(d)) return null;
+        return { year: y, month: m, day: d };
     };
 
     // Hàm mở modal chi tiết
-    const handleViewDetail = (service: any) => {
-        setSelectedService(service);
+    const handleViewDetail = async (service: any) => {
         setIsDetailModalOpen(true);
+        setIsDetailLoading(true);
+        setSelectedService(null);
+        try {
+            const response = await fetch(`${API_BASE_URL}/${service.id}`);
+            const res = await safeReadJson(response);
+            if (!response.ok) {
+                throw new Error((res as any)?.message || 'Không thể tải chi tiết khoản thu');
+            }
+            setSelectedService({ id: service.id, ...(normalizeIsBilled((res as any)?.data || {}) || {}) });
+        } catch (error) {
+            toast.error('Lỗi tải chi tiết', { description: (error as Error).message });
+            setIsDetailModalOpen(false);
+        } finally {
+            setIsDetailLoading(false);
+        }
     };
 
-    // Giả lập Fetch dữ liệu
-    const fetchExtraServices = useCallback(async () => {
+    const fetchExtraServices = useCallback(async (keyword: string) => {
         setIsLoading(true);
         try {
-            //const response = await fetch('http://localhost:8081/api/v1/accounting/extra-services');
-            //const res = await response.json();
-            //setServices(res.data || []);
+            const response = await fetch(`${API_BASE_URL}?keyword=${encodeURIComponent(keyword ?? '')}`);
+            const res = await safeReadJson(response);
+            if (!response.ok) {
+                throw new Error((res as any)?.message || 'Không thể tải danh sách dịch vụ phát sinh');
+            }
+            const rawList = (res as any)?.data;
+            setServices(Array.isArray(rawList) ? rawList.map(normalizeIsBilled) : []);
         } catch (error) {
-            console.error("Lỗi tải dữ liệu:", error);
+            toast.error('Lỗi tải dữ liệu', { description: (error as Error).message });
+            setServices([]);
         } finally {
             setIsLoading(false);
         }
     }, []);
 
-    useEffect(() => { fetchExtraServices(); }, [fetchExtraServices]);
+    useEffect(() => {
+        const t = setTimeout(() => {
+            fetchExtraServices(searchTerm);
+        }, 250);
+        return () => clearTimeout(t);
+    }, [fetchExtraServices, searchTerm]);
+
+    useEffect(() => {
+        if (!isCreateModalOpen) return;
+        const t = setTimeout(async () => {
+            setIsApartmentLoading(true);
+            try {
+                const response = await fetch(
+                    `http://localhost:8081/api/v1/apartments/dropdown?keyword=${encodeURIComponent(apartmentKeyword || '')}`
+                );
+                const res = await safeReadJson(response);
+                if (!response.ok) {
+                    throw new Error((res as any)?.message || 'Không thể tải danh sách căn hộ');
+                }
+                const options = (res as any)?.data;
+                setApartmentOptions(Array.isArray(options) ? options : []);
+            } catch (error) {
+                setApartmentOptions([]);
+            } finally {
+                setIsApartmentLoading(false);
+            }
+        }, 250);
+        return () => clearTimeout(t);
+    }, [apartmentKeyword, isCreateModalOpen]);
+
+    const resetCreateForm = () => {
+        setCreateTitle('');
+        setCreateDescription('');
+        setCreateQuantity('');
+        setCreateUnitPrice('');
+        setCreateFeeDate('');
+        setCreateIsBilled(false);
+        setApartmentKeyword('');
+        setApartmentOptions([]);
+        setSelectedApartmentId('');
+    };
+
+    const handleCreateExtraFee = async () => {
+        if (isSubmitting) return;
+
+        const dateParts = parseDateParts(createFeeDate);
+        const quantity = Number(createQuantity);
+        const unitPrice = Number(createUnitPrice);
+
+        if (!selectedApartmentId || !createTitle || !dateParts || !Number.isFinite(quantity) || !Number.isFinite(unitPrice)) {
+            toast.warning('Thiếu thông tin', { description: 'Vui lòng nhập đủ Căn hộ, Tiêu đề, Ngày, Số lượng, Đơn giá.' });
+            return;
+        }
+
+        setIsSubmitting(true);
+        const promise = new Promise(async (resolve, reject) => {
+            try {
+                const payload = {
+                    apartmentId: selectedApartmentId,
+                    title: createTitle,
+                    description: createDescription || null,
+                    quantity,
+                    unitPrice,
+                    year: dateParts.year,
+                    month: dateParts.month,
+                    day: dateParts.day,
+                    isBilled: createIsBilled,
+                };
+                const response = await fetch(API_BASE_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload),
+                });
+                const res = await safeReadJson(response);
+                if (!response.ok) {
+                    throw new Error((res as any)?.message || 'Không thể tạo khoản thu');
+                }
+                resolve((res as any)?.message || 'Tạo khoản thu thành công');
+            } catch (error) {
+                reject(error);
+            }
+        });
+
+        toast.promise(promise, {
+            loading: 'Đang tạo khoản thu...',
+            success: (m: any) => String(m),
+            error: (e: any) => (e as Error).message,
+        });
+
+        try {
+            await promise;
+            setIsCreateModalOpen(false);
+            resetCreateForm();
+            await fetchExtraServices(searchTerm);
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
+    const filteredServices = services
+        .filter((item: any) => {
+            if (!startDate && !endDate) return true;
+            const feeDate = String(item.feeDate || '');
+            if (!feeDate) return false;
+            if (startDate && feeDate < startDate) return false;
+            if (endDate && feeDate > endDate) return false;
+            return true;
+        })
+        .sort((a: any, b: any) => String(b.feeDate || '').localeCompare(String(a.feeDate || '')));
 
     return (
         <div className="space-y-6 p-2">
@@ -137,7 +256,20 @@ export function ExtraServiceManagement() {
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-50">
-                        {services.map((item: any) => (
+                        {isLoading ? (
+                            <tr>
+                                <td colSpan={4} className="px-6 py-8 text-center text-sm text-slate-500">
+                                    Đang tải dữ liệu...
+                                </td>
+                            </tr>
+                        ) : filteredServices.length === 0 ? (
+                            <tr>
+                                <td colSpan={4} className="px-6 py-8 text-center text-sm text-slate-500">
+                                    Không có dữ liệu
+                                </td>
+                            </tr>
+                        ) : (
+                        filteredServices.map((item: any) => (
                             <tr key={item.id} className="hover:bg-slate-50 transition-colors">
                                 <td className="px-6 py-4 font-bold text-slate-700">{item.apartmentLabel}</td>
                                 <td className="px-6 py-4 text-sm text-slate-600">{item.title}</td>
@@ -155,18 +287,146 @@ export function ExtraServiceManagement() {
                                     </button>
                                 </td>
                             </tr>
-                        ))}
+                        )))}
                     </tbody>
                 </table>
             </div>
 
+            <Modal
+                isOpen={isCreateModalOpen}
+                onClose={() => {
+                    setIsCreateModalOpen(false);
+                    resetCreateForm();
+                }}
+                title="Tạo khoản thu phát sinh"
+            >
+                <div className="p-6 space-y-5">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                            <label className="text-xs font-bold text-gray-500 uppercase tracking-widest">Căn hộ</label>
+                            <input
+                                type="text"
+                                value={apartmentKeyword}
+                                onChange={(e) => setApartmentKeyword(e.target.value)}
+                                placeholder="Nhập để tìm căn hộ..."
+                                className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-2xl outline-none font-medium"
+                            />
+                            <select
+                                value={selectedApartmentId}
+                                onChange={(e) => setSelectedApartmentId(e.target.value)}
+                                className="w-full px-4 py-3 bg-white border border-gray-200 rounded-2xl outline-none font-medium"
+                                disabled={isApartmentLoading}
+                            >
+                                <option value="">{isApartmentLoading ? 'Đang tải...' : 'Chọn căn hộ'}</option>
+                                {apartmentOptions.map((opt) => (
+                                    <option key={opt.id} value={opt.id}>
+                                        {opt.label}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+
+                        <div className="space-y-2">
+                            <label className="text-xs font-bold text-gray-500 uppercase tracking-widest">Ngày ghi nhận</label>
+                            <input
+                                type="date"
+                                value={createFeeDate}
+                                onChange={(e) => setCreateFeeDate(e.target.value)}
+                                className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-2xl outline-none font-medium"
+                            />
+                        </div>
+                    </div>
+
+                    <div className="space-y-2">
+                        <label className="text-xs font-bold text-gray-500 uppercase tracking-widest">Tiêu đề</label>
+                        <input
+                            type="text"
+                            value={createTitle}
+                            onChange={(e) => setCreateTitle(e.target.value)}
+                            placeholder="Ví dụ: Phí sửa chữa..."
+                            className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-2xl outline-none font-medium"
+                        />
+                    </div>
+
+                    <div className="space-y-2">
+                        <label className="text-xs font-bold text-gray-500 uppercase tracking-widest">Mô tả</label>
+                        <textarea
+                            value={createDescription}
+                            onChange={(e) => setCreateDescription(e.target.value)}
+                            rows={3}
+                            placeholder="Mô tả chi tiết (không bắt buộc)"
+                            className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-2xl outline-none font-medium resize-none"
+                        />
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                            <label className="text-xs font-bold text-gray-500 uppercase tracking-widest">Số lượng</label>
+                            <input
+                                type="number"
+                                value={createQuantity}
+                                onChange={(e) => setCreateQuantity(e.target.value)}
+                                placeholder="0"
+                                className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-2xl outline-none font-medium"
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <label className="text-xs font-bold text-gray-500 uppercase tracking-widest">Đơn giá (VND)</label>
+                            <input
+                                type="number"
+                                value={createUnitPrice}
+                                onChange={(e) => setCreateUnitPrice(e.target.value)}
+                                placeholder="0"
+                                className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-2xl outline-none font-medium"
+                            />
+                        </div>
+                    </div>
+
+                    <label className="flex items-center gap-3">
+                        <input
+                            type="checkbox"
+                            checked={createIsBilled}
+                            onChange={(e) => setCreateIsBilled(e.target.checked)}
+                            className="h-4 w-4"
+                        />
+                        <span className="text-sm font-medium text-gray-700">Đã lập hóa đơn</span>
+                    </label>
+
+                    <div className="pt-2 flex gap-3">
+                        <button
+                            onClick={() => {
+                                setIsCreateModalOpen(false);
+                                resetCreateForm();
+                            }}
+                            className="flex-1 py-3 rounded-2xl font-bold text-gray-500 hover:bg-gray-100 transition-all border border-gray-200"
+                            disabled={isSubmitting}
+                        >
+                            Hủy
+                        </button>
+                        <button
+                            onClick={handleCreateExtraFee}
+                            className="flex-1 py-3 rounded-2xl font-bold text-white shadow-lg transition-all"
+                            style={{ backgroundColor: '#6366f1' }}
+                            disabled={isSubmitting}
+                        >
+                            Tạo khoản thu
+                        </button>
+                    </div>
+                </div>
+            </Modal>
+
             {/* MODAL CHI TIẾT KHOẢN THU */}
             <Modal 
                 isOpen={isDetailModalOpen} 
-                onClose={() => setIsDetailModalOpen(false)} 
+                onClose={() => {
+                    setIsDetailModalOpen(false);
+                    setSelectedService(null);
+                }} 
                 title="Chi tiết dịch vụ phát sinh"
             >
-                {selectedService && (
+                {isDetailLoading ? (
+                    <div className="p-6 text-sm text-gray-600">Đang tải chi tiết...</div>
+                ) : selectedService ? (
                     <div className="p-6 space-y-6">
                         {/* Header chi tiết */}
                         <div className="flex items-center gap-4 p-4 bg-indigo-50 rounded-2xl">
@@ -235,7 +495,7 @@ export function ExtraServiceManagement() {
                             Đóng cửa sổ
                         </button>
                     </div>
-                )}
+                ) : null}
             </Modal>
         </div>
     );

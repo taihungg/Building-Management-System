@@ -22,8 +22,8 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 @Transactional
 public class ExtraFeeService {
-    ApartmentRepository apartmentRepository;
-    ExtraFeeRepository extraFeeRepository;
+    private final ApartmentRepository apartmentRepository;
+    private final ExtraFeeRepository extraFeeRepository;
 
     @SuppressWarnings("null")
     public ExtraFeeDetailDTO getExtraFeeDetail(UUID id){
