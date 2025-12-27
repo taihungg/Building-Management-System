@@ -77,6 +77,18 @@ export function AuthorityResidentManagement() {
     return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
   };
 
+  // Hàm chuyển đổi status enum sang tiếng Việt
+  const getStatusLabel = (status: string) => {
+    const statusMap: { [key: string]: string } = {
+      'PERMANENT_RESIDENCE': 'Thường trú',
+      'TEMPORARY_RESIDENCE': 'Tạm trú',
+      'ACCOMMODATION': 'Lưu trú',
+      'TEMPORARY_ABSENCE': 'Tạm vắng',
+      'INACTIVE': 'Không hoạt động'
+    };
+    return statusMap[status] || status;
+  };
+
   const handleExportExcel = () => {
     try {
       const exportData = residents.map((resident) => ({
@@ -208,7 +220,7 @@ export function AuthorityResidentManagement() {
                     <div className="flex items-center gap-2 overflow-hidden">
                       <div className={`w-2 h-2 rounded-full flex-shrink-0 ${resident.status === 'INACTIVE' ? 'bg-gray-300' : 'bg-green-500'}`} />
                       <span className="font-medium text-gray-600 truncate">
-                        {resident.status || 'N/A'}
+                        {getStatusLabel(resident.status) || 'N/A'}
                       </span>
                     </div>
                   </td>
@@ -307,7 +319,7 @@ export function AuthorityResidentManagement() {
                     <div>
                         <p className="text-xs font-bold text-gray-400 mb-3">Trạng thái cư trú</p>
                         <span className="inline-flex px-4 py-2 rounded-xl text-sm font-bold border shadow-sm bg-gray-100 text-gray-800 border-gray-200">
-                            {selectedResident.status || 'N/A'}
+                            {getStatusLabel(selectedResident.status) || 'N/A'}
                         </span>
                     </div>
                   </div>

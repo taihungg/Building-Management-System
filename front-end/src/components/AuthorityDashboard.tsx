@@ -62,6 +62,18 @@ export function AuthorityDashboard() {
     fetchIssues();
   }, [fetchIssues]);
 
+  // Hàm chuyển đổi status enum sang tiếng Việt
+  const getStatusLabel = (status: string) => {
+    const statusMap: { [key: string]: string } = {
+      'PERMANENT_RESIDENCE': 'Thường trú',
+      'TEMPORARY_RESIDENCE': 'Tạm trú',
+      'ACCOMMODATION': 'Lưu trú',
+      'TEMPORARY_ABSENCE': 'Tạm vắng',
+      'INACTIVE': 'Không hoạt động'
+    };
+    return statusMap[status] || status;
+  };
+
   // Data cho PieChart
   const lostItemStatusData = [
     { name: 'Đã xử lý', value: issues.filter(e => e.status === 'PROCESSED').length, color: '#10B981' },
@@ -186,11 +198,11 @@ export function AuthorityDashboard() {
               <YAxis />
               <Tooltip />
               <Legend />
-              <Bar dataKey="PERMANENT_RESIDENCE" stackId="a" fill="#10B981" name="PERMANENT_RESIDENCE" radius={[4, 4, 0, 0]} />
-              <Bar dataKey="TEMPORARY_RESIDENCE" stackId="a" fill="#F59E0B" name="TEMPORARY_RESIDENCE" radius={[4, 4, 0, 0]} />
-              <Bar dataKey="ACCOMMODATION" stackId="a" fill="#3B82F6" name="ACCOMMODATION" radius={[4, 4, 0, 0]} />
-              <Bar dataKey="TEMPORARY_ABSENCE" stackId="a" fill="#FBBF24" name="TEMPORARY_ABSENCE" radius={[4, 4, 0, 0]} />
-              <Bar dataKey="INACTIVE" stackId="a" fill="#9CA3AF" name="INACTIVE" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="PERMANENT_RESIDENCE" stackId="a" fill="#10B981" name="Thường trú" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="TEMPORARY_RESIDENCE" stackId="a" fill="#F59E0B" name="Tạm trú" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="ACCOMMODATION" stackId="a" fill="#3B82F6" name="Lưu trú" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="TEMPORARY_ABSENCE" stackId="a" fill="#FBBF24" name="Tạm vắng" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="INACTIVE" stackId="a" fill="#9CA3AF" name="Không hoạt động" radius={[4, 4, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </div>
