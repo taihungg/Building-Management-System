@@ -9,6 +9,6 @@ public interface ExtraFeeSummary {
     String getTitle();
     BigDecimal getAmount();
     LocalDate getFeeDate();
-    boolean isBilled();
+    boolean getIsBilled();
     String getApartmentLabel();
 }
