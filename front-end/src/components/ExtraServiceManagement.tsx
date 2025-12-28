@@ -416,7 +416,8 @@ export function ExtraServiceManagement() {
                         <button
                             type="button"
                             onClick={submitCreate}
-                            className="flex-1 py-3 rounded-xl bg-gray-900 text-white font-bold"
+                            className="flex-1 py-3 rounded-xl font-bold"
+                            style={{ backgroundColor: '#111827', color: 'white' }}
                             disabled={isCreateSubmitting}
                         >
                             {isCreateSubmitting ? 'Đang tạo...' : 'Tạo khoản thu'}

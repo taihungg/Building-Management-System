@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'; 
+import { useState, useEffect, useCallback, useRef } from 'react'; 
 import { Plus, Bell, AlertCircle, Clock, Loader2, ListChecks } from 'lucide-react'; // Đã thêm ListChecks
 import { Toaster, toast } from 'sonner';
 import React from 'react';
@@ -18,12 +18,10 @@ type AnnouncementItem = {
 
 type BuildingOption = { id: string; label: string; value: string };
 type ApartmentOption = { id: string; label: string };
-type StaffOption = { id: string; label: string };
 
 type NewAnnouncementState = {
   title: string;
   message: string;
-  senderId: string;
   targetType: TargetType;
   buildingId: string;
   floor: number;
@@ -37,9 +35,6 @@ type ButtonProps = {
   disabled?: boolean;
   type?: 'button' | 'submit' | 'reset';
 };
-
-const UUID_REGEX =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 // Định nghĩa các biểu tượng và màu sắc
 const typeColors = {
@@ -75,7 +70,10 @@ const TARGET_TYPES = [
 
 
 export function Notifications() { 
-  const DEFAULT_SENDER_ID = 'a2ca2e25-4443-496b-a457-46539af501cc'; 
+  const DEFAULT_SENDER_ID = '46d6b17d-d407-4218-85ae-fb8e033816f4';
+  const ANNOUNCEMENTS_FETCH_TIMEOUT_MS = 30000;
+  const ANNOUNCEMENT_CREATE_TIMEOUT_MS = 60000;
+  const sendPollTokenRef = useRef(0);
   
   // State chung
   const [announcements, setAnnouncements] = useState<AnnouncementItem[]>([]);
@@ -88,9 +86,6 @@ export function Notifications() {
   const [isBuildingsLoading, setIsBuildingsLoading] = useState(false);
   const [buildingKeyword, setBuildingKeyword] = useState('');
 
-  // State cho Staff (sender) - lấy từ lịch sử thông báo đã gửi
-  const [staffs, setStaffs] = useState<StaffOption[]>([]);
-
   // State cho Căn hộ (gửi theo danh sách apartmentIds)
   const [apartments, setApartments] = useState<ApartmentOption[]>([]);
   const [isApartmentsLoading, setIsApartmentsLoading] = useState(false);
@@ -101,7 +96,6 @@ export function Notifications() {
   const [newAnnouncement, setNewAnnouncement] = useState<NewAnnouncementState>({
     title: '',
     message: '',
-    senderId: DEFAULT_SENDER_ID, 
     targetType: 'ALL', 
     buildingId: '', 
     floor: 0,
@@ -159,18 +153,25 @@ export function Notifications() {
   }, []);
 
   // --- HÀM TẢI DỮ LIỆU LỊCH SỬ THÔNG BÁO ---
-  const fetchAnnouncements = useCallback(async () => {
-    setIsLoading(true);
-    setError(null);
+  const fetchAnnouncements = useCallback(async (opts?: { silent?: boolean }) => {
+    const silent = opts?.silent ?? false;
+    if (!silent) {
+        setIsLoading(true);
+        setError(null);
+    }
+    const controller = new AbortController();
+    const timeoutId = window.setTimeout(() => controller.abort(), ANNOUNCEMENTS_FETCH_TIMEOUT_MS);
     try {
-        const response = await fetch('http://localhost:8081/api/v1/announcements/staff/all?page=0&size=1000&sort=createdDate,desc'); 
+        const response = await fetch('http://localhost:8081/api/announcements/staff', {
+            signal: controller.signal,
+        }); 
         
         if (!response.ok) {
             throw new Error("Không thể lấy danh sách thông báo đã gửi.");
         }
         
-        const rawData = await response.json();
-        const rawAnnouncements = rawData?.content || [];
+        const json = await response.json().catch(() => ({} as any));
+        const rawAnnouncements = Array.isArray(json?.data) ? json.data : [];
 
         const parseLocalDateTime = (value: any): Date | null => {
             if (!value) return null;
@@ -199,17 +200,6 @@ export function Notifications() {
             return null;
         };
         
-        const senderMap = new Map<string, string>();
-        for (const a of rawAnnouncements) {
-            const id = a?.sender?.id;
-            if (id) {
-                const label = a?.sender?.fullName ? String(a.sender.fullName) : String(id);
-                senderMap.set(String(id), label);
-            }
-        }
-        const senderOptions: StaffOption[] = Array.from(senderMap.entries()).map(([id, label]) => ({ id, label }));
-        setStaffs(senderOptions);
-
         const transformedData: AnnouncementItem[] = rawAnnouncements.map((announcement: any) => {
             const type = 'GENERAL'; 
             const Icon = typeIcons[type];
@@ -223,7 +213,7 @@ export function Notifications() {
                 id: String(announcement.id ?? ''),
                 title: String(announcement.title ?? ''),
                 message: String(announcement.message ?? ''), 
-                sender: announcement.sender?.fullName || 'BQL Chung cư',
+                sender: String(announcement.senderName ?? 'BQL Chung cư'),
                 targetDetail: String(announcement.targetDetail ?? ''),
                 time: timeFormatted,
                 icon: Icon,
@@ -231,13 +221,25 @@ export function Notifications() {
         });
 
         setAnnouncements(transformedData);
+        return transformedData;
         
     } catch (err: unknown) {
-        const message = err instanceof Error ? err.message : 'Không thể tải lịch sử thông báo';
-        setError(message);
-        toast.error("Lỗi tải lịch sử thông báo", { description: message });
+        const message =
+            err instanceof DOMException && err.name === 'AbortError'
+                ? 'Kết nối quá thời gian. Vui lòng thử lại.'
+                : err instanceof Error
+                    ? err.message
+                    : 'Không thể tải lịch sử thông báo';
+        if (!silent) {
+            setError(message);
+            toast.error("Lỗi tải lịch sử thông báo", { description: message });
+        }
+        throw err;
     } finally {
-        setIsLoading(false);
+        window.clearTimeout(timeoutId);
+        if (!silent) {
+            setIsLoading(false);
+        }
     }
   }, []);
 
@@ -258,12 +260,6 @@ export function Notifications() {
         return;
     }
 
-    const senderId = newAnnouncement.senderId.trim();
-    if (!UUID_REGEX.test(senderId)) {
-        toast.warning("SenderId không hợp lệ (cần UUID).");
-        return;
-    }
-    
     if (newAnnouncement.targetType === 'APARTMENTS' && newAnnouncement.apartmentIds.length === 0) {
         toast.warning("Vui lòng chọn ít nhất một căn hộ.");
         return;
@@ -286,7 +282,7 @@ export function Notifications() {
     const payload: any = {
         title,
         message,
-        senderId,
+        senderId: DEFAULT_SENDER_ID,
         targetType: mappedTargetType,
         buildingId: null,
         floors: null,
@@ -304,59 +300,98 @@ export function Notifications() {
     }
 
     const toastId = toast.loading('Đang gửi thông báo...');
-    const controller = new AbortController();
-    const timeoutId = window.setTimeout(() => controller.abort(), 15000);
+    const knownAnnouncementIds = new Set(announcements.map((a) => a.id));
+    const pollToken = ++sendPollTokenRef.current;
 
-    try {
-        const response = await fetch('http://localhost:8081/api/v1/announcements/staff/create', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(payload),
-            signal: controller.signal,
-        });
-
-        if (!response.ok) {
-            let detail = '';
-            const contentType = response.headers.get('content-type') || '';
-            if (contentType.includes('application/json')) {
-                const errorData = await response.json().catch(() => ({} as any));
-                detail = String(errorData?.message ?? '');
-            } else {
-                detail = await response.text().catch(() => '');
-            }
-            const message = detail?.trim() ? detail.trim() : `Lỗi: ${response.status} khi gửi thông báo.`;
-            throw new Error(message);
-        }
-
-        await fetchAnnouncements();
-
+    const closeAndResetForm = () => {
         setIsCreateModalOpen(false);
         setNewAnnouncement({
             title: '',
             message: '',
-            senderId: DEFAULT_SENDER_ID,
             targetType: 'ALL',
             buildingId: '',
             floor: 0,
             apartmentIds: [],
         });
-
-        toast.success('Thông báo đã được gửi thành công!', { id: toastId });
-    } catch (err: unknown) {
-        const message =
-            err instanceof DOMException && err.name === 'AbortError'
-                ? 'Kết nối quá thời gian. Vui lòng thử lại.'
-                : err instanceof Error
-                    ? err.message
-                    : 'Không thể gửi thông báo.';
-
-        toast.error('Gửi thông báo thất bại', { id: toastId, description: message });
-    } finally {
-        window.clearTimeout(timeoutId);
         setIsSubmitting(false);
-    }
+    };
+
+    const startConfirmPoll = () => {
+        toast.loading('Đang gửi thông báo...', { id: toastId });
+        (async () => {
+            const maxAttempts = 30;
+            for (let attempt = 0; attempt < maxAttempts; attempt++) {
+                if (sendPollTokenRef.current !== pollToken) return;
+                await new Promise((r) => window.setTimeout(r, 2000));
+                try {
+                    const latest = await fetchAnnouncements({ silent: true });
+                    if (sendPollTokenRef.current !== pollToken) return;
+                    const found = latest.some((a) => a.title === title && a.message === message && !knownAnnouncementIds.has(a.id));
+                    if (found) {
+                        toast.success('Thông báo đã được gửi xong!', { id: toastId });
+                        return;
+                    }
+                } catch {
+                }
+            }
+            toast.error('Gửi thông báo thất bại', { id: toastId, description: 'Không xác nhận được thông báo mới sau khi gửi.' });
+        })();
+    };
+
+    closeAndResetForm();
+
+    void (async () => {
+        const controller = new AbortController();
+        const requestTimeoutMs = mappedTargetType === 'ALL' ? 240000 : ANNOUNCEMENT_CREATE_TIMEOUT_MS;
+        const timeoutId = window.setTimeout(() => controller.abort(), requestTimeoutMs);
+
+        try {
+            const response = await fetch('http://localhost:8081/api/announcements', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(payload),
+                signal: controller.signal,
+            });
+
+            if (!response.ok) {
+                let detail = '';
+                const contentType = response.headers.get('content-type') || '';
+                if (contentType.includes('application/json')) {
+                    const errorData = await response.json().catch(() => ({} as any));
+                    detail = String(errorData?.message ?? errorData?.error ?? '');
+                } else {
+                    detail = await response.text().catch(() => '');
+                }
+                const errorMessage = detail?.trim() ? detail.trim() : `Lỗi: ${response.status} khi gửi thông báo.`;
+
+                if ([502, 503, 504].includes(response.status)) {
+                    startConfirmPoll();
+                    return;
+                }
+
+                toast.error('Gửi thông báo thất bại', { id: toastId, description: errorMessage });
+                return;
+            }
+
+            toast.success('Thông báo đã được gửi xong!', { id: toastId });
+            fetchAnnouncements({ silent: true }).catch(() => {});
+        } catch (err: unknown) {
+            const isTimeout = err instanceof DOMException && err.name === 'AbortError';
+            const isNetworkError = err instanceof TypeError;
+
+            if (isTimeout || isNetworkError) {
+                startConfirmPoll();
+                return;
+            }
+
+            const msg = err instanceof Error ? err.message : 'Không thể gửi thông báo.';
+            toast.error('Gửi thông báo thất bại', { id: toastId, description: msg });
+        } finally {
+            window.clearTimeout(timeoutId);
+        }
+    })();
   };
 
   const handleApartmentSelect = (apartmentId: string) => {
@@ -378,14 +413,11 @@ export function Notifications() {
   const totalSentAnnouncements = announcements.length;
                        
   // Handler mở Modal (và tải buildings + residents nếu cần)
-  const handleOpenCreateModal = () => {
+  const handleOpenCreateModal = async () => {
       setBuildingKeyword('');
       setApartmentKeyword('');
       setBuildings([]);
       setApartments([]);
-      if (staffs.length > 0 && !UUID_REGEX.test(newAnnouncement.senderId.trim())) {
-          setNewAnnouncement((prev) => ({ ...prev, senderId: staffs[0].id }));
-      }
       setIsCreateModalOpen(true);
   };
   
@@ -396,7 +428,6 @@ export function Notifications() {
       setNewAnnouncement({
           title: '',
           message: '',
-          senderId: DEFAULT_SENDER_ID,
           targetType: 'ALL', 
           buildingId: '',
           floor: 0,
@@ -524,33 +555,6 @@ export function Notifications() {
                 ></textarea>
             </div>
 
-            <div className="space-y-1">
-                <label htmlFor="senderId" className="text-sm font-medium text-slate-700">Nhân viên gửi</label>
-                {staffs.length === 0 ? (
-                    <input
-                        id="senderId"
-                        type="text"
-                        value={newAnnouncement.senderId}
-                        onChange={(e) => setNewAnnouncement({ ...newAnnouncement, senderId: e.target.value })}
-                        placeholder="Nhập UUID nhân viên gửi..."
-                        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
-                    />
-                ) : (
-                    <select
-                        id="senderId"
-                        value={newAnnouncement.senderId}
-                        onChange={(e) => setNewAnnouncement({ ...newAnnouncement, senderId: e.target.value })}
-                        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
-                    >
-                        {staffs.map((s) => (
-                            <option key={s.id} value={s.id}>
-                                {s.label || s.id}
-                            </option>
-                        ))}
-                    </select>
-                )}
-            </div>
-            
             <hr/>
             
             {/* Cấu hình Người nhận */}

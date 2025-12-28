@@ -118,7 +118,7 @@ export function ApartmentManagement() {
         const jsonOwner = await resOwner.json();
         setPotentialOwners(jsonOwner.data || []);
 
-        const resBuild = await fetch('http://localhost:8081/api/v1/buildings/dropdown?keyword=C');
+        const resBuild = await fetch(`http://localhost:8081/api/v1/buildings/dropdown?keyword=${encodeURIComponent('%')}`);
         if (resBuild.ok) {
            const jsonBuild = await resBuild.json();
            setBuildingList(jsonBuild.data || []);
@@ -385,7 +385,12 @@ export function ApartmentManagement() {
           <p className="text-gray-600 mt-1">Quản lý tất cả các đơn vị căn hộ và chi tiết của chúng</p>
         </div>
         <Button 
-          onClick={() => setIsAddUnitOpen(true)}
+          onClick={() => {
+            setIsAddUnitOpen(true);
+            if (buildingList.length === 0 || potentialOwners.length === 0) {
+              fetchFormDependencies();
+            }
+          }}
           className="flex items-center gap-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:shadow-xl transition-all rounded-full px-6"
         >
           <Plus className="w-5 h-5" />
@@ -569,16 +574,42 @@ export function ApartmentManagement() {
                     {/* Building */}
                     <div className="col-span-3">
                         <Label className="mb-2 block font-medium text-gray-700">Tòa Nhà <span className="text-red-500">*</span></Label>
-                        <Select value={newBuildingId} onValueChange={setNewBuildingId}>
-                            <SelectTrigger className="h-10 border-blue-300 focus:ring-2 focus:ring-blue-500">
-                                <SelectValue placeholder="Chọn Tòa Nhà" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                {buildingList.map(b => (
-                                    <SelectItem key={b.id} value={b.id}>{b.label}</SelectItem>
+                        <div className="relative w-full">
+                            <select
+                                value={newBuildingId || "none"}
+                                onChange={(e) => setNewBuildingId(e.target.value === "none" ? "" : e.target.value)}
+                                className="
+                                    appearance-none
+                                    bg-white
+                                    border border-blue-300
+                                    text-gray-700
+                                    py-2
+                                    pl-4
+                                    pr-10
+                                    rounded-lg
+                                    shadow-sm
+                                    font-medium
+                                    w-full
+                                    h-10
+                                    hover:border-blue-400
+                                    focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500
+                                    transition-all
+                                    cursor-pointer
+                                "
+                            >
+                                <option value="none" className="font-semibold text-gray-500">
+                                    Chọn Tòa Nhà
+                                </option>
+                                {buildingList.map((b) => (
+                                    <option key={b.id} value={b.id}>
+                                        {b.label}
+                                    </option>
                                 ))}
-                            </SelectContent>
-                        </Select>
+                            </select>
+                            <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-gray-400">
+                                ▾
+                            </span>
+                        </div>
                     </div>
                     
                     {/* Room Number */}
