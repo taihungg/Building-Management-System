@@ -1,9 +1,10 @@
 import { useState, useEffect, useCallback } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate } from 'react-router-dom'; 
 import React from 'react';
+import { Toaster, toast } from 'sonner';
 
 // === Imports Components ===
-// Admin Components
+// management
 import { Sidebar } from './components/Sidebar';
 import { Header } from './components/Header';
 import { Dashboard } from './components/Dashboard';
@@ -14,8 +15,10 @@ import { ServiceManagement } from './components/ServiceManagement';
 import { Notifications } from './components/Notifications';
 import { Profile } from './components/Profile';
 import { Settings } from './components/Settings';
+import { ExtraServiceManagement } from './components/ExtraServiceManagement';
+import { VoluntaryContribution } from './components/VoluntaryContribution';
 
-// Resident Components
+// Resident
 import { ResidentSidebar } from './components/ResidentSidebar';
 import { ResidentHeader } from './components/ResidentHeader';
 import { ResidentDashboard } from './components/ResidentDashboard';
@@ -25,92 +28,71 @@ import { BuildingRules } from './components/BuildingRules';
 import { ResidentProfile } from './components/ResidentProfile';
 import { ResidentSettings } from './components/ResidentSettings';
 
-// Accounting Components
+// Accounting
 import { AccountingSidebar } from './components/AccountingSidebar';
 import { AccountingHeader } from './components/AccountingHeader';
 import { AccountingDashboard } from './components/AccountingDashboard';
 import { DebtManagement } from './components/DebtManagement';
 import { InvoiceCreation } from './components/InvoiceCreation';
 import { AccountingProfile } from './components/AccountingProfile';
+import { AccountingVoluntaryContribution } from './components/AccountingVoluntaryContribution';
 
-// Authority Components (Components bạn cung cấp)
+// Authority
 import { AuthoritySidebar } from './components/AuthoritySidebar';
 import { AuthorityHeader } from './components/AuthorityHeader';
 import { AuthorityDashboard } from './components/AuthorityDashboard';
 import { AuthorityResidentManagement } from './components/AuthorityResidentManagement';
 import { AuthorityAnnouncements } from './components/AuthorityAnnouncements';
 import { AuthorityProfile } from './components/AuthorityProfile';
-import { Login } from './components/Login'; 
-import { ExtraServiceManagement } from './components/ExtraServiceManagement';
-import { VoluntaryContribution } from './components/VoluntaryContribution';
-import { AccountingVoluntaryContribution } from './components/AccountingVoluntaryContribution';
 
+// Auth
+import { Login } from './components/Login'; 
 
 // === Định nghĩa kiểu và Maps ===
-type UserRole = 'admin' | 'resident' | 'accounting' | 'authority' | null; 
+type UserRole = 'management' | 'resident' | 'accounting' | 'authority' | null; 
 type AuthPage = 'login' | 'signup' | 'forgot';
 
-// Map: Tên Tab -> Đường dẫn URL 
-const adminTabToPath: Record<string, string> = {
-  'dashboard': '/admin/dashboard',
-  'residents': '/admin/residents',
-  'apartments': '/admin/apartments',
-  'bills': '/admin/bills',
-  'services': '/admin/services',
-  'notifications': '/admin/notifications',
-  'profile': '/admin/profile',
-  'settings': '/admin/settings',
-  'extra-services': '/admin/extra-services', 
-  'voluntary-contributions': '/admin/voluntary-contributions'
+// Bộ dịch vai trò từ Backend (In hoa) sang Frontend (In thường)
+const ROLE_MAP: Record<string, UserRole> = {
+  'MANAGEMENT': 'management',
+  'RESIDENT': 'resident',
+  'ACCOUNTANT': 'accounting',
+  'STATE': 'authority'
+};
+
+const managementTabToPath: Record<string, string> = {
+  'dashboard': '/management/dashboard', 'residents': '/management/residents', 'apartments': '/management/apartments',
+  'bills': '/management/bills', 'services': '/management/services', 'notifications': '/management/notifications',
+  'profile': '/management/profile', 'settings': '/management/settings', 'extra-services': '/management/extra-services', 
+  'voluntary-contributions': '/management/voluntary-contributions'
 };
 
 const residentTabToPath: Record<string, string> = {
-  'resident-dashboard': '/resident/dashboard',
-  'resident-announcements': '/resident/announcements',
-  'resident-bills': '/resident/invoice',
-  'building-rules': '/resident/rules',
-  'profile': '/resident/profile',
-  'settings': '/resident/settings',
+  'resident-dashboard': '/resident/dashboard', 'resident-announcements': '/resident/announcements',
+  'resident-bills': '/resident/invoice', 'building-rules': '/resident/rules',
+  'profile': '/resident/profile', 'settings': '/resident/settings',
 };
 
 const accountingTabToPath: Record<string, string> = {
-  'accounting-dashboard': '/accounting/dashboard',
-  'debt-management': '/accounting/debt',
-  'invoice-creation': '/accounting/invoice',
-  'profile': '/accounting/profile',
-  'settings': '/accounting/settings',
-  'accounting-voluntary-contribution': '/accounting/voluntary-contribution'
+  'accounting-dashboard': '/accounting/dashboard', 'debt-management': '/accounting/debt',
+  'invoice-creation': '/accounting/invoice', 'profile': '/accounting/profile',
+  'settings': '/accounting/settings', 'accounting-voluntary-contribution': '/accounting/voluntary-contribution'
 };
 
-// ✅ MAPS CHO VAI TRÒ AUTHORITY
 const authorityTabToPath: Record<string, string> = {
-  'authority-dashboard': '/authority/dashboard',
-  'authority-residents': '/authority/residents',
-  'authority-announcements': '/authority/announcements',
-  'profile': '/authority/profile',
-  'settings': '/authority/settings',
+  'authority-dashboard': '/authority/dashboard', 'authority-residents': '/authority/residents',
+  'authority-announcements': '/authority/announcements', 'profile': '/authority/profile', 'settings': '/authority/settings',
 };
 
-// Map: Đường dẫn URL -> Tên Tab 
-const adminPathToTab: Record<string, string> = Object.fromEntries(
-  Object.entries(adminTabToPath).map(([tab, path]) => [path, tab])
-);
-const residentPathToTab: Record<string, string> = Object.fromEntries(
-  Object.entries(residentTabToPath).map(([tab, path]) => [path, tab])
-);
-const accountingPathToTab: Record<string, string> = Object.fromEntries(
-  Object.entries(accountingTabToPath).map(([tab, path]) => [path, tab])
-);
-// ✅ PATHS CHO VAI TRÒ AUTHORITY
-const authorityPathToTab: Record<string, string> = Object.fromEntries(
-  Object.entries(authorityTabToPath).map(([tab, path]) => [path, tab])
-);
-
+// Maps ngược để sync URL
+const managementPathToTab = Object.fromEntries(Object.entries(managementTabToPath).map(([t, p]) => [p, t]));
+const residentPathToTab = Object.fromEntries(Object.entries(residentTabToPath).map(([t, p]) => [p, t]));
+const accountingPathToTab = Object.fromEntries(Object.entries(accountingTabToPath).map(([t, p]) => [p, t]));
+const authorityPathToTab = Object.fromEntries(Object.entries(authorityTabToPath).map(([t, p]) => [p, t]));
 
 // =================================================================
-// HÀM LAYOUT VÀ ROUTE CHO TỪNG VAI TRÒ
+// LAYOUT CHUNG
 // =================================================================
-
 const MainLayout = ({ sidebar, header, routes }: { sidebar: JSX.Element, header: JSX.Element, routes: JSX.Element }) => (
     <div className="flex h-screen bg-gray-50">
         {sidebar}
@@ -128,352 +110,173 @@ const MainLayout = ({ sidebar, header, routes }: { sidebar: JSX.Element, header:
     </div>
 );
 
-// Admin Routes (Giữ nguyên)
-const adminRoutes = (
-    <>
-        <Route path="/" element={<Navigate to="dashboard" replace />} />
-        <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="/residents" element={<ResidentManagement />} />
-        <Route path="/apartments" element={<ApartmentManagement />} />
-        <Route path="/bills" element={<BillManagement />} />
-        <Route path="/services" element={<ServiceManagement />} />
-        <Route path="/notifications" element={<Notifications />} />
-        <Route path="/profile" element={<Profile />} />
-        <Route path="/settings" element={<Settings />} />
-        <Route path="/extra-services" element={<ExtraServiceManagement />} />
-        <Route path="/voluntary-contributions" element ={<VoluntaryContribution/>} />
-    </>
-);
-
-const residentRoutes = (
-    <>
-        <Route path="/" element={<Navigate to="dashboard" replace />} />
-        <Route path="/dashboard" element={<ResidentDashboard onNavigate={(page) => { console.log("Navigate to", page); }} />} />
-        <Route path="/announcements" element={<ResidentAnnouncements />} />
-        <Route path="/invoice" element={<ResidentBills />} />
-        <Route path="/rules" element={<BuildingRules />} />
-        <Route path="/profile" element={<ResidentProfile />} />
-        <Route path="/settings" element={<ResidentSettings />} />
-    </>
-);
-
-const accountingRoutes = (
-    <>
-        <Route path="/" element={<Navigate to="dashboard" replace />} />
-        <Route path="/dashboard" element={<AccountingDashboard />} />
-        <Route path="/debt" element={<DebtManagement />} />
-        <Route path="/invoice" element={<InvoiceCreation />} />
-        <Route path="/profile" element={<AccountingProfile />} />
-        <Route path="/settings" element={<Settings />} />
-        <Route path = "/voluntary-contribution" element ={<AccountingVoluntaryContribution/>}/>
-    </>
-);
-
-const authorityRoutes = (
-    <>
-        <Route path="/" element={<Navigate to="dashboard" replace />} />
-        <Route path="/dashboard" element={<AuthorityDashboard />} />
-        <Route path="/residents" element={<AuthorityResidentManagement />} />
-        <Route path="/announcements" element={<AuthorityAnnouncements />} />
-        <Route path="/profile" element={<AuthorityProfile />} />
-        <Route path="/settings" element={<Settings />} /> {/* Dùng Settings chung */}
-    </>
-);
-
-
 // =================================================================
 // APP CONTENT
 // =================================================================
-
 function AppContent() {
     const navigate = useNavigate(); 
-    
-    // States
     const [activeTab, setActiveTab] = useState('dashboard'); 
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     const [isAuthenticated, setIsAuthenticated] = useState(false);
     const [userRole, setUserRole] = useState<UserRole>(null); 
     const [authPage, setAuthPage] = useState<AuthPage>('login');
 
-    
-    // Hàm đẩy URL mới khi click vào tab
+    // 1. Khôi phục phiên đăng nhập khi F5
+    useEffect(() => {
+        const savedRole = localStorage.getItem('user_role');
+        if (savedRole && ROLE_MAP[savedRole]) {
+            setUserRole(ROLE_MAP[savedRole]);
+            setIsAuthenticated(true);
+        }
+    }, []);
+
     const pushPathForTab = useCallback((tab: string, role: UserRole) => {
         let path: string | undefined;
-        if (role === 'admin') {
-            path = adminTabToPath[tab];
-        } else if (role === 'resident') {
-            path = residentTabToPath[tab];
-        } else if (role === 'accounting') {
-            path = accountingTabToPath[tab];
-        } else if (role === 'authority') { // ✅ authority
-            path = authorityTabToPath[tab];
-        }
+        if (role === 'management') path = managementTabToPath[tab];
+        else if (role === 'resident') path = residentTabToPath[tab];
+        else if (role === 'accounting') path = accountingTabToPath[tab];
+        else if (role === 'authority') path = authorityTabToPath[tab];
         
-        if (path && path !== window.location.pathname) {
-            navigate(path); 
-        }
+        if (path && path !== window.location.pathname) navigate(path); 
     }, [navigate]); 
 
-    // Hàm xử lý khi click vào Sidebar item
     const handleSetActiveTab = useCallback((tab: string) => {
         setActiveTab(tab);
         pushPathForTab(tab, userRole);
     }, [userRole, pushPathForTab]);
 
-    // Hàm xử lý Login
-    const handleLogin = (role: UserRole) => {
-        setUserRole(role);
-        setIsAuthenticated(true);
-        
-        let initialTab: string;
-        let initialPath: string;
-        
-        if (role === 'resident') {
-            initialTab = 'resident-dashboard';
-            initialPath = residentTabToPath[initialTab];
-        } else if (role === 'accounting') {
-            initialTab = 'accounting-dashboard';
-            initialPath = accountingTabToPath[initialTab];
-        } else if (role === 'authority') { // ✅ authority
-            initialTab = 'authority-dashboard';
-            initialPath = authorityTabToPath[initialTab];
-        } else { // admin
-            initialTab = 'dashboard';
-            initialPath = adminTabToPath[initialTab];
+    // 2. Xử lý Login từ dữ liệu API thực tế
+    const handleLogin = (data: { role: string; accountId: string; personId: string }) => {
+        const mappedRole = ROLE_MAP[data.role];
+        if (!mappedRole) {
+            toast.error("Vai trò người dùng không hợp lệ");
+            return;
         }
 
-        setActiveTab(initialTab);
+        setUserRole(mappedRole);
+        setIsAuthenticated(true);
+        
+        let initialPath = '';
+        if (mappedRole === 'resident') initialPath = residentTabToPath['resident-dashboard'];
+        else if (mappedRole === 'accounting') initialPath = accountingTabToPath['accounting-dashboard'];
+        else if (mappedRole === 'authority') initialPath = authorityTabToPath['authority-dashboard'];
+        else initialPath = managementTabToPath['dashboard'];
+
         navigate(initialPath, { replace: true });
     };
 
     const handleLogout = () => {
+        localStorage.clear();
         setIsAuthenticated(false);
         setUserRole(null);
-        setActiveTab('dashboard'); 
         navigate('/login'); 
-        setAuthPage('login');
     };
-    
 
-    // 2. Sync tab and auth page with browser history
+    // 3. Đồng bộ URL và Tab
     useEffect(() => {
-        const syncStateFromPath = () => {
-            const path = window.location.pathname;
-            
-            // --- Xử lý trang Auth ---
-            if (!isAuthenticated) {
-                // ... (Auth page logic) ...
-                if (path === '/signup') setAuthPage('signup');
-                else if (path === '/forgot') setAuthPage('forgot');
-                else if (path !== '/login' && path !== '/') {
-                    setAuthPage('login');
-                    navigate('/login', { replace: true }); 
-                } else {
-                    setAuthPage('login');
-                }
-                return;
-            }
-            
-            // --- Xử lý trang chính (Authenticated) ---
-            let tab = '';
-            let base = '';
-            let defaultTab = '';
+        const path = window.location.pathname;
+        if (!isAuthenticated) {
+            if (path === '/signup') setAuthPage('signup');
+            else if (path === '/forgot') setAuthPage('forgot');
+            else if (path !== '/login') navigate('/login', { replace: true });
+            return;
+        }
 
-            if (userRole === 'admin') {
-                tab = adminPathToTab[path];
-                base = '/admin';
-                defaultTab = 'dashboard';
-            } else if (userRole === 'resident') {
-                tab = residentPathToTab[path];
-                base = '/resident';
-                defaultTab = 'resident-dashboard';
-            } else if (userRole === 'accounting') {
-                tab = accountingPathToTab[path];
-                base = '/accounting';
-                defaultTab = 'accounting-dashboard';
-            } else if (userRole === 'authority') { // ✅ authority
-                tab = authorityPathToTab[path];
-                base = '/authority';
-                defaultTab = 'authority-dashboard';
-            }
-            
-            if (tab) {
-                setActiveTab(tab);
-            } 
-            else if (base && path.startsWith(base)) {
-                setActiveTab(defaultTab);
-            }
-        };
-
-        const handlePopState = () => syncStateFromPath();
-        window.addEventListener('popstate', handlePopState);
-        syncStateFromPath();
-
-        return () => window.removeEventListener('popstate', handlePopState);
+        let tab = '';
+        if (userRole === 'management') tab = managementPathToTab[path];
+        else if (userRole === 'resident') tab = residentPathToTab[path];
+        else if (userRole === 'accounting') tab = accountingPathToTab[path];
+        else if (userRole === 'authority') tab = authorityPathToTab[path];
         
-    }, [isAuthenticated, userRole, navigate]); 
-    
-
-    // --- Conditional Renders ---
+        if (tab) setActiveTab(tab);
+    }, [isAuthenticated, userRole, navigate]);
 
     if (!isAuthenticated) {
-        // Placeholder components
-        const Signup = () => <div className="p-8">Signup Page Placeholder</div>;
-        const ForgotPassword = () => <div className="p-8">Forgot Password Page Placeholder</div>;
-
-        if (authPage === 'signup') {
-            return (
-                <Signup
-                    onBack={() => navigate('/login')}
-                    onSuccess={() => navigate('/login')}
-                />
-            );
-        }
-
-        if (authPage === 'forgot') {
-            return (
-                <ForgotPassword
-                    onBack={() => navigate('/login')}
-                />
-            );
-        }
-        
-        // SỬ DỤNG COMPONENT LOGIN ĐÃ IMPORT
-        return (
-            <Login 
-                onLogin={handleLogin} 
-                onNavigateAuth={(page) => {
-                    setAuthPage(page);
-                    const path = page === 'signup' ? '/signup' : page === 'forgot' ? '/forgot' : '/login';
-                    navigate(path);
-                }}
-            />
-        );
+        return <Login onLogin={handleLogin} onNavigateAuth={(p) => { setAuthPage(p); navigate('/' + p); }} />;
     }
 
-    // --- ĐÃ ĐĂNG NHẬP (Main Application Router) ---
-    
-    let sidebarComponent, headerComponent, appRoutes, baseUrl;
+    // 4. Cấu hình Sidebar/Header theo vai trò
+    let sidebar, header, routes, baseUrl;
 
-    if (userRole === 'admin') {
-        sidebarComponent = (
-            <Sidebar 
-                activeTab={activeTab} 
-                setActiveTab={handleSetActiveTab} 
-                isOpen={isSidebarOpen}
-                onClose={() => setIsSidebarOpen(false)}
-                onLogout={handleLogout} 
-            />
+    if (userRole === 'management') {
+        sidebar = <Sidebar activeTab={activeTab} setActiveTab={handleSetActiveTab} isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} onLogout={handleLogout} />;
+        header = <Header onMenuClick={() => setIsSidebarOpen(true)} onLogout={handleLogout} />;
+        routes = (
+            <>
+                <Route path="/" element={<Navigate to="dashboard" replace />} />
+                <Route path="/dashboard" element={<Dashboard />} />
+                <Route path="/residents" element={<ResidentManagement />} />
+                <Route path="/apartments" element={<ApartmentManagement />} />
+                <Route path="/bills" element={<BillManagement />} />
+                <Route path="/services" element={<ServiceManagement />} />
+                <Route path="/notifications" element={<Notifications />} />
+                <Route path="/profile" element={<Profile />} />
+                <Route path="/settings" element={<Settings />} />
+                <Route path="/extra-services" element={<ExtraServiceManagement />} />
+                <Route path="/voluntary-contributions" element={<VoluntaryContribution />} />
+            </>
         );
-        headerComponent = (
-            <Header 
-                onMenuClick={() => setIsSidebarOpen(true)}
-                onLogout={handleLogout} 
-            />
-        );
-        appRoutes = adminRoutes;
-        baseUrl = '/admin/*';
-        
+        baseUrl = '/management/*';
     } else if (userRole === 'resident') {
-        sidebarComponent = (
-            <ResidentSidebar 
-                activeTab={activeTab} 
-                setActiveTab={handleSetActiveTab} 
-                isOpen={isSidebarOpen}
-                onClose={() => setIsSidebarOpen(false)}
-                onLogout={handleLogout} 
-            />
+        sidebar = <ResidentSidebar activeTab={activeTab} setActiveTab={handleSetActiveTab} isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} onLogout={handleLogout} />;
+        header = <ResidentHeader onMenuClick={() => setIsSidebarOpen(true)} onLogout={handleLogout} />;
+        routes = (
+            <>
+                <Route path="/" element={<Navigate to="dashboard" replace />} />
+                <Route path="/dashboard" element={<ResidentDashboard onNavigate={() => {}} />} />
+                <Route path="/announcements" element={<ResidentAnnouncements />} />
+                <Route path="/invoice" element={<ResidentBills />} />
+                <Route path="/rules" element={<BuildingRules />} />
+                <Route path="/profile" element={<ResidentProfile />} />
+                <Route path="/settings" element={<ResidentSettings />} />
+            </>
         );
-        headerComponent = (
-            <ResidentHeader 
-              onMenuClick={() => setIsSidebarOpen(true)}
-              onLogout={handleLogout}
-            />
-        );
-        appRoutes = residentRoutes;
         baseUrl = '/resident/*';
-        
     } else if (userRole === 'accounting') {
-        sidebarComponent = (
-            <AccountingSidebar 
-                activeTab={activeTab} 
-                setActiveTab={handleSetActiveTab} 
-                isOpen={isSidebarOpen}
-                onClose={() => setIsSidebarOpen(false)}
-                onLogout={handleLogout} 
-            />
+        sidebar = <AccountingSidebar activeTab={activeTab} setActiveTab={handleSetActiveTab} isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} onLogout={handleLogout} />;
+        header = <AccountingHeader onMenuClick={() => setIsSidebarOpen(true)} onNavigate={(p) => p === 'logout' ? handleLogout() : navigate(`/accounting/${p}`)} />;
+        routes = (
+            <>
+                <Route path="/" element={<Navigate to="dashboard" replace />} />
+                <Route path="/dashboard" element={<AccountingDashboard />} />
+                <Route path="/debt" element={<DebtManagement />} />
+                <Route path="/invoice" element={<InvoiceCreation />} />
+                <Route path="/profile" element={<AccountingProfile />} />
+                <Route path="/settings" element={<Settings />} />
+                <Route path="/voluntary-contribution" element={<AccountingVoluntaryContribution />} />
+            </>
         );
-        // Handle navigation for accounting header
-        const handleAccountingNavigate = (page: string) => {
-          if (page === 'logout') {
-            handleLogout();
-          } else if (page === 'profile') {
-            navigate('/accounting/profile');
-          } else if (page === 'settings') {
-            navigate('/accounting/settings');
-          } else if (page === 'accounting-dashboard') {
-            navigate('/accounting/dashboard');
-          }
-        };
-
-        headerComponent = (
-            <AccountingHeader 
-              onMenuClick={() => setIsSidebarOpen(true)}
-              onNavigate={handleAccountingNavigate}
-            />
-        );
-        appRoutes = accountingRoutes;
         baseUrl = '/accounting/*';
-
-    } else if (userRole === 'authority') { 
-        sidebarComponent = (
-            <AuthoritySidebar 
-                activeTab={activeTab} 
-                setActiveTab={handleSetActiveTab} 
-                isOpen={isSidebarOpen}
-                onClose={() => setIsSidebarOpen(false)}
-                onLogout={handleLogout} 
-            />
+    } else if (userRole === 'authority') {
+        sidebar = <AuthoritySidebar activeTab={activeTab} setActiveTab={handleSetActiveTab} isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} onLogout={handleLogout} />;
+        header = <AuthorityHeader onMenuClick={() => setIsSidebarOpen(true)} onLogout={handleLogout} />;
+        routes = (
+            <>
+                <Route path="/" element={<Navigate to="dashboard" replace />} />
+                <Route path="/dashboard" element={<AuthorityDashboard />} />
+                <Route path="/residents" element={<AuthorityResidentManagement />} />
+                <Route path="/announcements" element={<AuthorityAnnouncements />} />
+                <Route path="/profile" element={<AuthorityProfile />} />
+                <Route path="/settings" element={<Settings />} />
+            </>
         );
-        headerComponent = (
-            <AuthorityHeader 
-              onMenuClick={() => setIsSidebarOpen(true)}
-              onLogout={handleLogout}
-            />
-        );
-        appRoutes = authorityRoutes;
         baseUrl = '/authority/*';
-        
-    } else {
-        return <Navigate to="/login" replace />;
     }
 
-
-    // Router cho người dùng đã đăng nhập
     return (
         <Routes>
-            <Route path={baseUrl} element={
-                <MainLayout 
-                    sidebar={sidebarComponent} 
-                    header={headerComponent} 
-                    routes={appRoutes} 
-                />
-            } />
-            
+            <Route path={baseUrl} element={<MainLayout sidebar={sidebar!} header={header!} routes={routes!} />} />
             <Route path="/login" element={<Navigate to={`/${userRole}/dashboard`} replace />} />
-            <Route path="/signup" element={<Navigate to={`/${userRole}/dashboard`} replace />} />
-            <Route path="/forgot" element={<Navigate to={`/${userRole}/dashboard`} replace />} />
             <Route path="/" element={<Navigate to={`/${userRole}/dashboard`} replace />} />
             <Route path="*" element={<div className="p-4 text-3xl text-red-600">404 Not Found</div>} />
-
         </Routes>
     );
 }
 
-
 export default function App() {
     return (
         <Router>
+            <Toaster position="top-right" richColors />
             <AppContent />
         </Router>
     );
