@@ -37,7 +37,15 @@ const renderActiveLostItemSector = (props: any) => {
 // Helper function để format thời gian tương đối
 const formatRelativeTime = (date: Date, currentTime: Date = new Date()): string => {
   const now = currentTime;
-  const diffInMinutes = Math.floor((now.getTime() - date.getTime()) / (1000 * 60));
+  const diffInMs = now.getTime() - date.getTime();
+  const diffInMinutes = Math.floor(diffInMs / (1000 * 60));
+  const diffInHours = Math.floor(diffInMs / (1000 * 60 * 60));
+  const diffInDays = Math.floor(diffInMs / (1000 * 60 * 60 * 24));
+
+  // Xử lý trường hợp date trong tương lai (do timezone hoặc lỗi)
+  if (diffInMs < 0) {
+    return 'Vừa xong';
+  }
 
   if (diffInMinutes < 1) {
     return 'Vừa xong';
@@ -45,12 +53,11 @@ const formatRelativeTime = (date: Date, currentTime: Date = new Date()): string 
   if (diffInMinutes < 60) {
     return `${diffInMinutes} phút trước`;
   }
-  if (diffInMinutes < 24 * 60) {
-    const hours = Math.floor(diffInMinutes / 60);
-    return `${hours} giờ trước`;
+  if (diffInHours < 24) {
+    return `${diffInHours} giờ trước`;
   }
-  const days = Math.floor(diffInMinutes / (24 * 60));
-  return `${days} ngày trước`;
+  // Tất cả >= 1 ngày đều hiển thị "X ngày trước"
+  return `${diffInDays} ngày trước`;
 };
 
 export function AuthorityDashboard() {
@@ -86,7 +93,7 @@ export function AuthorityDashboard() {
     return today;
   };
 
-
+    
 
   const fetchResidents = async () => {
     try {
@@ -112,7 +119,7 @@ export function AuthorityDashboard() {
       const response = await fetch('http://localhost:8081/api/issues?type=SECURITY');
       if (!response.ok) {
         throw new Error('Không thể tải danh sách tin báo');
-      }
+    }
       const res = await response.json();
       const issues = res.data || [];
 
@@ -125,9 +132,18 @@ export function AuthorityDashboard() {
       // Sử dụng createdDate từ API nếu có, nếu không thì dùng thời gian hiện tại
       const mappedAnnouncements = unprocessedIssues.slice(0, 5).map((issue: any) => {
         // Sử dụng createdDate từ API nếu có
-        const createdAt = issue.createdDate
-          ? new Date(issue.createdDate)
-          : new Date(); // Fallback về thời gian hiện tại nếu không có
+        // Xử lý timezone: API trả về ISO string, parse trực tiếp
+        let createdAt: Date;
+        if (issue.createdDate) {
+          createdAt = new Date(issue.createdDate);
+          // Kiểm tra nếu date không hợp lệ
+          if (isNaN(createdAt.getTime())) {
+            console.warn('Invalid createdDate:', issue.createdDate);
+            createdAt = new Date();
+          }
+        } else {
+          createdAt = new Date(); // Fallback về thời gian hiện tại nếu không có
+        }
 
         return {
           id: issue.id,
@@ -203,7 +219,7 @@ export function AuthorityDashboard() {
       { name: 'Tạm trú', value: statusCounts.TEMPORARY_RESIDENCE, color: '#F59E0B' },
       { name: 'Tạm vắng', value: statusCounts.TEMPORARY_ABSENCE, color: '#3B82F6' },
       { name: 'Lưu trú', value: statusCounts.VISITOR, color: '#8B5CF6' },
-    ];
+  ];
 
     // Debug: Log để kiểm tra
     console.log('Dashboard - Resident Status Data:', result);
@@ -252,7 +268,7 @@ export function AuthorityDashboard() {
         </div>
 
         {/* Card 3: Tổng cư dân (Bright Blue) */}
-        <div
+        <div 
           className="rounded-xl shadow-md p-6 h-32 relative overflow-hidden flex justify-between items-center"
           style={{ backgroundColor: '#3b82f6' }}
         >
@@ -264,7 +280,7 @@ export function AuthorityDashboard() {
         </div>
 
         {/* Card 4: Tin báo mới (Orange) */}
-        <div
+        <div 
           className="rounded-xl shadow-md p-6 h-32 relative overflow-hidden flex justify-between items-center"
           style={{ backgroundColor: '#f97316' }}
         >
@@ -281,7 +297,7 @@ export function AuthorityDashboard() {
         {/* Biểu đồ tròn - tỉ lệ cư dân (1/3 width) */}
         <div className="bg-white rounded-2xl p-6 border-2 border-gray-200 flex flex-col lg:col-span-1 h-[340px]">
           <h3 className="text-xl font-semibold text-gray-900 mb-4">Tỉ lệ cư dân</h3>
-
+          
           {/* Donut chart centered */}
           <div className="flex-1 flex items-center justify-center relative cursor-pointer">
             <ResponsiveContainer width="100%" height={220}>
@@ -300,30 +316,30 @@ export function AuthorityDashboard() {
                   onMouseLeave={() => setActiveLostItemIndex(null)}
                 >
                   {residentStatusData.filter(item => item.value > 0).map((entry, index) => (
-                    <Cell
-                      key={`cell-${index}`}
+                    <Cell 
+                      key={`cell-${index}`} 
                       fill={entry.color}
                       cursor="pointer"
                       onMouseEnter={() => setActiveLostItemIndex(index)}
                     />
                   ))}
                 </Pie>
-                <Tooltip
+                <Tooltip 
                   cursor={{ fill: 'transparent' }}
                   formatter={(value: number, name: string) => [
                     `${value} người`,
                     name,
                   ]}
-                  contentStyle={{
+                  contentStyle={{ 
                     backgroundColor: '#ffffff',
                     borderRadius: '8px',
                     border: 'none',
                     boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
                     padding: '10px'
                   }}
-                  itemStyle={{
+                  itemStyle={{ 
                     color: '#374151',
-                    fontWeight: 500
+                    fontWeight: 500 
                   }}
                 />
               </PieChart>
@@ -339,20 +355,20 @@ export function AuthorityDashboard() {
           {/* Compact legend under chart */}
           <div className="mt-4 space-y-2">
             {residentStatusData.map((item, index) => (
-              <div
-                key={index}
+              <div 
+                key={index} 
                 className="flex items-center justify-between px-3 py-2 rounded-lg bg-gray-50"
               >
                 <div className="flex items-center gap-2">
                   <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: item.color }}></div>
-                  <span
+                  <span 
                     className="text-xs font-medium"
                     style={{ color: item.color }}
                   >
                     {item.name}
                   </span>
                 </div>
-                <span
+                <span 
                   className="text-xs font-semibold"
                   style={{ color: item.color }}
                 >
@@ -365,8 +381,8 @@ export function AuthorityDashboard() {
 
         {/* Tin báo cần xử lý gấp (2/3 width) */}
         <div className="bg-white rounded-2xl shadow-sm border-2 border-gray-200 p-6 lg:col-span-2">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-bold text-gray-800">Tin báo cần xử lý gấp</h2>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-lg font-bold text-gray-800">Tin báo cần xử lý gấp</h2>
             <button
               onClick={() => navigate('/authority/announcements')}
               className="text-sm text-blue-600 hover:underline cursor-pointer"
