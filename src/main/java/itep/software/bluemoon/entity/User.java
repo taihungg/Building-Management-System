@@ -2,14 +2,14 @@ package itep.software.bluemoon.entity;
 
 import java.util.UUID;
 
-import org.springframework.data.jpa.domain.support.AuditingEntityListener;
-
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import itep.software.bluemoon.entity.person.Person;
+import itep.software.bluemoon.enumeration.UserRole;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.EntityListeners;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -29,7 +29,6 @@ import lombok.Setter;
 @AllArgsConstructor
 @Builder
 @Entity
-@EntityListeners(AuditingEntityListener.class)
 @Table(name = "users")
 public class User extends BaseEntity {
     @Id
@@ -48,6 +47,10 @@ public class User extends BaseEntity {
     @Column(nullable = false)
     @JsonIgnore
     private String password;
+
+    @Column(name = "role", length = 20)
+    @Enumerated(EnumType.STRING)
+    private UserRole role;
     
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(
