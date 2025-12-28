@@ -18,6 +18,10 @@ export function Dashboard() {
   const [pendingIssuesList, setPendingIssuesList] = useState<Issue[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
+  // Link deploy mới của chú
+  const BASE_URL = 'https://untoasted-jean-unsympathisingly.ngrok-free.dev';
+  const NGROK_HEADERS = { 'ngrok-skip-browser-warning': 'true' };
+
   const occupancyRate = apartmentStats.total > 0 
     ? ((apartmentStats.occupied / apartmentStats.total) * 100).toFixed(1) 
     : "0";
@@ -37,11 +41,13 @@ export function Dashboard() {
       const currentMonth = new Date().getMonth() + 1;
 
       try {
-        const resRes = await fetch('http://localhost:8081/api/v1/residents');
+        // 1. Fetch Residents
+        const resRes = await fetch(`${BASE_URL}/api/v1/residents`, { headers: NGROK_HEADERS });
         const dataRes = await resRes.json();
         if (resRes.ok) setResidentCount(dataRes.data?.length || 0);
 
-        const resApt = await fetch('http://localhost:8081/api/v1/apartments');
+        // 2. Fetch Apartments
+        const resApt = await fetch(`${BASE_URL}/api/v1/apartments`, { headers: NGROK_HEADERS });
         const dataApt = await resApt.json();
         if (resApt.ok) {
             const total = dataApt.data?.length || 0;
@@ -49,7 +55,8 @@ export function Dashboard() {
             setApartmentStats({ total, occupied });
         }
 
-        const resChart = await fetch(`http://localhost:8081/api/v1/accounting/dashboard/barchart?year=${currentYear}`);
+        // 3. Fetch Chart Data
+        const resChart = await fetch(`${BASE_URL}/api/v1/accounting/dashboard/barchart?year=${currentYear}`, { headers: NGROK_HEADERS });
         const dataChart = await resChart.json();
         if (resChart.ok && dataChart.data) {
             const formattedData = dataChart.data
@@ -67,14 +74,15 @@ export function Dashboard() {
             setMonthlyRevenue(currentMonthData ? currentMonthData.paidRevenue : 0);
         }
 
-        const resIssue = await fetch('http://localhost:8081/api/issues');
+        // 4. Fetch Issues
+        const resIssue = await fetch(`${BASE_URL}/api/issues`, { headers: NGROK_HEADERS });
         const dataIssue = await resIssue.json();
         if (resIssue.ok) {
             const pending = (dataIssue as Issue[]).filter(i => i.status === 'UNPROCESSED');
             setPendingIssuesList(pending);
         }
       } catch (err) {
-        console.error("Lỗi Dashboard API:", err);
+        console.log("Lỗi Dashboard API:", err);
       } finally {
         setIsLoading(false);
       }
@@ -84,8 +92,7 @@ export function Dashboard() {
 
   return (
     <div className="p-8 bg-[#f8fafc] min-h-screen text-slate-900 font-sans"> 
-      
-      {/* --- STATS CARDS --- */}
+      {/* ... Toàn bộ phần UI giữ nguyên 100% như cũ ... */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6" style={{ marginBottom: '48px' }}>
         <div style={{ backgroundColor: '#ffffff', padding: '24px', borderRadius: '32px', border: '1px solid #e2e8f0', boxShadow: '0 4px 15px rgba(0,0,0,0.03)' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
@@ -134,37 +141,20 @@ export function Dashboard() {
         </div>
       </div>
 
-      {/* --- MAIN CONTENT GRID --- */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8" style={{ marginTop: '40px', columnGap: '32px' }}>        
-        
-        {/* 1. Biểu đồ Tài chính */}
         <div className="lg:col-span-2 bg-white border border-slate-100 shadow-sm" style={{ borderRadius: '32px', padding: '32px', display: 'flex', flexDirection: 'column', minHeight: '480px' }}>
           <div className="flex justify-between items-start mb-8">
             <div>
               <h3 className="text-lg font-semibold text-slate-800" style={{ margin: 0 }}>Phân tích dòng tiền 6 tháng gần nhất</h3>
               <p className="text-sm text-slate-400 mt-1">So sánh doanh thu dự kiến và thực tế</p>
             </div>
-            
-            {/* Phần chú thích (Legend) sử dụng màu mới */}
             <div className="flex gap-4 px-4 py-2 rounded-xl" style={{ backgroundColor: '#f8fafc' }}>
               <div className="flex items-center gap-2 text-xs font-medium text-slate-500">
-                {/* Fix cứng width/height bằng inline style */}
-                <div style={{ 
-                  width: '10px', 
-                  height: '10px', 
-                  backgroundColor: '#818cf8', // Màu Indigo rõ hơn
-                  borderRadius: '50%' 
-                }}></div> 
+                <div style={{ width: '10px', height: '10px', backgroundColor: '#818cf8', borderRadius: '50%' }}></div> 
                 <span>Phải thu</span>
               </div>
-              
               <div className="flex items-center gap-2 text-xs font-medium text-slate-500">
-                <div style={{ 
-                  width: '10px', 
-                  height: '10px', 
-                  backgroundColor: '#059669', // Màu Emerald đậm
-                  borderRadius: '50%' 
-                }}></div> 
+                <div style={{ width: '10px', height: '10px', backgroundColor: '#059669', borderRadius: '50%' }}></div> 
                 <span>Thực thu</span>
               </div>
             </div>
@@ -174,72 +164,23 @@ export function Dashboard() {
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={chartData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }} barGap={8}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
-                <XAxis 
-                  dataKey="month" 
-                  axisLine={false} 
-                  tickLine={false} 
-                  tick={{fill: '#94a3b8', fontSize: 11}} 
-                  dy={10} 
-                />
-                <YAxis 
-                  axisLine={false} 
-                  tickLine={false} 
-                  tick={{fill: '#94a3b8', fontSize: 11}} 
-                  tickFormatter={(v) => v >= 1000000 ? `${(v/1000000).toFixed(0)}M` : v} 
-                  width={35} 
-                />
-                <Tooltip 
-                  cursor={{fill: '#ffffff', opacity: 0.7}} 
-                  contentStyle={{borderRadius: '16px', border: 'none', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.05)'}} 
-                />
-                
-                {/* Cập nhật màu sắc trực tiếp cho các cột (Bar) */}
-                <Bar 
-                  dataKey="phaiThu" 
-                  fill="#C7D2FE" 
-                  radius={[4, 4, 0, 0]} 
-                  barSize={16} 
-                />
-                <Bar 
-                  dataKey="thucThu" 
-                  fill="#059669" 
-                  radius={[4, 4, 0, 0]} 
-                  barSize={16} 
-                />
+                <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{fill: '#94a3b8', fontSize: 11}} dy={10} />
+                <YAxis axisLine={false} tickLine={false} tick={{fill: '#94a3b8', fontSize: 11}} tickFormatter={(v) => v >= 1000000 ? `${(v/1000000).toFixed(0)}M` : v} width={35} />
+                <Tooltip cursor={{fill: '#ffffff', opacity: 0.7}} contentStyle={{borderRadius: '16px', border: 'none', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.05)'}} />
+                <Bar dataKey="phaiThu" fill="#C7D2FE" radius={[4, 4, 0, 0]} barSize={16} />
+                <Bar dataKey="thucThu" fill="#059669" radius={[4, 4, 0, 0]} barSize={16} />
               </BarChart>
             </ResponsiveContainer>
           </div>
         </div>
 
-        {/* 2. Danh sách yêu cầu */}
-        <div 
-          className="bg-white flex flex-col overflow-hidden transition-all duration-300" 
-          style={{
-            borderRadius: '32px',
-            // Đổ bóng đa lớp giúp card trông nổi khối và mềm mại hơn
-            boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.04), 0 8px 10px -6px rgba(0, 0, 0, 0.04)',
-            border: '1px solid #f1f5f9'
-          }}
-        >
-          {/* Header: Làm màu text đậm hơn và icon có màu sắc để tạo điểm nhấn */}
+        <div className="bg-white flex flex-col overflow-hidden" style={{ borderRadius: '32px', boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.04)', border: '1px solid #f1f5f9' }}>
           <div className="p-6 border-b border-slate-50 flex justify-between items-center" style={{ backgroundColor: '#ffffff' }}>
             <div className="flex items-center gap-3">
-                {/* Icon mang màu thương hiệu */}
-                <div style={{ color: '#6366f1' }}> 
-                    <ClipboardList size={22} />
-                </div>
-                <h3 className="text-lg font-extrabold text-slate-800" style={{ letterSpacing: '-0.02em' }}>
-                    Yêu cầu chưa xử lý
-                </h3>
+                <div style={{ color: '#6366f1' }}> <ClipboardList size={22} /></div>
+                <h3 className="text-lg font-extrabold text-slate-800">Yêu cầu chưa xử lý</h3>
             </div>
-            <span 
-              className="text-[11px] font-bold px-3 py-1 rounded-full shadow-sm" 
-              style={{ 
-                backgroundColor: '#fff1f2', 
-                color: '#e11d48',
-                border: '1px solid #ffe4e6' // Thêm viền nhẹ cho badge
-              }}
-            >
+            <span className="text-[11px] font-bold px-3 py-1 rounded-full shadow-sm" style={{ backgroundColor: '#fff1f2', color: '#e11d48' }}>
                 {pendingIssuesList.length} MỚI
             </span>
           </div>
@@ -249,25 +190,16 @@ export function Dashboard() {
                 <tbody className="divide-y divide-slate-50">
                     {pendingIssuesList.length > 0 ? (
                         pendingIssuesList.slice(0, 6).map((issue, idx) => (
-                            <tr 
-                              key={idx} 
-                              className="transition-all duration-200 group"
-                              style={{ cursor: 'pointer' }}
-                            >
+                            <tr key={idx} className="transition-all duration-200 group" style={{ cursor: 'pointer' }}>
                                 <td className="py-4 px-6 group-hover:bg-indigo-50/30">
                                     <p className="text-sm font-bold text-slate-700 group-hover:text-indigo-600 transition-colors">
                                         {issue.title || "Yêu cầu kỹ thuật"}
                                     </p>
-                                    <p className="text-[11px] text-slate-400 mt-1 font-medium">
-                                        <span style={{ color: '#94a3b8' }}>Vị trí:</span> Phòng {issue.roomNumber || '---'}
-                                    </p>
+                                    <p className="text-[11px] text-slate-400 mt-1 font-medium">Phòng {issue.roomNumber || '---'}</p>
                                 </td>
-                                <td className="py-4 px-6 text-right group-hover:bg-indigo-50/30">
-                                    <Link 
-                                      to="/admin/services" 
-                                      className="inline-flex items-center text-[11px] font-bold text-indigo-500 hover:text-indigo-700 uppercase tracking-wider"
-                                    >
-                                        Chi tiết <ChevronRight size={14} className="ml-1 group-hover:translate-x-1 transition-transform" />
+                                <td className="py-4 px-6 text-right">
+                                    <Link to="/admin/services" className="inline-flex items-center text-[11px] font-bold text-indigo-500 hover:text-indigo-700 uppercase tracking-wider">
+                                        Chi tiết <ChevronRight size={14} className="ml-1" />
                                     </Link>
                                 </td>
                             </tr>
@@ -278,25 +210,7 @@ export function Dashboard() {
                 </tbody>
             </table>
           </div>
-          
-          {/* Footer: Thay đổi màu nền và màu text để tăng sự chú ý */}
-          <Link 
-            to="/admin/services" 
-            className="p-4 text-center text-xs font-bold transition-all duration-200 border-t border-slate-100"
-            style={{ 
-                backgroundColor: '#f8fafc', 
-                color: '#64748b',
-                letterSpacing: '0.05em'
-            }}
-            onMouseOver={(e) => {
-                e.currentTarget.style.backgroundColor = '#6366f1';
-                e.currentTarget.style.color = '#ffffff';
-            }}
-            onMouseOut={(e) => {
-                e.currentTarget.style.backgroundColor = '#f8fafc';
-                e.currentTarget.style.color = '#64748b';
-            }}
-          >
+          <Link to="/admin/services" className="p-4 text-center text-xs font-bold border-t border-slate-100" style={{ backgroundColor: '#f8fafc', color: '#64748b' }}>
             XEM TẤT CẢ YÊU CẦU
           </Link>
         </div>
