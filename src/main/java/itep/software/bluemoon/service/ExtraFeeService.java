@@ -22,8 +22,8 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 @Transactional
 public class ExtraFeeService {
-    ApartmentRepository apartmentRepository;
-    ExtraFeeRepository extraFeeRepository;
+    private final ApartmentRepository apartmentRepository;
+    private final ExtraFeeRepository extraFeeRepository;
 
     @SuppressWarnings("null")
     public ExtraFeeDetailDTO getExtraFeeDetail(UUID id){
@@ -38,7 +38,7 @@ public class ExtraFeeService {
                 .amount(VndUtils.format(extraFee.getAmount()))
                 .isBilled(extraFee.isBilled())
                 .feeDate(extraFee.getFeeDate())
-                .apartmentLabel(extraFee.getApartment().getRoomNumber() + extraFee.getApartment().getBuilding().getName())
+                .apartmentLabel("Căn hộ " + extraFee.getApartment().getRoomNumber() + " - Tòa nhà " + extraFee.getApartment().getBuilding().getName())
                 .build();
     }
     
@@ -92,6 +92,8 @@ public class ExtraFeeService {
     }
 
     public List<ExtraFeeSummary> searchByAllInformation(String keyword){
-        return extraFeeRepository.searchGeneral(keyword.trim());
+        keyword = (keyword == null || keyword.isBlank()) ? null : keyword.trim();
+
+        return extraFeeRepository.searchGeneral(keyword);
     }
 }

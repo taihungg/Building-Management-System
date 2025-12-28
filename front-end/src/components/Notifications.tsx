@@ -113,10 +113,10 @@ export function Notifications() {
         const res = await response.json();
         const data = res.data || [];
         
-        // Chuyển đổi dữ liệu để sử dụng trong list chọn (giả định cấu trúc có id, fullName, apartmentLabel)
+        // Chuyển đổi dữ liệu để sử dụng trong list chọn
         const residentList = data.map(r => ({
             id: r.id, 
-            name: `${r.fullName} (${r.apartmentLabel || 'N/A'})` 
+            name: `${r.fullName} (P.${r.roomNumber ?? 'N/A'})` 
         }));
         
         setResidents(residentList);
@@ -135,27 +135,57 @@ export function Notifications() {
     setIsLoading(true);
     setError(null);
     try {
-        const response = await fetch('http://localhost:8081/api/announcements'); 
+        const response = await fetch('http://localhost:8081/api/v1/announcements/staff/all?page=0&size=1000&sort=createdDate,desc'); 
         
         if (!response.ok) {
             throw new Error("Không thể lấy danh sách thông báo đã gửi.");
         }
         
         const rawData = await response.json();
+        const rawAnnouncements = rawData?.content || [];
+
+        const parseLocalDateTime = (value) => {
+            if (!value) return null;
+            if (Array.isArray(value)) {
+                const [year, month, day, hour = 0, minute = 0, second = 0, nano = 0] = value;
+                const millisecond = Math.floor(nano / 1_000_000);
+                return new Date(year, month - 1, day, hour, minute, second, millisecond);
+            }
+            if (typeof value === 'string' || typeof value === 'number') {
+                const date = new Date(value);
+                return Number.isNaN(date.getTime()) ? null : date;
+            }
+            if (typeof value === 'object') {
+                const year = value.year;
+                const month = value.monthValue ?? value.month;
+                const day = value.dayOfMonth ?? value.day;
+                const hour = value.hour ?? 0;
+                const minute = value.minute ?? 0;
+                const second = value.second ?? 0;
+                const nano = value.nano ?? 0;
+                if (typeof year === 'number' && typeof month === 'number' && typeof day === 'number') {
+                    const millisecond = Math.floor(nano / 1_000_000);
+                    return new Date(year, month - 1, day, hour, minute, second, millisecond);
+                }
+            }
+            return null;
+        };
         
-        const transformedData = rawData.map(announcement => {
+        const transformedData = rawAnnouncements.map(announcement => {
             const type = 'GENERAL'; 
             const Icon = typeIcons[type];
             
-            const dateTime = new Date(announcement.createdAt);
-            const timeFormatted = dateTime.toLocaleDateString('vi-VN') + ' ' + dateTime.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+            const dateTime = parseLocalDateTime(announcement.createdDate);
+            const timeFormatted = dateTime
+                ? dateTime.toLocaleDateString('vi-VN') + ' ' + dateTime.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })
+                : 'N/A';
 
             return {
                 id: announcement.id,
                 title: announcement.title,
                 message: announcement.message, 
-                sender: announcement.senderName || 'BQL Chung cư',
-                receiverCount: announcement.receiverCount || 'N/A',
+                sender: announcement.sender?.fullName || 'BQL Chung cư',
+                receiverCount: 0,
                 time: timeFormatted,
                 icon: Icon,
             };
@@ -194,34 +224,43 @@ export function Notifications() {
 
     setIsSubmitting(true);
     
-    // Xử lý payload trước khi gửi
-    let payload = {
+    const mappedTargetType =
+        newAnnouncement.targetType === 'ALL' ? 'ALL'
+        : newAnnouncement.targetType === 'BUILDING' ? 'BY_BUILDING'
+        : newAnnouncement.targetType === 'FLOOR' ? 'BY_FLOOR'
+        : 'SPECIFIC_APARTMENTS';
+
+    if ((mappedTargetType === 'BY_BUILDING' || mappedTargetType === 'BY_FLOOR') && (!newAnnouncement.buildingId || newAnnouncement.buildingId === 'ALL')) {
+        toast.warning("Vui lòng chọn một Tòa nhà cụ thể.");
+        setIsSubmitting(false);
+        return;
+    }
+
+    const payload: any = {
         title: newAnnouncement.title,
         message: newAnnouncement.message,
         senderId: newAnnouncement.senderId,
-        targetType: newAnnouncement.targetType, 
+        targetType: mappedTargetType,
         buildingId: null,
-        floor: 0,
-        residentIds: [],
+        floors: null,
+        apartmentIds: null,
+        targetDetail: '',
     };
-    
-    // Áp dụng logic BuildingId, Floor và ResidentIds dựa trên TargetType
-    if (newAnnouncement.targetType === 'ALL') {
-        // API Backend có thể yêu cầu buildingId là null hoặc ID của 'ALL'
-        payload.buildingId = null; 
-    } else if (newAnnouncement.targetType === 'BUILDING') {
+
+    if (mappedTargetType === 'BY_BUILDING') {
         payload.buildingId = newAnnouncement.buildingId;
-    } else if (newAnnouncement.targetType === 'FLOOR') {
+    } else if (mappedTargetType === 'BY_FLOOR') {
         payload.buildingId = newAnnouncement.buildingId;
-        payload.floor = newAnnouncement.floor;
-    } else if (newAnnouncement.targetType === 'RESIDENTS') {
-        payload.residentIds = newAnnouncement.residentIds;
-        // Các trường khác (buildingId, floor) là null/0
+        payload.floors = [newAnnouncement.floor];
+    } else if (mappedTargetType === 'SPECIFIC_APARTMENTS') {
+        toast.warning("Chưa hỗ trợ gửi theo cá nhân với backend hiện tại.");
+        setIsSubmitting(false);
+        return;
     }
 
     const submitPromise = new Promise(async (resolve, reject) => {
         try {
-            const response = await fetch('http://localhost:8081/api/announcements', {
+            const response = await fetch('http://localhost:8081/api/v1/announcements/staff/create', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

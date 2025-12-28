@@ -1,8 +1,34 @@
-import { Search, Plus, Calendar, FileText, Trash2, Home, ArrowRight, X, Eye, Info } from 'lucide-react';
+import { Search, Plus, Calendar, Trash2, Home, ArrowRight, Eye } from 'lucide-react';
 import { Modal } from './Modal'; 
 import { Toaster, toast } from 'sonner';
 import { useState, useEffect, useCallback } from 'react';
 import React from 'react';
+
+type ExtraFeeSummary = {
+    id: string;
+    title: string;
+    amount: number;
+    feeDate: string;
+    isBilled: boolean;
+    apartmentLabel: string;
+};
+
+type ApartmentDropdownItem = {
+    id: string;
+    label: string;
+};
+
+type ExtraFeeDetailApi = {
+    title?: string;
+    description?: string;
+    quantity?: string | number;
+    unitPrice?: string | number;
+    amount?: string | number;
+    feeDate?: string;
+    apartmentLabel?: string;
+    isBilled?: boolean;
+    billed?: boolean;
+};
 
 export function ExtraServiceManagement() {
     const [searchTerm, setSearchTerm] = useState('');
@@ -10,88 +36,196 @@ export function ExtraServiceManagement() {
     
     // STATE CHO CHI TIẾT
     const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
-    const [selectedService, setSelectedService] = useState<any>(null);
+    const [selectedService, setSelectedService] = useState<(ExtraFeeSummary & ExtraFeeDetailApi) | null>(null);
+    const [isDetailLoading, setIsDetailLoading] = useState(false);
 
     const [isLoading, setIsLoading] = useState(false);
     const [startDate, setStartDate] = useState('');
     const [endDate, setEndDate] = useState('');
-    const [services, setServices] = useState([
-        {
-            id: "SRV-001",
-            title: "Phí sử dụng Bể bơi tháng 12",
-            description: "Gói vé tháng cho gia đình 4 người, đăng ký từ ngày 01/12.",
-            quantity: "1",
-            unitPrice: "500000",
-            amount: "500000",
-            isBilled: true,
-            feeDate: "2023-12-01",
-            apartmentLabel: "A.101",
-            serviceType: "SWIMMING"
-        },
-        {
-            id: "SRV-002",
-            title: "Sửa chữa vòi hoa sen",
-            description: "Thay mới vòi hoa sen phòng tắm chính do bị rò rỉ nước. Bao gồm tiền công và vật tư.",
-            quantity: "1",
-            unitPrice: "250000",
-            amount: "250000",
-            isBilled: false,
-            feeDate: "2023-12-15",
-            apartmentLabel: "B.205",
-            serviceType: "REPAIR"
-        },
-        {
-            id: "SRV-003",
-            title: "Phí thẻ tập Gym - Anh Nam",
-            description: "Gia hạn thẻ tập Gym 3 tháng (giảm giá 10% cho cư dân).",
-            quantity: "3",
-            unitPrice: "300000",
-            amount: "900000",
-            isBilled: false,
-            feeDate: "2023-12-20",
-            apartmentLabel: "C.1502",
-            serviceType: "GYM"
-        },
-        {
-            id: "SRV-004",
-            title: "Vệ sinh máy lạnh",
-            description: "Bảo trì định kỳ 2 máy lạnh (Phòng khách và phòng ngủ).",
-            quantity: "2",
-            unitPrice: "150000",
-            amount: "300000",
-            isBilled: true,
-            feeDate: "2023-12-22",
-            apartmentLabel: "A.101",
-            serviceType: "REPAIR"
-        }
-    ]);
+    const [services, setServices] = useState<ExtraFeeSummary[]>([]);
+
+    const [createApartmentKeyword, setCreateApartmentKeyword] = useState('');
+    const [createApartmentOptions, setCreateApartmentOptions] = useState<ApartmentDropdownItem[]>([]);
+    const [createApartmentSelected, setCreateApartmentSelected] = useState<ApartmentDropdownItem | null>(null);
+    const [createTitle, setCreateTitle] = useState('');
+    const [createDescription, setCreateDescription] = useState('');
+    const [createQuantity, setCreateQuantity] = useState('1');
+    const [createUnitPrice, setCreateUnitPrice] = useState('');
+    const [createFeeDate, setCreateFeeDate] = useState('');
+    const [createIsBilled, setCreateIsBilled] = useState(false);
+    const [isCreateSubmitting, setIsCreateSubmitting] = useState(false);
+
+    const parseMoney = (value: any) => {
+        if (typeof value === 'number') return value;
+        if (typeof value !== 'string') return Number(value) || 0;
+        const s = value.trim();
+        if (/^\d{1,3}(\.\d{3})+$/.test(s)) return Number(s.replace(/\./g, ''));
+        if (/^\d{1,3}(,\d{3})+$/.test(s)) return Number(s.replace(/,/g, ''));
+        if (/^\d+(\.\d+)?$/.test(s)) return Number(s);
+        return Number(s.replace(/[^\d-]/g, '')) || 0;
+    };
 
     const formatCurrency = (amount: any) => {
-        const val = Number(amount) || 0;
+        const val = parseMoney(amount);
         return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(val);
     };
 
     // Hàm mở modal chi tiết
-    const handleViewDetail = (service: any) => {
-        setSelectedService(service);
+    const handleViewDetail = async (service: ExtraFeeSummary) => {
         setIsDetailModalOpen(true);
+        setSelectedService(service);
+        setIsDetailLoading(true);
+        try {
+            const response = await fetch(`http://localhost:8081/api/v1/extrafee/${service.id}`);
+            if (!response.ok) {
+                const errorText = await response.text().catch(() => '');
+                throw new Error(errorText || `HTTP ${response.status}: ${response.statusText}`);
+            }
+            const res = await response.json();
+            const data: ExtraFeeDetailApi = res.data || {};
+            const billed = (data.isBilled ?? data.billed ?? false) as boolean;
+            setSelectedService({
+                ...service,
+                ...data,
+                isBilled: billed,
+            });
+        } catch (error) {
+            toast.error("Lỗi tải chi tiết", { description: (error as Error).message });
+        } finally {
+            setIsDetailLoading(false);
+        }
     };
 
-    // Giả lập Fetch dữ liệu
-    const fetchExtraServices = useCallback(async () => {
+    const fetchExtraServices = useCallback(async (keyword: string) => {
         setIsLoading(true);
         try {
-            //const response = await fetch('http://localhost:8081/api/v1/accounting/extra-services');
-            //const res = await response.json();
-            //setServices(res.data || []);
+            const trimmed = keyword.trim();
+            const url = trimmed
+                ? `http://localhost:8081/api/v1/extrafee?keyword=${encodeURIComponent(trimmed)}`
+                : `http://localhost:8081/api/v1/extrafee`;
+            const response = await fetch(url);
+            if (!response.ok) {
+                const errorText = await response.text().catch(() => '');
+                throw new Error(errorText || `HTTP ${response.status}: ${response.statusText}`);
+            }
+            const res = await response.json();
+            const data = (res.data || []) as ExtraFeeSummary[];
+            setServices(Array.isArray(data) ? data : []);
         } catch (error) {
-            console.error("Lỗi tải dữ liệu:", error);
+            toast.error("Lỗi tải dữ liệu", { description: (error as Error).message });
+            setServices([]);
         } finally {
             setIsLoading(false);
         }
     }, []);
 
-    useEffect(() => { fetchExtraServices(); }, [fetchExtraServices]);
+    useEffect(() => {
+        const t = setTimeout(() => {
+            fetchExtraServices(searchTerm);
+        }, 250);
+        return () => clearTimeout(t);
+    }, [fetchExtraServices, searchTerm]);
+
+    useEffect(() => {
+        const t = setTimeout(async () => {
+            const keyword = createApartmentKeyword.trim();
+            if (!keyword) {
+                setCreateApartmentOptions([]);
+                return;
+            }
+            try {
+                const response = await fetch(`http://localhost:8081/api/v1/apartments/dropdown?keyword=${encodeURIComponent(keyword)}`);
+                if (!response.ok) return;
+                const res = await response.json();
+                const data = (res.data || []) as ApartmentDropdownItem[];
+                setCreateApartmentOptions(Array.isArray(data) ? data : []);
+            } catch {
+                setCreateApartmentOptions([]);
+            }
+        }, 250);
+        return () => clearTimeout(t);
+    }, [createApartmentKeyword]);
+
+    const openCreateModal = () => {
+        setIsCreateModalOpen(true);
+        setCreateApartmentKeyword('');
+        setCreateApartmentOptions([]);
+        setCreateApartmentSelected(null);
+        setCreateTitle('');
+        setCreateDescription('');
+        setCreateQuantity('1');
+        setCreateUnitPrice('');
+        setCreateFeeDate('');
+        setCreateIsBilled(false);
+        setIsCreateSubmitting(false);
+    };
+
+    const submitCreate = async () => {
+        if (!createApartmentSelected) {
+            toast.error("Thiếu căn hộ", { description: "Vui lòng chọn căn hộ" });
+            return;
+        }
+        if (!createTitle.trim()) {
+            toast.error("Thiếu nội dung", { description: "Vui lòng nhập nội dung khoản thu" });
+            return;
+        }
+        if (!createFeeDate) {
+            toast.error("Thiếu ngày", { description: "Vui lòng chọn ngày ghi nhận" });
+            return;
+        }
+        const quantity = parseMoney(createQuantity);
+        const unitPrice = parseMoney(createUnitPrice);
+        if (!Number.isFinite(quantity) || quantity <= 0) {
+            toast.error("Số lượng không hợp lệ");
+            return;
+        }
+        if (!Number.isFinite(unitPrice) || unitPrice <= 0) {
+            toast.error("Đơn giá không hợp lệ");
+            return;
+        }
+        const [year, month, day] = createFeeDate.split('-').map((x: string) => Number(x));
+        if (!year || !month || !day) {
+            toast.error("Ngày không hợp lệ");
+            return;
+        }
+
+        setIsCreateSubmitting(true);
+        try {
+            const response = await fetch(`http://localhost:8081/api/v1/extrafee`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    apartmentId: createApartmentSelected.id,
+                    title: createTitle.trim(),
+                    description: createDescription.trim() || null,
+                    quantity,
+                    unitPrice,
+                    isBilled: createIsBilled,
+                    year,
+                    month,
+                    day,
+                }),
+            });
+            if (!response.ok) {
+                const errorText = await response.text().catch(() => '');
+                throw new Error(errorText || `HTTP ${response.status}: ${response.statusText}`);
+            }
+            toast.success("Tạo khoản thu thành công");
+            setIsCreateModalOpen(false);
+            await fetchExtraServices(searchTerm);
+        } catch (error) {
+            toast.error("Tạo khoản thu thất bại", { description: (error as Error).message });
+        } finally {
+            setIsCreateSubmitting(false);
+        }
+    };
+
+    const filteredServices = services.filter((item: ExtraFeeSummary) => {
+        if (!item.feeDate) return true;
+        if (startDate && item.feeDate < startDate) return false;
+        if (endDate && item.feeDate > endDate) return false;
+        return true;
+    });
 
     return (
         <div className="space-y-6 p-2">
@@ -119,7 +253,7 @@ export function ExtraServiceManagement() {
                         <Search className="text-gray-400 mr-2" size={18} />
                         <input type="text" placeholder="Tìm số phòng..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="w-full bg-transparent focus:outline-none text-sm" />
                     </div>
-                    <button onClick={() => setIsCreateModalOpen(true)} className="flex items-center gap-2 px-6 text-white rounded-xl shadow-lg transition-all hover:scale-105 font-bold" style={{ backgroundColor: '#6366f1', height: '48px' }}>
+                    <button onClick={openCreateModal} className="flex items-center gap-2 px-6 text-white rounded-xl shadow-lg transition-all hover:scale-105 font-bold" style={{ backgroundColor: '#6366f1', height: '48px' }}>
                         <Plus size={20} /> Tạo khoản thu
                     </button>
                 </div>
@@ -137,7 +271,15 @@ export function ExtraServiceManagement() {
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-50">
-                        {services.map((item: any) => (
+                        {isLoading ? (
+                            <tr>
+                                <td className="px-6 py-6 text-sm text-gray-500" colSpan={4}>Đang tải dữ liệu...</td>
+                            </tr>
+                        ) : filteredServices.length === 0 ? (
+                            <tr>
+                                <td className="px-6 py-6 text-sm text-gray-500" colSpan={4}>Không có dữ liệu</td>
+                            </tr>
+                        ) : filteredServices.map((item) => (
                             <tr key={item.id} className="hover:bg-slate-50 transition-colors">
                                 <td className="px-6 py-4 font-bold text-slate-700">{item.apartmentLabel}</td>
                                 <td className="px-6 py-4 text-sm text-slate-600">{item.title}</td>
@@ -160,13 +302,143 @@ export function ExtraServiceManagement() {
                 </table>
             </div>
 
+            <Modal
+                isOpen={isCreateModalOpen}
+                onClose={() => setIsCreateModalOpen(false)}
+                title="Tạo khoản thu phát sinh"
+            >
+                <div className="p-6 space-y-5">
+                    <div className="space-y-2">
+                        <label className="text-xs font-bold text-gray-600">Căn hộ</label>
+                        <input
+                            value={createApartmentSelected ? createApartmentSelected.label : createApartmentKeyword}
+                            onChange={(e) => {
+                                setCreateApartmentSelected(null);
+                                setCreateApartmentKeyword(e.target.value);
+                            }}
+                            placeholder="Nhập số phòng/từ khóa..."
+                            className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none"
+                        />
+                        {createApartmentSelected ? null : (
+                            <div className="max-h-44 overflow-y-auto border border-gray-100 rounded-xl bg-white">
+                                {createApartmentOptions.map((opt) => (
+                                    <button
+                                        type="button"
+                                        key={opt.id}
+                                        onClick={() => {
+                                            setCreateApartmentSelected(opt);
+                                            setCreateApartmentKeyword('');
+                                            setCreateApartmentOptions([]);
+                                        }}
+                                        className="w-full text-left px-4 py-2 hover:bg-gray-50 text-sm"
+                                    >
+                                        {opt.label}
+                                    </button>
+                                ))}
+                                {createApartmentKeyword.trim() && createApartmentOptions.length === 0 ? (
+                                    <div className="px-4 py-2 text-sm text-gray-500">Không tìm thấy căn hộ</div>
+                                ) : null}
+                            </div>
+                        )}
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                            <label className="text-xs font-bold text-gray-600">Ngày ghi nhận</label>
+                            <input
+                                type="date"
+                                value={createFeeDate}
+                                onChange={(e) => setCreateFeeDate(e.target.value)}
+                                className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none"
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <label className="text-xs font-bold text-gray-600">Trạng thái</label>
+                            <select
+                                value={createIsBilled ? 'billed' : 'pending'}
+                                onChange={(e) => setCreateIsBilled(e.target.value === 'billed')}
+                                className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none"
+                            >
+                                <option value="pending">Chờ xử lý</option>
+                                <option value="billed">Đã lập hóa đơn</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div className="space-y-2">
+                        <label className="text-xs font-bold text-gray-600">Nội dung</label>
+                        <input
+                            value={createTitle}
+                            onChange={(e) => setCreateTitle(e.target.value)}
+                            placeholder="Ví dụ: Phí sửa chữa..."
+                            className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none"
+                        />
+                    </div>
+
+                    <div className="space-y-2">
+                        <label className="text-xs font-bold text-gray-600">Mô tả</label>
+                        <textarea
+                            value={createDescription}
+                            onChange={(e) => setCreateDescription(e.target.value)}
+                            placeholder="Nhập mô tả (không bắt buộc)..."
+                            className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none min-h-[96px]"
+                        />
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                            <label className="text-xs font-bold text-gray-600">Số lượng</label>
+                            <input
+                                value={createQuantity}
+                                onChange={(e) => setCreateQuantity(e.target.value)}
+                                className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none"
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <label className="text-xs font-bold text-gray-600">Đơn giá (VND)</label>
+                            <input
+                                value={createUnitPrice}
+                                onChange={(e) => setCreateUnitPrice(e.target.value)}
+                                placeholder="Ví dụ: 500000"
+                                className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none"
+                            />
+                        </div>
+                    </div>
+
+                    <div className="flex gap-3">
+                        <button
+                            type="button"
+                            onClick={() => setIsCreateModalOpen(false)}
+                            className="flex-1 py-3 rounded-xl border border-gray-200 font-bold"
+                            disabled={isCreateSubmitting}
+                        >
+                            Hủy
+                        </button>
+                        <button
+                            type="button"
+                            onClick={submitCreate}
+                            className="flex-1 py-3 rounded-xl bg-gray-900 text-white font-bold"
+                            disabled={isCreateSubmitting}
+                        >
+                            {isCreateSubmitting ? 'Đang tạo...' : 'Tạo khoản thu'}
+                        </button>
+                    </div>
+                </div>
+            </Modal>
+
             {/* MODAL CHI TIẾT KHOẢN THU */}
             <Modal 
                 isOpen={isDetailModalOpen} 
-                onClose={() => setIsDetailModalOpen(false)} 
+                onClose={() => {
+                    setIsDetailModalOpen(false);
+                    setSelectedService(null);
+                    setIsDetailLoading(false);
+                }}
                 title="Chi tiết dịch vụ phát sinh"
             >
-                {selectedService && (
+                {isDetailLoading && !selectedService ? (
+                    <div className="p-6 text-sm text-gray-500">Đang tải chi tiết...</div>
+                ) : selectedService && (
                     <div className="p-6 space-y-6">
                         {/* Header chi tiết */}
                         <div className="flex items-center gap-4 p-4 bg-indigo-50 rounded-2xl">
@@ -217,7 +489,7 @@ export function ExtraServiceManagement() {
                         {/* Trạng thái hóa đơn */}
                         <div className="flex items-center justify-between p-4 rounded-2xl border border-gray-100">
                             <span className="text-sm font-bold text-gray-500">Trạng thái thanh toán</span>
-                            {selectedService.isBilled ? (
+                            {(selectedService.isBilled ?? selectedService.billed) ? (
                                 <span className="px-4 py-1.5 bg-emerald-100 text-emerald-600 rounded-full text-[10px] font-black uppercase">
                                     Đã lập hóa đơn
                                 </span>
