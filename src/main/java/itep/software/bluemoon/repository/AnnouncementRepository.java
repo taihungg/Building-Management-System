@@ -45,7 +45,6 @@ public interface AnnouncementRepository extends JpaRepository<Announcement, UUID
         """)
     List<AnnouncementSummary> findAnnouncementsByResidentId(@Param("residentId") UUID residentId);
     
- // Trong AnnouncementRepository thêm:
     @Query("""
         SELECT a.id as id,
                a.title as title,

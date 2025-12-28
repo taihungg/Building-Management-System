@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Menu, Search, Clock, LogOut, User, Settings } from 'lucide-react'; // Import Clock icon
+import { Menu, Clock, LogOut, User, Settings } from 'lucide-react'; // Import Clock icon
 import { useNavigate } from 'react-router-dom';
 import { getCurrentPeriod } from '../utils/timeUtils';
 
@@ -80,18 +80,6 @@ export function AuthorityHeader({ onMenuClick, onLogout }: AuthorityHeaderProps)
               <p className="text-xs text-gray-600">Quản lý Cư trú và an ninh</p>
             </div>
           </button>
-        </div>
-
-        {/* Center: Search Bar */}
-        <div className="flex-1 max-w-2xl mx-8">
-          <div className="relative">
-            <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-            <input
-              type="text"
-              placeholder="Tìm kiếm cư dân, thông báo..."
-              className="w-full pl-12 pr-4 py-3 bg-gray-50 border-2 border-gray-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-700 text-sm"
-            />
-          </div>
         </div>
 
         {/* Right: Real-time Clock & Profile */}

@@ -38,7 +38,7 @@ public class ExtraFeeController {
     }
 
     @GetMapping
-    public ResponseEntity<Object> searchByAllInformation(@RequestParam(value = "keyword") String keyword){
+    public ResponseEntity<Object> searchByAllInformation(@RequestParam(value = "keyword", required = false) String keyword){
         List<ExtraFeeSummary> data = extraFeeService.searchByAllInformation(keyword);
 
         return ApiResponse.responseBuilder(

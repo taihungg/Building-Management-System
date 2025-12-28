@@ -3,6 +3,9 @@ package itep.software.bluemoon.entity.accounting;
 import java.math.BigDecimal;
 import java.util.UUID;
 
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -66,6 +69,7 @@ public class InvoiceDetail {
     @Column(name = "description", columnDefinition = "TEXT")
     private String description;
 
-    @Column(columnDefinition = "jsonb")
+    @Column(name = "line_items", columnDefinition = "jsonb")
+    @JdbcTypeCode(SqlTypes.JSON)
     private String lineItems;
 }

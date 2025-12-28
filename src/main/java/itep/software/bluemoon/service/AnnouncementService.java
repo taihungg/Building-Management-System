@@ -32,7 +32,6 @@ public class AnnouncementService {
     private final ResidentRepository residentRepository;
     private final StaffRepository staffRepository;
 
-    @Transactional
     public Announcement createAnnouncement(AnnouncementCreateRequestDTO request) {
         Staff sender = staffRepository.findById(request.getSenderId())
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy nhân viên"));
