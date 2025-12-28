@@ -5,17 +5,19 @@ import java.util.UUID;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-import org.springdoc.core.annotations.ParameterObject;
 
 import itep.software.bluemoon.entity.Announcement;
 import itep.software.bluemoon.model.DTO.announcement.AnnouncementCreateRequestDTO;
+import itep.software.bluemoon.model.DTO.announcement.AnnouncementUpdateRequestDTO;
 import itep.software.bluemoon.model.projection.AnnouncementDetailSummary;
 import itep.software.bluemoon.model.projection.AnnouncementWithReadStatus;
 import itep.software.bluemoon.model.projection.RecipientStatusSummary;
@@ -93,4 +95,34 @@ public class AnnouncementController {
                 null
         );
     }
+    
+    
+    //Cập nhật thông báo
+    @PutMapping("/{id}")
+    public ResponseEntity<Object> updateAnnouncement(
+            @PathVariable UUID id,
+            @RequestBody AnnouncementUpdateRequestDTO request) {
+        
+        AnnouncementDetailSummary announcement = announcementService.updateAnnouncement(id, request);
+        
+        return ApiResponse.responseBuilder(
+                HttpStatus.OK,
+                "Announcement updated successfully",
+                announcement
+        );
+    }
+
+    //Xóa thông báo
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Object> deleteAnnouncement(@PathVariable UUID id) {
+        announcementService.deleteAnnouncement(id);
+        
+        return ApiResponse.responseBuilder(
+                HttpStatus.OK,
+                "Announcement deleted successfully",
+                null
+        );
+    }
+    
+    
 }
