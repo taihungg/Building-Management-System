@@ -2,6 +2,7 @@ package itep.software.bluemoon.controller;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.UUID;
 
 import org.springframework.core.io.InputStreamResource;
 import org.springframework.http.HttpHeaders;
@@ -9,6 +10,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -111,6 +113,21 @@ public class AccountingController {
                 HttpStatus.OK,
                 "Get data for pie chart of dashboard successfully!",
                 data
+        );
+    }
+    
+    @PatchMapping("/invoices/confirm")
+    public ResponseEntity<Object> confirmInvoices(
+            @RequestParam Integer month,
+            @RequestParam Integer year,
+            @RequestParam UUID staffId) {
+        
+        List<InvoiceSummary> invoices = invoiceService.confirmInvoices(month, year, staffId);
+        
+        return ApiResponse.responseBuilder(
+                HttpStatus.OK,
+                String.format("Confirmed %d invoices and sent notifications successfully!", invoices.size()),
+                invoices
         );
     }
 }

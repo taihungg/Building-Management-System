@@ -24,10 +24,12 @@ import itep.software.bluemoon.entity.accounting.PriceTier;
 import itep.software.bluemoon.entity.accounting.ServicePrice;
 import itep.software.bluemoon.entity.accounting.ServiceType;
 import itep.software.bluemoon.entity.accounting.UsageRecord;
+import itep.software.bluemoon.enumeration.AnnouncementTargetType;
 import itep.software.bluemoon.enumeration.InvoiceStatus;
 import itep.software.bluemoon.enumeration.ServiceCode;
 import itep.software.bluemoon.enumeration.TierCode;
 import itep.software.bluemoon.model.DTO.accounting.InvoiceLineItemDTO;
+import itep.software.bluemoon.model.DTO.announcement.AnnouncementCreateRequestDTO;
 import itep.software.bluemoon.model.projection.InvoiceSummary;
 import itep.software.bluemoon.repository.ApartmentRepository;
 import itep.software.bluemoon.repository.ExtraFeeRepository;
@@ -54,6 +56,7 @@ public class InvoiceService {
     private final UsageRecordRepository usageRecordRepository;
     private final ExtraFeeRepository extraFeeRepository;
     private final ObjectMapper objectMapper;
+    private final AnnouncementService announcementService;
 
     public List<InvoiceSummary> getInvoiceSummary(int month, int year){
         return invoiceRepository.getInvoiceSummary(month, year);
@@ -373,5 +376,52 @@ public class InvoiceService {
             log.error("JSON Error", e);
             return "[]";
         }
+    }
+    
+    
+    
+    /**
+     *  Duyệt cac hóa đơn trong tháng pending -> unpaid và gửi thông báo
+     */
+    public List<InvoiceSummary> confirmInvoices(int month, int year, UUID staffId) {
+        List<Invoice> pendingInvoices = invoiceRepository.findByMonthAndYearAndStatus(
+                month, year, InvoiceStatus.PENDING);
+        
+        if (pendingInvoices.isEmpty()) {
+            throw new RuntimeException(
+                String.format("Không tìm thấy hóa đơn PENDING cho tháng %d/%d", month, year));
+        }
+        
+        for (Invoice invoice : pendingInvoices) {
+            try {
+                invoice.setStatus(InvoiceStatus.UNPAID);
+                createInvoiceNotification(invoice, staffId);
+            } catch (Exception e) {
+                log.error("Lỗi confirm hóa đơn {}: {}", invoice.getId(), e.getMessage());
+            }
+        }
+        
+        invoiceRepository.saveAll(pendingInvoices);
+        
+        return invoiceRepository.findInvoiceSummariesByMonthYearStatus(month, year, InvoiceStatus.UNPAID);
+    }
+    
+    private void createInvoiceNotification(Invoice invoice, UUID staffId) {
+        Apartment apartment = invoice.getApartment();
+        
+        AnnouncementCreateRequestDTO request = new AnnouncementCreateRequestDTO();
+        request.setSenderId(staffId);
+        request.setTitle(String.format("Hóa đơn tháng %d/%d", invoice.getMonth(), invoice.getYear()));
+        request.setMessage(String.format(
+            "Căn hộ %d có hóa đơn mới với tổng số tiền: %s VNĐ. Vui lòng thanh toán trước hạn.",
+            apartment.getRoomNumber(),
+            VndUtils.format(invoice.getTotalAmount())
+        ));
+        request.setTargetType(AnnouncementTargetType.SPECIFIC_APARTMENTS);
+        request.setApartmentIds(List.of(apartment.getId()));
+        request.setTargetDetail("Hóa đơn căn hộ " + apartment.getRoomNumber());
+        
+        // Gọi service có sẵn
+        announcementService.createAnnouncement(request);
     }
 }
