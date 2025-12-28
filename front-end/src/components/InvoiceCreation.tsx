@@ -48,7 +48,7 @@ export function InvoiceCreation() {
       const data = res.data || res;
       
       setTableData(Array.isArray(data) ? data : []);
-      toast.success("Tải dữ liệu thành công, chú có thể sửa trực tiếp trên bảng");
+      toast.success("Tải dữ liệu thành công, có thể sửa trực tiếp trên bảng");
     } catch (error: any) {
       toast.error("Lỗi đọc file", { description: error.message });
     } finally {
