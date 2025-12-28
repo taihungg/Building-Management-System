@@ -106,7 +106,13 @@ export function Notifications() {
   const fetchBuildings = useCallback(async (keyword: string) => {
     setIsBuildingsLoading(true);
     try {
-        const response = await fetch(`http://localhost:8081/api/v1/buildings/dropdown?keyword=${encodeURIComponent(keyword ?? '')}`); 
+        const response = await fetch(`https://untoasted-jean-unsympathisingly.ngrok-free.dev/api/v1/buildings/dropdown?keyword=${encodeURIComponent(keyword ?? '')}`,{
+          method: 'GET',
+          headers: {
+              'Content-Type': 'application/json',
+              'ngrok-skip-browser-warning': 'true'
+          },
+      }); 
         
         if (!response.ok) {
             throw new Error("Không thể tải danh sách Tòa nhà.");
@@ -129,7 +135,13 @@ export function Notifications() {
   const fetchApartments = useCallback(async (keyword: string) => {
     setIsApartmentsLoading(true);
     try {
-        const response = await fetch(`http://localhost:8081/api/v1/apartments/dropdown?keyword=${encodeURIComponent(keyword ?? '')}`); 
+        const response = await fetch(`https://untoasted-jean-unsympathisingly.ngrok-free.dev/api/v1/apartments/dropdown?keyword=${encodeURIComponent(keyword ?? '')}`,{
+          method: 'GET',
+          headers: {
+              'Content-Type': 'application/json',
+              'ngrok-skip-browser-warning': 'true'
+          },
+      }); 
         
         if (!response.ok) {
             throw new Error("Không thể tải danh sách Căn hộ.");
@@ -162,9 +174,15 @@ export function Notifications() {
     const controller = new AbortController();
     const timeoutId = window.setTimeout(() => controller.abort(), ANNOUNCEMENTS_FETCH_TIMEOUT_MS);
     try {
-        const response = await fetch('http://localhost:8081/api/announcements/staff', {
-            signal: controller.signal,
-        }); 
+      const response = await fetch('https://untoasted-jean-unsympathisingly.ngrok-free.dev/api/announcements/staff', {
+        signal: controller.signal,
+        method: 'GET',
+        headers: {
+            'Content-Type': 'application/json',
+            // Header bắt buộc để lấy dữ liệu JSON trực tiếp từ ngrok
+            'ngrok-skip-browser-warning': 'true'
+        }
+    });
         
         if (!response.ok) {
             throw new Error("Không thể lấy danh sách thông báo đã gửi.");
@@ -346,10 +364,11 @@ export function Notifications() {
         const timeoutId = window.setTimeout(() => controller.abort(), requestTimeoutMs);
 
         try {
-            const response = await fetch('http://localhost:8081/api/announcements', {
+            const response = await fetch('https://untoasted-jean-unsympathisingly.ngrok-free.dev/api/announcements', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
+                    'ngrok-skip-browser-warning': 'true'
                 },
                 body: JSON.stringify(payload),
                 signal: controller.signal,

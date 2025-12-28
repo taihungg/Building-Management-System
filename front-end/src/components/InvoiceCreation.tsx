@@ -34,9 +34,12 @@ export function InvoiceCreation() {
 
     setIsUploading(true);
     try {
-      const url = `http://localhost:8081/api/v1/accounting/usage-import/preview?month=${selectedMonth}&year=${selectedYear}`;
+      const url = `https://untoasted-jean-unsympathisingly.ngrok-free.dev/api/v1/accounting/usage-import/preview?month=${selectedMonth}&year=${selectedYear}`;
       const response = await fetch(url, {
         method: 'POST',
+        headers: {
+          'ngrok-skip-browser-warning': 'true'
+        },
         body: formData,
       });
 
@@ -68,10 +71,10 @@ export function InvoiceCreation() {
 
     setIsSaving(true);
     try {
-      const url = `http://localhost:8081/api/v1/accounting/usage-import/save?month=${selectedMonth}&year=${selectedYear}`;
+      const url = `https://untoasted-jean-unsympathisingly.ngrok-free.dev/api/v1/accounting/usage-import/save?month=${selectedMonth}&year=${selectedYear}`;
       const response = await fetch(url, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' },
         body: JSON.stringify(uniqueData)
       });
 

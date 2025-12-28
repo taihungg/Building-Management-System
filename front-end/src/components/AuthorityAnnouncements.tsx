@@ -70,7 +70,13 @@ export function AuthorityAnnouncements() {
     try {
       // Fetch all issues (vì type STATE chưa có data, dùng tất cả hoặc SECURITY)
       // Có thể thay đổi thành ?type=SECURITY nếu chỉ muốn security issues
-      const response = await fetch('http://localhost:8081/api/issues');
+      const response = await fetch('https://untoasted-jean-unsympathisingly.ngrok-free.dev/api/issues',{
+        method: 'GET',
+        headers: {
+          // TUYỆT ĐỐI KHÔNG để 'Content-Type': 'application/json' ở đây khi dùng FormData
+          'ngrok-skip-browser-warning': 'true' 
+        },
+      });
       if (!response.ok) {
         throw new Error('Không thể tải danh sách tin báo');
       }
@@ -309,10 +315,11 @@ export function AuthorityAnnouncements() {
   const handleStatusUpdate = async (announcementId: string, newStatus: 'pending' | 'in_progress' | 'handled') => {
     try {
       const issueStatus = mapAnnouncementStatusToIssueStatus(newStatus);
-      const response = await fetch(`http://localhost:8081/api/issues/${announcementId}/status`, {
+      const response = await fetch(`https://untoasted-jean-unsympathisingly.ngrok-free.dev/api/issues/${announcementId}/status`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
+          'ngrok-skip-browser-warning': 'true'
         },
         body: JSON.stringify({ status: issueStatus }),
       });

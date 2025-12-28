@@ -91,10 +91,11 @@ export function ServiceManagement() {
   // 1. API Tạo Issue (POST)
   const createIssueApi = async (issueData: IssueCreateRequest) => {
     try {
-      const response = await fetch('http://localhost:8081/api/issues', {
+      const response = await fetch('https://untoasted-jean-unsympathisingly.ngrok-free.dev/api/issues', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'ngrok-skip-browser-warning': 'true'
         },
         body: JSON.stringify(issueData),
       });
@@ -117,10 +118,11 @@ export function ServiceManagement() {
   const updateIssueStatusApi = async (issueId: string, newStatus: IssueStatusEnum) => {
     setOpenIssueMenuId(null); 
     try {
-        const response = await fetch(`http://localhost:8081/api/issues/${issueId}/status`, {
+        const response = await fetch(`https://untoasted-jean-unsympathisingly.ngrok-free.dev/api/issues/${issueId}/status`, {
             method: 'PATCH',
             headers: {
                 'Content-Type': 'application/json',
+                'ngrok-skip-browser-warning': 'true'
             },
             body: JSON.stringify({ status: newStatus }), 
         });
@@ -144,8 +146,12 @@ export function ServiceManagement() {
     setIsLoading(true);
     setError(null);
     try {
-        let url = 'http://localhost:8081/api/issues';
-        const response = await fetch(url);
+        let url = 'https://untoasted-jean-unsympathisingly.ngrok-free.dev/api/issues';
+        const response = await fetch(url ,{method: 'GET',
+          headers: {
+              'Content-Type': 'application/json',
+              'ngrok-skip-browser-warning': 'true'
+          }});
         
         if (!response.ok) {
             throw new Error("Không thể tải danh sách yêu cầu/sự cố.");
@@ -211,7 +217,13 @@ export function ServiceManagement() {
     
     setIsApartmentDropdownLoading(true);
     try {
-      const response = await fetch(`http://localhost:8081/api/v1/apartments/dropdown?keyword=${keyword}`);
+      const response = await fetch(`https://untoasted-jean-unsympathisingly.ngrok-free.dev/api/v1/apartments/dropdown?keyword=${keyword}`,{
+        method: 'GET',
+        headers: {
+            'Content-Type': 'application/json',
+            'ngrok-skip-browser-warning': 'true'
+        },
+    });
       
       if (!response.ok) {
         // Lỗi 404/Network

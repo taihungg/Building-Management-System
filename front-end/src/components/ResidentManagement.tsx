@@ -148,17 +148,29 @@ const [includeInactive, setIncludeInactive] = useState(false);
   // --- FETCH DỮ LIỆU CƯ DÂN ---
   const fetchResidents = async () => {
     try {
-      let url = 'http://localhost:8081/api/v1/residents';
+      // Đổi sang domain ngrok mới của chú
+      let url = 'https://untoasted-jean-unsympathisingly.ngrok-free.dev/api/v1/residents';
 
-      const response = await fetch(url);
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          // Header quan trọng để ngrok không chặn API
+          'ngrok-skip-browser-warning': 'true'
+        }
+      });
+
       if (!response.ok) {
         throw new Error("Can't get residents");
       }
+
       const res = await response.json();
       const data = Array.isArray(res.data) ? res.data.map(normalizeResidentData) : [];
       setResidents(data);
     }
     catch (err) {
+      // Chuẩn cú pháp log lỗi để chú dễ kiểm tra
+      console.log(err);
       setError((err as Error).message);
     }
   }
@@ -207,13 +219,17 @@ const [includeInactive, setIncludeInactive] = useState(false);
   // --- API CALL: CREATE RESIDENT ---
   const createResident = async (dataToCreate: any) => {
     try {
-      const response = await fetch('http://localhost:8081/api/v1/residents', {
+      // Thay sang domain ngrok mới
+      const response = await fetch('https://untoasted-jean-unsympathisingly.ngrok-free.dev/api/v1/residents', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          // Header bắt buộc khi dùng ngrok để không bị chặn
+          'ngrok-skip-browser-warning': 'true'
         },
         body: JSON.stringify(dataToCreate),
       });
+
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
         throw new Error(errorData.message || "Can't create residents");
@@ -221,6 +237,8 @@ const [includeInactive, setIncludeInactive] = useState(false);
       return await response.json();
     }
     catch (err) {
+      // Log lỗi chuẩn cú pháp chú dặn
+      console.log(err);
       throw err;
     }
   }
@@ -316,8 +334,18 @@ const [includeInactive, setIncludeInactive] = useState(false);
   useEffect(() => {
     const getApartmentDropDown = async () => {
       try {
-        let url = `http://localhost:8081/api/v1/apartments/dropdown?keyword=${encodeURIComponent(apartmentKeyword || "")}`;
-        const response = await fetch(url);
+        // Thay domain sang ngrok mới của chú
+        let url = `https://untoasted-jean-unsympathisingly.ngrok-free.dev/api/v1/apartments/dropdown?keyword=${encodeURIComponent(apartmentKeyword || "")}`;
+        
+        const response = await fetch(url, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            // Header quan trọng để vượt qua trang cảnh báo của ngrok
+            'ngrok-skip-browser-warning': 'true'
+          }
+        });
+  
         if (!response.ok) {
           throw new Error("Can't get apartments");
         }
@@ -325,7 +353,8 @@ const [includeInactive, setIncludeInactive] = useState(false);
         setApartmentList(res.data || []);
       }
       catch (err) {
-        console.error((err as Error).message);
+        // Chuẩn cú pháp log lỗi chú dặn
+        console.log(err);
         setApartmentList([]);
       }
     }
@@ -340,7 +369,7 @@ const [includeInactive, setIncludeInactive] = useState(false);
 
   const handleDelete = async (residentID: string, isHardDelete: boolean) => {
     const deleteAction = async () => {
-      let baseUrl = `http://localhost:8081/api/v1/residents`;
+      let baseUrl = `https://untoasted-jean-unsympathisingly.ngrok-free.dev/api/v1/residents`;
       let url = `${baseUrl}?id=${residentID}`;
       if (isHardDelete) {
         url += '&hard=true';
@@ -381,11 +410,13 @@ const [includeInactive, setIncludeInactive] = useState(false);
         status: updateStatus,
       }
       
-      let url = `http://localhost:8081/api/v1/residents/${selectedResident.id}`;
+      // 1. Domain cho lệnh PUT (Cập nhật)
+      let url = `https://untoasted-jean-unsympathisingly.ngrok-free.dev/api/v1/residents/${selectedResident.id}`;
       const response = await fetch(url, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
+          "ngrok-skip-browser-warning": "true" // Vượt rào ngrok
         },
         body: JSON.stringify(dataToUpdate),
       });
@@ -395,9 +426,15 @@ const [includeInactive, setIncludeInactive] = useState(false);
         throw new Error(res.message || "Không thể cập nhật cư dân");
       }
       
-      // Tải lại bảng và chi tiết
+      // Tải lại bảng danh sách
       await fetchResidents();
-      const detailResponse = await fetch(`http://localhost:8081/api/v1/residents/${selectedResident.id}`);
+
+      // 2. Domain cho lệnh GET (Lấy chi tiết sau khi sửa)
+      const detailResponse = await fetch(`https://untoasted-jean-unsympathisingly.ngrok-free.dev/api/v1/residents/${selectedResident.id}`, {
+        headers: {
+          "ngrok-skip-browser-warning": "true" // Vượt rào ngrok
+        }
+      });
       const detailRes = await detailResponse.json();
       
       setSelectedResident(normalizeResidentData(detailRes.data)); 
@@ -421,8 +458,14 @@ const [includeInactive, setIncludeInactive] = useState(false);
     const createAction = async () => {
       setIsCreatingAccount(true);
       try {
-        const response = await fetch(`http://localhost:8081/api/v1/residents/${selectedResident.id}/account`, {
-          method: "POST"
+        // Thay domain sang ngrok mới của chú
+        const response = await fetch(`https://untoasted-jean-unsympathisingly.ngrok-free.dev/api/v1/residents/${selectedResident.id}/account`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            // Header bắt buộc để chạy qua ngrok
+            "ngrok-skip-browser-warning": "true"
+          }
         });
 
         const res = await response.json().catch(() => ({}));
@@ -432,7 +475,13 @@ const [includeInactive, setIncludeInactive] = useState(false);
 
         const updated = normalizeResidentData(res.data);
         setSelectedResident(updated);
+        
+        // Hàm fetchResidents này chú cũng nhớ phải dùng domain ngrok bên trong nhé
         await fetchResidents();
+      } catch (err) {
+        // Log lỗi chuẩn cú pháp chú dặn
+        console.log(err);
+        throw err;
       } finally {
         setIsCreatingAccount(false);
       }
@@ -450,7 +499,15 @@ const [includeInactive, setIncludeInactive] = useState(false);
     setIsLoadingDetail(true);
     setIsEditMode(false); 
     try {
-        const response = await fetch(`http://localhost:8081/api/v1/residents/${id}`);
+        // Thay domain sang ngrok mới của chú
+        const response = await fetch(`https://untoasted-jean-unsympathisingly.ngrok-free.dev/api/v1/residents/${id}`, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+                // Header "vượt rào" ngrok để lấy dữ liệu JSON thay vì trang cảnh báo
+                'ngrok-skip-browser-warning': 'true'
+            }
+        });
         
         if (!response.ok) {
             throw new Error("Không thể tải thông tin chi tiết cư dân");
@@ -464,14 +521,15 @@ const [includeInactive, setIncludeInactive] = useState(false);
         setUpdateName(residentData.fullName);
         setUpdateIDCard(residentData.idCard || ""); 
         setUpdateDOB(residentData.dob || "");
-              setUpdateHomeTown(residentData.homeTown || ""); 
-              setUpdateEmail(residentData.email || "");
-              setUpdatePhone(residentData.phoneNumber || "");
-              setUpdateStatus(isEditableResidentStatus(residentData.status) ? residentData.status : "PERMANENT_RESIDENCE");
-              
-              setIsViewModalOpen(true);      // Mở Modal
-          } catch (err) {
-              console.error(err);
+        setUpdateHomeTown(residentData.homeTown || ""); 
+        setUpdateEmail(residentData.email || "");
+        setUpdatePhone(residentData.phoneNumber || "");
+        setUpdateStatus(isEditableResidentStatus(residentData.status) ? residentData.status : "PERMANENT_RESIDENCE");
+        
+        setIsViewModalOpen(true); // Mở Modal
+    } catch (err) {
+        // Chuẩn cú pháp log lỗi để chú dễ kiểm tra
+        console.log(err);
         toast.error("Lỗi tải dữ liệu", { description: (err as Error).message });
         setIsViewModalOpen(false);
     } finally {
@@ -487,7 +545,15 @@ const [includeInactive, setIncludeInactive] = useState(false);
     setIsLoadingDetail(true); 
 
     try {
-        const response = await fetch(`http://localhost:8081/api/v1/residents/${resident.id}`);
+        // Thay domain sang ngrok mới của chú
+        const response = await fetch(`https://untoasted-jean-unsympathisingly.ngrok-free.dev/api/v1/residents/${resident.id}`, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+                // Header quan trọng để không bị trang cảnh báo ngrok chặn
+                'ngrok-skip-browser-warning': 'true'
+            }
+        });
         
         if (!response.ok) {
             throw new Error("Không thể tải thông tin chi tiết cư dân để chỉnh sửa");
@@ -507,7 +573,8 @@ const [includeInactive, setIncludeInactive] = useState(false);
         setUpdateStatus(isEditableResidentStatus(residentData.status) ? residentData.status : "PERMANENT_RESIDENCE");
         
     } catch (err) {
-        console.error(err);
+        // Log lỗi chuẩn cú pháp chú dặn
+        console.log(err);
         toast.error("Lỗi tải dữ liệu", { description: (err as Error).message });
         setIsViewModalOpen(false); 
     } finally {

@@ -192,12 +192,13 @@ export function AuthorityResidentManagement() {
         params.append('include_inactive', 'true');
       }
       const queryString = params.toString();
-      let url = `http://localhost:8081/api/v1/residents${queryString ? `?${queryString}` : ''}`;
+      let url = `https://untoasted-jean-unsympathisingly.ngrok-free.dev/api/v1/residents${queryString ? `?${queryString}` : ''}`;
 
       const response = await fetch(url, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
+          'ngrok-skip-browser-warning': 'true'
         },
         signal: controller.signal,
       });
@@ -306,7 +307,13 @@ export function AuthorityResidentManagement() {
     setIsViewModalOpen(true);
     setSelectedResident(null);
     try {
-      const response = await fetch(`http://localhost:8081/api/v1/residents/${residentId}`);
+      const response = await fetch(`https://untoasted-jean-unsympathisingly.ngrok-free.dev/api/v1/residents/${residentId}`,{
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'ngrok-skip-browser-warning': 'true'
+        },
+      });
       if (!response.ok) {
         throw new Error("Không thể tải thông tin cư dân");
       }

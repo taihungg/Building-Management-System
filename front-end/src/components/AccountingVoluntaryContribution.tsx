@@ -36,19 +36,19 @@ export function AccountingVoluntaryContribution() {
     const [isLoadingDetails, setIsLoadingDetails] = useState(false);
     const [animate, setAnimate] = useState(false);
 
-    // 1. Lấy danh sách Campaign
     const fetchCampaigns = async () => {
         try {
-            const response = await fetch('https://bfb4409df63b.ngrok-free.app/api/v1/campaigns', {
+            const response = await fetch('https://untoasted-jean-unsympathisingly.ngrok-free.dev/api/v1/campaigns', {
                 method: 'GET',
                 headers: {
                     'Content-Type': 'application/json',
-                    'ngrok-skip-browser-warning': 'true'
+                    'ngrok-skip-browser-warning': 'true' // Vượt rào ngrok
                 }
             });
             const result = await response.json();
-            if (result.statusCode === 200) {
-                setCampaigns(result.data);
+            // Kiểm tra statusCode theo format của chú
+            if (result.statusCode === 200 || response.ok) {
+                setCampaigns(result.data || []);
                 setTimeout(() => setAnimate(true), 150);
             }
         } catch (error) {
@@ -57,60 +57,65 @@ export function AccountingVoluntaryContribution() {
         }
     };
 
-    // 2. Xử lý xoá Campaign
-   // 1. Xử lý xoá Campaign - Đã chuyển sang Ngrok
-   const handleDeleteCampaign = async (e: React.MouseEvent, id: string, title: string) => {
-    e.stopPropagation(); 
-    
-    if (!window.confirm(`Chú có chắc chắn muốn xoá chiến dịch "${title}" không? Dữ liệu đã xoá sẽ không thể khôi phục.`)) {
-        return;
-    }
-
-    try {
-        const response = await fetch(`https://bfb4409df63b.ngrok-free.app/api/v1/campaigns/${id}`, {
-            method: 'DELETE',
-            headers: {
-                'ngrok-skip-browser-warning': 'true' // Vượt rào ngrok
-            }
-        });
-        const result = await response.json();
-
-        if (result.statusCode === 200 || response.ok) {
-            toast.success(`Đã xoá thành công chiến dịch: ${title}`);
-            setCampaigns(prev => prev.filter(item => item.id !== id));
-        } else {
-            toast.error(result.message || "Có lỗi xảy ra khi xoá");
+    // 2. Xử lý xoá Campaign - Đã sửa lỗi trùng lặp URL
+    const handleDeleteCampaign = async (e: React.MouseEvent, id: string, title: string) => {
+        e.stopPropagation(); 
+        
+        if (!window.confirm(`Chú có chắc chắn muốn xoá chiến dịch "${title}" không? Dữ liệu đã xoá sẽ không thể khôi phục.`)) {
+            return;
         }
-    } catch (error) {
-        console.log(error); // Chuẩn cú pháp chú dặn
-        toast.error("Lỗi kết nối server khi xoá");
-    }
-};
 
-// 2. Xem chi tiết - Đã chuyển sang Ngrok
-const fetchCampaignDetail = async (campaign: Campaign) => {
-    setSelectedCampaign(campaign);
-    setIsLoadingDetails(true);
-    try {
-        const response = await fetch(`https://bfb4409df63b.ngrok-free.app/api/v1/campaigns/${campaign.id}`, {
-            method: 'GET',
-            headers: {
-                'ngrok-skip-browser-warning': 'true' // Vượt rào ngrok
+        try {
+            // Sửa lại URL: Bỏ đoạn /campaignId/api/v1 dư thừa
+            const response = await fetch(`https://untoasted-jean-unsympathisingly.ngrok-free.dev/api/v1/campaigns/${id}`, {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'ngrok-skip-browser-warning': 'true'
+                }
+            });
+            
+            const result = await response.json().catch(() => ({}));
+
+            if (response.ok || result.statusCode === 200) {
+                toast.success(`Đã xoá thành công chiến dịch: ${title}`);
+                setCampaigns(prev => prev.filter(item => item.id !== id));
+            } else {
+                toast.error(result.message || "Có lỗi xảy ra khi xoá");
             }
-        });
-        const result = await response.json();
-        if (result.statusCode === 200) {
-            setSelectedCampaign(result.data.campaign);
-            setContributions(result.data.contributions || []);
+        } catch (error) {
+            console.log(error); 
+            toast.error("Lỗi kết nối server khi xoá");
         }
-    } catch (error) {
-        console.log(error); // Chuẩn cú pháp chú dặn
-        toast.error("Không thể tải chi tiết đóng góp");
-    } finally {
-        setIsLoadingDetails(false);
-    }
-};
+    };
 
+    // 3. Xem chi tiết - Đã sửa lỗi logic URL
+    const fetchCampaignDetail = async (campaign: Campaign) => {
+        setSelectedCampaign(campaign);
+        setIsLoadingDetails(true);
+        try {
+            // Sửa lại URL: Truy cập thẳng vào ID chiến dịch
+            const response = await fetch(`https://untoasted-jean-unsympathisingly.ngrok-free.dev/api/v1/campaigns/${campaign.id}`, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'ngrok-skip-browser-warning': 'true'
+                }
+            });
+            const result = await response.json();
+            
+            if (response.ok || result.statusCode === 200) {
+                // Giữ nguyên logic map dữ liệu của chú
+                setSelectedCampaign(result.data.campaign || result.data);
+                setContributions(result.data.contributions || []);
+            }
+        } catch (error) {
+            console.log(error);
+            toast.error("Không thể tải chi tiết đóng góp");
+        } finally {
+            setIsLoadingDetails(false);
+        }
+    };
     useEffect(() => { fetchCampaigns(); }, []);
 
     const formatCurrency = (amount: number) =>

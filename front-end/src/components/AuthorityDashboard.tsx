@@ -97,9 +97,15 @@ export function AuthorityDashboard() {
 
   const fetchResidents = async () => {
     try {
-      let url = 'http://localhost:8081/api/v1/residents';
+      let url = 'https://untoasted-jean-unsympathisingly.ngrok-free.dev/api/v1/residents';
 
-      const response = await fetch(url);
+      const response = await fetch(url,{
+        method: 'GET',
+        headers: {
+           'Content-Type': 'application/json' ,
+          'ngrok-skip-browser-warning': 'true' 
+        },
+      });
       if (!response.ok) {
         throw new Error("Can't get residents");
       }
@@ -116,7 +122,13 @@ export function AuthorityDashboard() {
   const fetchUrgentIssues = async () => {
     try {
       // Fetch issues với type SECURITY hoặc STATE (ưu tiên SECURITY vì có data)
-      const response = await fetch('http://localhost:8081/api/issues?type=SECURITY');
+      const response = await fetch('https://untoasted-jean-unsympathisingly.ngrok-free.dev/api/issues?type=SECURITY',{
+        method: 'GET',
+        headers: {
+           'Content-Type': 'application/json' ,
+          'ngrok-skip-browser-warning': 'true' 
+        },
+      });
       if (!response.ok) {
         throw new Error('Không thể tải danh sách tin báo');
     }
