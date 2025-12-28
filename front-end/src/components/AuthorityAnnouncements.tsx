@@ -16,6 +16,7 @@ interface Announcement {
   reporterName?: string; // Tên người báo
   reporterAvatar?: string; // Avatar người báo
   roomNumber?: number; // Số phòng từ API
+  location?: string | null; // Địa điểm từ API
 }
 // -----------------------------------------------------------
 
@@ -24,7 +25,15 @@ interface Announcement {
 // --- Hàm giả lập formatRelativeTime (Nếu bạn chưa định nghĩa) ---
 const formatRelativeTime = (date: Date, currentTime: Date = new Date()): string => {
   const now = currentTime;
-  const diffInMinutes = Math.floor((now.getTime() - date.getTime()) / (1000 * 60));
+  const diffInMs = now.getTime() - date.getTime();
+  const diffInMinutes = Math.floor(diffInMs / (1000 * 60));
+  const diffInHours = Math.floor(diffInMs / (1000 * 60 * 60));
+  const diffInDays = Math.floor(diffInMs / (1000 * 60 * 60 * 24));
+
+  // Xử lý trường hợp date trong tương lai (do timezone hoặc lỗi)
+  if (diffInMs < 0) {
+    return 'Vừa xong';
+  }
 
   if (diffInMinutes < 1) {
     return 'Vừa xong';
@@ -32,12 +41,11 @@ const formatRelativeTime = (date: Date, currentTime: Date = new Date()): string 
   if (diffInMinutes < 60) {
     return `${diffInMinutes} phút trước`;
   }
-  if (diffInMinutes < 24 * 60) {
-    const hours = Math.floor(diffInMinutes / 60);
-    return `${hours} giờ trước`;
+  if (diffInHours < 24) {
+    return `${diffInHours} giờ trước`;
   }
-  const days = Math.floor(diffInMinutes / (24 * 60));
-  return `${days} ngày trước`;
+  // Tất cả >= 1 ngày đều hiển thị "X ngày trước"
+  return `${diffInDays} ngày trước`;
 };
 // -----------------------------------------------------------
 
@@ -81,9 +89,18 @@ export function AuthorityAnnouncements() {
       // Sử dụng createdDate từ API nếu có, nếu không thì dùng thời gian hiện tại
       const mappedAnnouncements: Announcement[] = filteredIssues.map((issue: any) => {
         // Sử dụng createdDate từ API nếu có
-        const createdAt = issue.createdDate
-          ? new Date(issue.createdDate)
-          : new Date(); // Fallback về thời gian hiện tại nếu không có
+        // Xử lý timezone: API trả về ISO string, parse trực tiếp
+        let createdAt: Date;
+        if (issue.createdDate) {
+          createdAt = new Date(issue.createdDate);
+          // Kiểm tra nếu date không hợp lệ
+          if (isNaN(createdAt.getTime())) {
+            console.warn('Invalid createdDate:', issue.createdDate);
+            createdAt = new Date();
+          }
+        } else {
+          createdAt = new Date(); // Fallback về thời gian hiện tại nếu không có
+        }
 
         return {
           id: issue.id,
@@ -95,7 +112,8 @@ export function AuthorityAnnouncements() {
           date: createdAt.toISOString().split('T')[0],
           reporterName: issue.reporterName || '',
           reporterAvatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(issue.reporterName || '')}&background=3b82f6&color=fff`,
-          roomNumber: issue.roomNumber
+          roomNumber: issue.roomNumber,
+          location: issue.location || null // Sử dụng location từ API nếu có
         };
       });
 
@@ -253,9 +271,17 @@ export function AuthorityAnnouncements() {
     return Package;
   };
 
-  // Get location from message and roomNumber
-  const getLocation = (message: string, roomNumber?: number) => {
-    const messageLower = message?.toLowerCase() || '';
+  // Get location from API first, then fallback to message and roomNumber
+  const getLocation = (announcement: Announcement) => {
+    // Ưu tiên sử dụng location từ API nếu có
+    if (announcement.location) {
+      return announcement.location;
+    }
+
+    // Fallback: Tự tính toán từ message và roomNumber
+    const message = announcement.message || '';
+    const messageLower = message.toLowerCase();
+    const roomNumber = announcement.roomNumber;
 
     // Tìm từ khóa trong description
     if (messageLower.includes('sảnh')) return 'Sảnh';
@@ -436,7 +462,7 @@ export function AuthorityAnnouncements() {
               <tbody className="bg-white divide-y divide-gray-100">
           {filteredAnnouncements.map((announcement) => {
             const statusInfo = getStatusLabel(announcement.status);
-                  const location = getLocation(announcement.message, announcement.roomNumber);
+                  const location = getLocation(announcement);
                   const reporterName = announcement.reporterName || 'Chưa có';
                   const reporterAvatar = announcement.reporterAvatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(reporterName)}&background=3b82f6&color=fff`;
             
@@ -710,7 +736,7 @@ export function AuthorityAnnouncements() {
                     <MapPin className="w-5 h-5 text-gray-400" />
                     <div>
                       <p className="text-xs text-gray-500">Địa điểm</p>
-                      <p className="text-sm font-medium text-gray-900">{getLocation(selectedAnnouncement.message, selectedAnnouncement.roomNumber)}</p>
+                      <p className="text-sm font-medium text-gray-900">{getLocation(selectedAnnouncement)}</p>
                     </div>
                   </div>
                 </div>

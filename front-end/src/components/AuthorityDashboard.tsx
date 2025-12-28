@@ -37,7 +37,15 @@ const renderActiveLostItemSector = (props: any) => {
 // Helper function để format thời gian tương đối
 const formatRelativeTime = (date: Date, currentTime: Date = new Date()): string => {
   const now = currentTime;
-  const diffInMinutes = Math.floor((now.getTime() - date.getTime()) / (1000 * 60));
+  const diffInMs = now.getTime() - date.getTime();
+  const diffInMinutes = Math.floor(diffInMs / (1000 * 60));
+  const diffInHours = Math.floor(diffInMs / (1000 * 60 * 60));
+  const diffInDays = Math.floor(diffInMs / (1000 * 60 * 60 * 24));
+
+  // Xử lý trường hợp date trong tương lai (do timezone hoặc lỗi)
+  if (diffInMs < 0) {
+    return 'Vừa xong';
+  }
 
   if (diffInMinutes < 1) {
     return 'Vừa xong';
@@ -45,12 +53,11 @@ const formatRelativeTime = (date: Date, currentTime: Date = new Date()): string 
   if (diffInMinutes < 60) {
     return `${diffInMinutes} phút trước`;
   }
-  if (diffInMinutes < 24 * 60) {
-    const hours = Math.floor(diffInMinutes / 60);
-    return `${hours} giờ trước`;
+  if (diffInHours < 24) {
+    return `${diffInHours} giờ trước`;
   }
-  const days = Math.floor(diffInMinutes / (24 * 60));
-  return `${days} ngày trước`;
+  // Tất cả >= 1 ngày đều hiển thị "X ngày trước"
+  return `${diffInDays} ngày trước`;
 };
 
 export function AuthorityDashboard() {
@@ -125,9 +132,18 @@ export function AuthorityDashboard() {
       // Sử dụng createdDate từ API nếu có, nếu không thì dùng thời gian hiện tại
       const mappedAnnouncements = unprocessedIssues.slice(0, 5).map((issue: any) => {
         // Sử dụng createdDate từ API nếu có
-        const createdAt = issue.createdDate
-          ? new Date(issue.createdDate)
-          : new Date(); // Fallback về thời gian hiện tại nếu không có
+        // Xử lý timezone: API trả về ISO string, parse trực tiếp
+        let createdAt: Date;
+        if (issue.createdDate) {
+          createdAt = new Date(issue.createdDate);
+          // Kiểm tra nếu date không hợp lệ
+          if (isNaN(createdAt.getTime())) {
+            console.warn('Invalid createdDate:', issue.createdDate);
+            createdAt = new Date();
+          }
+        } else {
+          createdAt = new Date(); // Fallback về thời gian hiện tại nếu không có
+        }
 
         return {
           id: issue.id,
