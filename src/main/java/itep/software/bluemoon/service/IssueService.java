@@ -12,7 +12,6 @@ import itep.software.bluemoon.entity.person.Resident;
 import itep.software.bluemoon.enumeration.IssueStatus;
 import itep.software.bluemoon.enumeration.IssueType;
 import itep.software.bluemoon.model.DTO.issue.IssueCreateRequestDTO;
-import itep.software.bluemoon.model.DTO.issue.IssueResponseDTO;
 import itep.software.bluemoon.model.projection.IssueSummary;
 import itep.software.bluemoon.repository.ApartmentRepository;
 import itep.software.bluemoon.repository.IssueRepository;
@@ -21,6 +20,7 @@ import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
+@Transactional
 public class IssueService {
 
     private final IssueRepository issueRepository;
@@ -60,7 +60,7 @@ public class IssueService {
 
     
     @SuppressWarnings("null")
-    public IssueResponseDTO updateStatus(UUID issueId, IssueStatus newStatus) {
+    public IssueSummary updateStatus(UUID issueId, IssueStatus newStatus) {
         Issue issue = issueRepository.findById(issueId)
             .orElseThrow(() -> new RuntimeException("Issue not found"));
         
@@ -72,19 +72,10 @@ public class IssueService {
         }
         
         issue.setStatus(newStatus);
-        Issue saved = issueRepository.save(issue);
+        issueRepository.save(issue);
         
-        return IssueResponseDTO.builder()
-            .id(saved.getId())
-            .title(saved.getTitle())
-            .description(saved.getDescription())
-            .type(saved.getType())
-            .status(saved.getStatus())
-            .apartmentId(saved.getApartment().getId())
-            .roomNumber(saved.getApartment().getRoomNumber())
-            .reporterId(saved.getReporter().getId())
-            .reporterName(saved.getReporter().getFullName())
-            .build();
+        return issueRepository.findIssueSummaryById(issue.getId())
+            .orElseThrow(() -> new RuntimeException("Failed to retrieve updated issue"));
     }
     
     private boolean isValidTransition(IssueStatus from, IssueStatus to) {
