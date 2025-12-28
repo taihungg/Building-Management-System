@@ -2,6 +2,7 @@ import { Search, Plus, Calendar, Trash2, Home, ArrowRight, Eye } from 'lucide-re
 import { Modal } from './Modal'; 
 import { Toaster, toast } from 'sonner';
 import { useState, useEffect, useCallback } from 'react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 
 type ExtraFeeSummary = {
     id: string;
@@ -42,6 +43,7 @@ export function ExtraServiceManagement() {
     const [startDate, setStartDate] = useState('');
     const [endDate, setEndDate] = useState('');
     const [services, setServices] = useState<ExtraFeeSummary[]>([]);
+    const [billingFilter, setBillingFilter] = useState<'ALL' | 'BILLED' | 'UNBILLED'>('ALL');
 
     const [createApartmentKeyword, setCreateApartmentKeyword] = useState('');
     const [createApartmentOptions, setCreateApartmentOptions] = useState<ApartmentDropdownItem[]>([]);
@@ -53,6 +55,8 @@ export function ExtraServiceManagement() {
     const [createFeeDate, setCreateFeeDate] = useState('');
     const [createIsBilled, setCreateIsBilled] = useState(false);
     const [isCreateSubmitting, setIsCreateSubmitting] = useState(false);
+    const [deleteTarget, setDeleteTarget] = useState<ExtraFeeSummary | null>(null);
+    const [isDeleteSubmitting, setIsDeleteSubmitting] = useState(false);
 
     const parseMoney = (value: any) => {
         if (typeof value === 'number') return value;
@@ -67,6 +71,13 @@ export function ExtraServiceManagement() {
     const formatCurrency = (amount: any) => {
         const val = parseMoney(amount);
         return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(val);
+    };
+
+    const getBillingBadgeStyle = (isBilled: boolean): React.CSSProperties => {
+        if (isBilled) {
+            return { backgroundColor: '#10b981', borderColor: '#10b981', color: '#ffffff' };
+        }
+        return { backgroundColor: '#f59e0b', borderColor: '#f59e0b', color: '#ffffff' };
     };
 
     // Hàm mở modal chi tiết
@@ -219,7 +230,62 @@ export function ExtraServiceManagement() {
         }
     };
 
+    const openDeleteConfirm = (service: ExtraFeeSummary) => {
+        if (service.isBilled) {
+            toast.error('Không thể xóa khoản thu đã lập hóa đơn');
+            return;
+        }
+        setDeleteTarget(service);
+        setIsDeleteSubmitting(false);
+    };
+
+    const handleTrashClick = (service: ExtraFeeSummary) => {
+        if (isDeleteSubmitting) {
+            toast.message('Đang xóa khoản thu...');
+            return;
+        }
+        if (service.isBilled) {
+            toast.error('Không thể xóa khoản thu đã lập hóa đơn');
+            return;
+        }
+        openDeleteConfirm(service);
+    };
+
+    const submitDelete = async () => {
+        if (isDeleteSubmitting) return;
+        if (!deleteTarget) return;
+
+        setIsDeleteSubmitting(true);
+        const action = async () => {
+            const response = await fetch(`http://localhost:8081/api/v1/extrafee/${deleteTarget.id}`, { method: 'DELETE' });
+            if (!response.ok) {
+                const errorText = await response.text().catch(() => '');
+                throw new Error(errorText || `HTTP ${response.status}: ${response.statusText}`);
+            }
+        };
+
+        toast.promise(action(), {
+            loading: 'Đang xóa khoản thu...',
+            success: async () => {
+                if (selectedService?.id === deleteTarget.id) {
+                    setIsDetailModalOpen(false);
+                    setSelectedService(null);
+                    setIsDetailLoading(false);
+                }
+                setDeleteTarget(null);
+                await fetchExtraServices(searchTerm);
+                return 'Xóa khoản thu thành công';
+            },
+            error: (err) => `Xóa khoản thu thất bại: ${(err as Error).message}`,
+            finally: () => {
+                setIsDeleteSubmitting(false);
+            },
+        });
+    };
+
     const filteredServices = services.filter((item: ExtraFeeSummary) => {
+        if (billingFilter === 'BILLED' && !item.isBilled) return false;
+        if (billingFilter === 'UNBILLED' && item.isBilled) return false;
         if (!item.feeDate) return true;
         if (startDate && item.feeDate < startDate) return false;
         if (endDate && item.feeDate > endDate) return false;
@@ -252,6 +318,39 @@ export function ExtraServiceManagement() {
                         <Search className="text-gray-400 mr-2" size={18} />
                         <input type="text" placeholder="Tìm số phòng..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="w-full bg-transparent focus:outline-none text-sm" />
                     </div>
+                    <div style={{ width: '220px' }}>
+                        <Select value={billingFilter} onValueChange={(value: string) => setBillingFilter(value as any)}>
+                            <SelectTrigger className="flex items-center justify-between w-full h-11 px-4 bg-white border border-gray-200 rounded-xl shadow-sm text-sm font-medium text-gray-700 hover:border-blue-400 transition-all">
+                                <SelectValue placeholder="Thanh toán" />
+                            </SelectTrigger>
+                            <SelectContent
+                                align="start"
+                                className="z-[9999] w-[var(--radix-popper-anchor-width)] min-w-[var(--radix-popper-anchor-width)] rounded-xl border border-gray-200 !bg-white !opacity-100 shadow-xl ring-1 ring-gray-200/70 [&_[data-slot=select-viewport]]:!bg-white [&_[data-slot=select-viewport]]:!opacity-100"
+                            >
+                                <SelectItem
+                                    value="ALL"
+                                    hideIndicator
+                                    className="cursor-pointer rounded-lg px-3 py-2 text-sm text-gray-700 outline-none data-[highlighted]:bg-blue-50 data-[highlighted]:text-blue-700 data-[state=checked]:bg-blue-100 data-[state=checked]:font-semibold data-[state=checked]:text-blue-800 !pr-3"
+                                >
+                                    Tất cả
+                                </SelectItem>
+                                <SelectItem
+                                    value="BILLED"
+                                    hideIndicator
+                                    className="cursor-pointer rounded-lg px-3 py-2 text-sm text-gray-700 outline-none data-[highlighted]:bg-blue-50 data-[highlighted]:text-blue-700 data-[state=checked]:bg-blue-100 data-[state=checked]:font-semibold data-[state=checked]:text-blue-800 !pr-3"
+                                >
+                                    Đã thanh toán
+                                </SelectItem>
+                                <SelectItem
+                                    value="UNBILLED"
+                                    hideIndicator
+                                    className="cursor-pointer rounded-lg px-3 py-2 text-sm text-gray-700 outline-none data-[highlighted]:bg-blue-50 data-[highlighted]:text-blue-700 data-[state=checked]:bg-blue-100 data-[state=checked]:font-semibold data-[state=checked]:text-blue-800 !pr-3"
+                                >
+                                    Chưa thanh toán
+                                </SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </div>
                     <button onClick={openCreateModal} className="flex items-center gap-2 px-6 text-white rounded-xl shadow-lg transition-all hover:scale-105 font-bold" style={{ backgroundColor: '#6366f1', height: '48px' }}>
                         <Plus size={20} /> Tạo khoản thu
                     </button>
@@ -266,23 +365,29 @@ export function ExtraServiceManagement() {
                             <th className="px-6 py-4 text-[11px] font-bold uppercase">Căn hộ</th>
                             <th className="px-6 py-4 text-[11px] font-bold uppercase">Nội dung</th>
                             <th className="px-6 py-4 text-[11px] font-bold uppercase">Số tiền</th>
+                            <th className="px-6 py-4 text-[11px] font-bold uppercase">Thanh toán</th>
                             <th className="px-6 py-4 text-[11px] font-bold uppercase text-center">Thao tác</th>
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-50">
                         {isLoading ? (
                             <tr>
-                                <td className="px-6 py-6 text-sm text-gray-500" colSpan={4}>Đang tải dữ liệu...</td>
+                                <td className="px-6 py-6 text-sm text-gray-500" colSpan={5}>Đang tải dữ liệu...</td>
                             </tr>
                         ) : filteredServices.length === 0 ? (
                             <tr>
-                                <td className="px-6 py-6 text-sm text-gray-500" colSpan={4}>Không có dữ liệu</td>
+                                <td className="px-6 py-6 text-sm text-gray-500" colSpan={5}>Không có dữ liệu</td>
                             </tr>
                         ) : filteredServices.map((item) => (
                             <tr key={item.id} className="hover:bg-slate-50 transition-colors">
                                 <td className="px-6 py-4 font-bold text-slate-700">{item.apartmentLabel}</td>
                                 <td className="px-6 py-4 text-sm text-slate-600">{item.title}</td>
                                 <td className="px-6 py-4 font-extrabold text-indigo-600">{formatCurrency(item.amount)}</td>
+                                <td className="px-6 py-4">
+                                    <span className="inline-flex px-3 py-1 rounded-full text-sm font-medium border" style={getBillingBadgeStyle(item.isBilled)}>
+                                        {item.isBilled ? 'Đã thanh toán' : 'Chưa thanh toán'}
+                                    </span>
+                                </td>
                                 <td className="px-6 py-4 flex justify-center gap-2">
                                     <button 
                                         onClick={() => handleViewDetail(item)}
@@ -291,7 +396,12 @@ export function ExtraServiceManagement() {
                                     >
                                         <Eye size={18} />
                                     </button>
-                                    <button className="p-2 text-rose-500 hover:bg-rose-50 rounded-lg transition-colors">
+                                    <button
+                                        onClick={() => handleTrashClick(item)}
+                                        disabled={isDeleteSubmitting}
+                                        className={`p-2 text-rose-500 hover:bg-rose-50 rounded-lg transition-colors disabled:opacity-60 disabled:cursor-not-allowed ${item.isBilled ? 'opacity-60' : ''}`}
+                                        title={item.isBilled ? 'Đã lập hóa đơn: không thể xóa' : 'Xóa'}
+                                    >
                                         <Trash2 size={18} />
                                     </button>
                                 </td>
@@ -421,6 +531,33 @@ export function ExtraServiceManagement() {
                             disabled={isCreateSubmitting}
                         >
                             {isCreateSubmitting ? 'Đang tạo...' : 'Tạo khoản thu'}
+                        </button>
+                    </div>
+                </div>
+            </Modal>
+
+            <Modal isOpen={deleteTarget != null} onClose={() => setDeleteTarget(null)} title="Xóa khoản thu">
+                <div className="p-6 space-y-4">
+                    <div className="text-sm text-gray-600">
+                        Xóa khoản thu {deleteTarget ? <span className="font-bold text-gray-900">{deleteTarget.title}</span> : null}? Thao tác không thể hoàn tác.
+                    </div>
+                    <div className="flex gap-3 pt-2">
+                        <button
+                            type="button"
+                            onClick={() => setDeleteTarget(null)}
+                            className="flex-1 py-3 rounded-xl border border-gray-200 font-bold"
+                            disabled={isDeleteSubmitting}
+                        >
+                            Hủy
+                        </button>
+                        <button
+                            type="button"
+                            onClick={submitDelete}
+                            className="flex-1 py-3 rounded-xl font-bold text-white"
+                            style={{ backgroundColor: '#e11d48', border: 'none' }}
+                            disabled={isDeleteSubmitting}
+                        >
+                            {isDeleteSubmitting ? 'Đang xóa...' : 'Xóa'}
                         </button>
                     </div>
                 </div>

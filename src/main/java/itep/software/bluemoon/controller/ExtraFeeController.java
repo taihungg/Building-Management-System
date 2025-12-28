@@ -5,6 +5,7 @@ import java.util.UUID;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -56,6 +57,17 @@ public class ExtraFeeController {
                 HttpStatus.OK, 
                 "Create extra fee successfully!", 
                 data
+        );
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Object> deleteExtraFee(@PathVariable UUID id) {
+        extraFeeService.deleteExtraFee(id);
+
+        return ApiResponse.responseBuilder(
+                HttpStatus.OK, 
+                "Delete extra fee successfully!", 
+                null
         );
     }
 }

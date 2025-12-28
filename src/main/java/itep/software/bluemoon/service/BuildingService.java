@@ -21,11 +21,8 @@ public class BuildingService {
     private final BuildingRepository buildingRepository;
 
     public List<Dropdown> searchForDropdown(String keyword){
-        if(keyword == null || keyword.isBlank()) {
-            return new ArrayList<>();
-        }
-
-        return buildingRepository.searchForDropdown(keyword.trim());
+        final String normalized = keyword == null ? "" : keyword.trim();
+        return buildingRepository.searchForDropdown(normalized);
     }
 
     @SuppressWarnings("null")

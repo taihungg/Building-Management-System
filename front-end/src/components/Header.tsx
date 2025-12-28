@@ -211,26 +211,32 @@ export function Header({ onMenuClick, onNavigate, onLogout }: HeaderProps) {
     setIsNotificationLoading(true);
     setNotificationError(null);
     try {
-      const response = await fetch(
-        'http://localhost:8081/api/v1/announcements/staff/all?page=0&size=10&sort=createdDate,desc'
-      );
+      const response = await fetch('http://localhost:8081/api/announcements/staff');
       if (!response.ok) {
         throw new Error('Không thể tải danh sách thông báo.');
       }
-      const rawData = await response.json();
-      const rawAnnouncements = rawData?.content || [];
+      const rawData = await response.json().catch(() => ({} as any));
+      const rawAnnouncements = Array.isArray(rawData?.data) ? rawData.data : [];
 
-      const transformed: HeaderNotificationItem[] = rawAnnouncements.map((announcement: any) => {
-        const dateTime = parseLocalDateTime(announcement.createdDate);
-        return {
-          id: String(announcement.id ?? ''),
-          title: String(announcement.title ?? ''),
-          message: typeof announcement.message === 'string' ? announcement.message : undefined,
-          createdAtIso: dateTime ? dateTime.toISOString() : undefined,
-        };
-      });
+      const transformed: HeaderNotificationItem[] = rawAnnouncements
+        .map((announcement: any) => {
+          const dateTime = parseLocalDateTime(announcement.createdDate);
+          return {
+            id: String(announcement.id ?? ''),
+            title: String(announcement.title ?? ''),
+            message: typeof announcement.message === 'string' ? announcement.message : undefined,
+            createdAtIso: dateTime ? dateTime.toISOString() : undefined,
+          };
+        })
+        .filter((x: HeaderNotificationItem) => x.id && x.title)
+        .sort((a: HeaderNotificationItem, b: HeaderNotificationItem) => {
+          const aMs = a.createdAtIso ? new Date(a.createdAtIso).getTime() : 0;
+          const bMs = b.createdAtIso ? new Date(b.createdAtIso).getTime() : 0;
+          return bMs - aMs;
+        })
+        .slice(0, 10);
 
-      setNotificationItems(transformed.filter((x) => x.id && x.title).slice(0, 10));
+      setNotificationItems(transformed);
     } catch (err: any) {
       setNotificationError(err?.message ?? 'Không thể tải danh sách thông báo.');
       setNotificationItems([]);

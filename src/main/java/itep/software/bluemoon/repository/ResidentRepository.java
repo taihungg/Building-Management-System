@@ -75,6 +75,12 @@ public interface ResidentRepository extends JpaRepository<Resident, UUID> {
     @Query("SELECT r FROM Resident r JOIN r.apartment a WHERE a.building.id = :buildingId")
     List<Resident> findByBuildingId(@Param("buildingId") UUID buildingId);
 
+    @Query("SELECT COUNT(r) FROM Resident r")
+    long countAllResidents();
+
+    @Query("SELECT COUNT(r) FROM Resident r JOIN r.apartment a WHERE a.building.id = :buildingId")
+    long countByBuildingId(@Param("buildingId") UUID buildingId);
+
     // Tìm cư dân theo danh sách NHIỀU tầng của 1 tòa
     @Query("SELECT r FROM Resident r " +
     	       "JOIN FETCH r.apartment a " +
@@ -82,7 +88,13 @@ public interface ResidentRepository extends JpaRepository<Resident, UUID> {
     	       "WHERE b.id = :buildingId AND a.floor IN :floors")
     List<Resident> findByBuildingAndFloors(@Param("buildingId") UUID buildingId, @Param("floors") List<Integer> floors);
 
+    @Query("SELECT COUNT(r) FROM Resident r JOIN r.apartment a WHERE a.building.id = :buildingId AND a.floor IN :floors")
+    long countByBuildingAndFloors(@Param("buildingId") UUID buildingId, @Param("floors") List<Integer> floors);
+
     //Tìm cư dân theo danh sách ID căn hộ
     @Query("SELECT r FROM Resident r WHERE r.apartment.id IN :apartmentIds")
     List<Resident> findByApartmentIds(@Param("apartmentIds") List<UUID> apartmentIds);
+
+    @Query("SELECT COUNT(r) FROM Resident r WHERE r.apartment.id IN :apartmentIds")
+    long countByApartmentIds(@Param("apartmentIds") List<UUID> apartmentIds);
 }
