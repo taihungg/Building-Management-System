@@ -70,10 +70,19 @@ export function BillManagement() {
   const fetchBills = useCallback(async () => {
     setIsLoading(true);
     try {
-      let url = `http://localhost:8081/api/v1/accounting/invoices?year=${selectedYear}`;
+      // 1. Thay domain sang ngrok mới
+      let url = `https://untoasted-jean-unsympathisingly.ngrok-free.dev/api/v1/accounting/invoices?year=${selectedYear}`;
       if (selectedMonth > 0) url += `&month=${selectedMonth}`; 
       
-      const response = await fetch(url);
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          // 2. Thêm header để ngrok không chặn dữ liệu trả về
+          'ngrok-skip-browser-warning': 'true'
+        }
+      });
+
       if (!response.ok) throw new Error("Không thể tải dữ liệu hóa đơn");
       const res = await response.json();
       const data = res.data || [];
@@ -81,13 +90,14 @@ export function BillManagement() {
       setBills(data);
       calculateStats(data);
     } catch (error) {
-      console.error("Lỗi tải hóa đơn:", error);
+      // 3. Log lỗi chuẩn cú pháp chú dặn
+      console.log(error);
       toast.error("Lỗi tải dữ liệu");
       setBills([]);
     } finally {
       setIsLoading(false);
     }
-  }, [selectedMonth, selectedYear]); 
+  }, [selectedMonth, selectedYear]);
 
   useEffect(() => {
     fetchBills();
@@ -134,9 +144,18 @@ export function BillManagement() {
   const handleExportToExcel = () => {
     const promise = new Promise(async (resolve, reject) => {
         try {
-            const url = `http://localhost:8081/api/v1/accounting/invoices/export?month=${selectedMonth}&year=${selectedYear}`;
-            const response = await fetch(url);
+            const url = `https://untoasted-jean-unsympathisingly.ngrok-free.dev/api/v1/accounting/invoices/export?month=${selectedMonth}&year=${selectedYear}`;
+            
+            const response = await fetch(url, {
+                method: 'GET',
+                headers: {
+                    // Header quan trọng nhất để ngrok nhả file Excel ra
+                    'ngrok-skip-browser-warning': 'true'
+                }
+            });
+
             if (!response.ok) throw new Error("Lỗi xuất báo cáo");
+
             const blob = await response.blob();
             const href = window.URL.createObjectURL(blob);
             const anchorElement = document.createElement('a');
@@ -145,11 +164,21 @@ export function BillManagement() {
             document.body.appendChild(anchorElement);
             anchorElement.click();
             document.body.removeChild(anchorElement);
+            window.URL.revokeObjectURL(href); // Dọn dẹp bộ nhớ sau khi tải xong
+            
             resolve(`Xuất file thành công!`);
-        } catch (error) { reject(error); }
+        } catch (error) { 
+            console.log(error); // Log lỗi chuẩn cú pháp chú dặn
+            reject(error); 
+        }
     });
-    toast.promise(promise, { loading: `Đang xuất báo cáo...`, success: (m) => m, error: (e) => e.message });
-  };
+
+    toast.promise(promise, { 
+        loading: `Đang xuất báo cáo...`, 
+        success: (m) => m, 
+        error: (e) => e.message 
+    });
+};
 
   return (
     <div className="space-y-6">

@@ -57,9 +57,16 @@ export function DebtManagement() {
     setIsLoading(true);
     try {
       // Bắt buộc có tháng và năm
-      const url = `http://localhost:8081/api/v1/accounting/invoices?year=${selectedYear}&month=${selectedMonth}`;
+      const url = `https://untoasted-jean-unsympathisingly.ngrok-free.dev/api/v1/accounting/invoices?year=${selectedYear}&month=${selectedMonth}`;
       
-      const response = await fetch(url);
+      const response = await fetch(url,{
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          // 2. Thêm header để ngrok không chặn dữ liệu trả về
+          'ngrok-skip-browser-warning': 'true'
+        }
+      });
       if (!response.ok) throw new Error("Không thể tải dữ liệu hóa đơn");
       
       const res = await response.json();
@@ -97,12 +104,13 @@ export function DebtManagement() {
     
     try {
       // Gọi API POST với month và year trên URL
-      const url = `http://localhost:8081/api/v1/accounting/invoices/generation?month=${selectedMonth}&year=${selectedYear}`;
+      const url = `https://untoasted-jean-unsympathisingly.ngrok-free.dev/api/v1/accounting/invoices/generation?month=${selectedMonth}&year=${selectedYear}`;
       
       const response = await fetch(url, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'ngrok-skip-browser-warning': 'true'
         },
         // Vì chú bảo không cần file, nên body có thể để trống hoặc gửi {}
         body: JSON.stringify({}), 
@@ -231,11 +239,12 @@ export function DebtManagement() {
 
           // Gọi API để tạo hóa đơn từ file
           const response = await fetch(
-            `http://localhost:8081/api/v1/accounting/invoices/generation?month=${selectedMonth}&year=${selectedYear}`,
+            `https://untoasted-jean-unsympathisingly.ngrok-free.dev/api/v1/accounting/invoices/generation?month=${selectedMonth}&year=${selectedYear}`,
             {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',
+                'ngrok-skip-browser-warning': 'true'
               },
               body: JSON.stringify({
                 data: jsonData
@@ -312,10 +321,11 @@ export function DebtManagement() {
     setIsApproving(true);
     try {
       // Gọi API để duyệt tất cả hóa đơn PENDING
-      const response = await fetch(`http://localhost:8081/api/v1/accounting/invoices/approve-all?month=${selectedMonth}&year=${selectedYear}`, { 
+      const response = await fetch(`https://untoasted-jean-unsympathisingly.ngrok-free.dev/api/v1/accounting/invoices/approve-all?month=${selectedMonth}&year=${selectedYear}`, { 
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'ngrok-skip-browser-warning': 'true'
         }
       });
 
@@ -357,10 +367,11 @@ export function DebtManagement() {
 
     try {
       // Gọi API để cập nhật hóa đơn
-      const response = await fetch(`http://localhost:8081/api/v1/accounting/invoices/${billId}`, {
+      const response = await fetch(`https://untoasted-jean-unsympathisingly.ngrok-free.dev/api/v1/accounting/invoices/${billId}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
+          'ngrok-skip-browser-warning': 'true'
         },
         body: JSON.stringify({
           totalAmount: newValue
@@ -394,10 +405,11 @@ export function DebtManagement() {
   const handlePayInvoice = async (invoiceId: string) => {
     try {
       // Gọi API để thanh toán hóa đơn
-      const response = await fetch(`http://localhost:8081/api/v1/accounting/invoices/${invoiceId}/pay`, { 
+      const response = await fetch(`https://untoasted-jean-unsympathisingly.ngrok-free.dev/api/v1/accounting/invoices/${invoiceId}/pay`, { 
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'ngrok-skip-browser-warning': 'true'
         }
       });
 
@@ -428,10 +440,11 @@ export function DebtManagement() {
 
     try {
       // Gọi API để thanh toán tất cả hóa đơn UNPAID
-      const response = await fetch(`http://localhost:8081/api/v1/accounting/invoices/pay-all?month=${selectedMonth}&year=${selectedYear}`, { 
+      const response = await fetch(`https://untoasted-jean-unsympathisingly.ngrok-free.dev/api/v1/accounting/invoices/pay-all?month=${selectedMonth}&year=${selectedYear}`, { 
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'ngrok-skip-browser-warning': 'true'
         }
       });
 
@@ -551,12 +564,13 @@ export function DebtManagement() {
     setIsExporting(true);
     try {
       // API đúng như chú gửi
-      const url = `http://localhost:8081/api/v1/accounting/invoices/export?month=${selectedMonth}&year=${selectedYear}`;
+      const url = `https://untoasted-jean-unsympathisingly.ngrok-free.dev/api/v1/accounting/invoices/export?month=${selectedMonth}&year=${selectedYear}`;
       
       const response = await fetch(url, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
+          'ngrok-skip-browser-warning': 'true'
         },
       });
 

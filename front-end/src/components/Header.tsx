@@ -211,7 +211,7 @@ export function Header({ onMenuClick, onNavigate, onLogout }: HeaderProps) {
     setIsNotificationLoading(true);
     setNotificationError(null);
     try {
-      const response = await fetch('http://localhost:8081/api/announcements/staff');
+      const response = await fetch('https://untoasted-jean-unsympathisingly.ngrok-free.dev/api/announcements/staff');
       if (!response.ok) {
         throw new Error('Không thể tải danh sách thông báo.');
       }

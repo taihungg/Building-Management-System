@@ -132,7 +132,13 @@ export function VoluntaryContribution() {
     const fetchCampaigns = useCallback(async () => {
         setIsLoadingCampaigns(true);
         try {
-            const response = await fetch('http://localhost:8081/api/v1/campaigns');
+            const response = await fetch('https://untoasted-jean-unsympathisingly.ngrok-free.dev/api/v1/campaigns',{
+                method: 'GET',
+                headers: {
+                  'Content-Type': 'application/json',
+                  'ngrok-skip-browser-warning': 'true'
+                }
+              });
             if (!response.ok) {
                 const t = await response.text().catch(() => '');
                 throw new Error(t || `HTTP ${response.status}`);
@@ -170,7 +176,14 @@ export function VoluntaryContribution() {
         setIsDetailModalOpen(true);
         setIsDetailLoading(true);
         try {
-            const response = await fetch(`http://localhost:8081/api/v1/campaigns/${campaignId}`);
+            const response = await fetch(`https://untoasted-jean-unsympathisingly.ngrok-free.dev/api/v1/campaigns/${campaignId}`,{
+                method: 'GET',
+                headers: {
+                  'Content-Type': 'application/json',
+                  // 2. Thêm header để ngrok không chặn dữ liệu trả về
+                  'ngrok-skip-browser-warning': 'true'
+                }
+              });
             if (!response.ok) {
                 const t = await response.text().catch(() => '');
                 throw new Error(t || `HTTP ${response.status}`);
@@ -237,9 +250,9 @@ export function VoluntaryContribution() {
 
         setIsCreateSubmitting(true);
         const action = async () => {
-            const response = await fetch('http://localhost:8081/api/v1/campaigns', {
+            const response = await fetch('https://untoasted-jean-unsympathisingly.ngrok-free.dev/api/v1/campaigns', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 'Content-Type': 'application/json','ngrok-skip-browser-warning': 'true' },
                 body: JSON.stringify({
                     title,
                     description: createDescription.trim() || null,
@@ -290,9 +303,9 @@ export function VoluntaryContribution() {
 
         setIsEditSubmitting(true);
         const action = async () => {
-            const response = await fetch(`http://localhost:8081/api/v1/campaigns/${selectedCampaignId}`, {
+            const response = await fetch(`https://untoasted-jean-unsympathisingly.ngrok-free.dev/api/v1/campaigns/${selectedCampaignId}`, {
                 method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 'Content-Type': 'application/json','ngrok-skip-browser-warning': 'true' },
                 body: JSON.stringify({
                     title,
                     description: editDescription.trim() || null,
@@ -332,7 +345,14 @@ export function VoluntaryContribution() {
         setIsDeleteSubmitting(true);
 
         const action = async () => {
-            const response = await fetch(`http://localhost:8081/api/v1/campaigns/${deleteTargetId}`, { method: 'DELETE' });
+            const response = await fetch(`https://untoasted-jean-unsympathisingly.ngrok-free.dev/api/v1/campaigns/${deleteTargetId}`, {
+                method: 'DELETE',
+                headers: {
+                  'Content-Type': 'application/json',
+                  // 2. Thêm header để ngrok không chặn dữ liệu trả về
+                  'ngrok-skip-browser-warning': 'true'
+                }
+              });
             if (!response.ok) {
                 const t = await response.text().catch(() => '');
                 throw new Error(t || `HTTP ${response.status}`);
@@ -375,9 +395,9 @@ export function VoluntaryContribution() {
 
         setIsAddContributionSubmitting(true);
         const action = async () => {
-            const response = await fetch('http://localhost:8081/api/v1/campaigns/contributions', {
+            const response = await fetch('https://untoasted-jean-unsympathisingly.ngrok-free.dev/api/v1/campaigns/contributions', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 'ngrok-skip-browser-warning': 'true' },
                 body: JSON.stringify({
                     campaignId: selectedCampaignId,
                     contributorName: name,

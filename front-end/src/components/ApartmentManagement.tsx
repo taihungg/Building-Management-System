@@ -86,7 +86,8 @@ export function ApartmentManagement() {
     setIsLoading(true);
     setError(null);
     try {
-        let baseUrl = 'http://localhost:8081/api/v1/apartments';
+        // Thay domain sang ngrok mới
+        let baseUrl = 'https://untoasted-jean-unsympathisingly.ngrok-free.dev/api/v1/apartments';
         const params = new URLSearchParams();
 
         if (keyword) params.append('keyword', keyword);
@@ -96,16 +97,24 @@ export function ApartmentManagement() {
         if (selectedFloor) params.append('floor', selectedFloor);
 
         const finalUrl = `${baseUrl}?${params.toString()}`;
-        const response = await fetch(finalUrl);
+        const response = await fetch(finalUrl, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+                // Header quan trọng để không bị ngrok chặn
+                'ngrok-skip-browser-warning': 'true'
+            }
+        });
+
         if (!response.ok) throw new Error("Không thể tải danh sách căn hộ");
 
         const res = await response.json();
         setApartments(res.data || []); 
     } catch (err) {
-        console.error(err);
-        setError(err.message);
+        // Chuẩn cú pháp log lỗi chú dặn
+        console.log(err);
+        setError((err as Error).message);
         setApartments([]); 
-        // Không cần toast lỗi ở đây để tránh spam khi load trang
     } finally {
         setIsLoading(false);
     }
@@ -114,17 +123,27 @@ export function ApartmentManagement() {
   // 2. Fetch Dropdown Data (Buildings & Owners)
   const fetchFormDependencies = async () => {
     try {
-        const resOwner = await fetch('http://localhost:8081/api/v1/residents');
+        const NGROK_HEADERS = { 'ngrok-skip-browser-warning': 'true' };
+        
+        // Cập nhật link Residents
+        const resOwner = await fetch('https://untoasted-jean-unsympathisingly.ngrok-free.dev/api/v1/residents', {
+            headers: NGROK_HEADERS
+        });
         const jsonOwner = await resOwner.json();
         setPotentialOwners(jsonOwner.data || []);
 
-        const resBuild = await fetch(`http://localhost:8081/api/v1/buildings/dropdown?keyword=${encodeURIComponent('%')}`);
+        // Cập nhật link Buildings dropdown
+        const resBuild = await fetch(`https://untoasted-jean-unsympathisingly.ngrok-free.dev/api/v1/buildings/dropdown?keyword=${encodeURIComponent('%')}`, {
+            headers: NGROK_HEADERS
+        });
+        
         if (resBuild.ok) {
            const jsonBuild = await resBuild.json();
            setBuildingList(jsonBuild.data || []);
         }
     } catch (err) {
-        console.error("Lỗi tải dữ liệu dropdown:", err);
+        // Chuẩn cú pháp log lỗi chú dặn
+        console.log(err);
     }
   };
 
@@ -158,7 +177,16 @@ export function ApartmentManagement() {
   // Mở Modal Xem chi tiết
   const handleViewDetail = async (id) => {
     try {
-        const response = await fetch(`http://localhost:8081/api/v1/apartments/${id}`);
+        // Thay sang domain ngrok mới của chú
+        const response = await fetch(`https://untoasted-jean-unsympathisingly.ngrok-free.dev/api/v1/apartments/${id}`, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+                // Header quan trọng để ngrok trả về dữ liệu thay vì trang cảnh báo
+                'ngrok-skip-browser-warning': 'true'
+            }
+        });
+        
         const res = await response.json();
 
         if (!response.ok) throw new Error(res.message || "Lỗi tải chi tiết");
@@ -166,7 +194,8 @@ export function ApartmentManagement() {
         setSelectedApartment(res.data);
         setIsViewModalOpen(true);
     } catch (err) {
-        console.error(err);
+        // Chuẩn cú pháp log lỗi chú dặn
+        console.log(err);
         toast.error("Không thể xem chi tiết", { description: err.message });
     }
   };
@@ -190,20 +219,37 @@ export function ApartmentManagement() {
             ownerId: newOwnerId === "none" ? null : newOwnerId
         };
 
-        const response = await fetch('http://localhost:8081/api/v1/apartments', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
-        });
+        try {
+            // Thay đổi sang domain ngrok của chú
+            const response = await fetch('https://untoasted-jean-unsympathisingly.ngrok-free.dev/api/v1/apartments', {
+                method: 'POST',
+                headers: { 
+                    'Content-Type': 'application/json',
+                    // Header bắt buộc khi gọi API qua ngrok
+                    'ngrok-skip-browser-warning': 'true'
+                },
+                body: JSON.stringify(payload)
+            });
 
-        const res = await response.json();
-        if (!response.ok) throw new Error(res.message || "Không thể tạo căn hộ");
-        
-        // Thành công
-        setIsAddUnitOpen(false);
-        setNewRoomNumber(""); setNewFloor(""); setNewArea(""); setNewOwnerId("none");
-        await fetchApartments();
-        return "Thêm căn hộ mới thành công!";
+            const res = await response.json();
+            if (!response.ok) throw new Error(res.message || "Không thể tạo căn hộ");
+            
+            // Thành công
+            setIsAddUnitOpen(false);
+            setNewRoomNumber(""); 
+            setNewFloor(""); 
+            setNewArea(""); 
+            setNewOwnerId("none");
+            
+            // Chú nhớ đảm bảo hàm fetchApartments cũng đã được đổi domain ngrok nhé
+            await fetchApartments();
+            
+            return "Thêm căn hộ mới thành công!";
+        } catch (err) {
+            // Log lỗi chuẩn cú pháp chú dặn để debug
+            console.log(err);
+            throw err;
+        }
     };
 
     toast.promise(createAction(), {
@@ -223,16 +269,32 @@ export function ApartmentManagement() {
             ? `?new_owner_id=${editingOwnerId}` 
             : ``; 
 
-        const response = await fetch(`http://localhost:8081/api/v1/apartments/${selectedApartment.id}${queryParam}`, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' }
-        });
+        try {
+            // Thay đổi sang domain ngrok của chú
+            const response = await fetch(`https://untoasted-jean-unsympathisingly.ngrok-free.dev/api/v1/apartments/${selectedApartment.id}${queryParam}`, {
+                method: 'PUT',
+                headers: { 
+                    'Content-Type': 'application/json',
+                    // Header bắt buộc khi dùng ngrok
+                    'ngrok-skip-browser-warning': 'true'
+                }
+            });
 
-        if (!response.ok) throw new Error("Lỗi cập nhật chủ sở hữu");
-        
-        setIsViewModalOpen(false); 
-        await fetchApartments();   
-        return "Cập nhật chủ sở hữu thành công!";
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(errorData.message || "Lỗi cập nhật chủ sở hữu");
+            }
+            
+            setIsViewModalOpen(false); 
+            // Chú nhớ kiểm tra hàm fetchApartments cũng phải dùng link ngrok nhé
+            await fetchApartments();   
+            return "Cập nhật chủ sở hữu thành công!";
+
+        } catch (err) {
+            // Log lỗi chuẩn cú pháp chú dặn
+            console.log(err);
+            throw err;
+        }
     };
 
     toast.promise(updateAction(), {
@@ -259,20 +321,34 @@ export function ApartmentManagement() {
     setIsDeleting(true);
 
     const deleteAction = async () => {
-        const response = await fetch(`http://localhost:8081/api/v1/apartments?id=${apartmentToDelete.id}`, {
-            method: 'DELETE',
-            headers: { 'Content-Type': 'application/json' }
-        });
+        try {
+            // Thay đổi sang domain ngrok mới của chú
+            const response = await fetch(`https://untoasted-jean-unsympathisingly.ngrok-free.dev/api/v1/apartments?id=${apartmentToDelete.id}`, {
+                method: 'DELETE',
+                headers: { 
+                    'Content-Type': 'application/json',
+                    // Header quan trọng để không bị trang cảnh báo của ngrok chặn
+                    'ngrok-skip-browser-warning': 'true'
+                }
+            });
 
-        if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.message || "Không xác định");
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(errorData.message || "Không xác định");
+            }
+
+            setIsDeleteModalOpen(false); 
+            setApartmentToDelete(null);  
+            
+            // Chú nhớ đảm bảo hàm fetchApartments cũng đã được đổi domain ngrok nhé
+            await fetchApartments();     
+            return "Đã xóa căn hộ thành công!";
+            
+        } catch (err) {
+            // Log lỗi chuẩn cú pháp chú dặn
+            console.log(err);
+            throw err;
         }
-
-        setIsDeleteModalOpen(false); 
-        setApartmentToDelete(null);  
-        await fetchApartments();     
-        return "Đã xóa căn hộ thành công!";
     };
 
     toast.promise(deleteAction(), {
@@ -301,22 +377,36 @@ export function ApartmentManagement() {
             residentIds: [residentToAdd] // Gửi mảng ID theo ApartmentResidentUpdateDTO
         };
 
-        const response = await fetch(`http://localhost:8081/api/v1/apartments/${selectedApartment.id}/residents/add`, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
-        });
+        try {
+            // Thay đổi sang domain ngrok mới của chú
+            const response = await fetch(`https://untoasted-jean-unsympathisingly.ngrok-free.dev/api/v1/apartments/${selectedApartment.id}/residents/add`, {
+                method: 'PUT',
+                headers: { 
+                    'Content-Type': 'application/json',
+                    // Header bắt buộc khi dùng qua ngrok để không bị chặn
+                    'ngrok-skip-browser-warning': 'true'
+                },
+                body: JSON.stringify(payload)
+            });
 
-        if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.message || "Không thể thêm cư dân");
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(errorData.message || "Không thể thêm cư dân");
+            }
+            
+            // Chú nhớ đảm bảo các hàm fetch này cũng đã được đổi domain ngrok nhé
+            await handleViewDetail(selectedApartment.id); 
+            await fetchApartments(); 
+            
+            setResidentToAdd("");
+            return "Đã thêm cư dân vào căn hộ!";
+        } catch (err) {
+            // Log lỗi chuẩn cú pháp chú dặn
+            console.log(err);
+            throw err;
+        } finally {
+            setIsProcessingResident(false);
         }
-        
-        // Refresh lại dữ liệu modal chi tiết
-        await handleViewDetail(selectedApartment.id); 
-        await fetchApartments(); // Refresh danh sách ngoài grid
-        setResidentToAdd("");
-        return "Đã thêm cư dân vào căn hộ!";
     };
 
     toast.promise(addAction(), {
@@ -342,20 +432,35 @@ export function ApartmentManagement() {
             residentIds: [residentId]
         };
 
-        const response = await fetch(`http://localhost:8081/api/v1/apartments/${selectedApartment.id}/residents/remove`, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
-        });
+        try {
+            // Thay đổi sang domain ngrok mới của chú
+            const response = await fetch(`https://untoasted-jean-unsympathisingly.ngrok-free.dev/api/v1/apartments/${selectedApartment.id}/residents/remove`, {
+                method: 'PUT',
+                headers: { 
+                    'Content-Type': 'application/json',
+                    // Header vượt rào để ngrok không chặn lệnh PUT này
+                    'ngrok-skip-browser-warning': 'true'
+                },
+                body: JSON.stringify(payload)
+            });
 
-        if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.message || "Không thể xóa cư dân");
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(errorData.message || "Không thể xóa cư dân");
+            }
+            
+            // Chú lưu ý: handleViewDetail và fetchApartments cũng phải dùng link ngrok bên trong
+            await handleViewDetail(selectedApartment.id);
+            await fetchApartments();
+            
+            return `Đã loại bỏ ${residentName} khỏi căn hộ!`;
+        } catch (err) {
+            // Log lỗi chuẩn cú pháp chú dặn
+            console.log(err);
+            throw err;
+        } finally {
+            setIsProcessingResident(false);
         }
-        
-        await handleViewDetail(selectedApartment.id);
-        await fetchApartments();
-        return `Đã loại bỏ ${residentName} khỏi căn hộ!`;
     };
 
     toast.promise(removeAction(), {

@@ -369,7 +369,7 @@ const [includeInactive, setIncludeInactive] = useState(false);
 
   const handleDelete = async (residentID: string, isHardDelete: boolean) => {
     const deleteAction = async () => {
-      let baseUrl = `http://localhost:8081/api/v1/residents`;
+      let baseUrl = `https://untoasted-jean-unsympathisingly.ngrok-free.dev/api/v1/residents`;
       let url = `${baseUrl}?id=${residentID}`;
       if (isHardDelete) {
         url += '&hard=true';

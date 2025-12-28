@@ -86,7 +86,13 @@ export function ExtraServiceManagement() {
         setSelectedService(service);
         setIsDetailLoading(true);
         try {
-            const response = await fetch(`http://localhost:8081/api/v1/extrafee/${service.id}`);
+            const response = await fetch(`https://untoasted-jean-unsympathisingly.ngrok-free.dev/api/v1/extrafee/${service.id}`,{
+                method: 'GET',
+                headers: {
+                  'Content-Type': 'application/json',
+                  'ngrok-skip-browser-warning': 'true'
+                }
+              });
             if (!response.ok) {
                 const errorText = await response.text().catch(() => '');
                 throw new Error(errorText || `HTTP ${response.status}: ${response.statusText}`);
@@ -111,9 +117,16 @@ export function ExtraServiceManagement() {
         try {
             const trimmed = keyword.trim();
             const url = trimmed
-                ? `http://localhost:8081/api/v1/extrafee?keyword=${encodeURIComponent(trimmed)}`
-                : `http://localhost:8081/api/v1/extrafee`;
-            const response = await fetch(url);
+                ? `https://untoasted-jean-unsympathisingly.ngrok-free.dev/api/v1/extrafee?keyword=${encodeURIComponent(trimmed)}`
+                : `https://untoasted-jean-unsympathisingly.ngrok-free.dev/api/v1/extrafee`;
+            const response = await fetch(url,{
+                method: 'GET',
+                headers: {
+                  'Content-Type': 'application/json',
+                  // 2. Thêm header để ngrok không chặn dữ liệu trả về
+                  'ngrok-skip-browser-warning': 'true'
+                }
+              });
             if (!response.ok) {
                 const errorText = await response.text().catch(() => '');
                 throw new Error(errorText || `HTTP ${response.status}: ${response.statusText}`);
@@ -144,7 +157,14 @@ export function ExtraServiceManagement() {
                 return;
             }
             try {
-                const response = await fetch(`http://localhost:8081/api/v1/apartments/dropdown?keyword=${encodeURIComponent(keyword)}`);
+                const response = await fetch(`https://untoasted-jean-unsympathisingly.ngrok-free.dev/api/v1/apartments/dropdown?keyword=${encodeURIComponent(keyword)}`,{
+                    method: 'GET',
+                    headers: {
+                      'Content-Type': 'application/json',
+                      // 2. Thêm header để ngrok không chặn dữ liệu trả về
+                      'ngrok-skip-browser-warning': 'true'
+                    }
+                  });
                 if (!response.ok) return;
                 const res = await response.json();
                 const data = (res.data || []) as ApartmentDropdownItem[];
@@ -201,9 +221,9 @@ export function ExtraServiceManagement() {
 
         setIsCreateSubmitting(true);
         try {
-            const response = await fetch(`http://localhost:8081/api/v1/extrafee`, {
+            const response = await fetch(`https://untoasted-jean-unsympathisingly.ngrok-free.dev/api/v1/extrafee`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' },
                 body: JSON.stringify({
                     apartmentId: createApartmentSelected.id,
                     title: createTitle.trim(),
@@ -257,7 +277,14 @@ export function ExtraServiceManagement() {
 
         setIsDeleteSubmitting(true);
         const action = async () => {
-            const response = await fetch(`http://localhost:8081/api/v1/extrafee/${deleteTarget.id}`, { method: 'DELETE' });
+            const response = await fetch(`https://untoasted-jean-unsympathisingly.ngrok-free.dev/api/v1/extrafee/${deleteTarget.id}`, {
+                method: 'DELETE',
+                headers: {
+                  'Content-Type': 'application/json',
+                  // 2. Thêm header để ngrok không chặn dữ liệu trả về
+                  'ngrok-skip-browser-warning': 'true'
+                }
+              });
             if (!response.ok) {
                 const errorText = await response.text().catch(() => '');
                 throw new Error(errorText || `HTTP ${response.status}: ${response.statusText}`);

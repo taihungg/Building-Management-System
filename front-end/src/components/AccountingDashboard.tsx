@@ -30,8 +30,22 @@ export function AccountingDashboard() {
     const currentYear = new Date().getFullYear();
     try {
       const [metricsRes, barchartRes] = await Promise.all([
-        fetch(`http://localhost:8081/api/v1/accounting/dashboard/fourmetrics`),
-        fetch(`http://localhost:8081/api/v1/accounting/dashboard/barchart?year=${currentYear}`)
+        fetch(`https://untoasted-jean-unsympathisingly.ngrok-free.dev/api/v1/accounting/dashboard/fourmetrics`,{
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            // 2. Thêm header để ngrok không chặn dữ liệu trả về
+            'ngrok-skip-browser-warning': 'true'
+          }
+        }),
+        fetch(`https://untoasted-jean-unsympathisingly.ngrok-free.dev/api/v1/accounting/dashboard/barchart?year=${currentYear}`,{
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            // 2. Thêm header để ngrok không chặn dữ liệu trả về
+            'ngrok-skip-browser-warning': 'true'
+          }
+        })
       ]);
 
       if (!metricsRes.ok || !barchartRes.ok) throw new Error("Không thể tải dữ liệu");
