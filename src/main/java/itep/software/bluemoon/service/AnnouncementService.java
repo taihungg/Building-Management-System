@@ -1,7 +1,6 @@
 package itep.software.bluemoon.service;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -34,7 +33,6 @@ public class AnnouncementService {
     private final ResidentRepository residentRepository;
     private final StaffRepository staffRepository;
 
-    @SuppressWarnings("null")
     @Transactional
     public void createAnnouncement(AnnouncementCreateRequestDTO request) {
         Staff sender = staffRepository.findById(request.getSenderId())
