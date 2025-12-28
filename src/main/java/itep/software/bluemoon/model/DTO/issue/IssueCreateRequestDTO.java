@@ -10,4 +10,5 @@ public class IssueCreateRequestDTO {
     private String description;
     private IssueType type;
     private UUID reporterId;
+    private String location;
 }

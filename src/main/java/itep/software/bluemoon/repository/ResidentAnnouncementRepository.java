@@ -7,7 +7,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
-
+import org.springframework.data.jpa.repository.Modifying;
 import itep.software.bluemoon.entity.ResidentAnnouncement;
 import itep.software.bluemoon.entity.key.ResidentAnnouncementId;
 import itep.software.bluemoon.model.projection.AnnouncementWithReadStatus;
@@ -52,4 +52,8 @@ public interface ResidentAnnouncementRepository extends JpaRepository<ResidentAn
     );
     
     List<ResidentAnnouncement> findByAnnouncementId(UUID announcementId);
+    
+    @Modifying
+    @Query("DELETE FROM ResidentAnnouncement ra WHERE ra.announcement.id = :announcementId")
+    void deleteByAnnouncementId(@Param("announcementId") UUID announcementId);
 }
