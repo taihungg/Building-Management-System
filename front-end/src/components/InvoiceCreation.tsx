@@ -123,9 +123,19 @@ export function InvoiceCreation() {
            ></div>
            
            {/* Icon nằm giữa */}
-           <FileSpreadsheet 
-             className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-purple-600 w-6 h-6" 
-           />
+            <div 
+              style={{
+                position: 'absolute',
+                top: '50%',
+                left: '50%',
+                transform: 'translate(-50%, -50%)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}
+            >
+              <FileSpreadsheet style={{ color: '#7c3aed', width: '24px', height: '24px' }} />
+            </div>
          </div>
      
          <div className="text-center">
@@ -162,7 +172,19 @@ export function InvoiceCreation() {
             ></div>
             
             {/* Icon Database nằm giữa */}
-            <Database className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-indigo-600 w-6 h-6" />
+            <div 
+              style={{
+                position: 'absolute',
+                top: '50%',
+                left: '50%',
+                transform: 'translate(-50%, -50%)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}
+            >
+              <Database style={{ color: '#4f46e5', width: '24px', height: '24px' }} />
+            </div>
           </div>
       
           <div className="text-center">
