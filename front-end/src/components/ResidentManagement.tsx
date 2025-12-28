@@ -1,17 +1,63 @@
 import { useState, useEffect } from "react";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
-import { Search, Plus, Edit, Trash2, MoreVertical, MapPin, Phone, UserCircle, Mail, Eye, Home, Fingerprint, Globe, Users, Filter } from "lucide-react"; 
+import { Search, Plus, Edit, Trash2, MoreVertical, MapPin, Phone, UserCircle, Mail, Eye, Home, Globe, Users, Clock, UserMinus } from "lucide-react"; 
 import { Label } from "./ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
 import { Dropdown } from "./Dropdown";
 import { Modal } from "./Modal";
-import React from 'react';
 
 import { Toaster, toast } from 'sonner';
 
-// --- Định nghĩa Kiểu Dữ Liệu Tạm Thời (Giúp Type Safety) ---
-// Giả định: ResidentData chứa các trường cần thiết, bao gồm các trường detail từ API
+type EditableResidentStatus =
+  | "PERMANENT_RESIDENCE"
+  | "TEMPORARY_RESIDENCE"
+  | "TEMPORARY_ABSENCE"
+  | "ACCOMMODATION";
+
+type ResidentStatusFilter = "ALL" | EditableResidentStatus | "INACTIVE";
+
+const RESIDENT_STATUS_OPTIONS: Array<{ value: EditableResidentStatus; label: string }> = [
+  { value: "PERMANENT_RESIDENCE", label: "Thường trú" },
+  { value: "TEMPORARY_RESIDENCE", label: "Tạm trú" },
+  { value: "TEMPORARY_ABSENCE", label: "Tạm vắng" },
+  { value: "ACCOMMODATION", label: "Lưu trú" },
+];
+
+const RESIDENT_STATUS_FILTER_OPTIONS: Array<{ value: ResidentStatusFilter; label: string }> = [
+  { value: "ALL", label: "Tất cả" },
+  ...RESIDENT_STATUS_OPTIONS,
+  { value: "INACTIVE", label: "Không ở" },
+];
+
+const getResidentStatusLabel = (status?: string) => {
+  const found = RESIDENT_STATUS_OPTIONS.find((o) => o.value === status);
+  if (found) return found.label;
+  if (status === "INACTIVE") return "Không ở";
+  return status || "N/A";
+};
+
+const getResidentStatusBadgeStyle = (status?: string): React.CSSProperties => {
+  switch (status) {
+    case "PERMANENT_RESIDENCE":
+      return { backgroundColor: "#10b981", borderColor: "#10b981", color: "#ffffff" };
+    case "TEMPORARY_RESIDENCE":
+      return { backgroundColor: "#f59e0b", borderColor: "#f59e0b", color: "#ffffff" };
+    case "ACCOMMODATION":
+      return { backgroundColor: "#8b5cf6", borderColor: "#8b5cf6", color: "#ffffff" };
+    case "TEMPORARY_ABSENCE":
+      return { backgroundColor: "#3b82f6", borderColor: "#3b82f6", color: "#ffffff" };
+    case "INACTIVE":
+      return { backgroundColor: "#0f172a", borderColor: "#020617", color: "#ffffff" };
+    default:
+      return { backgroundColor: "#f3f4f6", borderColor: "#e5e7eb", color: "#374151" };
+  }
+};
+
+const isEditableResidentStatus = (value: unknown): value is EditableResidentStatus => {
+  return RESIDENT_STATUS_OPTIONS.some((o) => o.value === value);
+};
+
 interface ResidentData {
   id: string;
   fullName: string;
@@ -21,14 +67,34 @@ interface ResidentData {
   email?: string;
   phoneNumber?: string;
   roomNumber?: string;
-  status: 'ACTIVE' | 'INACTIVE' | 'N/A';
+  building?: string;
+  status: EditableResidentStatus | "INACTIVE" | "N/A";
+  hasAccount?: boolean;
 }
+
+const normalizeResidentData = (raw: any): ResidentData => {
+  const roomNumber = raw?.roomNumber ?? raw?.room ?? raw?.apartment?.roomNumber;
+  return {
+    id: String(raw?.id ?? ""),
+    fullName: raw?.fullName ?? "",
+    idCard: raw?.idCard ?? undefined,
+    dob: raw?.dob ?? undefined,
+    homeTown: raw?.homeTown ?? undefined,
+    email: raw?.email ?? undefined,
+    phoneNumber: raw?.phoneNumber ?? raw?.phone ?? undefined,
+    roomNumber: roomNumber == null ? undefined : String(roomNumber),
+    building: raw?.building ?? raw?.buildingName ?? undefined,
+    status: raw?.status ?? "N/A",
+    hasAccount: raw?.hasAccount,
+  };
+};
 
 export function ResidentManagement() {
   const [residents, setResidents] = useState<ResidentData[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
 const [includeInactive, setIncludeInactive] = useState(false);
+  const [statusFilter, setStatusFilter] = useState<ResidentStatusFilter>("ALL");
 
   // --- TẠO STATE CHO FORM "THÊM MỚI" ---
   const [newName, setNewName] = useState("");
@@ -57,6 +123,7 @@ const [includeInactive, setIncludeInactive] = useState(false);
   const [updateHomeTown, setUpdateHomeTown] = useState("");
   const [updateEmail, setUpdateEmail] = useState("");
   const [updatePhone, setUpdatePhone] = useState("");
+  const [updateStatus, setUpdateStatus] = useState<EditableResidentStatus>("PERMANENT_RESIDENCE");
 
   // --- STATE CHO MODAL VIEW/EDIT DETAIL ---
   const [selectedResident, setSelectedResident] = useState<ResidentData | null>(null);
@@ -65,7 +132,14 @@ const [includeInactive, setIncludeInactive] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false); 
 
   const [createAccount, setCreateAccount] = useState(false);
+  const [isCreatingAccount, setIsCreatingAccount] = useState(false);
 
+  const hasAccount = selectedResident?.hasAccount === true;
+  const accountButtonLabel = hasAccount
+    ? "Đã có tài khoản cư dân"
+    : isCreatingAccount
+      ? "Đang tạo tài khoản..."
+      : "Tạo tài khoản cho cư dân";
 
   useEffect(() => {
     fetchResidents();
@@ -81,7 +155,8 @@ const [includeInactive, setIncludeInactive] = useState(false);
         throw new Error("Can't get residents");
       }
       const res = await response.json();
-      setResidents(res.data);
+      const data = Array.isArray(res.data) ? res.data.map(normalizeResidentData) : [];
+      setResidents(data);
     }
     catch (err) {
       setError((err as Error).message);
@@ -89,7 +164,15 @@ const [includeInactive, setIncludeInactive] = useState(false);
   }
 
   const filteredResidents = residents.filter((resident) => {
-    if (!includeInactive && resident.status !== "ACTIVE") {
+    if (statusFilter === "INACTIVE") {
+      return resident.status === "INACTIVE";
+    }
+
+    if (!includeInactive && resident.status === "INACTIVE" && statusFilter === "ALL") {
+      return false;
+    }
+
+    if (statusFilter !== "ALL" && resident.status !== statusFilter) {
       return false;
     }
   
@@ -102,6 +185,17 @@ const [includeInactive, setIncludeInactive] = useState(false);
       String(resident.email || "").toLowerCase().includes(keyword)
     );
   });
+
+  const statusCounts = residents.reduce(
+    (acc, resident) => {
+      if (resident.status === "PERMANENT_RESIDENCE") acc.permanent += 1;
+      if (resident.status === "TEMPORARY_RESIDENCE") acc.temporary += 1;
+      if (resident.status === "TEMPORARY_ABSENCE") acc.absence += 1;
+      if (resident.status === "ACCOMMODATION") acc.accommodation += 1;
+      return acc;
+    },
+    { permanent: 0, temporary: 0, absence: 0, accommodation: 0 },
+  );
 
   // --- API CALL: CREATE RESIDENT ---
   const createResident = async (dataToCreate: any) => {
@@ -140,7 +234,7 @@ const [includeInactive, setIncludeInactive] = useState(false);
           homeTown: newHomeTown,
           apartmentID: newAppartmentID,
           // Thêm các trường có điều kiện
-          ...(createAccount && { email: newEmail, phoneNumber: newPhone }),
+          ...(createAccount && { email: newEmail, phone: newPhone }),
         }
         await createResident(dataform);
         await fetchResidents();
@@ -233,7 +327,8 @@ const [includeInactive, setIncludeInactive] = useState(false);
         dob: updateDOB,
         homeTown: updateHomeTown, 
         email: updateEmail,
-        phoneNumber: updatePhone,
+        phone: updatePhone,
+        status: updateStatus,
       }
       
       let url = `http://localhost:8081/api/v1/residents/${selectedResident.id}`;
@@ -255,7 +350,7 @@ const [includeInactive, setIncludeInactive] = useState(false);
       const detailResponse = await fetch(`http://localhost:8081/api/v1/residents/${selectedResident.id}`);
       const detailRes = await detailResponse.json();
       
-      setSelectedResident(detailRes.data); 
+      setSelectedResident(normalizeResidentData(detailRes.data)); 
       setIsEditMode(false); 
     };
 
@@ -266,15 +361,38 @@ const [includeInactive, setIncludeInactive] = useState(false);
     });
   }
   
-  // 🔥 Hàm xử lý khi nhấn nút Tạo Tài khoản (Chưa có logic backend)
-  const handleCreateAccount = () => {
-    if (!selectedResident || !selectedResident.id) return;
-    
-    // Logic giả định
-    toast.info("Đang xử lý tạo tài khoản...", {
-        description: `Tài khoản sẽ được tạo cho cư dân: ${selectedResident.fullName}. Cần tích hợp API backend.`,
+  const handleCreateAccount = async () => {
+    if (!selectedResident?.id) return;
+    if (selectedResident.hasAccount === true) {
+      toast.info("Cư dân đã có tài khoản");
+      return;
+    }
+
+    const createAction = async () => {
+      setIsCreatingAccount(true);
+      try {
+        const response = await fetch(`http://localhost:8081/api/v1/residents/${selectedResident.id}/account`, {
+          method: "POST"
+        });
+
+        const res = await response.json().catch(() => ({}));
+        if (!response.ok) {
+          throw new Error(res.message || "Không thể tạo tài khoản cư dân");
+        }
+
+        const updated = normalizeResidentData(res.data);
+        setSelectedResident(updated);
+        await fetchResidents();
+      } finally {
+        setIsCreatingAccount(false);
+      }
+    };
+
+    toast.promise(createAction(), {
+      loading: "Đang tạo tài khoản cư dân...",
+      success: "Tạo tài khoản cư dân thành công!",
+      error: (err) => `Tạo tài khoản thất bại: ${(err as Error).message}`,
     });
-    // Thêm logic API call tại đây
   };
 
   // Hàm tải chi tiết và mở ở chế độ VIEW
@@ -289,20 +407,21 @@ const [includeInactive, setIncludeInactive] = useState(false);
         }
 
         const res = await response.json();
-        const residentData: ResidentData = res.data;
+        const residentData = normalizeResidentData(res.data);
 
         // Chuẩn bị dữ liệu đầy đủ cho Form Edit
         setSelectedResident(residentData); 
         setUpdateName(residentData.fullName);
         setUpdateIDCard(residentData.idCard || ""); 
         setUpdateDOB(residentData.dob || "");
-        setUpdateHomeTown(residentData.homeTown || ""); 
-        setUpdateEmail(residentData.email || "");
-        setUpdatePhone(residentData.phoneNumber || "");
-        
-        setIsViewModalOpen(true);      // Mở Modal
-    } catch (err) {
-        console.error(err);
+              setUpdateHomeTown(residentData.homeTown || ""); 
+              setUpdateEmail(residentData.email || "");
+              setUpdatePhone(residentData.phoneNumber || "");
+              setUpdateStatus(isEditableResidentStatus(residentData.status) ? residentData.status : "PERMANENT_RESIDENCE");
+              
+              setIsViewModalOpen(true);      // Mở Modal
+          } catch (err) {
+              console.error(err);
         toast.error("Lỗi tải dữ liệu", { description: (err as Error).message });
         setIsViewModalOpen(false);
     } finally {
@@ -325,7 +444,7 @@ const [includeInactive, setIncludeInactive] = useState(false);
         }
 
         const res = await response.json();
-        const residentData: ResidentData = res.data;
+        const residentData = normalizeResidentData(res.data);
 
         // Cập nhật state với DỮ LIỆU ĐẦY ĐỦ từ API chi tiết
         setSelectedResident(residentData); 
@@ -335,6 +454,7 @@ const [includeInactive, setIncludeInactive] = useState(false);
         setUpdateHomeTown(residentData.homeTown || ""); 
         setUpdateEmail(residentData.email || "");
         setUpdatePhone(residentData.phoneNumber || "");
+        setUpdateStatus(isEditableResidentStatus(residentData.status) ? residentData.status : "PERMANENT_RESIDENCE");
         
     } catch (err) {
         console.error(err);
@@ -370,115 +490,94 @@ const [includeInactive, setIncludeInactive] = useState(false);
         </Button>
       </div>
 
-     {/* Search + Stats Row - ĐÃ GIỚI HẠN CHIỀU RỘNG 50% */}
-     {/* Container điều chỉnh chiều rộng: w-full cho mobile, lg:w-1/2 cho màn hình lớn */}
-     {/* Search + Stats Row - ĐÃ DÙNG INLINE STYLE ĐỂ ÉP BUỘC CHIỀU RỘNG 50% */}
-     {/* Vẫn giữ w-full cho mobile, và sử dụng style={{ maxWidth: '50%' }} để đảm bảo khối không vượt quá nửa màn hình */}
-     <div className="w-full lg:w-1/2"  >
-  <div className="bg-white rounded-xl border-2 border-gray-200 p-6 space-y-4">
-
-    {/* Search */}
-    <div className="space-y-2">
-    <div className="relative max-w-md">
-        {/* ICON SEARCH */}
-        {/* Đã tăng kích thước icon (w-5 h-5) và điều chỉnh vị trí left-4 */}
-        <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" /> 
-        
-        <input
-            type="text"
-            placeholder="Tìm kiếm theo tên, số phòng, điện thoại hoặc email..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="
-                w-full
-                // Tăng padding trái để chừa chỗ cho icon, tăng padding dọc
-                pl-12 pr-6 py-3 text-sm 
-                // THAY ĐỔI: bg-white, border-2, và rounded-full
-                bg-white border-2 border-gray-200 rounded-full 
-                // THAY ĐỔI: Hiệu ứng focus hiện đại hơn
-                focus:outline-none focus:border-blue-600 focus:ring-4 focus:ring-blue-100 
-            "
-        />
-    </div>
-
-      {/* Checkbox include inactive */}
-      <label className="flex items-center gap-2 text-sm text-gray-600 cursor-pointer">
-        <input
-          type="checkbox"
-          checked={includeInactive}
-          onChange={(e) => setIncludeInactive(e.target.checked)}
-          className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-        />
-        Bao gồm cư dân không ở
-      </label>
-    </div>
-
-    {/* Stats */}
-    
-
-  </div>
-</div>
-
-<div className="grid grid-cols-2 gap-6">
-  {[
-    { 
-      label: "Tổng số cư dân", 
-      value: residents.length, 
-      icon: Users,
-      color: "#3b82f6", // Blue-500
-      bgColor: "#eff6ff" // Blue-50
-    },
-    { 
-      label: "Kết quả lọc", 
-      value: filteredResidents.length, 
-      icon: Filter,
-      color: "#10b981", // Emerald-500
-      bgColor: "#ecfdf5" // Emerald-50
-    }
-  ].map(({ label, value, icon: Icon, color, bgColor }) => (
-    <div
-      key={label}
-      className="relative bg-white p-6 shadow-sm transition-all hover:shadow-md border border-gray-100"
-      style={{ borderRadius: '24px' }} // Bo tròn lớn đồng bộ với style của bạn
-    >
-      <div className="flex items-center gap-4">
-        {/* Cụm Icon với nền Gradient nhẹ */}
-        <div 
-          className="flex items-center justify-center w-14 h-14 rounded-2xl shadow-inner"
-          style={{ backgroundColor: bgColor }}
-        >
-          <Icon size={26} style={{ color: color }} strokeWidth={2.5} />
+      <div className="grid grid-cols-4 gap-4">
+        <div className="flex justify-between items-center p-6 rounded-xl shadow-md h-32 relative overflow-hidden" style={{ backgroundColor: '#10b981' }}>
+          <div className="flex flex-col">
+            <p className="text-4xl font-bold text-white">{statusCounts.permanent}</p>
+            <p className="text-sm font-medium mt-1 text-white">Thường trú</p>
+          </div>
+          <Home className="h-12 w-12 text-white opacity-80" />
         </div>
 
-        {/* Cụm Text */}
-        <div className="flex flex-col">
-          <p className="text-sm font-bold text-gray-400 uppercase tracking-wider">
-            {label}
-          </p>
-          <div className="flex items-baseline gap-1">
-            <p className="text-3xl font-black text-slate-800">
-              {value.toLocaleString()}
-            </p>
-            <span className="text-[10px] font-bold text-gray-400">Người</span>
+        <div className="flex justify-between items-center p-6 rounded-xl shadow-md h-32 relative overflow-hidden" style={{ backgroundColor: '#f59e0b' }}>
+          <div className="flex flex-col">
+            <p className="text-4xl font-bold text-white">{statusCounts.temporary}</p>
+            <p className="text-sm font-medium mt-1 text-white">Tạm trú</p>
+          </div>
+          <Clock className="h-12 w-12 text-white opacity-80" />
+        </div>
+
+        <div className="flex justify-between items-center p-6 rounded-xl shadow-md h-32 relative overflow-hidden" style={{ backgroundColor: '#8b5cf6' }}>
+          <div className="flex flex-col">
+            <p className="text-4xl font-bold text-white">{statusCounts.accommodation}</p>
+            <p className="text-sm font-medium mt-1 text-white">Lưu trú</p>
+          </div>
+          <Globe className="h-12 w-12 text-white opacity-80" />
+        </div>
+
+        <div className="flex justify-between items-center p-6 rounded-xl shadow-md h-32 relative overflow-hidden" style={{ backgroundColor: '#3b82f6' }}>
+          <div className="flex flex-col">
+            <p className="text-4xl font-bold text-white">{statusCounts.absence}</p>
+            <p className="text-sm font-medium mt-1 text-white">Tạm vắng</p>
+          </div>
+          <UserMinus className="h-12 w-12 text-white opacity-80" />
+        </div>
+      </div>
+
+      <div className="flex items-center justify-between gap-6 w-full bg-white p-2 rounded-2xl shadow-[0_2px_15px_-3px_rgba(0,0,0,0.07),0_10px_20px_-2px_rgba(0,0,0,0.04)] border border-gray-100">
+        <div className="relative w-1/3">
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5 pointer-events-none" />
+          <input
+            type="text"
+            placeholder="Tìm tên, căn hộ..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full h-12 pl-12 pr-4 bg-gray-50/50 border-none rounded-xl text-sm focus:ring-2 focus:ring-blue-500/20 focus:bg-white transition-all placeholder:text-gray-400 outline-none"
+          />
+        </div>
+
+        <div className="flex items-center gap-4">
+          <label className="flex items-center gap-2 text-sm text-gray-600 cursor-pointer whitespace-nowrap">
+            <input
+              type="checkbox"
+              checked={includeInactive}
+              onChange={(e) => setIncludeInactive(e.target.checked)}
+              className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+            />
+            Bao gồm đã chuyển đi
+          </label>
+
+          <div className="w-52">
+            <Select value={statusFilter} onValueChange={(value: string) => setStatusFilter(value as ResidentStatusFilter)}>
+              <SelectTrigger className="flex items-center justify-between w-full h-11 px-4 bg-white border border-gray-200 rounded-xl shadow-sm text-sm font-medium text-gray-700 hover:border-blue-400 transition-all">
+                <SelectValue placeholder="Tất cả trạng thái" />
+              </SelectTrigger>
+              <SelectContent
+                align="start"
+                className="z-[9999] w-[var(--radix-popper-anchor-width)] min-w-[var(--radix-popper-anchor-width)] rounded-xl border border-gray-200 !bg-white !opacity-100 shadow-xl ring-1 ring-gray-200/70 [&_[data-slot=select-viewport]]:!bg-white [&_[data-slot=select-viewport]]:!opacity-100"
+              >
+                {RESIDENT_STATUS_FILTER_OPTIONS.map((opt) => (
+                  <SelectItem
+                    key={opt.value}
+                    value={opt.value}
+                    hideIndicator
+                    className="cursor-pointer rounded-lg px-3 py-2 text-sm text-gray-700 outline-none data-[highlighted]:bg-blue-50 data-[highlighted]:text-blue-700 data-[state=checked]:bg-blue-100 data-[state=checked]:font-semibold data-[state=checked]:text-blue-800 !pr-3"
+                  >
+                    {opt.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
         </div>
       </div>
 
-      {/* Trang trí: Một dải màu mỏng ở góc dưới để tăng nhận diện */}
-      <div 
-        className="absolute bottom-4 right-6 w-12 h-1 rounded-full opacity-30"
-        style={{ backgroundColor: color }}
-      />
-    </div>
-  ))}
-</div>
-
 
 
       {/* Residents Table */}
-      <div className="bg-white rounded-xl border-2 border-gray-200 overflow-hidden">
+      <div className="bg-white rounded-xl border-2 border-gray-200 overflow-hidden !bg-white">
         <div className="overflow-x-auto">
-          <table className="w-full">
+          <table className="w-full bg-white !bg-white">
             <thead className="bg-blue-600 border-b-2 border-blue-700">
               <tr>
                 <th className="text-left px-6 py-4 text-sm text-white">Cư dân</th>
@@ -488,9 +587,9 @@ const [includeInactive, setIncludeInactive] = useState(false);
                 <th className="text-left px-6 py-4 text-sm text-white">Hành động</th>
               </tr>
             </thead>
-            <tbody className="divide-y-2 divide-gray-200">
+            <tbody className="divide-y-2 divide-gray-200 bg-white !bg-white">
               {filteredResidents.map((resident) => (
-                <tr key={resident.id} className="hover:bg-gray-50 transition-colors">
+                <tr key={resident.id} className="bg-white !bg-white hover:bg-gray-50 transition-colors">
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center text-white text-sm">
@@ -521,13 +620,11 @@ const [includeInactive, setIncludeInactive] = useState(false);
                     </div>
                   </td>
                   <td className="px-6 py-4">
-                    <span className={`inline-flex px-3 py-1 rounded-full text-sm font-medium ${resident.status === 'ACTIVE'
-                        ? 'bg-green-100 text-green-700'
-                        : resident.status === 'INACTIVE'
-                          ? 'bg-gray-100 text-gray-700'
-                          : 'bg-orange-100 text-orange-700'
-                      }`}>
-                      {resident.status === 'ACTIVE' ? 'Đang ở' : resident.status === 'INACTIVE' ? 'Không ở' : 'N/A'}
+                    <span
+                      className="inline-flex px-3 py-1 rounded-full text-sm font-medium border"
+                      style={getResidentStatusBadgeStyle(resident.status)}
+                    >
+                      {getResidentStatusLabel(resident.status)}
                     </span>
                   </td>
                   <td className="px-6 py-4">
@@ -810,12 +907,11 @@ const [includeInactive, setIncludeInactive] = useState(false);
                                     {isEditMode ? updateHomeTown : (selectedResident.homeTown || "Chưa cập nhật quê quán")}
                                 </p>
                             </div>
-                            <span className={`px-3 py-1 rounded-full text-xs font-bold border ${
-                                selectedResident.status === 'ACTIVE' 
-                                    ? 'bg-green-500/20 border-green-400/50 text-green-50' 
-                                    : 'bg-gray-500/20 border-gray-400/50 text-gray-200'
-                            }`}>
-                                {selectedResident.status === 'ACTIVE' ? 'Đang ở' : 'Không ở'}
+                            <span
+                              className="px-3 py-1 rounded-full text-xs font-bold border shadow-sm"
+                              style={getResidentStatusBadgeStyle(isEditMode ? updateStatus : selectedResident.status)}
+                            >
+                                {getResidentStatusLabel(isEditMode ? updateStatus : selectedResident.status)}
                             </span>
                         </div>
                     </div>
@@ -835,16 +931,16 @@ const [includeInactive, setIncludeInactive] = useState(false);
                             </h3>
                             <div className="space-y-3">
                                 <div><Label htmlFor="updateName">Họ và Tên</Label>
-                                <Input id="updateName" type="text" value={updateName} onChange={(e) => setUpdateName(e.target.value)} className="mt-1"/></div>
+                                <Input id="updateName" type="text" value={updateName} onChange={(e) => setUpdateName(e.target.value)} className="mt-1 h-11 rounded-xl bg-white border-gray-200 px-4"/></div>
                                 
                                 <div><Label htmlFor="updateIDCard">CMND / CCCD</Label>
-                                <Input id="updateIDCard" type="text" value={updateIDCard} onChange={(e) => setUpdateIDCard(e.target.value)} className="mt-1"/></div>
+                                <Input id="updateIDCard" type="text" value={updateIDCard} onChange={(e) => setUpdateIDCard(e.target.value)} className="mt-1 h-11 rounded-xl bg-white border-gray-200 px-4"/></div>
                                 
                                 <div><Label htmlFor="updateDOB">Ngày Sinh</Label>
-                                <Input id="updateDOB" type="date" value={updateDOB} onChange={(e) => setUpdateDOB(e.target.value)} className="mt-1"/></div>
+                                <Input id="updateDOB" type="date" value={updateDOB} onChange={(e) => setUpdateDOB(e.target.value)} className="mt-1 h-11 rounded-xl bg-white border-gray-200 px-4"/></div>
                                 
                                 <div><Label htmlFor="updateHomeTown">Quê Quán</Label>
-                                <Input id="updateHomeTown" type="text" value={updateHomeTown} onChange={(e) => setUpdateHomeTown(e.target.value)} className="mt-1"/></div>
+                                <Input id="updateHomeTown" type="text" value={updateHomeTown} onChange={(e) => setUpdateHomeTown(e.target.value)} className="mt-1 h-11 rounded-xl bg-white border-gray-200 px-4"/></div>
                             </div>
                         </div>
 
@@ -855,18 +951,38 @@ const [includeInactive, setIncludeInactive] = useState(false);
                             </h3>
                             <div className="space-y-3">
                                 <div><Label htmlFor="updatePhone">Số Điện Thoại</Label>
-                                <Input id="updatePhone" type="tel" value={updatePhone} onChange={(e) => setUpdatePhone(e.target.value)} className="mt-1"/></div>
+                                <Input id="updatePhone" type="tel" value={updatePhone} onChange={(e) => setUpdatePhone(e.target.value)} className="mt-1 h-11 rounded-xl bg-white border-gray-200 px-4"/></div>
                                 
                                 <div><Label htmlFor="updateEmail">Email</Label>
-                                <Input id="updateEmail" type="email" value={updateEmail} onChange={(e) => setUpdateEmail(e.target.value)} className="mt-1"/></div>
+                                <Input id="updateEmail" type="email" value={updateEmail} onChange={(e) => setUpdateEmail(e.target.value)} className="mt-1 h-11 rounded-xl bg-white border-gray-200 px-4"/></div>
+
+                                <div>
+                                    <Label htmlFor="updateStatus">Trạng thái cư trú</Label>
+                                    <select
+                                      id="updateStatus"
+                                      value={updateStatus}
+                                      onChange={(e) => setUpdateStatus(e.target.value as EditableResidentStatus)}
+                                      className="mt-1 h-11 w-full rounded-xl bg-white border border-gray-200 px-4 text-base md:text-sm text-gray-700 shadow-sm hover:border-blue-400 transition-all outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400"
+                                    >
+                                      {RESIDENT_STATUS_OPTIONS.map((opt) => (
+                                        <option key={opt.value} value={opt.value}>
+                                          {opt.label}
+                                        </option>
+                                      ))}
+                                    </select>
+                                </div>
                                 
                                 {/* Apartment (Read Only) */}
                                 <div className="mt-4 p-4 bg-gray-100 border border-gray-200 rounded-xl">
                                     <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Căn Hộ (Chỉ Xem)</p>
-                                    <div className="flex items-baseline gap-2">
-                                        <span className="text-sm font-semibold text-gray-400 uppercase">Phòng</span>
+                                    <div className="grid grid-cols-[auto,1fr,auto,auto] items-baseline gap-x-2">
+                                        <span className="text-sm font-semibold text-gray-500 uppercase">Tòa</span>
+                                        <span className="text-base font-bold text-gray-900 tracking-tight truncate">
+                                            {selectedResident.building || "N/A"}
+                                        </span>
+                                        <span className="text-sm font-semibold text-gray-500 uppercase">Phòng</span>
                                         <span className="text-xl font-extrabold text-gray-900 tracking-tight font-mono">
-                                            {selectedResident.roomNumber}
+                                            {selectedResident.roomNumber || "N/A"}
                                         </span>
                                     </div>
                                 </div>
@@ -882,18 +998,6 @@ const [includeInactive, setIncludeInactive] = useState(false);
                                 Thông Tin Cá Nhân
                             </h3>
                             <div className="space-y-3">
-                                {/* SYSTEM ID */}
-                                <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg border border-gray-100 group hover:border-blue-200 transition-colors">
-                                    <div className="p-2 bg-slate-200 text-slate-600 rounded-md">
-                                        <Fingerprint className="w-4 h-4" />
-                                    </div>
-                                    <div className="flex-1 overflow-hidden">
-                                        <p className="text-xs text-gray-500">ID Hệ Thống</p>
-                                        <p className="font-mono text-xs font-medium text-gray-700 truncate" title={selectedResident.id}>
-                                            {selectedResident.id}
-                                        </p>
-                                    </div>
-                                </div> 
                                 {/* ID Card (CMND/CCCD) */}
                                 <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg border border-gray-100">
                                     <div className="p-2 bg-blue-100 text-blue-600 rounded-md">
@@ -953,12 +1057,16 @@ const [includeInactive, setIncludeInactive] = useState(false);
                                         <Home className="w-7 h-7 text-blue-600" />
                                     </div>
                                     <p className="text-xs font-bold text-blue-600/80 uppercase tracking-wider mb-1">Căn Hộ Hiện Tại</p>
-                                    <div className="flex items-baseline gap-2 relative z-10">
-                                        <span className="text-sm font-semibold text-blue-400 uppercase">Phòng</span>
-                                        <span className="text-xl font-extrabold text-blue-900 tracking-tight font-mono">
-                                            {selectedResident.roomNumber}
+                                    <div className="grid grid-cols-[auto,1fr,auto,auto] items-baseline gap-x-2 relative z-10">
+                                        <span className="text-sm font-semibold text-blue-600 uppercase">Tòa</span>
+                                        <span className="text-base font-bold text-blue-900 tracking-tight truncate">
+                                            {selectedResident.building || "N/A"}
                                         </span>
-                                    </div>                      
+                                        <span className="text-sm font-semibold text-blue-600 uppercase">Phòng</span>
+                                        <span className="text-xl font-extrabold text-blue-900 tracking-tight font-mono">
+                                            {selectedResident.roomNumber || "N/A"}
+                                        </span>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -995,10 +1103,21 @@ const [includeInactive, setIncludeInactive] = useState(false);
                         
                         {/* 🔥 NÚT CREATE ACCOUNT (TẠO TÀI KHOẢN) */}
                         <Button 
-                            onClick={handleCreateAccount} 
-                            className="bg-orange-500 hover:bg-orange-600 text-white rounded-full px-6 shadow-lg shadow-orange-500/30"
+                            onClick={() => {
+                              if (hasAccount) {
+                                toast.info("Cư dân đã có tài khoản");
+                                return;
+                              }
+                              handleCreateAccount();
+                            }}
+                            disabled={isCreatingAccount}
+                            className={`rounded-full px-6 shadow-lg disabled:opacity-100 ${
+                              hasAccount
+                                ? "bg-gray-200 text-gray-600 shadow-none cursor-default"
+                                : "bg-green-600 text-white"
+                            }`}
                         >
-                            <Users className="w-4 h-4 mr-2" /> Tạo tài khoản
+                            <Users className="w-4 h-4 mr-2" /> {accountButtonLabel}
                         </Button>
                         
                         <Button 
