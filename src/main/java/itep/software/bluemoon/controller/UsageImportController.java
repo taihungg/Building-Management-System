@@ -53,7 +53,7 @@ public class UsageImportController {
     }
     
     
-    @GetMapping("/api/usage-records")
+    @GetMapping("/usage-records")
     public ResponseEntity<Object> getUsageRecords(
             @RequestParam int month,
             @RequestParam int year) {

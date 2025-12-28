@@ -378,18 +378,13 @@ public class InvoiceService {
         }
     }
     
-    
-    
-    /**
-     *  Duyệt cac hóa đơn trong tháng pending -> unpaid và gửi thông báo
-     */
     public List<InvoiceSummary> confirmInvoices(int month, int year, UUID staffId) {
         List<Invoice> pendingInvoices = invoiceRepository.findByMonthAndYearAndStatus(
                 month, year, InvoiceStatus.PENDING);
         
         if (pendingInvoices.isEmpty()) {
             throw new RuntimeException(
-                String.format("Không tìm thấy hóa đơn PENDING cho tháng %d/%d", month, year));
+                String.format("Not found PENDING invoice in %d/%d", month, year));
         }
         
         for (Invoice invoice : pendingInvoices) {
@@ -397,7 +392,7 @@ public class InvoiceService {
                 invoice.setStatus(InvoiceStatus.UNPAID);
                 createInvoiceNotification(invoice, staffId);
             } catch (Exception e) {
-                log.error("Lỗi confirm hóa đơn {}: {}", invoice.getId(), e.getMessage());
+                log.error("Error comfirming invoice {}: {}", invoice.getId(), e.getMessage());
             }
         }
         

@@ -13,7 +13,6 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 @Transactional
 public class UsageRecordService {
-    
     private final UsageRecordRepository usageRecordRepository;
     
     @Transactional(readOnly = true)
