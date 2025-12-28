@@ -1,5 +1,4 @@
 package itep.software.bluemoon.service;
-
 import java.util.List;
 import java.util.UUID;
 
@@ -12,7 +11,6 @@ import itep.software.bluemoon.entity.person.Resident;
 import itep.software.bluemoon.enumeration.IssueStatus;
 import itep.software.bluemoon.enumeration.IssueType;
 import itep.software.bluemoon.model.DTO.issue.IssueCreateRequestDTO;
-import itep.software.bluemoon.model.DTO.issue.IssueResponseDTO;
 import itep.software.bluemoon.model.projection.IssueSummary;
 import itep.software.bluemoon.repository.ApartmentRepository;
 import itep.software.bluemoon.repository.IssueRepository;
@@ -21,46 +19,29 @@ import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
+@Transactional
 public class IssueService {
-
     private final IssueRepository issueRepository;
     private final ApartmentRepository apartmentRepository;
     private final ResidentRepository residentRepository;
     
-    //tạo Issue
-    @SuppressWarnings("null")
-    public Issue createIssue(IssueCreateRequestDTO request) {
-
+    public Issue createIssue(IssueCreateRequestDTO request) { // ← BỎ @SuppressWarnings
         Apartment apartment = apartmentRepository.findById(request.getApartmentId())
                 .orElseThrow(() -> new RuntimeException("Apartment not found"));
-
         Resident reporter = residentRepository.findById(request.getReporterId())
                 .orElseThrow(() -> new RuntimeException("Resident not found"));
-
         Issue issue = Issue.builder()
                 .apartment(apartment)
                 .title(request.getTitle())
                 .description(request.getDescription())
                 .type(request.getType())
                 .status(IssueStatus.UNPROCESSED)
-                //.level(request.getLevel())
-                //.escRequest(escalationRequest(request.getLevel()))
                 .reporter(reporter)
                 .build();
-
         return issueRepository.save(issue);
     }
-    /*
-    public EscalationRequest escalationRequest(IssueLevel level) {
-        return level == IssueLevel.AUTHORITY
-                ? EscalationRequest.REQUESTED
-                : EscalationRequest.NONE;
-    }
-    */
-
     
-    @SuppressWarnings("null")
-    public IssueResponseDTO updateStatus(UUID issueId, IssueStatus newStatus) {
+    public IssueSummary updateStatus(UUID issueId, IssueStatus newStatus) { // ← BỎ @SuppressWarnings
         Issue issue = issueRepository.findById(issueId)
             .orElseThrow(() -> new RuntimeException("Issue not found"));
         
@@ -72,19 +53,10 @@ public class IssueService {
         }
         
         issue.setStatus(newStatus);
-        Issue saved = issueRepository.save(issue);
+        issueRepository.save(issue);
         
-        return IssueResponseDTO.builder()
-            .id(saved.getId())
-            .title(saved.getTitle())
-            .description(saved.getDescription())
-            .type(saved.getType())
-            .status(saved.getStatus())
-            .apartmentId(saved.getApartment().getId())
-            .roomNumber(saved.getApartment().getRoomNumber())
-            .reporterId(saved.getReporter().getId())
-            .reporterName(saved.getReporter().getFullName())
-            .build();
+        return issueRepository.findIssueSummaryById(issue.getId())
+            .orElseThrow(() -> new RuntimeException("Failed to retrieve updated issue"));
     }
     
     private boolean isValidTransition(IssueStatus from, IssueStatus to) {
@@ -94,21 +66,19 @@ public class IssueService {
             case PROCESSED   -> false;
         };
     }
-
+    
     @Transactional(readOnly = true)
     public List<IssueSummary> getAllIssues() {
-    	return issueRepository.findAllIssueSummaries();
+        return issueRepository.findAllIssueSummaries();
     }
-    // Số lượng Issue có Type là Security
+    
     @Transactional(readOnly = true)
     public int countIssuesByType(IssueType type) {
         return issueRepository.countByType(type);
     }
     
-    // Danh sách Issue có Type là Security
     @Transactional(readOnly = true)
     public List<IssueSummary> getIssuesByType(IssueType type) {
         return issueRepository.findIssueSummariesByType(type);
     }
-
 }
