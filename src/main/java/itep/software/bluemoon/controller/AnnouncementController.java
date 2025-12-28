@@ -3,9 +3,7 @@ package itep.software.bluemoon.controller;
 import java.util.List;
 import java.util.UUID;
 
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.web.PageableDefault;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -17,66 +15,81 @@ import org.springframework.web.bind.annotation.RestController;
 
 import itep.software.bluemoon.entity.Announcement;
 import itep.software.bluemoon.model.DTO.announcement.AnnouncementCreateRequestDTO;
-import itep.software.bluemoon.model.DTO.announcement.AnnouncementResponseDTO;
-import itep.software.bluemoon.model.DTO.announcement.RecipientStatusResponseDTO;
+import itep.software.bluemoon.model.projection.AnnouncementDetailSummary;
+import itep.software.bluemoon.model.projection.AnnouncementWithReadStatus;
+import itep.software.bluemoon.model.projection.RecipientStatusSummary;
+import itep.software.bluemoon.response.ApiResponse;
 import itep.software.bluemoon.service.AnnouncementService;
 import lombok.RequiredArgsConstructor;
+
 @RestController
-@RequestMapping("/api/v1/announcements")
+@RequestMapping("/api/announcements")
 @RequiredArgsConstructor
 public class AnnouncementController {
 
-	private final AnnouncementService announcementService;
+    private final AnnouncementService announcementService;
 
-    // ================= STAFF APIS =================
-
-    /**
-     * Staff tạo và gửi thông báo mới 
-     */
-    @PostMapping("/staff/create")
-    public ResponseEntity<String> createAnnouncement(@RequestBody AnnouncementCreateRequestDTO request) {
-        announcementService.createAnnouncement(request);
-        return ResponseEntity.ok("Thông báo đã được gửi thành công!");
+    // Tạo thông báo mới
+    @PostMapping
+    public ResponseEntity<Object> createAnnouncement(@RequestBody AnnouncementCreateRequestDTO request) {
+        Announcement announcement = announcementService.createAnnouncement(request);
+        
+        return ApiResponse.responseBuilder(
+                HttpStatus.CREATED,
+                "Announcement created successfully",
+                announcement
+        );
     }
 
-    /**
-     * Staff xem toàn bộ danh sách thông báo đã từng gửi
-     */
-    @GetMapping("/staff/all")
-    public ResponseEntity<Page<Announcement>> getAllAnnouncements(
-            @PageableDefault(size = 10, sort = "id") Pageable pageable) {
-        return ResponseEntity.ok(announcementService.getAllAnnouncements(pageable));
+    // Staff xem tất cả announcements
+    @GetMapping("/staff")
+    public ResponseEntity<Object> getAllAnnouncements() {
+        List<AnnouncementDetailSummary> announcements = announcementService.getAllAnnouncements();
+        
+        return ApiResponse.responseBuilder(
+                HttpStatus.OK,
+                "Announcements retrieved successfully",
+                announcements
+        );
     }
 
-    /**
-     * Staff xem chi tiết danh sách người nhận và ai đã đọc thông báo đó
-     */
-    @GetMapping("/staff/{id}/recipients")
-    public ResponseEntity<List<RecipientStatusResponseDTO>> getRecipientStatuses(@PathVariable UUID id) {
-        return ResponseEntity.ok(announcementService.getRecipientStatuses(id));
+    // Staff xem recipient statuses của một announcement
+    @GetMapping("/{announcementId}/recipients")
+    public ResponseEntity<Object> getRecipientStatuses(@PathVariable UUID announcementId) {
+        List<RecipientStatusSummary> statuses = announcementService.getRecipientStatuses(announcementId);
+        
+        return ApiResponse.responseBuilder(
+                HttpStatus.OK,
+                "Recipient statuses retrieved successfully",
+                statuses
+        );
     }
 
-
-    // ================= RESIDENT APIS =================
-
-    /**
-     * Cư dân xem danh sách thông báo dành riêng cho mình
-     */
+    // Resident xem announcements của mình
     @GetMapping("/resident/{residentId}")
-    public ResponseEntity<Page<AnnouncementResponseDTO>> getMyAnnouncements(
-            @PathVariable UUID residentId,
-            @PageableDefault(size = 10) Pageable pageable) {
-        return ResponseEntity.ok(announcementService.getResidentAnnouncements(residentId, pageable));
+    public ResponseEntity<Object> getResidentAnnouncements(@PathVariable UUID residentId) {
+        List<AnnouncementWithReadStatus> announcements = 
+                announcementService.getResidentAnnouncements(residentId);
+        
+        return ApiResponse.responseBuilder(
+                HttpStatus.OK,
+                "Resident announcements retrieved successfully",
+                announcements
+        );
     }
 
-    /**
-     * Cư dân đánh dấu một thông báo là đã đọc
-     */
-    @PatchMapping("/resident/{residentId}/read/{announcementId}")
-    public ResponseEntity<Void> markAsRead(
+    // Đánh dấu announcement đã đọc
+    @PatchMapping("/resident/{residentId}/announcement/{announcementId}/read")
+    public ResponseEntity<Object> markAsRead(
             @PathVariable UUID residentId,
             @PathVariable UUID announcementId) {
-    	announcementService.markAsRead(residentId, announcementId);
-        return ResponseEntity.noContent().build();
+        
+        announcementService.markAsRead(residentId, announcementId);
+        
+        return ApiResponse.responseBuilder(
+                HttpStatus.OK,
+                "Announcement marked as read",
+                null
+        );
     }
 }
