@@ -23,7 +23,9 @@ public interface IssueRepository extends JpaRepository<Issue, UUID> {
                    i.title as title,
                    i.description as description,
                    i.status as status,
-                   i.type as type
+                   i.type as type,
+                   i.createdDate as createdDate,
+                   i.location as location
             FROM Issue i
             JOIN i.apartment a
             JOIN i.reporter r
@@ -43,7 +45,9 @@ public interface IssueRepository extends JpaRepository<Issue, UUID> {
                    i.title as title,
                    i.description as description,
                    i.status as status,
-                   i.type as type
+                   i.type as type,
+                   i.createdDate as createdDate,
+                   i.location as location
             FROM Issue i
             JOIN i.apartment a
             JOIN i.reporter r
@@ -58,7 +62,9 @@ public interface IssueRepository extends JpaRepository<Issue, UUID> {
                    i.title as title,
                    i.description as description,
                    i.status as status,
-                   i.type as type
+                   i.type as type,
+                   i.createdDate as createdDate,
+                   i.location as location
             FROM Issue i
             JOIN i.apartment a
             JOIN i.reporter r

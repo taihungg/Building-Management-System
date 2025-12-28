@@ -1,6 +1,8 @@
 package itep.software.bluemoon.model.projection;
 
+import java.time.LocalDateTime;
 import java.util.UUID;
+
 import itep.software.bluemoon.enumeration.IssueStatus;
 import itep.software.bluemoon.enumeration.IssueType;
 
@@ -10,6 +12,8 @@ public interface IssueSummary {
     String getReporterName();   
     String getTitle();
     String getDescription();
+    String getLocation();
     IssueStatus getStatus();
     IssueType getType();
+    LocalDateTime getCreatedDate();
 }
