@@ -12,6 +12,7 @@ import itep.software.bluemoon.entity.Apartment;
 import itep.software.bluemoon.entity.accounting.ServiceType;
 import itep.software.bluemoon.entity.accounting.UsageRecord;
 import itep.software.bluemoon.enumeration.ServiceCode;
+import itep.software.bluemoon.model.projection.UsageRecordSummary;
 
 public interface UsageRecordRepository extends JpaRepository<UsageRecord, UUID>{
     @Query("SELECT u FROM UsageRecord u " +
@@ -44,4 +45,24 @@ public interface UsageRecordRepository extends JpaRepository<UsageRecord, UUID>{
         @Param("month") int month,
         @Param("year") int year
     );
+    
+    @Query("""
+    	    SELECT u.id AS id,
+    	           CONCAT('P.', a.roomNumber) AS apartmentLabel,
+    	           s.title AS serviceName,
+    	           u.oldIndex AS oldIndex,
+    	           u.newIndex AS newIndex,
+    	           u.quantity AS quantity,
+    	           u.month AS month,
+    	           u.year AS year
+    	    FROM UsageRecord u
+    	    JOIN u.apartment a
+    	    JOIN u.serviceType s
+    	    WHERE u.month = :month AND u.year = :year
+    	    ORDER BY a.roomNumber ASC, s.code ASC
+    	    """)
+    	List<UsageRecordSummary> findUsageRecordSummariesByMonthYear(
+    	    @Param("month") int month,
+    	    @Param("year") int year
+    	);
 }

@@ -61,4 +61,21 @@ public interface InvoiceRepository extends JpaRepository<Invoice, UUID> {
            "AND i.status = 'PAID' " +
            "GROUP BY st.code")
     List<Object[]> findRevenueDistribution(@Param("month") int month, @Param("year") int year);
+    
+    @Query("""
+    	    SELECT i.id AS id,
+    	           CONCAT('P.', a.roomNumber) AS apartmentLabel,
+    	           i.totalAmount AS totalAmount,
+    	           i.status AS status,
+    	           i.createdDate AS createdDate
+    	    FROM Invoice i
+    	    JOIN i.apartment a
+    	    WHERE i.month = :month AND i.year = :year AND i.status = :status
+    	    ORDER BY a.roomNumber ASC
+    	    """)
+    	List<InvoiceSummary> findInvoiceSummariesByMonthYearStatus(
+    	    @Param("month") int month,
+    	    @Param("year") int year,
+    	    @Param("status") InvoiceStatus status
+    	);
 }
