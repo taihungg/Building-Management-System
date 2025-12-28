@@ -4,9 +4,10 @@ public enum TierCode {
     BIKE,
     MOTO,
     CAR,
-   
-    TIER_1,
-    TIER_2, 
-    TIER_3, 
-    TIER_4  
+    ONE,
+    TWO,
+    THREE,
+    FOUR,
+    FIVE,
+    SIX
 }
