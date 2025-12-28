@@ -1,8 +1,7 @@
 import React, { useState, useRef } from 'react';
-import { Upload, FileSpreadsheet, CheckCircle2, X, Save, AlertCircle, Loader2, Download, Trash2, Pencil, Calendar } from 'lucide-react';
+import { Upload, FileSpreadsheet, CheckCircle2, X, Save, AlertCircle, Loader2, Download, Trash2, Pencil, Calendar, Receipt, Database } from 'lucide-react';
 import { toast, Toaster } from 'sonner';
 
-// Interface chuẩn theo Schema Backend chú gửi
 interface UsageImportData {
   apartmentCode: string;
   buildingCode: string;
@@ -17,18 +16,17 @@ interface UsageImportData {
 
 export function InvoiceCreation() {
   const currentDate = new Date();
-  
-  // States quản lý bộ lọc
   const [selectedMonth, setSelectedMonth] = useState<number>(currentDate.getMonth() + 1);
   const [selectedYear, setSelectedYear] = useState<number>(currentDate.getFullYear());
-  
-  // States quản lý dữ liệu và trạng thái API
   const [tableData, setTableData] = useState<UsageImportData[]>([]);
-  const [isUploading, setIsUploading] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
+  
+  // --- STATE QUẢN LÝ POPUP LOADING ---
+  const [isUploading, setIsUploading] = useState(false); // Cho khâu tải Excel
+  const [isSaving, setIsSaving] = useState(false);       // Cho khâu Lưu vào DB
+  
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // 1. API PREVIEW: Tải file lên và hiện dữ liệu ra bảng trang chính
+  // 1. API PREVIEW: Tải file lên -> Hiện Popup Loading
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
@@ -36,9 +34,8 @@ export function InvoiceCreation() {
     const formData = new FormData();
     formData.append('file', file);
 
-    setIsUploading(true);
+    setIsUploading(true); // Mở Popup Loading Excel
     try {
-      // URL truyền month, year để BE lấy chỉ số cũ đối soát
       const url = `http://localhost:8081/api/v1/accounting/usage-import/preview?month=${selectedMonth}&year=${selectedYear}`;
       const response = await fetch(url, {
         method: 'POST',
@@ -51,46 +48,26 @@ export function InvoiceCreation() {
       const data = res.data || res;
       
       setTableData(Array.isArray(data) ? data : []);
-      toast.success("Tải dữ liệu thành công, vui lòng kiểm tra bảng bên dưới");
+      toast.success("Tải dữ liệu thành công, chú có thể sửa trực tiếp trên bảng");
     } catch (error: any) {
       toast.error("Lỗi đọc file", { description: error.message });
     } finally {
-      setIsUploading(false);
+      setIsUploading(false); // Đóng Popup
       if (fileInputRef.current) fileInputRef.current.value = '';
     }
   };
 
-  // 2. CHỈNH SỬA TRỰC TIẾP TRÊN BẢNG
-  const handleEditCell = (index: number, field: keyof UsageImportData, value: any) => {
-    const newData = [...tableData];
-    newData[index] = { ...newData[index], [field]: value };
-    
-    // Tự động tính lại lượng tiêu thụ khi sửa số mới hoặc số cũ
-    if (field === 'newIndex' || field === 'oldIndex') {
-      newData[index].quantity = (Number(newData[index].newIndex) || 0) - (Number(newData[index].oldIndex) || 0);
-    }
-    setTableData(newData);
-  };
-
-  const handleDeleteRow = (index: number) => {
-    setTableData(tableData.filter((_, i) => i !== index));
-  };
-
-  // 3. API SAVE: Lưu toàn bộ dữ liệu đang hiện trên bảng vào Database
+  // 2. API SAVE: Lưu vào DB -> Hiện Popup Loading
   const handleSaveToDB = async () => {
-    if (tableData.length === 0) {
-      toast.error("Chưa có dữ liệu để lưu");
-      return;
-    }
+    if (tableData.length === 0) return;
 
-    // Lọc trùng nhẹ để tránh lỗi Backend
     const uniqueData = tableData.filter((item, index, self) =>
       index === self.findIndex((t) => (
         t.apartmentCode === item.apartmentCode && t.serviceCode === item.serviceCode
       ))
     );
 
-    setIsSaving(true);
+    setIsSaving(true); // Mở Popup Loading Database
     try {
       const url = `http://localhost:8081/api/v1/accounting/usage-import/save?month=${selectedMonth}&year=${selectedYear}`;
       const response = await fetch(url, {
@@ -102,55 +79,138 @@ export function InvoiceCreation() {
       if (!response.ok) throw new Error("Lỗi khi lưu vào Database");
 
       toast.success("Đã lưu dữ liệu vào hệ thống thành công!");
-      // Sau khi lưu thành công có thể xóa bảng hoặc giữ lại tùy chú, ở đây con giữ lại để xem
+      setTableData([]); 
+
     } catch (error: any) {
       toast.error("Lưu thất bại", { description: error.message });
     } finally {
-      setIsSaving(false);
+      setIsSaving(false); // Đóng Popup
     }
   };
 
+  const handleEditCell = (index: number, field: keyof UsageImportData, value: any) => {
+    const newData = [...tableData];
+    newData[index] = { ...newData[index], [field]: value };
+    if (field === 'newIndex' || field === 'oldIndex') {
+      newData[index].quantity = (Number(newData[index].newIndex) || 0) - (Number(newData[index].oldIndex) || 0);
+    }
+    setTableData(newData);
+  };
+
+  const handleDeleteRow = (index: number) => {
+    setTableData(tableData.filter((_, i) => i !== index));
+  };
+
   return (
-    <div className="space-y-6 p-6">
+    <div className="space-y-6 p-6 relative">
       <Toaster richColors position="top-right" />
+
+      {/* --- POPUP LOADING KHI UPLOAD EXCEL --- */}
+      {isUploading && (
+       <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm animate-in fade-in duration-300">
+       <div className="bg-white p-8 rounded-[32px] shadow-2xl flex flex-col items-center gap-4 max-w-sm w-full mx-4 border border-purple-100">
+         <div className="relative">
+           {/* VÒNG TRÒN XOAY DÙNG INLINE CSS */}
+           <div 
+             style={{
+               width: '64px',       // tương đương w-16
+               height: '64px',      // tương đương h-16
+               border: '4px solid #f5f3ff',   // tương đương border-purple-50
+               borderTop: '4px solid #7c3aed', // tương đương border-t-purple-600
+               borderRadius: '50%',
+               animation: 'spin 1s linear infinite'
+             }}
+           ></div>
+           
+           {/* Icon nằm giữa */}
+           <FileSpreadsheet 
+             className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-purple-600 w-6 h-6" 
+           />
+         </div>
+     
+         <div className="text-center">
+           <h3 className="text-xl font-bold text-gray-900">Đang đọc file Excel</h3>
+           <p className="text-gray-500 text-sm mt-1">Hệ thống đang trích xuất dữ liệu căn hộ, vui lòng đợi...</p>
+         </div>
+     
+         {/* NHÚNG CSS QUAY VÀO ĐÂY */}
+         <style>{`
+           @keyframes spin {
+             0% { transform: rotate(0deg); }
+             100% { transform: rotate(360deg); }
+           }
+         `}</style>
+       </div>
+     </div>
+      )}
+
+      {/* --- POPUP LOADING KHI LƯU VÀO DATABASE --- */}
+      {isSaving && (
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-md animate-in fade-in duration-300">
+        <div className="bg-white p-8 rounded-[32px] shadow-2xl flex flex-col items-center gap-4 max-w-sm w-full mx-4 border border-indigo-100">
+          <div className="relative">
+            {/* VÒNG TRÒN XOAY DÙNG INLINE CSS */}
+            <div 
+              style={{
+                width: '64px',
+                height: '64px',
+                border: '4px solid #eef2ff',   // tương đương border-indigo-50
+                borderTop: '4px solid #4f46e5', // tương đương border-t-indigo-600
+                borderRadius: '50%',
+                animation: 'spin 1s linear infinite'
+              }}
+            ></div>
+            
+            {/* Icon Database nằm giữa */}
+            <Database className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-indigo-600 w-6 h-6" />
+          </div>
       
-      {/* HEADER */}
+          <div className="text-center">
+            <h3 className="text-xl font-bold text-gray-900">Đang lưu hệ thống</h3>
+            <p className="text-gray-500 text-sm mt-1">
+              Đang ghi dữ liệu sử dụng vào cơ sở dữ liệu. Không tắt trình duyệt lúc này!
+            </p>
+          </div>
+      
+          {/* PHẦN ĐỊNH NGHĨA KEYFRAMES (Chỉ cần khai báo 1 lần trong file) */}
+          <style>{`
+            @keyframes spin {
+              0% { transform: rotate(0deg); }
+              100% { transform: rotate(360deg); }
+            }
+          `}</style>
+        </div>
+      </div>
+      )}
+      
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold text-gray-900">Dữ liệu sử dụng</h1>
       </div>
 
-      {/* FILTER & BUTTONS */}
       <div className="flex items-center justify-between gap-4 mb-8">
-      <div className="flex items-center bg-white border border-gray-200 rounded-lg shadow-sm px-3 py-2 transition-all hover:border-blue-400 hover:shadow-md">
-          <Calendar className="w-4 h-4 text-gray-500 flex-shrink-0 mr-2" />
-          
-          {/* Select MONTH - Bắt buộc chọn */}
+        <div className="flex items-center bg-white border border-gray-200 rounded-lg shadow-sm px-3 py-2 transition-all hover:border-blue-400">
+          <Calendar className="w-4 h-4 text-gray-500 mr-2" />
           <select
             value={selectedMonth}
             onChange={(e) => setSelectedMonth(Number(e.target.value))}
-            className="text-sm font-medium text-gray-700 bg-transparent border-none focus:ring-0 cursor-pointer outline-none appearance-none pr-6"
-            style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' fill=\'none\' viewBox=\'0 0 24 24\' stroke=\'%236b7280\'%3E%3Cpath stroke-linecap=\'round\' stroke-linejoin=\'round\' stroke-width=\'2\' d=\'M19 9l-7 7-7-7\'/%3E%3C/svg%3E")', backgroundRepeat: 'no-repeat', backgroundPosition: 'right 0 center', backgroundSize: '16px' }}
+            className="text-sm font-medium text-gray-700 bg-transparent border-none focus:ring-0 outline-none"
           >
-            {Array.from({ length: 12 }, (_, i) => i + 1).map(month => (
-              <option key={month} value={month}>Tháng {month}</option>
+            {Array.from({ length: 12 }, (_, i) => (
+              <option key={i+1} value={i+1}>Tháng {i+1}</option>
             ))}
           </select>
-          
-          {/* Divider */}
           <div className="w-px h-4 bg-gray-300 mx-2"></div>
-          
-          {/* Select YEAR */}
           <select
             value={selectedYear}
             onChange={(e) => setSelectedYear(Number(e.target.value))}
-            className="text-sm font-medium text-gray-700 bg-transparent border-none focus:ring-0 cursor-pointer outline-none appearance-none pr-6"
-            style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' fill=\'none\' viewBox=\'0 0 24 24\' stroke=\'%236b7280\'%3E%3Cpath stroke-linecap=\'round\' stroke-linejoin=\'round\' stroke-width=\'2\' d=\'M19 9l-7 7-7-7\'/%3E%3C/svg%3E")', backgroundRepeat: 'no-repeat', backgroundPosition: 'right 0 center', backgroundSize: '16px' }}
+            className="text-sm font-medium text-gray-700 bg-transparent border-none focus:ring-0 outline-none"
           >
-            {[currentDate.getFullYear() - 1, currentDate.getFullYear(), currentDate.getFullYear() + 1].map(year => (
+            {[2024, 2025, 2026].map(year => (
               <option key={year} value={year}>Năm {year}</option>
             ))}
           </select>
         </div>
+
         <div className="flex items-center gap-3">
           <input ref={fileInputRef} type="file" hidden accept=".xlsx,.xls" onChange={handleFileUpload} />
           
@@ -161,27 +221,28 @@ export function InvoiceCreation() {
 
           <button
             onClick={() => fileInputRef.current?.click()}
-            disabled={isUploading}
-            className="h-12 flex items-center gap-2 px-6 rounded-xl font-semibold bg-white border-2 border-purple-600 text-purple-600 hover:bg-purple-50 shadow-sm transition-all"
+            disabled={isUploading || isSaving}
+            className="h-12 flex items-center gap-2 px-6 rounded-xl font-semibold bg-white border-2 border-purple-600 text-purple-600 hover:bg-purple-50 shadow-sm transition-all disabled:opacity-50"
           >
             {isUploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
             <span>Tải lên Excel</span>
           </button>
 
-          <button
-            onClick={handleSaveToDB}
-            disabled={isSaving || tableData.length === 0}
-            className="h-12 flex items-center gap-2 px-6 rounded-xl font-semibold bg-purple-600 text-white hover:bg-purple-700 shadow-sm transition-all disabled:opacity-50 disabled:bg-gray-300"
-          >
-            {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-            <span>Lưu vào hệ thống</span>
-          </button>
+          {tableData.length > 0 && (
+            <button
+              onClick={handleSaveToDB}
+              disabled={isSaving}
+              className="h-12 flex items-center gap-2 px-6 rounded-xl font-semibold bg-purple-600 text-white hover:bg-purple-700 shadow-lg shadow-purple-200 transition-all animate-in fade-in zoom-in duration-300"
+            >
+              {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+              <span>Lưu vào hệ thống</span>
+            </button>
+          )}
         </div>
       </div>
 
-      {/* BẢNG DỮ LIỆU CHÍNH TRÊN TRANG */}
       {tableData.length > 0 ? (
-        <div className="bg-white border border-gray-200 rounded-[32px] overflow-hidden shadow-sm">
+        <div className="bg-white border border-gray-200 rounded-[32px] overflow-hidden shadow-sm animate-in fade-in slide-in-from-bottom-4 duration-500">
           <div className="overflow-x-auto">
             <table className="w-full text-left">
               <thead className="bg-gray-50 border-b border-gray-100">
@@ -206,7 +267,7 @@ export function InvoiceCreation() {
                     </td>
                     <td className="p-4">
                       <span className={`px-3 py-1 rounded-full text-[10px] font-black ${row.serviceCode === 'ELECTRICITY' ? 'bg-amber-100 text-amber-600' : 'bg-blue-100 text-blue-600'}`}>
-                        {row.serviceCode === 'ELECTRICITY' ? '⚡ ĐIỆN' : '💧 NƯỚC'}
+                        {row.serviceCode === 'ELECTRICITY' ? 'ĐIỆN' : 'NƯỚC'}
                       </span>
                     </td>
                     <td className="p-4 text-right">
@@ -225,14 +286,9 @@ export function InvoiceCreation() {
                         className={`w-full bg-transparent border-none text-right font-black focus:ring-0 p-0 ${row.newIndex < row.oldIndex ? 'text-red-500' : 'text-gray-900'}`}
                       />
                     </td>
-                    <td className="p-4 text-right font-bold text-purple-600">
-                      {row.quantity}
-                    </td>
+                    <td className="p-4 text-right font-bold text-purple-600">{row.quantity}</td>
                     <td className="p-4 text-center">
-                      <button 
-                        onClick={() => handleDeleteRow(idx)}
-                        className="p-2 text-gray-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all"
-                      >
+                      <button onClick={() => handleDeleteRow(idx)} className="p-2 text-gray-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all">
                         <Trash2 size={18} />
                       </button>
                     </td>
@@ -245,7 +301,7 @@ export function InvoiceCreation() {
       ) : (
         <div className="flex flex-col items-center justify-center py-32 bg-gray-50 border-2 border-dashed border-gray-200 rounded-[32px]">
           <FileSpreadsheet size={64} className="text-gray-200 mb-4" />
-          <p className="text-gray-400 font-medium italic">Chưa có dữ liệu. Vui lòng chọn kỳ và tải file Excel lên để bắt đầu.</p>
+          <p className="text-gray-400 font-medium italic">Vui lòng tải file Excel lên để nhập dữ liệu cho Tháng {selectedMonth}/{selectedYear}</p>
         </div>
       )}
     </div>

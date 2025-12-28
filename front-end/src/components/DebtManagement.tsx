@@ -43,6 +43,7 @@ export function DebtManagement() {
   // Bắt buộc chọn tháng (không có "Tất cả các tháng")
   const [selectedMonth, setSelectedMonth] = useState(currentDate.getMonth() + 1); 
   const [selectedYear, setSelectedYear] = useState(currentDate.getFullYear());
+  const [isLoadingData, setIsLoadingData] = useState(false);
 
   const [stats, setStats] = useState({
     totalRevenue: 0,
@@ -85,10 +86,48 @@ export function DebtManagement() {
   };
 
   // Handle file upload click
-  const handleUploadClick = () => {
-    if (isUploading) return;
-    if (fileInputRef.current) {
-      fileInputRef.current.click();
+  const handleGenerateInvoices = async () => {
+    // Kiểm tra xem chú đã chọn tháng chưa
+    if (!selectedMonth) {
+      toast.error("Vui lòng chọn tháng trước khi tạo hóa đơn");
+      return;
+    }
+
+    setIsLoadingData(true);// Tận dụng state loading có sẵn
+    
+    try {
+      // Gọi API POST với month và year trên URL
+      const url = `http://localhost:8081/api/v1/accounting/invoices/generation?month=${selectedMonth}&year=${selectedYear}`;
+      
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        // Vì chú bảo không cần file, nên body có thể để trống hoặc gửi {}
+        body: JSON.stringify({}), 
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Lỗi khi tạo hóa đơn");
+      }
+
+      const res = await response.json();
+      
+      // Thông báo thành công rực rỡ
+      toast.success(`Đã khởi tạo hóa đơn thành công cho tháng ${selectedMonth}/${selectedYear}`, {
+        description: "Hệ thống đã tính toán tiền điện, nước và phí dịch vụ.",
+      });
+
+      // Nếu chú muốn sau khi tạo xong thì load lại danh sách để xem, chú gọi hàm fetch ở đây:
+      // fetchBills(); 
+
+    } catch (error: any) {
+      console.error("Lỗi:", error);
+      toast.error("Tạo hóa đơn thất bại", { description: error.message });
+    } finally {
+      setIsLoadingData(false);
     }
   };
 
@@ -662,7 +701,7 @@ export function DebtManagement() {
         <div className="flex items-center gap-3">
           {/* Tạo hóa đơn Button */}
           <button
-            onClick={handleUploadClick}
+            onClick={handleGenerateInvoices}
             disabled={isUploading || isGenerating}
             className={`px-4 py-2 rounded-xl font-semibold transition-all flex items-center gap-2 ${
               isUploading || isGenerating
@@ -739,6 +778,32 @@ export function DebtManagement() {
           <AlertCircle className="w-16 h-16 text-gray-400 mx-auto mb-4" />
           <h3 className="text-xl font-semibold text-gray-900 mb-2">Chưa có hóa đơn</h3>
           <p className="text-gray-600">Tháng {selectedMonth}/{selectedYear} chưa có hóa đơn. Hãy sử dụng nút "Tạo hóa đơn" ở trên để tạo hóa đơn.</p>
+        </div>
+      )}
+      {isLoadingData && (
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40 backdrop-blur-sm">
+          <div className="bg-white p-6 rounded-2xl shadow-xl flex flex-col items-center gap-3">
+            {/* Vòng xoay quay tròn */}
+            <div 
+  style={{
+    width: '80px',
+    height: '80px',
+    border: '4px solid #e2e8f0', // Màu xám nhạt (blue-200)
+    borderTop: '4px solid #2563eb', // Màu xanh đậm (blue-600)
+    borderRadius: '50%',
+    animation: 'spin 1s linear infinite',
+  }}
+>
+  {/* Nhúng trực tiếp keyframes vào để trình duyệt hiểu lệnh 'spin' */}
+  <style>{`
+    @keyframes spin {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+  `}</style>
+            </div>            
+            <p className="text-sm font-bold text-gray-700">Đang xử lý, đợi tí...</p>
+          </div>
         </div>
       )}
 
