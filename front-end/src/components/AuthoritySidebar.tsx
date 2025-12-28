@@ -1,5 +1,5 @@
-import { 
-  LayoutDashboard, 
+import {
+  LayoutDashboard,
   Users,
   Bell,
   ChevronLeft,
@@ -15,8 +15,8 @@ import React from 'react';
 // --- Định nghĩa Kiểu Dữ Liệu ---
 
 interface MenuItem {
-  to?: string; 
-  id?: string; 
+  to?: string;
+  id?: string;
   label: string;
   icon: LucideIcon;
 }
@@ -32,13 +32,13 @@ interface AuthoritySidebarProps {
 const menuItems: MenuItem[] = [
   { to: '/authority/dashboard', label: 'An ninh và cư trú', icon: LayoutDashboard },
   { to: '/authority/residents', label: 'Quản lý cư dân', icon: Users },
-  { to: '/authority/announcements', label: 'Thông báo mất đồ', icon: Bell },
+  { to: '/authority/announcements', label: 'Quản lý an ninh', icon: Bell },
 ];
 
 const bottomItems: MenuItem[] = [
   { to: '/authority/settings', label: 'Cài đặt', icon: Settings },
   { to: '/authority/profile', label: 'Hồ sơ', icon: User },
-  { id: 'logout', label: 'Đăng xuất', icon: LogOut }, 
+  { id: 'logout', label: 'Đăng xuất', icon: LogOut },
 ];
 
 // --- Hàm Tiện Ích: Định nghĩa Class cho NavLink ---
@@ -86,13 +86,13 @@ export function AuthoritySidebar({ isOpen, onClose, onLogout }: AuthoritySidebar
         </button>
       );
     }
-    
+
     // 2. Dùng NavLink cho các mục điều hướng
     return (
       <NavLink
         key={item.to}
-        to={item.to!} 
-        onClick={onClose} 
+        to={item.to!}
+        onClick={onClose}
         className={isBottom ? getBottomNavLinkClass : getTopNavLinkClass}
       >
         <Icon className="w-5 h-5" />
@@ -125,7 +125,7 @@ export function AuthoritySidebar({ isOpen, onClose, onLogout }: AuthoritySidebar
             {/* Header */}
             <div className="p-6 border-b border-gray-100 flex items-center justify-between">
               <h1 className="text-xl text-blue-600 font-extrabold tracking-tight">BuildingHub</h1>
-              <button 
+              <button
                 onClick={onClose}
                 className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
                 aria-label="Đóng Menu"
@@ -143,7 +143,7 @@ export function AuthoritySidebar({ isOpen, onClose, onLogout }: AuthoritySidebar
             <div className="p-4 border-t border-gray-100 space-y-1">
               {bottomItems.map((item) => renderMenuItem(item, true))}
             </div>
-            
+
           </motion.aside>
         </>
       )}

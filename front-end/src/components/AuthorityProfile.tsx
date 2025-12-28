@@ -12,7 +12,7 @@ export function AuthorityProfile() {
     position: 'Cán Bộ Cơ Quan Chức Năng',
     department: 'Phòng Quản Lý Cư Dân',
     joinDate: '2023-05-01',
-    bio: 'Cán bộ chuyên trách quản lý cư dân và theo dõi các thông báo mất đồ trong tòa nhà.',
+    bio: 'Cán bộ chuyên trách quản lý cư dân và theo dõi các sự cố an ninh trong tòa nhà.',
   });
 
   const handleSave = () => {
@@ -24,7 +24,7 @@ export function AuthorityProfile() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Hồ sơ cơ quan chức năng</h1>
+          <h1 className="text-3xl font-bold text-gray-900">Hồ Sơ Cơ Quan Chức Năng</h1>
           <p className="text-gray-600 mt-1">Quản lý thông tin cá nhân của bạn</p>
         </div>
         {!isEditing ? (
@@ -86,7 +86,7 @@ export function AuthorityProfile() {
                   </div>
                   <div className="flex items-center gap-3 text-sm text-gray-600">
                     <Shield className="w-4 h-4" />
-                    <span>Cơ quan chức năng</span>
+                    <span>Cơ Quan Chức Năng</span>
                   </div>
                 </div>
               </div>
@@ -102,7 +102,7 @@ export function AuthorityProfile() {
                 <span className="text-base text-gray-900 font-semibold">-</span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-sm text-gray-600">Thông báo mất đồ</span>
+                <span className="text-sm text-gray-600">Quản lý an ninh</span>
                 <span className="text-base text-gray-900 font-semibold">-</span>
               </div>
               <div className="flex justify-between items-center">
@@ -263,4 +263,3 @@ export function AuthorityProfile() {
     </div>
   );
 }
-
