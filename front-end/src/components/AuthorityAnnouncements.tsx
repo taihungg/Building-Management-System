@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Bell, AlertCircle, Search, FileText, Clock, CheckCircle, Loader, Plus, MapPin, ArrowRight, Package, Search as SearchIcon, CheckCircle2, Truck, Laptop, Wallet, Key, ChevronRight, X, Phone, User, Calendar, Upload } from 'lucide-react';
+import { Bell, AlertCircle, Search, FileText, Clock, CheckCircle, Loader, MapPin, ArrowRight, Package, Search as SearchIcon, CheckCircle2, Truck, Laptop, Wallet, Key, ChevronRight, X, Phone, User, Upload } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
 // import { getAnnouncements, subscribe as subscribeAnnouncements, type Announcement } from '../utils/announcements'; 
 // import { formatRelativeTime } from '../utils/timeUtils'; // Giả định hàm này được định nghĩa
@@ -15,6 +15,7 @@ interface Announcement {
   date: string; // Ngày sự kiện (mất đồ)
   reporterName?: string; // Tên người báo
   reporterAvatar?: string; // Avatar người báo
+  roomNumber?: number; // Số phòng từ API
 }
 // -----------------------------------------------------------
 
@@ -49,18 +50,8 @@ export function AuthorityAnnouncements() {
   const [isLoading, setIsLoading] = useState(true);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [selectedAnnouncement, setSelectedAnnouncement] = useState<Announcement | null>(null);
-  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [editingStatusId, setEditingStatusId] = useState<string | null>(null);
   const [currentTime, setCurrentTime] = useState(new Date()); // State để cập nhật thời gian thực
-  
-  // Form state for Add Notification
-  const [newNotification, setNewNotification] = useState({
-    title: '',
-    reporterName: '',
-    location: '',
-    date: '',
-    description: ''
-  });
 
   useEffect(() => {
     fetchAnnouncements();
@@ -69,27 +60,31 @@ export function AuthorityAnnouncements() {
   const fetchAnnouncements = async () => {
     setIsLoading(true);
     try {
-      // Fetch all issues (vì type AUTHORITY chưa có data, dùng tất cả hoặc SECURITY)
+      // Fetch all issues (vì type STATE chưa có data, dùng tất cả hoặc SECURITY)
       // Có thể thay đổi thành ?type=SECURITY nếu chỉ muốn security issues
       const response = await fetch('http://localhost:8081/api/issues');
       if (!response.ok) {
         throw new Error('Không thể tải danh sách tin báo');
       }
-      const issues = await response.json();
-      
-      // Filter để chỉ lấy SECURITY hoặc AUTHORITY issues (nếu có)
-      // Hoặc có thể bỏ filter để hiển thị tất cả
-      const filteredIssues = issues.filter((issue: any) => 
-        issue.type === 'SECURITY' || issue.type === 'AUTHORITY'
+      const res = await response.json();
+      console.log('API Response:', res);
+      const issues = res.data || []; // Lấy array từ response.data
+      console.log('Issues array:', issues.length, issues);
+
+      // Filter để chỉ lấy SECURITY hoặc STATE issues
+      const filteredIssues = issues.filter((issue: any) =>
+        issue.type === 'SECURITY' || issue.type === 'STATE'
       );
-      
+      console.log('Filtered SECURITY/STATE:', filteredIssues.length, filteredIssues);
+
       // Map IssueSummary to Announcement format
-      // Note: IssueSummary không có createdDate, nên dùng thời gian hiện tại trừ đi index để tạo thời gian tương đối
-      const mappedAnnouncements: Announcement[] = filteredIssues.map((issue: any, index: number) => {
-        // Tạo thời gian giả lập (mới nhất trừ đi index giờ để có thời gian khác nhau)
-        const now = new Date();
-        const createdAt = new Date(now.getTime() - index * 60 * 60 * 1000); // Mỗi item cách nhau 1 giờ
-        
+      // Sử dụng createdDate từ API nếu có, nếu không thì dùng thời gian hiện tại
+      const mappedAnnouncements: Announcement[] = filteredIssues.map((issue: any) => {
+        // Sử dụng createdDate từ API nếu có
+        const createdAt = issue.createdDate
+          ? new Date(issue.createdDate)
+          : new Date(); // Fallback về thời gian hiện tại nếu không có
+
         return {
           id: issue.id,
           title: issue.title,
@@ -103,9 +98,12 @@ export function AuthorityAnnouncements() {
           roomNumber: issue.roomNumber
         };
       });
-      
+
       // Sort by createdAt descending
       const sortedData = mappedAnnouncements.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+      console.log('Announcements - Fetched:', issues.length, 'total issues');
+      console.log('Announcements - Filtered:', filteredIssues.length, 'SECURITY/STATE issues');
+      console.log('Announcements - Mapped:', sortedData.length, 'announcements');
         setAnnouncements(sortedData);
     } catch (err: any) {
       console.error('Error fetching announcements:', err);
@@ -255,13 +253,29 @@ export function AuthorityAnnouncements() {
     return Package;
   };
 
-  // Get location from message
-  const getLocation = (message: string) => {
-    if (message.includes('sảnh')) return 'Sảnh';
-    if (message.includes('sân chơi')) return 'Sân chơi';
-    if (message.includes('gym') || message.includes('phòng gym')) return 'Phòng gym';
-    if (message.includes('hồ bơi')) return 'Hồ bơi';
-    if (message.includes('bãi giữ xe')) return 'Bãi giữ xe';
+  // Get location from message and roomNumber
+  const getLocation = (message: string, roomNumber?: number) => {
+    const messageLower = message?.toLowerCase() || '';
+
+    // Tìm từ khóa trong description
+    if (messageLower.includes('sảnh')) return 'Sảnh';
+    if (messageLower.includes('sân chơi')) return 'Sân chơi';
+    if (messageLower.includes('gym') || messageLower.includes('phòng gym')) return 'Phòng gym';
+    if (messageLower.includes('hồ bơi')) return 'Hồ bơi';
+    if (messageLower.includes('bãi giữ xe')) return 'Bãi giữ xe';
+    if (messageLower.includes('thang máy')) return 'Thang máy';
+    if (messageLower.includes('hành lang')) return 'Hành lang';
+    if (messageLower.includes('lối vào')) return 'Lối vào';
+
+    // Nếu có roomNumber, có thể suy ra khu vực (ví dụ: tầng 9 = room 900-999)
+    if (roomNumber) {
+      const floor = Math.floor(roomNumber / 100);
+      if (floor > 0) {
+        return `Tầng ${floor}`;
+      }
+    }
+
+    // Mặc định: Khu vực chung (các khu vực công cộng không xác định)
     return 'Khu vực chung';
   };
 
@@ -282,9 +296,9 @@ export function AuthorityAnnouncements() {
       }
 
       // Update local state
-      setAnnouncements(prev => 
-        prev.map(ann => 
-          ann.id === announcementId 
+      setAnnouncements(prev =>
+        prev.map(ann =>
+          ann.id === announcementId
             ? { ...ann, status: newStatus }
             : ann
         )
@@ -300,7 +314,7 @@ export function AuthorityAnnouncements() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Thông báo mất đồ</h1>
+          <h1 className="text-3xl font-bold text-gray-900">Quản lý an ninh</h1>
         </div>
       </div>
 
@@ -352,19 +366,24 @@ export function AuthorityAnnouncements() {
         <div className="flex items-center gap-4">
           {/* Status Filter Dropdown */}
           <div style={{ width: 'calc(13ch + 5.5rem)' }}>
+            <style>{`
+              [data-slot="select-content"] [data-slot="select-item"] > span:first-child {
+                display: none !important;
+              }
+            `}</style>
             <Select value={selectedStatus} onValueChange={setSelectedStatus}>
               <SelectTrigger className="h-12 px-4 bg-white border border-gray-200 rounded-xl text-sm hover:border-blue-400 transition-all w-full">
-                <SelectValue placeholder="Lọc trạng thái" />
+                <SelectValue placeholder="Tất cả trạng thái" />
               </SelectTrigger>
               <SelectContent
                 align="start"
-                style={{ width: 'calc(13ch + 5.5rem)' }}
+                style={{ width: 'calc(13ch + 5.5rem)', backgroundColor: '#ffffff' }}
                 className="rounded-xl border border-gray-200 !bg-white shadow-xl ring-1 ring-gray-200/70 z-50"
               >
-                <SelectItem className="cursor-pointer rounded-lg px-3 py-2 text-sm text-gray-700 outline-none data-[highlighted]:bg-blue-50 data-[highlighted]:text-blue-700 data-[state=checked]:bg-blue-100 data-[state=checked]:font-semibold data-[state=checked]:text-blue-800" value="all">Tất cả</SelectItem>
-                <SelectItem className="cursor-pointer rounded-lg px-3 py-2 text-sm text-gray-700 outline-none data-[highlighted]:bg-blue-50 data-[highlighted]:text-blue-700 data-[state=checked]:bg-blue-100 data-[state=checked]:font-semibold data-[state=checked]:text-blue-800" value="pending">Chưa xử lý</SelectItem>
-                <SelectItem className="cursor-pointer rounded-lg px-3 py-2 text-sm text-gray-700 outline-none data-[highlighted]:bg-blue-50 data-[highlighted]:text-blue-700 data-[state=checked]:bg-blue-100 data-[state=checked]:font-semibold data-[state=checked]:text-blue-800" value="in_progress">Đang xử lý</SelectItem>
-                <SelectItem className="cursor-pointer rounded-lg px-3 py-2 text-sm text-gray-700 outline-none data-[highlighted]:bg-blue-50 data-[highlighted]:text-blue-700 data-[state=checked]:bg-blue-100 data-[state=checked]:font-semibold data-[state=checked]:text-blue-800" value="handled">Đã xử lý</SelectItem>
+                <SelectItem className="cursor-pointer rounded-lg px-3 py-2 text-sm text-gray-700 outline-none data-[highlighted]:bg-blue-50 data-[highlighted]:text-blue-700 data-[state=checked]:bg-blue-100 data-[state=checked]:font-semibold data-[state=checked]:text-blue-800 pr-3" value="all">Tất cả trạng thái</SelectItem>
+                <SelectItem className="cursor-pointer rounded-lg px-3 py-2 text-sm text-gray-700 outline-none data-[highlighted]:bg-blue-50 data-[highlighted]:text-blue-700 data-[state=checked]:bg-blue-100 data-[state=checked]:font-semibold data-[state=checked]:text-blue-800 pr-3" value="pending">Chưa xử lý</SelectItem>
+                <SelectItem className="cursor-pointer rounded-lg px-3 py-2 text-sm text-gray-700 outline-none data-[highlighted]:bg-blue-50 data-[highlighted]:text-blue-700 data-[state=checked]:bg-blue-100 data-[state=checked]:font-semibold data-[state=checked]:text-blue-800 pr-3" value="in_progress">Đang xử lý</SelectItem>
+                <SelectItem className="cursor-pointer rounded-lg px-3 py-2 text-sm text-gray-700 outline-none data-[highlighted]:bg-blue-50 data-[highlighted]:text-blue-700 data-[state=checked]:bg-blue-100 data-[state=checked]:font-semibold data-[state=checked]:text-blue-800 pr-3" value="handled">Đã xử lý</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -373,29 +392,21 @@ export function AuthorityAnnouncements() {
           <div style={{ width: 'calc(12ch + 5.5rem)' }}>
             <Select value={selectedDateRange} onValueChange={setSelectedDateRange}>
               <SelectTrigger className="h-12 px-4 bg-white border border-gray-200 rounded-xl text-sm hover:border-blue-400 transition-all w-full">
-                <SelectValue placeholder="Lọc ngày tháng" />
+                <SelectValue placeholder="Tất cả thời gian" />
               </SelectTrigger>
               <SelectContent
                 align="start"
-                style={{ width: 'calc(12ch + 5.5rem)' }}
+                style={{ width: 'calc(12ch + 5.5rem)', backgroundColor: '#ffffff' }}
                 className="rounded-xl border border-gray-200 !bg-white shadow-xl ring-1 ring-gray-200/70 z-50"
               >
-                <SelectItem className="cursor-pointer rounded-lg px-3 py-2 text-sm text-gray-700 outline-none data-[highlighted]:bg-blue-50 data-[highlighted]:text-blue-700 data-[state=checked]:bg-blue-100 data-[state=checked]:font-semibold data-[state=checked]:text-blue-800" value="all">Tất cả</SelectItem>
-                <SelectItem className="cursor-pointer rounded-lg px-3 py-2 text-sm text-gray-700 outline-none data-[highlighted]:bg-blue-50 data-[highlighted]:text-blue-700 data-[state=checked]:bg-blue-100 data-[state=checked]:font-semibold data-[state=checked]:text-blue-800" value="today">Hôm nay</SelectItem>
-                <SelectItem className="cursor-pointer rounded-lg px-3 py-2 text-sm text-gray-700 outline-none data-[highlighted]:bg-blue-50 data-[highlighted]:text-blue-700 data-[state=checked]:bg-blue-100 data-[state=checked]:font-semibold data-[state=checked]:text-blue-800" value="7days">7 ngày qua</SelectItem>
-                <SelectItem className="cursor-pointer rounded-lg px-3 py-2 text-sm text-gray-700 outline-none data-[highlighted]:bg-blue-50 data-[highlighted]:text-blue-700 data-[state=checked]:bg-blue-100 data-[state=checked]:font-semibold data-[state=checked]:text-blue-800" value="month">Tháng này</SelectItem>
+                <SelectItem className="cursor-pointer rounded-lg px-3 py-2 text-sm text-gray-700 outline-none data-[highlighted]:bg-blue-50 data-[highlighted]:text-blue-700 data-[state=checked]:bg-blue-100 data-[state=checked]:font-semibold data-[state=checked]:text-blue-800 pr-3" value="all">Tất cả thời gian</SelectItem>
+                <SelectItem className="cursor-pointer rounded-lg px-3 py-2 text-sm text-gray-700 outline-none data-[highlighted]:bg-blue-50 data-[highlighted]:text-blue-700 data-[state=checked]:bg-blue-100 data-[state=checked]:font-semibold data-[state=checked]:text-blue-800 pr-3" value="today">Hôm nay</SelectItem>
+                <SelectItem className="cursor-pointer rounded-lg px-3 py-2 text-sm text-gray-700 outline-none data-[highlighted]:bg-blue-50 data-[highlighted]:text-blue-700 data-[state=checked]:bg-blue-100 data-[state=checked]:font-semibold data-[state=checked]:text-blue-800 pr-3" value="7days">7 ngày qua</SelectItem>
+                <SelectItem className="cursor-pointer rounded-lg px-3 py-2 text-sm text-gray-700 outline-none data-[highlighted]:bg-blue-50 data-[highlighted]:text-blue-700 data-[state=checked]:bg-blue-100 data-[state=checked]:font-semibold data-[state=checked]:text-blue-800 pr-3" value="month">Tháng này</SelectItem>
               </SelectContent>
             </Select>
           </div>
 
-          {/* Add Button (Wider) */}
-          <button 
-            onClick={() => setIsAddModalOpen(true)}
-            className="h-12 bg-blue-600 text-white rounded-xl text-sm font-bold flex items-center justify-center gap-2 px-6 whitespace-nowrap hover:bg-blue-700 transition-all shadow-sm min-w-[180px]"
-          >
-            <Plus className="w-4 h-4" />
-            Thêm tin báo
-          </button>
         </div>
       </div>
 
@@ -407,7 +418,7 @@ export function AuthorityAnnouncements() {
       ) : filteredAnnouncements.length === 0 ? (
         <div className="bg-white rounded-2xl p-12 border-2 border-gray-200 text-center">
           <FileText className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-          <p className="text-gray-600 text-lg">Không có thông báo mất đồ nào khớp với tìm kiếm.</p>
+          <p className="text-gray-600 text-lg">Không có sự cố an ninh nào khớp với tìm kiếm.</p>
         </div>
       ) : (
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-visible">
@@ -425,7 +436,7 @@ export function AuthorityAnnouncements() {
               <tbody className="bg-white divide-y divide-gray-100">
           {filteredAnnouncements.map((announcement) => {
             const statusInfo = getStatusLabel(announcement.status);
-                  const location = getLocation(announcement.message);
+                  const location = getLocation(announcement.message, announcement.roomNumber);
                   const reporterName = announcement.reporterName || 'Chưa có';
                   const reporterAvatar = announcement.reporterAvatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(reporterName)}&background=3b82f6&color=fff`;
             
@@ -481,7 +492,7 @@ export function AuthorityAnnouncements() {
                             className={`inline-flex rounded-full px-3 py-1 text-xs font-medium cursor-pointer transition-all hover:shadow-md ${
                               announcement.status === 'pending'
                                 ? 'bg-gray-100 text-gray-800 border border-gray-300'
-                                : announcement.status === 'in_progress' 
+                                : announcement.status === 'in_progress'
                                 ? 'bg-orange-100 text-orange-800 border border-orange-300'
                             : announcement.status === 'handled'
                                 ? 'bg-green-100 text-green-800 border border-green-300'
@@ -490,13 +501,13 @@ export function AuthorityAnnouncements() {
                           >
                           {statusInfo.label}
                           </button>
-                          
+
                           {/* Dropdown Menu */}
                           {editingStatusId === announcement.id && (
-                            <div 
+                            <div
                               className="absolute left-0 top-full mt-2 rounded-lg min-w-[180px] overflow-hidden"
                               onClick={(e) => e.stopPropagation()}
-                              style={{ 
+                              style={{
                                 backgroundColor: '#ffffff',
                                 border: '1px solid #e5e7eb',
                                 boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
@@ -516,7 +527,7 @@ export function AuthorityAnnouncements() {
                                   handleStatusUpdate(announcement.id, 'pending');
                                 }}
                                 className="w-full text-left px-4 py-2.5 text-sm transition-colors flex items-center gap-2"
-                                style={{ 
+                                style={{
                                   backgroundColor: announcement.status === 'pending' ? '#f3f4f6' : '#ffffff',
                                   opacity: 1,
                                   background: announcement.status === 'pending' ? '#f3f4f6' : '#ffffff'
@@ -545,7 +556,7 @@ export function AuthorityAnnouncements() {
                                   handleStatusUpdate(announcement.id, 'in_progress');
                                 }}
                                 className="w-full text-left px-4 py-2.5 text-sm transition-colors flex items-center gap-2"
-                                style={{ 
+                                style={{
                                   backgroundColor: announcement.status === 'in_progress' ? '#fff7ed' : '#ffffff',
                                   opacity: 1,
                                   background: announcement.status === 'in_progress' ? '#fff7ed' : '#ffffff'
@@ -574,7 +585,7 @@ export function AuthorityAnnouncements() {
                                   handleStatusUpdate(announcement.id, 'handled');
                                 }}
                                 className="w-full text-left px-4 py-2.5 text-sm transition-colors flex items-center gap-2"
-                                style={{ 
+                                style={{
                                   backgroundColor: announcement.status === 'handled' ? '#f0fdf4' : '#ffffff',
                                   opacity: 1,
                                   background: announcement.status === 'handled' ? '#f0fdf4' : '#ffffff'
@@ -699,7 +710,7 @@ export function AuthorityAnnouncements() {
                     <MapPin className="w-5 h-5 text-gray-400" />
                     <div>
                       <p className="text-xs text-gray-500">Địa điểm</p>
-                      <p className="text-sm font-medium text-gray-900">{getLocation(selectedAnnouncement.message)}</p>
+                      <p className="text-sm font-medium text-gray-900">{getLocation(selectedAnnouncement.message, selectedAnnouncement.roomNumber)}</p>
                     </div>
                   </div>
                 </div>
@@ -744,302 +755,6 @@ export function AuthorityAnnouncements() {
         </div>
       )}
 
-      {/* Add Notification Modal */}
-      {isAddModalOpen && (
-        <div 
-          className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4"
-          onClick={() => {
-            setIsAddModalOpen(false);
-            setNewNotification({
-              title: '',
-              reporterName: '',
-              location: '',
-              date: '',
-              description: ''
-            });
-          }}
-        >
-          {/* Modal Box */}
-          <div 
-            className="bg-white w-full max-w-md rounded-3xl shadow-[0_20px_50px_rgba(0,0,0,0.15)] overflow-hidden relative transform transition-all duration-300 ease-out border-2 border-gray-200"
-            onClick={(e) => e.stopPropagation()}
-            style={{
-              animation: 'modalAppear 0.3s ease-out forwards'
-            }}
-          >
-            {/* Header */}
-            <div className="flex items-center justify-between p-6 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-indigo-50">
-              <h2 className="text-2xl font-bold text-gray-900">Thêm tin báo mới</h2>
-              <button
-                onClick={() => {
-                  setIsAddModalOpen(false);
-                  setNewNotification({
-                    title: '',
-                    reporterName: '',
-                    location: '',
-                    date: '',
-                    description: ''
-                  });
-                }}
-                className="p-2 hover:bg-white rounded-lg transition-colors"
-              >
-                <X className="w-5 h-5 text-gray-500" />
-              </button>
-            </div>
-
-            {/* Body */}
-            <div className="max-h-[70vh] overflow-y-auto p-6 space-y-5">
-              {/* Đồ vật bị mất */}
-              <div>
-                <label className="text-sm font-semibold text-gray-700 mb-2 block">
-                  Đồ vật bị mất <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  value={newNotification.title}
-                  onChange={(e) => setNewNotification({ ...newNotification, title: e.target.value })}
-                  placeholder="Nhập tên đồ vật bị mất"
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all bg-white"
-                />
-              </div>
-
-              {/* Người báo */}
-              <div>
-                <label className="text-sm font-semibold text-gray-700 mb-2 block">
-                  Người báo <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  value={newNotification.reporterName}
-                  onChange={(e) => setNewNotification({ ...newNotification, reporterName: e.target.value })}
-                  placeholder="Nhập tên người báo"
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all bg-white"
-                />
-              </div>
-
-              {/* Địa điểm */}
-              <div>
-                <label className="text-sm font-semibold text-gray-700 mb-2 block">
-                  Địa điểm <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  value={newNotification.location}
-                  onChange={(e) => setNewNotification({ ...newNotification, location: e.target.value })}
-                  placeholder="Nhập địa điểm mất đồ"
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all bg-white"
-                />
-              </div>
-
-              {/* Ngày xảy ra */}
-              <div>
-                <label className="text-sm font-semibold text-gray-700 mb-2 block">
-                  Ngày xảy ra <span className="text-red-500">*</span>
-                </label>
-                <div className="relative">
-                  <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
-                  <input
-                    type="date"
-                    value={newNotification.date}
-                    onInput={(e) => {
-                      // Ngăn chặn nhập năm 5 chữ số bằng cách kiểm tra giá trị
-                      const input = e.currentTarget;
-                      const value = input.value;
-                      if (value) {
-                        const today = new Date();
-                        const todayStr = today.toISOString().split('T')[0];
-                        const year = parseInt(value.split('-')[0]);
-                        const currentYear = today.getFullYear();
-                        
-                        // Nếu năm không phải năm hiện tại hoặc có hơn 4 chữ số, reset
-                        if (year !== currentYear || year.toString().length > 4) {
-                          input.value = '';
-                          setNewNotification({ ...newNotification, date: '' });
-                          alert('Chỉ có thể chọn năm hiện tại (4 chữ số)');
-                          return;
-                        }
-                        
-                        // Nếu ngày không phải ngày hôm nay, reset
-                        if (value !== todayStr) {
-                          input.value = '';
-                          setNewNotification({ ...newNotification, date: '' });
-                          alert('Chỉ có thể chọn ngày hôm nay');
-                        }
-                      }
-                    }}
-                    onChange={(e) => {
-                      const selectedDate = e.target.value;
-                      if (!selectedDate) return;
-                      
-                      const today = new Date();
-                      const todayStr = today.toISOString().split('T')[0];
-                      const currentYear = today.getFullYear();
-                      
-                      // Kiểm tra năm chỉ có 4 chữ số và là năm hiện tại
-                      const yearStr = selectedDate.split('-')[0];
-                      const selectedYear = parseInt(yearStr);
-                      
-                      // Kiểm tra năm có đúng 4 chữ số
-                      if (yearStr.length !== 4 || isNaN(selectedYear)) {
-                        alert('Năm phải có đúng 4 chữ số');
-                        setNewNotification({ ...newNotification, date: '' });
-                        return;
-                      }
-                      
-                      // Kiểm tra năm là năm hiện tại
-                      if (selectedYear !== currentYear) {
-                        alert('Chỉ có thể chọn năm hiện tại');
-                        setNewNotification({ ...newNotification, date: '' });
-                        return;
-                      }
-                      
-                      // Chỉ cho phép chọn ngày hôm nay (không quá khứ, không tương lai)
-                      if (selectedDate === todayStr) {
-                        setNewNotification({ ...newNotification, date: selectedDate });
-                      } else if (selectedDate < todayStr) {
-                        alert('Không thể chọn ngày trong quá khứ');
-                        setNewNotification({ ...newNotification, date: '' });
-                      } else {
-                        alert('Không thể chọn ngày trong tương lai');
-                        setNewNotification({ ...newNotification, date: '' });
-                      }
-                    }}
-                    min={new Date().toISOString().split('T')[0]} // Chỉ cho phép ngày hôm nay
-                    max={new Date().toISOString().split('T')[0]} // Chỉ cho phép ngày hôm nay
-                    className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all bg-white"
-                  />
-                </div>
-              </div>
-
-              {/* Mô tả chi tiết */}
-              <div>
-                <label className="text-sm font-semibold text-gray-700 mb-2 block">
-                  Mô tả chi tiết
-                </label>
-                <textarea
-                  value={newNotification.description}
-                  onChange={(e) => setNewNotification({ ...newNotification, description: e.target.value })}
-                  placeholder="Nhập mô tả chi tiết về đồ vật bị mất..."
-                  rows={4}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all resize-none bg-white"
-                />
-              </div>
-
-            </div>
-
-            {/* Footer */}
-            <div className="p-6 border-t border-gray-200 bg-gray-50 flex gap-3">
-              <button
-                onClick={() => {
-                  setIsAddModalOpen(false);
-                  setNewNotification({
-                    title: '',
-                    reporterName: '',
-                    location: '',
-                    date: '',
-                    description: ''
-                  });
-                }}
-                className="flex-1 border-2 border-gray-300 py-3 rounded-xl font-semibold text-gray-700 hover:bg-white hover:border-gray-400 transition-all"
-              >
-                Hủy
-              </button>
-              <button
-                onClick={() => {
-                  // Validation: Kiểm tra các trường bắt buộc
-                  if (!newNotification.title || !newNotification.reporterName || !newNotification.date) {
-                    alert('Vui lòng điền đầy đủ các trường bắt buộc (Tiêu đề, Người báo, Ngày xảy ra)');
-                    return;
-                  }
-
-                  // Validation: Kiểm tra ngày phải chính xác là ngày hôm nay (không quá khứ, không tương lai)
-                  const selectedDate = new Date(newNotification.date);
-                  const today = new Date();
-                  today.setHours(0, 0, 0, 0);
-                  selectedDate.setHours(0, 0, 0, 0);
-                  
-                  // Kiểm tra năm chỉ là năm hiện tại
-                  const currentYear = today.getFullYear();
-                  const selectedYear = selectedDate.getFullYear();
-                  
-                  if (selectedYear !== currentYear) {
-                    alert('Chỉ có thể chọn năm hiện tại');
-                    return;
-                  }
-                  
-                  // Kiểm tra ngày phải chính xác là ngày hôm nay
-                  if (selectedDate.getTime() < today.getTime()) {
-                    alert('Không thể chọn ngày trong quá khứ');
-                    return;
-                  }
-                  
-                  if (selectedDate.getTime() > today.getTime()) {
-                    alert('Không thể chọn ngày trong tương lai');
-                    return;
-                  }
-                  
-                  // Kiểm tra ngày, tháng, năm phải khớp với hôm nay
-                  if (selectedDate.getDate() !== today.getDate() || 
-                      selectedDate.getMonth() !== today.getMonth() || 
-                      selectedDate.getFullYear() !== today.getFullYear()) {
-                    alert('Chỉ có thể chọn ngày hôm nay');
-                    return;
-                  }
-
-                  // TODO: Cần thêm apartmentId và reporterId (UUID) để tạo issue
-                  // Tạm thời thông báo cần cập nhật form
-                  alert('Vui lòng cập nhật form để thêm apartmentId và reporterId (UUID) trước khi tạo tin báo qua API.');
-                  
-                  // TODO: Uncomment khi đã có apartmentId và reporterId
-                  // try {
-                  //   const issueData = {
-                  //     apartmentId: newNotification.apartmentId, // TODO: Thêm field này vào form
-                  //     title: newNotification.title.trim(),
-                  //     description: newNotification.description?.trim() || '',
-                  //     type: 'AUTHORITY',
-                  //     reporterId: newNotification.reporterId // TODO: Thêm field này vào form (tìm từ reporterName)
-                  //   };
-                  //   
-                  //   const response = await fetch('http://localhost:8081/api/issues', {
-                  //     method: 'POST',
-                  //     headers: {
-                  //       'Content-Type': 'application/json',
-                  //     },
-                  //     body: JSON.stringify(issueData),
-                  //   });
-                  //   
-                  //   if (!response.ok) {
-                  //     const errorData = await response.json().catch(() => ({}));
-                  //     throw new Error(errorData.message || 'Không thể tạo tin báo');
-                  //   }
-                  //   
-                  //   const createdIssue = await response.json();
-                  //   
-                  //   // Refresh danh sách
-                  //   await fetchAnnouncements();
-                  //   
-                  //   alert('Đăng tin báo thành công!');
-                  //   setIsAddModalOpen(false);
-                  //   setNewNotification({
-                  //     title: '',
-                  //     reporterName: '',
-                  //     location: '',
-                  //     date: '',
-                  //     description: ''
-                  //   });
-                  // } catch (err: any) {
-                  //   console.error('Error creating announcement:', err);
-                  //   alert('Lỗi tạo tin báo: ' + (err.message || 'Lỗi không xác định'));
-                  // }
-                }}
-                className="flex-1 bg-blue-600 text-white py-3 rounded-xl font-bold hover:bg-blue-700 active:scale-[0.98] transition-all shadow-lg shadow-blue-500/30"
-              >
-                Đăng tin báo
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
