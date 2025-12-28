@@ -43,6 +43,7 @@ import { AuthorityProfile } from './components/AuthorityProfile';
 import { Login } from './components/Login'; 
 import { ExtraServiceManagement } from './components/ExtraServiceManagement';
 import { VoluntaryContribution } from './components/VoluntaryContribution';
+import { AccountingVoluntaryContribution } from './components/AccountingVoluntaryContribution';
 
 
 // === Định nghĩa kiểu và Maps ===
@@ -78,6 +79,7 @@ const accountingTabToPath: Record<string, string> = {
   'invoice-creation': '/accounting/invoice',
   'profile': '/accounting/profile',
   'settings': '/accounting/settings',
+  'accounting-voluntary-contribution': '/accounting/voluntary-contribution'
 };
 
 // ✅ MAPS CHO VAI TRÒ AUTHORITY
@@ -163,6 +165,7 @@ const accountingRoutes = (
         <Route path="/invoice" element={<InvoiceCreation />} />
         <Route path="/profile" element={<AccountingProfile />} />
         <Route path="/settings" element={<Settings />} />
+        <Route path = "/voluntary-contribution" element ={<AccountingVoluntaryContribution/>}/>
     </>
 );
 

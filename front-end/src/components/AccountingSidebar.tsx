@@ -1,4 +1,4 @@
-import { LayoutDashboard, ChevronLeft, Settings, User, LogOut, CreditCard, PlusCircle } from 'lucide-react';
+import { LayoutDashboard, ChevronLeft, Settings, User, LogOut, CreditCard, PlusCircle, Heart } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import React from 'react';
 // Import NavLink
@@ -15,6 +15,7 @@ const menuItems = [
   { id: 'accounting-dashboard', label: 'Tổng quan tài chính', icon: LayoutDashboard, path: '/accounting/dashboard' },
   { id: 'debt-management', label: 'Quản lý hóa đơn', icon: CreditCard, path: '/accounting/debt' },
   { id: 'invoice-creation', label: 'Dữ liệu sử dụng', icon: PlusCircle, path: '/accounting/invoice' },
+  {id:'accounting-voluntary-contribution', label: 'Quỹ đóng góp tự nguyện', icon: Heart, path:'/accounting/voluntary-contribution' }
 ];
 
 const bottomItems = [
