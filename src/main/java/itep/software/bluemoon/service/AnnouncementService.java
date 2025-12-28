@@ -13,6 +13,7 @@ import itep.software.bluemoon.entity.key.ResidentAnnouncementId;
 import itep.software.bluemoon.entity.person.Resident;
 import itep.software.bluemoon.entity.person.Staff;
 import itep.software.bluemoon.model.DTO.announcement.AnnouncementCreateRequestDTO;
+import itep.software.bluemoon.model.DTO.announcement.AnnouncementUpdateRequestDTO;
 import itep.software.bluemoon.model.projection.AnnouncementDetailSummary;
 import itep.software.bluemoon.model.projection.AnnouncementWithReadStatus;
 import itep.software.bluemoon.model.projection.RecipientStatusSummary;
@@ -78,10 +79,10 @@ public class AnnouncementService {
 
     private String generateTargetDescription(AnnouncementCreateRequestDTO request) {
         return switch (request.getTargetType()) {
-            case BY_BUILDING -> "Tòa nhà ID: " + request.getBuildingId();
-            case BY_FLOOR -> "Tòa ID: " + request.getBuildingId() + " - Tầng: " + request.getFloors();
-            case SPECIFIC_APARTMENTS -> "Gửi cho " + (request.getApartmentIds() != null ? request.getApartmentIds().size() : 0) + " căn hộ cụ thể";
-            case ALL -> "Toàn bộ cư dân";
+            case BY_BUILDING -> "Toa nha ID: " + request.getBuildingId();
+            case BY_FLOOR -> "Toa ID: " + request.getBuildingId() + " - Tang: " + request.getFloors();
+            case SPECIFIC_APARTMENTS -> "Gui cho " + (request.getApartmentIds() != null ? request.getApartmentIds().size() : 0) + " can ho cu the";
+            case ALL -> "Toan bo cu dan";
         };
     }
 
@@ -134,4 +135,60 @@ public class AnnouncementService {
         ra.setIsRead(true);
         residentAnnouncementRepository.save(ra);
     }
+    
+    
+    
+    //Cập nhật thông báo: Không nhất thiết phải cập nhật đủ 3 trường
+    public AnnouncementDetailSummary updateAnnouncement(UUID announcementId, AnnouncementUpdateRequestDTO request) {
+        Announcement announcement = announcementRepository.findById(announcementId)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy thông báo"));
+        
+        if (request.getTitle() != null && !request.getTitle().isEmpty()) {
+            announcement.setTitle(request.getTitle());
+        }
+        
+        if (request.getMessage() != null && !request.getMessage().isEmpty()) {
+            announcement.setMessage(request.getMessage());
+        }
+        
+        // Cập nhật targetType và targetDetail
+        if (request.getTargetType() != null) {
+            announcement.setTargetType(request.getTargetType());
+            
+            // Nếu ko có targetDetail, tự động gen
+            if (request.getTargetDetail() == null || request.getTargetDetail().isEmpty()) {
+                String generatedDetail = generateTargetDescriptionForUpdate(request);
+                announcement.setTargetDetail(generatedDetail);
+            } else {
+                announcement.setTargetDetail(request.getTargetDetail());
+            }
+        } else if (request.getTargetDetail() != null && !request.getTargetDetail().isEmpty()) {
+            // Chỉ cập nhật targetDetail nếu có
+            announcement.setTargetDetail(request.getTargetDetail());
+        }
+        
+        announcementRepository.save(announcement);
+        
+        return announcementRepository.findAnnouncementSummaryById(announcementId)
+                .orElseThrow(() -> new RuntimeException("Không thể lấy thông tin thông báo đã cập nhật"));
+    }
+    
+    private String generateTargetDescriptionForUpdate(AnnouncementUpdateRequestDTO request) {
+        return switch (request.getTargetType()) {
+        	case BY_BUILDING -> "Toa nha ID: " + request.getBuildingId();
+        	case BY_FLOOR -> "Toa ID: " + request.getBuildingId() + " - Tang: " + request.getFloors();
+        	case SPECIFIC_APARTMENTS -> "Gui cho " + (request.getApartmentIds() != null ? request.getApartmentIds().size() : 0) + " can ho cu the";
+        	case ALL -> "Toan bo cu dan";
+        };
+    }
+
+    //Xóa thông báo
+    public void deleteAnnouncement(UUID announcementId) {
+        if (!announcementRepository.existsById(announcementId)) {
+            throw new RuntimeException("Không tìm thấy thông báo");
+        }  
+        residentAnnouncementRepository.deleteByAnnouncementId(announcementId);
+        announcementRepository.deleteById(announcementId);
+    }
+
 }
