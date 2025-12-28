@@ -49,6 +49,9 @@ public class Issue extends BaseEntity {
 
     @Column(name = "description", columnDefinition = "TEXT")
     private String description;
+    
+    @Column(name = "location", length = 200)
+    private String location;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "type", nullable = false, length = 20)

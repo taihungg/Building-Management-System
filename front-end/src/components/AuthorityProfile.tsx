@@ -12,7 +12,7 @@ export function AuthorityProfile() {
     position: 'Cán Bộ Cơ Quan Chức Năng',
     department: 'Phòng Quản Lý Cư Dân',
     joinDate: '2023-05-01',
-    bio: 'Cán bộ chuyên trách quản lý cư dân và theo dõi các thông báo mất đồ trong tòa nhà.',
+    bio: 'Cán bộ chuyên trách quản lý cư dân và theo dõi các sự cố an ninh trong tòa nhà.',
   });
 
   const handleSave = () => {
@@ -102,7 +102,7 @@ export function AuthorityProfile() {
                 <span className="text-base text-gray-900 font-semibold">-</span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-sm text-gray-600">Thông báo mất đồ</span>
+                <span className="text-sm text-gray-600">Quản lý an ninh</span>
                 <span className="text-base text-gray-900 font-semibold">-</span>
               </div>
               <div className="flex justify-between items-center">
@@ -263,4 +263,3 @@ export function AuthorityProfile() {
     </div>
   );
 }
-
