@@ -7,7 +7,7 @@ import React from 'react';
 // UUID giả định để khắc phục lỗi 400 Bad Request khi gửi 'default-admin-reporter-id'
 const FALLBACK_REPORTER_UUID = '00000000-0000-0000-0000-000000000001'; 
 
-const categoryIcons = {
+const categoryIcons: Record<string, any> = {
   Plumbing: Droplet,
   Electrical: Zap,
   HVAC: Wind,
@@ -26,6 +26,38 @@ const STATUS_OPTIONS = [
     { enum: 'PROCESSED', label: 'Đã xử lý' }, 
 ];
 
+type IssueStatusEnum = 'UNPROCESSED' | 'PROCESSING' | 'PROCESSED' | (string & {});
+type IssueTypeEnum = 'MAINTENANCE' | 'COMPLAINT' | 'AUTHORITY' | 'SECURITY' | (string & {});
+
+type IssueSummaryDTO = {
+  id: string;
+  roomNumber?: number | string | null;
+  reporterName?: string | null;
+  title?: string | null;
+  description?: string | null;
+  status?: IssueStatusEnum | null;
+  type?: IssueTypeEnum | null;
+};
+
+type IssueItem = {
+  id: string;
+  title: string;
+  category: string;
+  type: IssueTypeEnum;
+  status: string;
+  rawStatus: IssueStatusEnum;
+  unit: string;
+  resident: string;
+  description: string;
+};
+
+type IssueCreateRequest = {
+  apartmentId: string;
+  title: string;
+  description: string;
+  type: IssueTypeEnum;
+  reporterId: string;
+};
 
 export function ServiceManagement() {
   const [searchTerm, setSearchTerm] = useState('');
@@ -34,30 +66,30 @@ export function ServiceManagement() {
   const [isLoading, setIsLoading] = useState(false);
   
   // State chính chứa danh sách Issue
-  const [allIssue, setAllIssue] = useState ([]);
-  const [error, setError] = useState(null);
+  const [allIssue, setAllIssue] = useState<IssueItem[]>([]);
+  const [error, setError] = useState<string | null>(null);
   
   // State cho form createIssue (SlideOut)
   const [updateApartmentID, setUpdateAppartmentID] = useState('');
   const [updateTitle, setUpdateTitle] = useState ('');
   const [updateDescription, setUpdateDescription] = useState ('');
-  const [updateType , setUpdateType] = useState ('MAINTENANCE'); // Đặt giá trị mặc định khớp với option
+  const [updateType , setUpdateType] = useState<IssueTypeEnum>('MAINTENANCE'); // Đặt giá trị mặc định khớp với option
   const [updateReporterID, setUpdateReporterID] = useState(''); 
   
   // State cho Dropdown Search Căn hộ
   const [apartmentSearchTerm, setApartmentSearchTerm] = useState('');
-  const [apartmentDropdown, setApartmentDropdown] = useState([]);
+  const [apartmentDropdown, setApartmentDropdown] = useState<Array<{ id: string; label: string }>>([]);
   const [isApartmentDropdownLoading, setIsApartmentDropdownLoading] = useState(false);
   const [selectedApartmentLabel, setSelectedApartmentLabel] = useState(''); 
 
   // State quản lý menu trạng thái
-  const [openIssueMenuId, setOpenIssueMenuId] = useState(null); 
+  const [openIssueMenuId, setOpenIssueMenuId] = useState<string | null>(null); 
 
 
   // --- HÀM GỌI API ---
 
   // 1. API Tạo Issue (POST)
-  const createIssueApi = async (issueData) => {
+  const createIssueApi = async (issueData: IssueCreateRequest) => {
     try {
       const response = await fetch('http://localhost:8081/api/issues', {
         method: 'POST',
@@ -73,7 +105,8 @@ export function ServiceManagement() {
         throw new Error(errorData.message || `Lỗi: ${response.status} khi tạo yêu cầu.`);
       }
 
-      return await response.json();
+      const json = await response.json().catch(() => ({}));
+      return json?.data;
     }
     catch (err) {
       throw err; 
@@ -81,7 +114,7 @@ export function ServiceManagement() {
   };
   
   // 2. API Cập nhật Trạng thái (PATCH)
-  const updateIssueStatusApi = async (issueId, newStatus) => {
+  const updateIssueStatusApi = async (issueId: string, newStatus: IssueStatusEnum) => {
     setOpenIssueMenuId(null); 
     try {
         const response = await fetch(`http://localhost:8081/api/issues/${issueId}/status`, {
@@ -101,8 +134,8 @@ export function ServiceManagement() {
 
         toast.success(`Cập nhật trạng thái thành công!`);
 
-    } catch (err) {
-        toast.error(`Thất bại: ${err.message}`);
+    } catch (err: unknown) {
+        toast.error(`Thất bại: ${err instanceof Error ? err.message : 'Không thể cập nhật trạng thái.'}`);
     }
   };
   
@@ -118,12 +151,13 @@ export function ServiceManagement() {
             throw new Error("Không thể tải danh sách yêu cầu/sự cố.");
         }
         
-        const rawData = await response.json();
+        const json = await response.json().catch(() => ({}));
+        const rawData = Array.isArray(json?.data) ? json.data : [];
         
-        const transformedData = rawData.map((issue) => {
+        const transformedData: IssueItem[] = (rawData as IssueSummaryDTO[]).map((issue) => {
             
             // Hàm chuyển đổi status từ ENUM sang UI Label (ĐÃ DỊCH)
-            const mapStatus = (status) => { 
+            const mapStatus = (status: IssueStatusEnum | null | undefined) => { 
                 switch (status) {
                     case 'UNPROCESSED': return 'Chưa Xử Lý';
                     case 'PROCESSING': return 'Đang Xử Lý';
@@ -134,10 +168,10 @@ export function ServiceManagement() {
                 }
             };
             // Lấy ENUM status gốc
-            const rawStatus = issue.status; 
+            const rawStatus: IssueStatusEnum = issue.status ?? 'UNPROCESSED'; 
 
             // Hàm map Type sang Category (ĐÃ DỊCH)
-            const mapCategory = (type) => { 
+            const mapCategory = (type: IssueTypeEnum | null | undefined) => { 
                 switch (type) {
                     case 'MAINTENANCE': return 'Bảo Trì'; 
                     case 'COMPLAINT': return 'Khiếu Nại'; 
@@ -147,28 +181,29 @@ export function ServiceManagement() {
             };
             
             return {
-                id: issue.id,
-                title: issue.title,
+                id: String(issue.id ?? ''),
+                title: String(issue.title ?? ''),
                 category: mapCategory(issue.type), // Label đã dịch
-                type: issue.type, // 🔥 Giữ ENUM gốc (MAINTENANCE, COMPLAINT, AUTHORITY)
+                type: (issue.type ?? 'MAINTENANCE') as IssueTypeEnum, // 🔥 Giữ ENUM gốc (MAINTENANCE, COMPLAINT, AUTHORITY)
                 status: mapStatus(rawStatus), 
                 rawStatus: rawStatus, // Lưu trạng thái ENUM gốc
-                unit: String(issue.roomNumber), 
-                resident: issue.reporterName, 
+                unit: String(issue.roomNumber ?? ''), 
+                resident: String(issue.reporterName ?? ''), 
+                description: String(issue.description ?? ''),
             };
         });
 
         setAllIssue(transformedData);
         
-    } catch (err) {
-        setError(err.message);
+    } catch (err: unknown) {
+        setError(err instanceof Error ? err.message : 'Không thể tải danh sách yêu cầu/sự cố.');
     } finally {
         setIsLoading(false);
     }
   }, []);
 
   // 4. API Tìm kiếm Căn hộ Dropdown (GET /dropdown)
-  const fetchApartmentDropdown = async (keyword) => {
+  const fetchApartmentDropdown = async (keyword: string) => {
     if (!keyword) {
       setApartmentDropdown([]);
       return;
@@ -183,11 +218,11 @@ export function ServiceManagement() {
         throw new Error("Lỗi tìm kiếm căn hộ.");
       }
       
-      const data = await response.json();
-      setApartmentDropdown(data.data || []); 
+      const json = await response.json().catch(() => ({}));
+      const list = Array.isArray(json?.data) ? json.data : [];
+      setApartmentDropdown(list.map((x: any) => ({ id: String(x?.id ?? ''), label: String(x?.label ?? '') })).filter((x: any) => x.id)); 
       
-    } catch (err) {
-      console.error("Lỗi dropdown:", err);
+    } catch (err: unknown) {
       setApartmentDropdown([]);
     } finally {
       setIsApartmentDropdownLoading(false);
@@ -196,7 +231,7 @@ export function ServiceManagement() {
 
 
   // --- LOGIC FORM SUBMIT ---
-  const handleSubmit = async(e)=>{
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault(); 
 
     // SỬA LỖI UUID: Dùng UUID hợp lệ thay cho chuỗi 'default-admin-reporter-id'
@@ -209,9 +244,9 @@ export function ServiceManagement() {
         return;
     }
 
-    const promise = new Promise(async (resolve, reject) => {
+    const promise = new Promise<string>(async (resolve, reject) => {
         try {
-            const dataform = {
+            const dataform: IssueCreateRequest = {
                 apartmentId: updateApartmentID,
                 title: updateTitle,
                 description: updateDescription,
@@ -242,12 +277,12 @@ export function ServiceManagement() {
     toast.promise(promise, {
         loading: 'Đang gửi yêu cầu...',
         success: (message) => message, 
-        error: (err) => `Thất bại: ${err.message}`, 
+        error: (err: any) => `Thất bại: ${err?.message ?? 'Không thể tạo yêu cầu.'}`, 
     });
   }
   
   // Hàm xử lý chọn căn hộ từ dropdown
-  const handleSelectApartment = (apartmentId, roomNumber) => {
+  const handleSelectApartment = (apartmentId: string, roomNumber: string) => {
     setUpdateAppartmentID(apartmentId);
     setSelectedApartmentLabel(roomNumber);
     setApartmentDropdown([]); 
@@ -275,7 +310,7 @@ export function ServiceManagement() {
 
 
   // Chuyển đổi trạng thái filter từ tiếng Việt sang UI Label tiếng Anh (để so sánh với Issue data)
-  const mapFilterToStatusLabel = (filter) => {
+  const mapFilterToStatusLabel = (filter: string) => {
       switch(filter) {
           case 'Chưa Xử Lý': return 'Chưa Xử Lý';
           case 'Đang Xử Lý': return 'Đang Xử Lý';

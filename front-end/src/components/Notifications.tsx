@@ -1,8 +1,40 @@
-import { useState, useEffect, useCallback } from 'react'; 
-import { Plus, Bell, AlertCircle, Info, Users, Clock, Loader2, ListChecks } from 'lucide-react'; // Đã thêm ListChecks
-import { toast } from 'sonner';
+import { useState, useEffect, useCallback, useRef } from 'react'; 
+import { Plus, Bell, AlertCircle, Clock, Loader2, ListChecks } from 'lucide-react'; // Đã thêm ListChecks
+import { Toaster, toast } from 'sonner';
 import React from 'react';
 import { Modal } from './Modal'; 
+
+type TargetType = 'ALL' | 'BUILDING' | 'FLOOR' | 'APARTMENTS';
+
+type AnnouncementItem = {
+  id: string;
+  title: string;
+  message: string;
+  sender: string;
+  targetDetail: string;
+  time: string;
+  icon: any;
+};
+
+type BuildingOption = { id: string; label: string; value: string };
+type ApartmentOption = { id: string; label: string };
+
+type NewAnnouncementState = {
+  title: string;
+  message: string;
+  targetType: TargetType;
+  buildingId: string;
+  floor: number;
+  apartmentIds: string[];
+};
+
+type ButtonProps = {
+  children: React.ReactNode;
+  onClick?: React.MouseEventHandler<HTMLButtonElement>;
+  className?: string;
+  disabled?: boolean;
+  type?: 'button' | 'submit' | 'reset';
+};
 
 // Định nghĩa các biểu tượng và màu sắc
 const typeColors = {
@@ -15,10 +47,11 @@ const typeIcons = {
 };
 
 // --- MOCK Button Component ---
-const Button = ({ children, onClick, className, disabled = false }) => (
+const Button = ({ children, onClick, className, disabled = false, type = 'button' }: ButtonProps) => (
     <button 
         onClick={onClick} 
         disabled={disabled}
+        type={type}
         className={`px-4 py-2 rounded-lg font-medium transition-colors ${className} ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
     >
         {children}
@@ -31,46 +64,49 @@ const TARGET_TYPES = [
     { label: 'Tất cả cư dân', value: 'ALL' },
     { label: 'Theo Tòa nhà', value: 'BUILDING' },
     { label: 'Theo Tầng (Tòa nhà)', value: 'FLOOR' },
-    // 🔥 ĐÃ THÊM TARGET TYPE MỚI
-    { label: 'Theo Cá nhân', value: 'RESIDENTS' }, 
+    { label: 'Theo Căn hộ cụ thể', value: 'APARTMENTS' }, 
 ];
 // --- END TARGET TYPE ---
 
 
 export function Notifications() { 
-  const DEFAULT_SENDER_ID = 'a2ca2e25-4443-496b-a457-46539af501cc'; 
+  const DEFAULT_SENDER_ID = '46d6b17d-d407-4218-85ae-fb8e033816f4';
+  const ANNOUNCEMENTS_FETCH_TIMEOUT_MS = 30000;
+  const ANNOUNCEMENT_CREATE_TIMEOUT_MS = 60000;
+  const sendPollTokenRef = useRef(0);
   
   // State chung
-  const [announcements, setAnnouncements] = useState([]);
+  const [announcements, setAnnouncements] = useState<AnnouncementItem[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState(null);
+  const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   
   // State cho Tòa nhà
-  const [buildings, setBuildings] = useState([]);
+  const [buildings, setBuildings] = useState<BuildingOption[]>([]);
   const [isBuildingsLoading, setIsBuildingsLoading] = useState(false);
+  const [buildingKeyword, setBuildingKeyword] = useState('');
 
-  // 🔥 State cho Cư dân
-  const [residents, setResidents] = useState([]);
-  const [isResidentsLoading, setIsResidentsLoading] = useState(false);
+  // State cho Căn hộ (gửi theo danh sách apartmentIds)
+  const [apartments, setApartments] = useState<ApartmentOption[]>([]);
+  const [isApartmentsLoading, setIsApartmentsLoading] = useState(false);
+  const [apartmentKeyword, setApartmentKeyword] = useState('');
   
   // State cho Modal và Form Tạo thông báo
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
-  const [newAnnouncement, setNewAnnouncement] = useState({
+  const [newAnnouncement, setNewAnnouncement] = useState<NewAnnouncementState>({
     title: '',
     message: '',
-    senderId: DEFAULT_SENDER_ID, 
     targetType: 'ALL', 
     buildingId: '', 
     floor: 0,
-    residentIds: [], // Danh sách ID cư dân được chọn
+    apartmentIds: [], // Danh sách ID căn hộ được chọn
   });
   
   // --- HÀM GỌI API LẤY DANH SÁCH TÒA NHÀ ---
-  const fetchBuildings = useCallback(async () => {
+  const fetchBuildings = useCallback(async (keyword: string) => {
     setIsBuildingsLoading(true);
     try {
-        const response = await fetch('http://localhost:8081/api/v1/buildings/dropdown?keyword='); 
+        const response = await fetch(`http://localhost:8081/api/v1/buildings/dropdown?keyword=${encodeURIComponent(keyword ?? '')}`); 
         
         if (!response.ok) {
             throw new Error("Không thể tải danh sách Tòa nhà.");
@@ -79,72 +115,65 @@ export function Notifications() {
         const res = await response.json();
         const data = res.data || [];
         
-        const allOption = { id: 'ALL', label: 'Tất cả Tòa nhà', value: 'ALL' }; 
-        const combinedBuildings = [allOption, ...data.map(b => ({ id: b.id, label: b.name, value: b.id }))];
+        const mapped = data.map((b: any) => ({ id: String(b.id), label: String(b.label ?? ''), value: String(b.id) }));
+        setBuildings(mapped);
         
-        setBuildings(combinedBuildings);
-        
-        if (newAnnouncement.buildingId === '') {
-            setNewAnnouncement(prev => ({
-                ...prev,
-                buildingId: combinedBuildings[0].id // Đặt mặc định là 'ALL'
-            }));
-        }
-        
-    } catch (err) {
-        toast.error("Lỗi tải Tòa nhà", { description: err.message });
+    } catch (err: unknown) {
+        toast.error("Lỗi tải Tòa nhà", { description: err instanceof Error ? err.message : 'Không thể tải danh sách Tòa nhà.' });
         setBuildings([]);
     } finally {
         setIsBuildingsLoading(false);
     }
-  }, [newAnnouncement.buildingId]);
+  }, []);
 
-  // 🔥 HÀM GỌI API LẤY DANH SÁCH CƯ DÂN
-  const fetchResidents = useCallback(async () => {
-    setIsResidentsLoading(true);
+  const fetchApartments = useCallback(async (keyword: string) => {
+    setIsApartmentsLoading(true);
     try {
-        // Sử dụng API bạn cung cấp
-        const response = await fetch('http://localhost:8081/api/v1/residents'); 
+        const response = await fetch(`http://localhost:8081/api/v1/apartments/dropdown?keyword=${encodeURIComponent(keyword ?? '')}`); 
         
         if (!response.ok) {
-            throw new Error("Không thể tải danh sách Cư dân.");
+            throw new Error("Không thể tải danh sách Căn hộ.");
         }
         
         const res = await response.json();
         const data = res.data || [];
         
-        // Chuyển đổi dữ liệu để sử dụng trong list chọn
-        const residentList = data.map(r => ({
-            id: r.id, 
-            name: `${r.fullName} (P.${r.roomNumber ?? 'N/A'})` 
+        const apartmentList = data.map((a: any) => ({
+          id: String(a.id),
+          label: String(a.label ?? ''),
         }));
+        setApartments(apartmentList);
         
-        setResidents(residentList);
-        
-    } catch (err) {
-        toast.error("Lỗi tải Cư dân", { description: err.message });
-        setResidents([]);
+    } catch (err: unknown) {
+        toast.error("Lỗi tải Căn hộ", { description: err instanceof Error ? err.message : 'Không thể tải danh sách Căn hộ.' });
+        setApartments([]);
     } finally {
-        setIsResidentsLoading(false);
+        setIsApartmentsLoading(false);
     }
   }, []);
 
-
   // --- HÀM TẢI DỮ LIỆU LỊCH SỬ THÔNG BÁO ---
-  const fetchAnnouncements = useCallback(async () => {
-    setIsLoading(true);
-    setError(null);
+  const fetchAnnouncements = useCallback(async (opts?: { silent?: boolean }) => {
+    const silent = opts?.silent ?? false;
+    if (!silent) {
+        setIsLoading(true);
+        setError(null);
+    }
+    const controller = new AbortController();
+    const timeoutId = window.setTimeout(() => controller.abort(), ANNOUNCEMENTS_FETCH_TIMEOUT_MS);
     try {
-        const response = await fetch('http://localhost:8081/api/v1/announcements/staff/all?page=0&size=1000&sort=createdDate,desc'); 
+        const response = await fetch('http://localhost:8081/api/announcements/staff', {
+            signal: controller.signal,
+        }); 
         
         if (!response.ok) {
             throw new Error("Không thể lấy danh sách thông báo đã gửi.");
         }
         
-        const rawData = await response.json();
-        const rawAnnouncements = rawData?.content || [];
+        const json = await response.json().catch(() => ({} as any));
+        const rawAnnouncements = Array.isArray(json?.data) ? json.data : [];
 
-        const parseLocalDateTime = (value) => {
+        const parseLocalDateTime = (value: any): Date | null => {
             if (!value) return null;
             if (Array.isArray(value)) {
                 const [year, month, day, hour = 0, minute = 0, second = 0, nano = 0] = value;
@@ -171,7 +200,7 @@ export function Notifications() {
             return null;
         };
         
-        const transformedData = rawAnnouncements.map(announcement => {
+        const transformedData: AnnouncementItem[] = rawAnnouncements.map((announcement: any) => {
             const type = 'GENERAL'; 
             const Icon = typeIcons[type];
             
@@ -181,23 +210,36 @@ export function Notifications() {
                 : 'N/A';
 
             return {
-                id: announcement.id,
-                title: announcement.title,
-                message: announcement.message, 
-                sender: announcement.sender?.fullName || 'BQL Chung cư',
-                receiverCount: 0,
+                id: String(announcement.id ?? ''),
+                title: String(announcement.title ?? ''),
+                message: String(announcement.message ?? ''), 
+                sender: String(announcement.senderName ?? 'BQL Chung cư'),
+                targetDetail: String(announcement.targetDetail ?? ''),
                 time: timeFormatted,
                 icon: Icon,
             };
         });
 
         setAnnouncements(transformedData);
+        return transformedData;
         
-    } catch (err) {
-        setError(err.message);
-        toast.error("Lỗi tải lịch sử thông báo", { description: err.message });
+    } catch (err: unknown) {
+        const message =
+            err instanceof DOMException && err.name === 'AbortError'
+                ? 'Kết nối quá thời gian. Vui lòng thử lại.'
+                : err instanceof Error
+                    ? err.message
+                    : 'Không thể tải lịch sử thông báo';
+        if (!silent) {
+            setError(message);
+            toast.error("Lỗi tải lịch sử thông báo", { description: message });
+        }
+        throw err;
     } finally {
-        setIsLoading(false);
+        window.clearTimeout(timeoutId);
+        if (!silent) {
+            setIsLoading(false);
+        }
     }
   }, []);
 
@@ -207,18 +249,19 @@ export function Notifications() {
   }, [fetchAnnouncements]); 
 
   // --- HÀM TẠO THÔNG BÁO MỚI ---
-  const handleCreateAnnouncement = async (e) => {
+  const handleCreateAnnouncement = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (isSubmitting) return;
 
-    if (!newAnnouncement.title || !newAnnouncement.message) {
+    const title = newAnnouncement.title.trim();
+    const message = newAnnouncement.message.trim();
+    if (!title || !message) {
         toast.warning("Vui lòng điền tiêu đề và nội dung.");
         return;
     }
-    
-    // Kiểm tra residentIds nếu targetType là RESIDENTS
-    if (newAnnouncement.targetType === 'RESIDENTS' && newAnnouncement.residentIds.length === 0) {
-        toast.warning("Vui lòng chọn ít nhất một cư dân.");
+
+    if (newAnnouncement.targetType === 'APARTMENTS' && newAnnouncement.apartmentIds.length === 0) {
+        toast.warning("Vui lòng chọn ít nhất một căn hộ.");
         return;
     }
 
@@ -237,9 +280,9 @@ export function Notifications() {
     }
 
     const payload: any = {
-        title: newAnnouncement.title,
-        message: newAnnouncement.message,
-        senderId: newAnnouncement.senderId,
+        title,
+        message,
+        senderId: DEFAULT_SENDER_ID,
         targetType: mappedTargetType,
         buildingId: null,
         floors: null,
@@ -253,84 +296,128 @@ export function Notifications() {
         payload.buildingId = newAnnouncement.buildingId;
         payload.floors = [newAnnouncement.floor];
     } else if (mappedTargetType === 'SPECIFIC_APARTMENTS') {
-        toast.warning("Chưa hỗ trợ gửi theo cá nhân với backend hiện tại.");
-        setIsSubmitting(false);
-        return;
+        payload.apartmentIds = newAnnouncement.apartmentIds;
     }
 
-    const submitPromise = new Promise(async (resolve, reject) => {
+    const toastId = toast.loading('Đang gửi thông báo...');
+    const knownAnnouncementIds = new Set(announcements.map((a) => a.id));
+    const pollToken = ++sendPollTokenRef.current;
+
+    const closeAndResetForm = () => {
+        setIsCreateModalOpen(false);
+        setNewAnnouncement({
+            title: '',
+            message: '',
+            targetType: 'ALL',
+            buildingId: '',
+            floor: 0,
+            apartmentIds: [],
+        });
+        setIsSubmitting(false);
+    };
+
+    const startConfirmPoll = () => {
+        toast.loading('Đang gửi thông báo...', { id: toastId });
+        (async () => {
+            const maxAttempts = 30;
+            for (let attempt = 0; attempt < maxAttempts; attempt++) {
+                if (sendPollTokenRef.current !== pollToken) return;
+                await new Promise((r) => window.setTimeout(r, 2000));
+                try {
+                    const latest = await fetchAnnouncements({ silent: true });
+                    if (sendPollTokenRef.current !== pollToken) return;
+                    const found = latest.some((a) => a.title === title && a.message === message && !knownAnnouncementIds.has(a.id));
+                    if (found) {
+                        toast.success('Thông báo đã được gửi xong!', { id: toastId });
+                        return;
+                    }
+                } catch {
+                }
+            }
+            toast.error('Gửi thông báo thất bại', { id: toastId, description: 'Không xác nhận được thông báo mới sau khi gửi.' });
+        })();
+    };
+
+    closeAndResetForm();
+
+    void (async () => {
+        const controller = new AbortController();
+        const requestTimeoutMs = mappedTargetType === 'ALL' ? 240000 : ANNOUNCEMENT_CREATE_TIMEOUT_MS;
+        const timeoutId = window.setTimeout(() => controller.abort(), requestTimeoutMs);
+
         try {
-            const response = await fetch('http://localhost:8081/api/v1/announcements/staff/create', {
+            const response = await fetch('http://localhost:8081/api/announcements', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify(payload),
+                signal: controller.signal,
             });
-            
+
             if (!response.ok) {
-                const errorData = await response.json().catch(() => ({}));
-                throw new Error(errorData.message || `Lỗi: ${response.status} khi gửi thông báo.`);
+                let detail = '';
+                const contentType = response.headers.get('content-type') || '';
+                if (contentType.includes('application/json')) {
+                    const errorData = await response.json().catch(() => ({} as any));
+                    detail = String(errorData?.message ?? errorData?.error ?? '');
+                } else {
+                    detail = await response.text().catch(() => '');
+                }
+                const errorMessage = detail?.trim() ? detail.trim() : `Lỗi: ${response.status} khi gửi thông báo.`;
+
+                if ([502, 503, 504].includes(response.status)) {
+                    startConfirmPoll();
+                    return;
+                }
+
+                toast.error('Gửi thông báo thất bại', { id: toastId, description: errorMessage });
+                return;
             }
 
-            await fetchAnnouncements();
-            
-            resolve("Thông báo đã được gửi thành công!");
-            
-        } catch (error) {
-            reject(error);
+            toast.success('Thông báo đã được gửi xong!', { id: toastId });
+            fetchAnnouncements({ silent: true }).catch(() => {});
+        } catch (err: unknown) {
+            const isTimeout = err instanceof DOMException && err.name === 'AbortError';
+            const isNetworkError = err instanceof TypeError;
+
+            if (isTimeout || isNetworkError) {
+                startConfirmPoll();
+                return;
+            }
+
+            const msg = err instanceof Error ? err.message : 'Không thể gửi thông báo.';
+            toast.error('Gửi thông báo thất bại', { id: toastId, description: msg });
         } finally {
-            setIsSubmitting(false);
+            window.clearTimeout(timeoutId);
         }
-    });
-    
-    toast.promise(submitPromise, {
-        loading: 'Đang gửi thông báo...',
-        success: (message) => {
-            setIsCreateModalOpen(false); 
-            // Reset form
-            setNewAnnouncement({
-                title: '',
-                message: '',
-                senderId: DEFAULT_SENDER_ID,
-                targetType: 'ALL', 
-                buildingId: buildings[0]?.id || '',
-                floor: 0,
-                residentIds: [],
-            });
-            return message;
-        },
-        error: (err) => `Gửi thông báo thất bại: ${err.message}`,
-    });
+    })();
   };
 
-  // --- LOGIC CHỌN CƯ DÂN ---
-  const handleResidentSelect = (residentId) => {
+  const handleApartmentSelect = (apartmentId: string) => {
     setNewAnnouncement(prev => {
-        const selectedIds = new Set(prev.residentIds);
-        if (selectedIds.has(residentId)) {
-            selectedIds.delete(residentId);
+        const selectedIds = new Set(prev.apartmentIds);
+        if (selectedIds.has(apartmentId)) {
+            selectedIds.delete(apartmentId);
         } else {
-            selectedIds.add(residentId);
+            selectedIds.add(apartmentId);
         }
         return {
             ...prev,
-            residentIds: Array.from(selectedIds)
+            apartmentIds: Array.from(selectedIds)
         };
     });
   };
 
   // --- CÁC HÀM XỬ LÝ UI KHÁC ---
   const totalSentAnnouncements = announcements.length;
-  const totalReceivers = announcements.reduce((sum, ann) => sum + (ann.receiverCount || 0), 0);
-  const avgReceivers = totalSentAnnouncements > 0 
-                       ? Math.round(totalReceivers / totalSentAnnouncements) 
-                       : 0;
                        
   // Handler mở Modal (và tải buildings + residents nếu cần)
-  const handleOpenCreateModal = () => {
-      fetchBuildings();
-      fetchResidents(); // 🔥 Tải danh sách cư dân
+  const handleOpenCreateModal = async () => {
+      setBuildingKeyword('');
+      setApartmentKeyword('');
+      setBuildings([]);
+      setApartments([]);
       setIsCreateModalOpen(true);
   };
   
@@ -341,19 +428,16 @@ export function Notifications() {
       setNewAnnouncement({
           title: '',
           message: '',
-          senderId: DEFAULT_SENDER_ID,
           targetType: 'ALL', 
-          buildingId: buildings[0]?.id || '',
+          buildingId: '',
           floor: 0,
-          residentIds: [],
+          apartmentIds: [],
       });
   }
 
-  // Lọc danh sách buildings chỉ hiển thị các tòa nhà cụ thể
-  const specificBuildings = buildings.filter(b => b.id !== 'ALL');
-
   return (
     <div className="space-y-6">
+      <Toaster position="top-right" richColors closeButton />
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl text-slate-900">Quản lý thông báo</h1>
@@ -376,7 +460,7 @@ export function Notifications() {
       <hr/>
 
       {/* Stats GRID */}
-      <div className="grid grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 gap-6">
         {/* Tổng số thông báo đã gửi */}
         <div className="bg-white rounded-xl p-6 shadow-sm border border-slate-200">
           <div className="flex items-center gap-3 mb-2">
@@ -386,28 +470,6 @@ export function Notifications() {
             <p className="text-slate-500 text-sm">Tổng số TB đã gửi</p>
           </div>
           <p className="text-2xl text-slate-900">{totalSentAnnouncements}</p>
-        </div>
-
-        {/* Tổng số người nhận */}
-        <div className="bg-white rounded-xl p-6 shadow-sm border border-slate-200">
-          <div className="flex items-center gap-3 mb-2">
-            <div className="w-10 h-10 rounded-lg bg-purple-100 flex items-center justify-center">
-              <Users className="w-5 h-5 text-purple-600" />
-            </div>
-            <p className="text-slate-500 text-sm">Tổng số người nhận</p>
-          </div>
-          <p className="text-2xl text-slate-900">{totalReceivers}</p>
-        </div>
-
-        {/* Người nhận trung bình */}
-        <div className="bg-white rounded-xl p-6 shadow-sm border border-slate-200">
-          <div className="flex items-center gap-3 mb-2">
-            <div className="w-10 h-10 rounded-lg bg-emerald-100 flex items-center justify-center">
-              <Info className="w-5 h-5 text-emerald-600" />
-            </div>
-            <p className="text-slate-500 text-sm">Người nhận TB/TB</p>
-          </div>
-          <p className="text-2xl text-slate-900">{avgReceivers}</p>
         </div>
         
       </div>
@@ -446,7 +508,7 @@ export function Notifications() {
                   {/* THÔNG TIN BỔ SUNG */}
                   <div className="pt-2 border-t border-slate-100 text-xs text-slate-500 flex justify-between">
                     <span>Gửi bởi: <span className="text-slate-700 font-medium">{announcement.sender}</span></span>
-                    <span>Đã gửi đến: <span className="text-slate-700 font-medium">{announcement.receiverCount} cư dân</span></span>
+                    <span>Đối tượng: <span className="text-slate-700 font-medium">{announcement.targetDetail || 'N/A'}</span></span>
                   </div>
                 </div>
               </div>
@@ -485,14 +547,14 @@ export function Notifications() {
                 <textarea
                     id="message"
                     required
-                    rows="4"
+                    rows={4}
                     value={newAnnouncement.message}
                     onChange={(e) => setNewAnnouncement({...newAnnouncement, message: e.target.value})}
                     placeholder="Nhập nội dung thông báo chi tiết..."
                     className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
                 ></textarea>
             </div>
-            
+
             <hr/>
             
             {/* Cấu hình Người nhận */}
@@ -508,10 +570,10 @@ export function Notifications() {
                         onChange={(e) => {
                             setNewAnnouncement({
                                 ...newAnnouncement, 
-                                targetType: e.target.value,
-                                buildingId: buildings[0]?.id || '', 
+                                targetType: e.target.value as TargetType,
+                                buildingId: '', 
                                 floor: e.target.value !== 'FLOOR' ? 0 : newAnnouncement.floor,
-                                residentIds: e.target.value !== 'RESIDENTS' ? [] : newAnnouncement.residentIds
+                                apartmentIds: e.target.value !== 'APARTMENTS' ? [] : newAnnouncement.apartmentIds
                             })
                         }}
                         className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
@@ -527,22 +589,41 @@ export function Notifications() {
                     <React.Fragment>
                         <div className="space-y-1">
                             <label htmlFor="buildingId" className="text-sm font-medium text-slate-700">Tòa nhà <span className="text-red-500">*</span></label>
+                            <input
+                              value={buildingKeyword}
+                              onChange={(e) => {
+                                const next = e.target.value;
+                                setBuildingKeyword(next);
+                                fetchBuildings(next);
+                              }}
+                              placeholder="Nhập từ khóa để tìm tòa nhà..."
+                              className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                            />
                             {isBuildingsLoading ? (
-                                <div className="w-full px-4 py-2 border border-slate-300 rounded-lg bg-slate-100 text-slate-500 flex items-center">
-                                    <Loader2 className="w-4 h-4 mr-2 animate-spin" /> Đang tải...
-                                </div>
+                              <div className="w-full px-4 py-2 border border-slate-300 rounded-lg bg-slate-100 text-slate-500 flex items-center">
+                                <Loader2 className="w-4 h-4 mr-2 animate-spin" /> Đang tải...
+                              </div>
+                            ) : buildings.length === 0 ? (
+                              <div className="w-full px-4 py-2 border border-slate-300 rounded-lg bg-slate-50 text-slate-500">
+                                Nhập từ khóa để tìm tòa nhà
+                              </div>
                             ) : (
-                                <select
-                                    id="buildingId"
-                                    required
-                                    value={newAnnouncement.buildingId}
-                                    onChange={(e) => setNewAnnouncement({...newAnnouncement, buildingId: e.target.value})}
-                                    className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
-                                >
-                                    {specificBuildings.map(b => (
-                                        <option key={b.id} value={b.id}>{b.label}</option>
-                                    ))}
-                                </select>
+                              <select
+                                id="buildingId"
+                                required
+                                value={newAnnouncement.buildingId}
+                                onChange={(e) => setNewAnnouncement({ ...newAnnouncement, buildingId: e.target.value })}
+                                className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                              >
+                                <option value="" disabled>
+                                  Chọn tòa nhà
+                                </option>
+                                {buildings.map((b) => (
+                                  <option key={b.id} value={b.id}>
+                                    {b.label}
+                                  </option>
+                                ))}
+                              </select>
                             )}
                         </div>
                         
@@ -565,49 +646,60 @@ export function Notifications() {
                     </React.Fragment>
                 )}
                 
-                {/* 🔥 Giao diện chọn cư dân (Chỉ hiện khi targetType là RESIDENTS) */}
-                {newAnnouncement.targetType === 'RESIDENTS' && (
+                {/* 🔥 Giao diện chọn căn hộ (Chỉ hiện khi targetType là APARTMENTS) */}
+                {newAnnouncement.targetType === 'APARTMENTS' && (
                     <div className="space-y-1 col-span-2">
                         <label className="text-sm font-medium text-slate-700 flex items-center">
-                            <ListChecks className="w-4 h-4 mr-1 text-blue-500"/> Chọn Cư dân cụ thể 
+                            <ListChecks className="w-4 h-4 mr-1 text-blue-500"/> Chọn Căn hộ cụ thể 
                             <span className="text-red-500 ml-1">*</span>
-                            <span className="text-xs text-slate-500 ml-3">({newAnnouncement.residentIds.length} người đã chọn)</span>
+                            <span className="text-xs text-slate-500 ml-3">({newAnnouncement.apartmentIds.length} căn hộ đã chọn)</span>
                         </label>
                         
-                        {isResidentsLoading ? (
-                            <div className="w-full p-4 border border-slate-300 rounded-lg bg-slate-50 text-slate-500 flex items-center justify-center" style={{ maxHeight: '300px', overflowY: 'auto' }}>
-                                <Loader2 className="w-4 h-4 mr-2 animate-spin" /> Đang tải danh sách cư dân...
-                            </div>
+                        <input
+                          value={apartmentKeyword}
+                          onChange={(e) => {
+                            const next = e.target.value;
+                            setApartmentKeyword(next);
+                            fetchApartments(next);
+                          }}
+                          placeholder="Nhập từ khóa để tìm căn hộ (vd: BlueMoon, 906)..."
+                          className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                        />
+
+                        {isApartmentsLoading ? (
+                          <div className="w-full p-4 border border-slate-300 rounded-lg bg-slate-50 text-slate-500 flex items-center justify-center" style={{ maxHeight: '300px', overflowY: 'auto' }}>
+                            <Loader2 className="w-4 h-4 mr-2 animate-spin" /> Đang tải danh sách căn hộ...
+                          </div>
                         ) : (
-                            <div className="w-full border border-slate-300 rounded-lg overflow-hidden" style={{ maxHeight: '300px', overflowY: 'auto' }}>
-                                {residents.length === 0 ? (
-                                    <p className="p-4 text-center text-slate-500">Không tìm thấy cư dân nào.</p>
-                                ) : (
-                                    residents.map(resident => (
-                                        <div 
-                                            key={resident.id}
-                                            onClick={() => handleResidentSelect(resident.id)}
-                                            className={`flex items-center justify-between p-3 border-b cursor-pointer transition-colors
-                                                ${newAnnouncement.residentIds.includes(resident.id) 
-                                                    ? 'bg-blue-50 text-blue-800 hover:bg-blue-100' 
-                                                    : 'bg-white text-slate-700 hover:bg-slate-50'
-                                                }`}
-                                        >
-                                            <span>{resident.name}</span>
-                                            <input
-                                                type="checkbox"
-                                                checked={newAnnouncement.residentIds.includes(resident.id)}
-                                                readOnly
-                                                className="form-checkbox h-4 w-4 text-blue-600 rounded"
-                                            />
-                                        </div>
-                                    ))
-                                )}
-                            </div>
+                          <div className="w-full border border-slate-300 rounded-lg overflow-hidden" style={{ maxHeight: '300px', overflowY: 'auto' }}>
+                            {apartments.length === 0 ? (
+                              <p className="p-4 text-center text-slate-500">Nhập từ khóa để tìm căn hộ.</p>
+                            ) : (
+                              apartments.map((apartment) => (
+                                <div
+                                  key={apartment.id}
+                                  onClick={() => handleApartmentSelect(apartment.id)}
+                                  className={`flex items-center justify-between p-3 border-b cursor-pointer transition-colors
+                                    ${newAnnouncement.apartmentIds.includes(apartment.id)
+                                      ? 'bg-blue-50 text-blue-800 hover:bg-blue-100'
+                                      : 'bg-white text-slate-700 hover:bg-slate-50'
+                                    }`}
+                                >
+                                  <span>{apartment.label}</span>
+                                  <input
+                                    type="checkbox"
+                                    checked={newAnnouncement.apartmentIds.includes(apartment.id)}
+                                    readOnly
+                                    className="form-checkbox h-4 w-4 text-blue-600 rounded"
+                                  />
+                                </div>
+                              ))
+                            )}
+                          </div>
                         )}
-                        {/* Thông báo lỗi nếu chưa chọn cư dân */}
-                        {newAnnouncement.targetType === 'RESIDENTS' && newAnnouncement.residentIds.length === 0 && (
-                            <p className="text-red-500 text-xs mt-1">Vui lòng chọn ít nhất một cư dân để gửi thông báo.</p>
+
+                        {newAnnouncement.targetType === 'APARTMENTS' && newAnnouncement.apartmentIds.length === 0 && (
+                          <p className="text-red-500 text-xs mt-1">Vui lòng chọn ít nhất một căn hộ để gửi thông báo.</p>
                         )}
                     </div>
                 )}
