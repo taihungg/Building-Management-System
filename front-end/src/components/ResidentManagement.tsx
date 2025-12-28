@@ -163,6 +163,13 @@ const [includeInactive, setIncludeInactive] = useState(false);
     }
   }
 
+  const handleCloseViewModal = () => {
+    setIsViewModalOpen(false);
+    setIsEditMode(false);
+    setSelectedResident(null);
+    void fetchResidents();
+  };
+
   const filteredResidents = residents.filter((resident) => {
     if (statusFilter === "INACTIVE") {
       return resident.status === "INACTIVE";
@@ -220,35 +227,78 @@ const [includeInactive, setIncludeInactive] = useState(false);
 
   // --- HANDLE SUBMIT THÊM CƯ DÂN ---
   const handleSubmit = async () => {
-    if (!newName || !newIDCard) {
+    const fullName = newName.trim();
+    const idCard = newIDCard.trim();
+
+    if (!fullName || !idCard) {
       toast.warning("Thiếu thông tin", { description: "Vui lòng nhập tên và CMND/CCCD" });
+      return;
+    }
+
+    if (idCard.length > 14) {
+      toast.warning("CMND/CCCD không hợp lệ", { description: "Vui lòng nhập tối đa 14 ký tự" });
+      return;
+    }
+
+    const email = newEmail.trim();
+    const phone = newPhone.trim();
+
+    if (createAccount && (!email || !phone)) {
+      toast.warning("Thiếu thông tin", { description: "Vui lòng nhập email và số điện thoại" });
+      return;
+    }
+
+    if (phone && phone.length > 10) {
+      toast.warning("Số điện thoại không hợp lệ", { description: "Vui lòng nhập tối đa 10 chữ số" });
       return;
     }
 
     const promise = new Promise(async (resolve, reject) => {
       try {
-        const dataform = {
-          fullName: newName,
-          idCard: newIDCard,
-          dob: newDOB,
-          homeTown: newHomeTown,
-          apartmentID: newAppartmentID,
-          // Thêm các trường có điều kiện
-          ...(createAccount && { email: newEmail, phone: newPhone }),
+        const dataform: Record<string, unknown> = {
+          fullName,
+          idCard,
+          status: "PERMANENT_RESIDENCE",
+        };
+
+        const dob = newDOB.trim();
+        const homeTown = newHomeTown.trim();
+        const apartmentID = newAppartmentID.trim();
+
+        if (dob) dataform.dob = dob;
+        if (homeTown) dataform.homeTown = homeTown;
+        if (apartmentID) dataform.apartmentID = apartmentID;
+        if (createAccount) {
+          dataform.email = email;
+          dataform.phone = phone;
         }
-        await createResident(dataform);
-        await fetchResidents();
-        
+
+        const createdRes = await createResident(dataform);
+        const createdResident = normalizeResidentData((createdRes as any)?.data ?? createdRes);
+
         // Reset form
         setNewName("");
         setnewIDCard("");
         setNewDOB("");
         setNewHomeTown("");
         setNewAppartmentID("");
+        setApartmentKeyword("");
         setCreateAccount(false); // Reset checkbox
         setNewEmail(''); // Reset email
         setNewPhone(''); // Reset phone
         setIsAddDialogOpen(false);
+
+        setSelectedResident(createdResident);
+        setUpdateName(createdResident.fullName);
+        setUpdateIDCard(createdResident.idCard || "");
+        setUpdateDOB(createdResident.dob || "");
+        setUpdateHomeTown(createdResident.homeTown || "");
+        setUpdateEmail(createdResident.email || "");
+        setUpdatePhone(createdResident.phoneNumber || "");
+        setUpdateStatus(isEditableResidentStatus(createdResident.status) ? createdResident.status : "PERMANENT_RESIDENCE");
+        setIsEditMode(false);
+        setIsViewModalOpen(true);
+
         resolve("Đã thêm cư dân thành công!");
       } catch (err) {
         reject(err);
@@ -678,6 +728,7 @@ const [includeInactive, setIncludeInactive] = useState(false);
               placeholder="Nhập số CMND/CCCD"
               value={newIDCard}
               onChange={(e) => setnewIDCard(e.target.value)}
+              maxLength={14}
               className="mt-1"
             />
         </div>
@@ -797,6 +848,7 @@ const [includeInactive, setIncludeInactive] = useState(false);
                       placeholder="Nhập số điện thoại"
                       value={newPhone}
                       onChange={(e) => setNewPhone(e.target.value)}
+                      maxLength={10}
                       required={createAccount}
                       className="mt-1"
                     />
@@ -874,10 +926,7 @@ const [includeInactive, setIncludeInactive] = useState(false);
       {/* --- MODAL VIEW/EDIT RESIDENT DETAIL (ĐÃ DỊCH) --- */}
       <Modal
     isOpen={isViewModalOpen}
-    onClose={() => {
-        setIsViewModalOpen(false);
-        setIsEditMode(false); // Reset mode khi đóng
-    }}
+    onClose={handleCloseViewModal}
     title={isEditMode ? "Chỉnh Sửa Thông Tin Cư Dân" : "Chi Tiết Cư Dân"}
 >
     {isLoadingDetail ? (
@@ -934,7 +983,7 @@ const [includeInactive, setIncludeInactive] = useState(false);
                                 <Input id="updateName" type="text" value={updateName} onChange={(e) => setUpdateName(e.target.value)} className="mt-1 h-11 rounded-xl bg-white border-gray-200 px-4"/></div>
                                 
                                 <div><Label htmlFor="updateIDCard">CMND / CCCD</Label>
-                                <Input id="updateIDCard" type="text" value={updateIDCard} onChange={(e) => setUpdateIDCard(e.target.value)} className="mt-1 h-11 rounded-xl bg-white border-gray-200 px-4"/></div>
+                                <Input id="updateIDCard" type="text" value={updateIDCard} onChange={(e) => setUpdateIDCard(e.target.value)} maxLength={14} className="mt-1 h-11 rounded-xl bg-white border-gray-200 px-4"/></div>
                                 
                                 <div><Label htmlFor="updateDOB">Ngày Sinh</Label>
                                 <Input id="updateDOB" type="date" value={updateDOB} onChange={(e) => setUpdateDOB(e.target.value)} className="mt-1 h-11 rounded-xl bg-white border-gray-200 px-4"/></div>
@@ -951,7 +1000,7 @@ const [includeInactive, setIncludeInactive] = useState(false);
                             </h3>
                             <div className="space-y-3">
                                 <div><Label htmlFor="updatePhone">Số Điện Thoại</Label>
-                                <Input id="updatePhone" type="tel" value={updatePhone} onChange={(e) => setUpdatePhone(e.target.value)} className="mt-1 h-11 rounded-xl bg-white border-gray-200 px-4"/></div>
+                                <Input id="updatePhone" type="tel" value={updatePhone} onChange={(e) => setUpdatePhone(e.target.value)} maxLength={10} className="mt-1 h-11 rounded-xl bg-white border-gray-200 px-4"/></div>
                                 
                                 <div><Label htmlFor="updateEmail">Email</Label>
                                 <Input id="updateEmail" type="email" value={updateEmail} onChange={(e) => setUpdateEmail(e.target.value)} className="mt-1 h-11 rounded-xl bg-white border-gray-200 px-4"/></div>
@@ -1097,7 +1146,7 @@ const [includeInactive, setIncludeInactive] = useState(false);
                     </>
                 ) : (
                     <>
-                        <Button variant="outline" onClick={() => setIsViewModalOpen(false)} className="rounded-full px-6">
+                        <Button variant="outline" onClick={handleCloseViewModal} className="rounded-full px-6">
                             Đóng
                         </Button>
                         
