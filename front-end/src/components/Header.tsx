@@ -29,8 +29,8 @@ type HeaderNotificationItem = {
   createdAtIso?: string;
 };
 
-const ADMIN_NOTIFICATIONS_LAST_READ_AT_KEY = 'admin_notifications_last_read_at';
-const ADMIN_NOTIFICATIONS_READ_IDS_KEY = 'admin_notifications_read_ids';
+const management_NOTIFICATIONS_LAST_READ_AT_KEY = 'management_notifications_last_read_at';
+const management_NOTIFICATIONS_READ_IDS_KEY = 'management_notifications_read_ids';
 
 const parseLocalDateTime = (value: any): Date | null => {
   if (!value) return null;
@@ -72,14 +72,14 @@ export function Header({ onMenuClick, onNavigate, onLogout }: HeaderProps) {
   const [notificationPage, setNotificationPage] = useState(0);
   const [notificationsLastReadAt, setNotificationsLastReadAt] = useState<string | null>(() => {
     try {
-      return localStorage.getItem(ADMIN_NOTIFICATIONS_LAST_READ_AT_KEY);
+      return localStorage.getItem(management_NOTIFICATIONS_LAST_READ_AT_KEY);
     } catch {
       return null;
     }
   });
   const [readNotificationIds, setReadNotificationIds] = useState<Record<string, true>>(() => {
     try {
-      const raw = localStorage.getItem(ADMIN_NOTIFICATIONS_READ_IDS_KEY);
+      const raw = localStorage.getItem(management_NOTIFICATIONS_READ_IDS_KEY);
       if (!raw) return {};
       const ids = JSON.parse(raw);
       if (!Array.isArray(ids)) return {};
@@ -112,19 +112,19 @@ export function Header({ onMenuClick, onNavigate, onLogout }: HeaderProps) {
     }
 
     if (page === 'dashboard') {
-      navigate('/admin/dashboard');
+      navigate('/management/dashboard');
       return;
     }
     if (page === 'notifications') {
-      navigate('/admin/notifications');
+      navigate('/management/notifications');
       return;
     }
     if (page === 'profile') {
-      navigate('/admin/profile');
+      navigate('/management/profile');
       return;
     }
     if (page === 'settings') {
-      navigate('/admin/settings');
+      navigate('/management/settings');
       return;
     }
   };
@@ -167,7 +167,7 @@ export function Header({ onMenuClick, onNavigate, onLogout }: HeaderProps) {
         next[id] = true;
       });
       try {
-        localStorage.setItem(ADMIN_NOTIFICATIONS_READ_IDS_KEY, JSON.stringify(Object.keys(next)));
+        localStorage.setItem(management_NOTIFICATIONS_READ_IDS_KEY, JSON.stringify(Object.keys(next)));
       } catch {}
       return next;
     });
@@ -175,7 +175,7 @@ export function Header({ onMenuClick, onNavigate, onLogout }: HeaderProps) {
     if (latestUnreadIso) {
       setNotificationsLastReadAt(latestUnreadIso);
       try {
-        localStorage.setItem(ADMIN_NOTIFICATIONS_LAST_READ_AT_KEY, latestUnreadIso);
+        localStorage.setItem(management_NOTIFICATIONS_LAST_READ_AT_KEY, latestUnreadIso);
       } catch {}
     }
   }, [unreadNotifications]);
@@ -462,7 +462,7 @@ export function Header({ onMenuClick, onNavigate, onLogout }: HeaderProps) {
               <div className="absolute right-0 mt-2 w-64 bg-white rounded-2xl shadow-xl border border-gray-200 overflow-hidden z-50"> 
                 <div className="p-4 border-b border-gray-100">
                   <h3 className="text-lg font-semibold text-gray-900">Tài Khoản Của Tôi</h3> {/* Dịch */}
-                  <p className="text-sm text-gray-500">administrator@hub.vn</p>
+                  <p className="text-sm text-gray-500">managementistrator@hub.vn</p>
                 </div>
                 <div className="py-1">
                   <button 

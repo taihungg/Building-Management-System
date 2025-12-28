@@ -24,23 +24,23 @@ interface SidebarProps {
   onLogout: () => void; // Thêm prop onLogout để tách biệt logic
 }
 
-// 2. Thêm tiền tố /admin vào tất cả các path (Nếu Sidebar này là của Admin)
+// 2. Thêm tiền tố /management vào tất cả các path (Nếu Sidebar này là của management)
 const menuItems = [
   // Đã Dịch
-  { id: 'dashboard', label: 'Bảng Điều Khiển', icon: LayoutDashboard, path: '/admin/dashboard' },
-  { id: 'residents', label: 'Cư Dân', icon: Users, path: '/admin/residents' },
-  { id: 'apartments', label: 'Căn Hộ', icon: Building2, path: '/admin/apartments' },
-  { id: 'bills', label: 'Hóa Đơn', icon: Receipt, path: '/admin/bills' },
-  { id: 'services', label: 'Sự Cố/Yêu Cầu', icon: Wrench, path: '/admin/services' },
-  { id: 'notifications', label: 'Thông Báo', icon: Bell, path: '/admin/notifications' },
-  { id: 'extra-services', label: 'Dịch vụ phát sinh', icon: Lightbulb, path: '/admin/extra-services' },
-  {id: 'voluntary-contributions', label: 'Khoản thu tự nguyện', icon: Heart, path: '/admin/voluntary-contributions'}
+  { id: 'dashboard', label: 'Bảng Điều Khiển', icon: LayoutDashboard, path: '/management/dashboard' },
+  { id: 'residents', label: 'Cư Dân', icon: Users, path: '/management/residents' },
+  { id: 'apartments', label: 'Căn Hộ', icon: Building2, path: '/management/apartments' },
+  { id: 'bills', label: 'Hóa Đơn', icon: Receipt, path: '/management/bills' },
+  { id: 'services', label: 'Sự Cố/Yêu Cầu', icon: Wrench, path: '/management/services' },
+  { id: 'notifications', label: 'Thông Báo', icon: Bell, path: '/management/notifications' },
+  { id: 'extra-services', label: 'Dịch vụ phát sinh', icon: Lightbulb, path: '/management/extra-services' },
+  {id: 'voluntary-contributions', label: 'Khoản thu tự nguyện', icon: Heart, path: '/management/voluntary-contributions'}
 ];
 
 const bottomItems = [
   // Đã Dịch
-  { id: 'settings', label: 'Cài Đặt', icon: Settings, path: '/admin/settings' },
-  { id: 'profile', label: 'Hồ Sơ', icon: User, path: '/admin/profile' },
+  { id: 'settings', label: 'Cài Đặt', icon: Settings, path: '/management/settings' },
+  { id: 'profile', label: 'Hồ Sơ', icon: User, path: '/management/profile' },
   { id: 'logout', label: 'Đăng Xuất', icon: LogOut, path: null }, 
 ];
 
