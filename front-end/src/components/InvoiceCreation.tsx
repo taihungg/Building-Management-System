@@ -20,13 +20,11 @@ export function InvoiceCreation() {
   const [selectedYear, setSelectedYear] = useState<number>(currentDate.getFullYear());
   const [tableData, setTableData] = useState<UsageImportData[]>([]);
   
-  // --- STATE QUẢN LÝ POPUP LOADING ---
-  const [isUploading, setIsUploading] = useState(false); // Cho khâu tải Excel
-  const [isSaving, setIsSaving] = useState(false);       // Cho khâu Lưu vào DB
+  const [isUploading, setIsUploading] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // 1. API PREVIEW: Tải file lên -> Hiện Popup Loading
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
@@ -34,7 +32,7 @@ export function InvoiceCreation() {
     const formData = new FormData();
     formData.append('file', file);
 
-    setIsUploading(true); // Mở Popup Loading Excel
+    setIsUploading(true);
     try {
       const url = `http://localhost:8081/api/v1/accounting/usage-import/preview?month=${selectedMonth}&year=${selectedYear}`;
       const response = await fetch(url, {
@@ -52,22 +50,23 @@ export function InvoiceCreation() {
     } catch (error: any) {
       toast.error("Lỗi đọc file", { description: error.message });
     } finally {
-      setIsUploading(false); // Đóng Popup
+      setIsUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = '';
     }
   };
 
-  // 2. API SAVE: Lưu vào DB -> Hiện Popup Loading
+  // --- HÀM LƯU VÀ CẬP NHẬT DỮ LIỆU TRẢ VỀ ---
   const handleSaveToDB = async () => {
     if (tableData.length === 0) return;
 
+    // Lọc trùng trước khi gửi
     const uniqueData = tableData.filter((item, index, self) =>
       index === self.findIndex((t) => (
         t.apartmentCode === item.apartmentCode && t.serviceCode === item.serviceCode
       ))
     );
 
-    setIsSaving(true); // Mở Popup Loading Database
+    setIsSaving(true);
     try {
       const url = `http://localhost:8081/api/v1/accounting/usage-import/save?month=${selectedMonth}&year=${selectedYear}`;
       const response = await fetch(url, {
@@ -78,13 +77,31 @@ export function InvoiceCreation() {
 
       if (!response.ok) throw new Error("Lỗi khi lưu vào Database");
 
+      const res = await response.json();
+      const rawData = res.data || res;
+
+      // XỬ LÝ DỮ LIỆU TRẢ VỀ: Bỏ 3 trường cuối (hasWarning, message, valid)
+      if (Array.isArray(rawData) && rawData.length > 0) {
+        // Nếu có dữ liệu trả về, lọc bỏ 3 trường cuối và hiển thị
+        const filteredData = rawData.map((item: any) => ({
+          apartmentCode: item.apartmentCode,
+          buildingCode: item.buildingCode,
+          serviceCode: item.serviceCode,
+          oldIndex: item.oldIndex,
+          newIndex: item.newIndex,
+          quantity: item.quantity
+        }));
+        setTableData(filteredData);
+      } else {
+        console.log("Backend không trả về mảng dữ liệu, giữ nguyên bảng hiện tại.");
+      }
+      
       toast.success("Đã lưu dữ liệu vào hệ thống thành công!");
-      setTableData([]); 
 
     } catch (error: any) {
       toast.error("Lưu thất bại", { description: error.message });
     } finally {
-      setIsSaving(false); // Đóng Popup
+      setIsSaving(false);
     }
   };
 
@@ -105,102 +122,58 @@ export function InvoiceCreation() {
     <div className="space-y-6 p-6 relative">
       <Toaster richColors position="top-right" />
 
-      {/* --- POPUP LOADING KHI UPLOAD EXCEL --- */}
+      {/* Popup Loading Upload */}
       {isUploading && (
        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm animate-in fade-in duration-300">
        <div className="bg-white p-8 rounded-[32px] shadow-2xl flex flex-col items-center gap-4 max-w-sm w-full mx-4 border border-purple-100">
          <div className="relative">
-           {/* VÒNG TRÒN XOAY DÙNG INLINE CSS */}
            <div 
              style={{
-               width: '64px',       // tương đương w-16
-               height: '64px',      // tương đương h-16
-               border: '4px solid #f5f3ff',   // tương đương border-purple-50
-               borderTop: '4px solid #7c3aed', // tương đương border-t-purple-600
+               width: '64px',
+               height: '64px',
+               border: '4px solid #f5f3ff',
+               borderTop: '4px solid #7c3aed',
                borderRadius: '50%',
                animation: 'spin 1s linear infinite'
              }}
            ></div>
-           
-           {/* Icon nằm giữa */}
-            <div 
-              style={{
-                position: 'absolute',
-                top: '50%',
-                left: '50%',
-                transform: 'translate(-50%, -50%)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center'
-              }}
-            >
+            <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <FileSpreadsheet style={{ color: '#7c3aed', width: '24px', height: '24px' }} />
             </div>
          </div>
-     
          <div className="text-center">
            <h3 className="text-xl font-bold text-gray-900">Đang đọc file Excel</h3>
            <p className="text-gray-500 text-sm mt-1">Hệ thống đang trích xuất dữ liệu căn hộ, vui lòng đợi...</p>
          </div>
-     
-         {/* NHÚNG CSS QUAY VÀO ĐÂY */}
-         <style>{`
-           @keyframes spin {
-             0% { transform: rotate(0deg); }
-             100% { transform: rotate(360deg); }
-           }
-         `}</style>
+         <style>{`@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }`}</style>
        </div>
      </div>
       )}
 
-      {/* --- POPUP LOADING KHI LƯU VÀO DATABASE --- */}
+      {/* Popup Loading Save */}
       {isSaving && (
         <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-md animate-in fade-in duration-300">
         <div className="bg-white p-8 rounded-[32px] shadow-2xl flex flex-col items-center gap-4 max-w-sm w-full mx-4 border border-indigo-100">
           <div className="relative">
-            {/* VÒNG TRÒN XOAY DÙNG INLINE CSS */}
             <div 
               style={{
                 width: '64px',
                 height: '64px',
-                border: '4px solid #eef2ff',   // tương đương border-indigo-50
-                borderTop: '4px solid #4f46e5', // tương đương border-t-indigo-600
+                border: '4px solid #eef2ff',
+                borderTop: '4px solid #4f46e5',
                 borderRadius: '50%',
                 animation: 'spin 1s linear infinite'
               }}
             ></div>
-            
-            {/* Icon Database nằm giữa */}
-            <div 
-              style={{
-                position: 'absolute',
-                top: '50%',
-                left: '50%',
-                transform: 'translate(-50%, -50%)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center'
-              }}
-            >
+            <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <Database style={{ color: '#4f46e5', width: '24px', height: '24px' }} />
             </div>
           </div>
-      
           <div className="text-center">
             <h3 className="text-xl font-bold text-gray-900">Đang lưu hệ thống</h3>
-            <p className="text-gray-500 text-sm mt-1">
-              Đang ghi dữ liệu sử dụng vào cơ sở dữ liệu. Không tắt trình duyệt lúc này!
-            </p>
+            <p className="text-gray-500 text-sm mt-1">Đang ghi dữ liệu sử dụng vào cơ sở dữ liệu. Không tắt trình duyệt lúc này!</p>
           </div>
-      
-          {/* PHẦN ĐỊNH NGHĨA KEYFRAMES (Chỉ cần khai báo 1 lần trong file) */}
-          <style>{`
-            @keyframes spin {
-              0% { transform: rotate(0deg); }
-              100% { transform: rotate(360deg); }
-            }
-          `}</style>
+          <style>{`@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }`}</style>
         </div>
       </div>
       )}
@@ -305,7 +278,7 @@ export function InvoiceCreation() {
                         type="number"
                         value={row.newIndex}
                         onChange={(e) => handleEditCell(idx, 'newIndex', Number(e.target.value))}
-                        className={`w-full bg-transparent border-none text-right font-black focus:ring-0 p-0 ${row.newIndex < row.oldIndex ? 'text-red-500' : 'text-gray-900'}`}
+                        className={`w-full bg-transparent border-none text-right font-black focus:ring-0 p-0 ${row.newIndex < (row.oldIndex || 0) ? 'text-red-500' : 'text-gray-900'}`}
                       />
                     </td>
                     <td className="p-4 text-right font-bold text-purple-600">{row.quantity}</td>
