@@ -10,6 +10,7 @@ import itep.software.bluemoon.entity.Apartment;
 import itep.software.bluemoon.entity.User;
 import itep.software.bluemoon.entity.person.Resident;
 import itep.software.bluemoon.enumeration.ResidentStatus;
+import itep.software.bluemoon.enumeration.UserRole;
 import itep.software.bluemoon.model.DTO.resident.ResidentCreationDTO;
 import itep.software.bluemoon.model.DTO.resident.ResidentDetailDTO;
 import itep.software.bluemoon.model.DTO.resident.ResidentUpdateDTO;
@@ -198,11 +199,12 @@ public class ResidentService {
             throw new RuntimeException("Resident already has an account");
         }
 
-        String generatedUsername = "resident_" + UUID.randomUUID().toString().substring(0, 8);
+        String generatedUsername = "resident" + resident.getPhone();
 
         User newAccount = User.builder()
                 .username(generatedUsername)
                 .password("12345")
+                .role(UserRole.RESIDENT)
                 .person(resident)
                 .build();
 
