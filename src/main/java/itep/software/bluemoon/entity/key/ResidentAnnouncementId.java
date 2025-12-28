@@ -18,7 +18,6 @@ import lombok.NoArgsConstructor;
 @EqualsAndHashCode
 @Embeddable
 public class ResidentAnnouncementId implements Serializable {
-
     @Column(name = "resident_id")
     private UUID residentId;
 
