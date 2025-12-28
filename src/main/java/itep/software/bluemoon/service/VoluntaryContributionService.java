@@ -21,15 +21,12 @@ import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
+@Transactional
 public class VoluntaryContributionService {
-    
     private final VoluntaryContributionRepository campaignRepository;
     private final ContributionRecordRepository contributionRepository;
     
-    /**
-     *  Tạo chiến dịch, kêu gọi quyên góp
-     */
-    @Transactional
+    @SuppressWarnings("null")
     public CampaignResponseDTO createCampaign(CreateCampaignRequestDTO request) {
 
         if (request.getContributionDeadline().isBefore(request.getStartDate())) {
@@ -58,9 +55,6 @@ public class VoluntaryContributionService {
         return mapToResponse(saved);
     }
     
-    /**
-     *  Xem danh sách các chiến dịch (có thể lọc theo status)
-     */
     public Page<CampaignResponseDTO> getAllCampaigns(CampaignStatus status, Pageable pageable) {
         Page<VoluntaryContribution> campaigns;
         
@@ -73,10 +67,6 @@ public class VoluntaryContributionService {
         return campaigns.map(this::mapToResponse);
     }
     
-    /**
-     *  Thêm người quyên góp
-     */
-    @Transactional
     public ContributionResponseDTO addContribution(UUID campaignId, AddContributionRequestDTO request) {
         VoluntaryContribution campaign = campaignRepository.findById(campaignId)
                 .orElseThrow(() -> new IllegalArgumentException("Campaign not found with id: " + campaignId));
@@ -104,9 +94,6 @@ public class VoluntaryContributionService {
         return mapToContributionResponse(saved);
     }
     
-    /**
-     *  Xem danh sách người quyên góp cho 1 chiến dịch cụ thể
-     */
     public Page<ContributionResponseDTO> getContributionsByCampaign(UUID campaignId, Pageable pageable) {
         // Check if campaign exists
         if (!campaignRepository.existsById(campaignId)) {

@@ -26,10 +26,9 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
 @RestController
-@RequestMapping("/api/campaigns")
+@RequestMapping("/api/v1/campaigns")
 @RequiredArgsConstructor
 public class VoluntaryContributionController {
-    
     private final VoluntaryContributionService campaignService;
     
     @PostMapping
@@ -38,7 +37,6 @@ public class VoluntaryContributionController {
         CampaignResponseDTO response = campaignService.createCampaign(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
-    
     
     @GetMapping
     public ResponseEntity<Page<CampaignResponseDTO>> getAllCampaigns(
