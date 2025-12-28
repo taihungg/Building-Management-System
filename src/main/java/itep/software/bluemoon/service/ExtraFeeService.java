@@ -96,4 +96,16 @@ public class ExtraFeeService {
 
         return extraFeeRepository.searchGeneral(keyword);
     }
+
+    @SuppressWarnings("null")
+    public void deleteExtraFee(UUID id) {
+        ExtraFee extraFee = extraFeeRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Extra fee not found!"));
+
+        if (extraFee.isBilled()) { 
+            throw new RuntimeException("Can not be removed extra fee was billed!");
+        }
+
+        extraFeeRepository.delete(extraFee);
+    }
 }
