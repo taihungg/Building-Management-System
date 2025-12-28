@@ -13,7 +13,7 @@ const formatTimeAndDate = (date: Date) => {
     // Định dạng giờ:phút:giây và Ngày, Tháng, Năm
     const timeOptions: Intl.DateTimeFormatOptions = { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false };
     const dateOptions: Intl.DateTimeFormatOptions = { weekday: 'short', month: 'short', day: 'numeric' };
-    
+
     const timeStr = date.toLocaleTimeString('vi-VN', timeOptions);
     const dateStr = date.toLocaleDateString('vi-VN', dateOptions);
 
@@ -55,7 +55,7 @@ export function AuthorityHeader({ onMenuClick, onLogout }: AuthorityHeaderProps)
       onLogout?.();
     } else {
       // Điều hướng đến đường dẫn đầy đủ của cơ quan chức năng
-      navigate(`/authority/${page}`); 
+      navigate(`/authority/${page}`);
     }
   };
 
@@ -67,8 +67,8 @@ export function AuthorityHeader({ onMenuClick, onLogout }: AuthorityHeaderProps)
           <button onClick={onMenuClick} className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
             <Menu className="w-6 h-6 text-gray-700" />
           </button>
-          
-          <button 
+
+          <button
             onClick={() => navigate('/authority/dashboard')}
             className="flex items-center gap-2 hover:opacity-80 transition-opacity"
           >
@@ -83,8 +83,8 @@ export function AuthorityHeader({ onMenuClick, onLogout }: AuthorityHeaderProps)
         </div>
 
         {/* Right: Real-time Clock & Profile */}
-        <div className="flex items-center gap-6"> 
-            
+        <div className="flex items-center gap-6">
+
             {/* Real-time Clock Display (match accounting header style) */}
             <div className="hidden sm:flex items-center gap-3 bg-slate-100 px-6 py-2 rounded-full">
               <Clock className="w-4 h-4 text-gray-600 flex-shrink-0" />
@@ -98,10 +98,10 @@ export function AuthorityHeader({ onMenuClick, onLogout }: AuthorityHeaderProps)
                 </span>
               </div>
             </div>
-            
+
             {/* Profile Avatar with Dropdown */}
             <div className="relative" ref={profileRef}>
-              <button 
+              <button
                 onClick={() => setIsProfileOpen(!isProfileOpen)}
                 className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center text-white font-semibold transition-transform hover:scale-105"
               >
@@ -116,13 +116,13 @@ export function AuthorityHeader({ onMenuClick, onLogout }: AuthorityHeaderProps)
                     <p className="text-sm text-gray-500">authority@hub.vn</p>
                   </div>
                   <div className="py-1">
-                    <button 
+                    <button
                       onClick={() => handleProfileItemClick('profile')}
                       className="w-full px-4 py-3 text-left text-gray-700 hover:bg-gray-50 transition-colors flex items-center gap-2"
                     >
                       <User className="w-4 h-4 text-gray-500"/> Hồ Sơ
                     </button>
-                    <button 
+                    <button
                       onClick={() => handleProfileItemClick('settings')}
                       className="w-full px-4 py-3 text-left text-gray-700 hover:bg-gray-50 transition-colors flex items-center gap-2"
                     >
@@ -130,7 +130,7 @@ export function AuthorityHeader({ onMenuClick, onLogout }: AuthorityHeaderProps)
                     </button>
                   </div>
                   <div className="border-t border-gray-100">
-                    <button 
+                    <button
                       onClick={() => handleProfileItemClick('logout')}
                       className="w-full px-4 py-3 text-left text-red-600 hover:bg-red-50 transition-colors font-medium flex items-center gap-2"
                     >

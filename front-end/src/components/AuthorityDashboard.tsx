@@ -37,7 +37,15 @@ const renderActiveLostItemSector = (props: any) => {
 // Helper function để format thời gian tương đối
 const formatRelativeTime = (date: Date, currentTime: Date = new Date()): string => {
   const now = currentTime;
-  const diffInMinutes = Math.floor((now.getTime() - date.getTime()) / (1000 * 60));
+  const diffInMs = now.getTime() - date.getTime();
+  const diffInMinutes = Math.floor(diffInMs / (1000 * 60));
+  const diffInHours = Math.floor(diffInMs / (1000 * 60 * 60));
+  const diffInDays = Math.floor(diffInMs / (1000 * 60 * 60 * 24));
+
+  // Xử lý trường hợp date trong tương lai (do timezone hoặc lỗi)
+  if (diffInMs < 0) {
+    return 'Vừa xong';
+  }
 
   if (diffInMinutes < 1) {
     return 'Vừa xong';
@@ -45,12 +53,11 @@ const formatRelativeTime = (date: Date, currentTime: Date = new Date()): string 
   if (diffInMinutes < 60) {
     return `${diffInMinutes} phút trước`;
   }
-  if (diffInMinutes < 24 * 60) {
-    const hours = Math.floor(diffInMinutes / 60);
-    return `${hours} giờ trước`;
+  if (diffInHours < 24) {
+    return `${diffInHours} giờ trước`;
   }
-  const days = Math.floor(diffInMinutes / (24 * 60));
-  return `${days} ngày trước`;
+  // Tất cả >= 1 ngày đều hiển thị "X ngày trước"
+  return `${diffInDays} ngày trước`;
 };
 
 export function AuthorityDashboard() {
@@ -97,7 +104,8 @@ export function AuthorityDashboard() {
         throw new Error("Can't get residents");
       }
       const res = await response.json();
-      setResidents(res.data);
+      console.log('Dashboard - Residents data:', res.data?.length || 0, 'residents');
+      setResidents(res.data || []);
     }
     catch (err: any) {
       setError(err.message);
@@ -107,23 +115,36 @@ export function AuthorityDashboard() {
 
   const fetchUrgentIssues = async () => {
     try {
-      // Fetch issues với type SECURITY hoặc AUTHORITY (ưu tiên SECURITY vì có data)
+      // Fetch issues với type SECURITY hoặc STATE (ưu tiên SECURITY vì có data)
       const response = await fetch('http://localhost:8081/api/issues?type=SECURITY');
       if (!response.ok) {
         throw new Error('Không thể tải danh sách tin báo');
-      }
-      const issues = await response.json();
-      
-      // Filter chỉ lấy các tin báo chưa xử lý (UNPROCESSED)
-      const unprocessedIssues = issues.filter((issue: any) => issue.status === 'UNPROCESSED');
-      
+    }
+      const res = await response.json();
+      const issues = res.data || [];
+
+      // Filter lấy các tin báo chưa xử lý (UNPROCESSED) hoặc đang xử lý (PROCESSING) và type là SECURITY hoặc STATE
+      const unprocessedIssues = issues.filter((issue: any) => 
+        (issue.status === 'UNPROCESSED' || issue.status === 'PROCESSING') && (issue.type === 'SECURITY' || issue.type === 'STATE')
+      );
+
       // Map IssueSummary to Announcement format
-      // Note: IssueSummary không có createdDate, nên dùng thời gian hiện tại trừ đi index để tạo thời gian tương đối
-      const mappedAnnouncements = unprocessedIssues.slice(0, 5).map((issue: any, index: number) => {
-        // Tạo thời gian giả lập (mới nhất trừ đi index phút để có thời gian khác nhau)
-        const now = new Date();
-        const createdAt = new Date(now.getTime() - index * 5 * 60 * 1000); // Mỗi item cách nhau 5 phút
-        
+      // Sử dụng createdDate từ API nếu có, nếu không thì dùng thời gian hiện tại
+      const mappedAnnouncements = unprocessedIssues.slice(0, 5).map((issue: any) => {
+        // Sử dụng createdDate từ API nếu có
+        // Xử lý timezone: API trả về ISO string, parse trực tiếp
+        let createdAt: Date;
+        if (issue.createdDate) {
+          createdAt = new Date(issue.createdDate);
+          // Kiểm tra nếu date không hợp lệ
+          if (isNaN(createdAt.getTime())) {
+            console.warn('Invalid createdDate:', issue.createdDate);
+            createdAt = new Date();
+          }
+        } else {
+          createdAt = new Date(); // Fallback về thời gian hiện tại nếu không có
+        }
+
         return {
           id: issue.id,
           title: issue.title,
@@ -137,9 +158,10 @@ export function AuthorityDashboard() {
           roomNumber: issue.roomNumber
         };
       });
-      
+
       // Sort by createdAt descending
       const sortedData = mappedAnnouncements.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+      console.log('Dashboard - Urgent issues:', sortedData.length, 'issues');
       setAnnouncements(sortedData);
     } catch (err: any) {
       console.error('Error fetching urgent issues:', err);
@@ -192,12 +214,19 @@ export function AuthorityDashboard() {
       else if (status === 'VISITOR') statusCounts.VISITOR++;
     });
 
-    return [
+    const result = [
       { name: 'Thường trú', value: statusCounts.PERMANENT_RESIDENCE, color: '#10B981' },
       { name: 'Tạm trú', value: statusCounts.TEMPORARY_RESIDENCE, color: '#F59E0B' },
       { name: 'Tạm vắng', value: statusCounts.TEMPORARY_ABSENCE, color: '#3B82F6' },
-      { name: 'Vãng lai', value: statusCounts.VISITOR, color: '#8B5CF6' },
-    ];
+      { name: 'Lưu trú', value: statusCounts.VISITOR, color: '#8B5CF6' },
+  ];
+
+    // Debug: Log để kiểm tra
+    console.log('Dashboard - Resident Status Data:', result);
+    console.log('Dashboard - Data for chart (value > 0):', result.filter(item => item.value > 0));
+    console.log('Dashboard - Data for legend (all 4):', result);
+
+    return result;
   };
 
   const residentStatusData = getResidentStatusData();
@@ -225,7 +254,7 @@ export function AuthorityDashboard() {
           <Building2 className="w-12 h-12 text-white opacity-80" />
         </div>
 
-        {/* Card 2: Báo mất đồ (Vibrant Green) */}
+        {/* Card 2: Quản lý an ninh (Vibrant Green) */}
         <div
           onClick={() => navigate('/authority/announcements')}
           className="rounded-xl shadow-md p-6 h-32 relative overflow-hidden cursor-pointer transition-transform hover:scale-[1.02] flex justify-between items-center"
@@ -233,7 +262,7 @@ export function AuthorityDashboard() {
         >
           <div className="flex flex-col">
             <p className="text-3xl font-bold text-white mb-1">Xem ngay</p>
-            <p className="text-sm font-medium text-white opacity-90">Báo mất đồ</p>
+            <p className="text-sm font-medium text-white opacity-90">Quản lý an ninh</p>
           </div>
           <Bell className="w-12 h-12 text-white opacity-80" />
         </div>
@@ -274,18 +303,19 @@ export function AuthorityDashboard() {
             <ResponsiveContainer width="100%" height={220}>
               <PieChart>
                 <Pie
-                  data={residentStatusData}
+                  data={residentStatusData.filter(item => item.value > 0)}
                   cx="50%"
                   cy="50%"
                   innerRadius={50}
                   outerRadius={90}
                   paddingAngle={3}
                   dataKey="value"
+                  minAngle={1}
                   activeIndex={activeLostItemIndex === null ? undefined : activeLostItemIndex}
                   activeShape={renderActiveLostItemSector}
                   onMouseLeave={() => setActiveLostItemIndex(null)}
                 >
-                  {residentStatusData.map((entry, index) => (
+                  {residentStatusData.filter(item => item.value > 0).map((entry, index) => (
                     <Cell 
                       key={`cell-${index}`} 
                       fill={entry.color}
@@ -350,16 +380,16 @@ export function AuthorityDashboard() {
         </div>
 
         {/* Tin báo cần xử lý gấp (2/3 width) */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 lg:col-span-2">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-bold text-gray-800">Tin báo cần xử lý gấp</h2>
-            <button 
+        <div className="bg-white rounded-2xl shadow-sm border-2 border-gray-200 p-6 lg:col-span-2">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-lg font-bold text-gray-800">Tin báo cần xử lý gấp</h2>
+            <button
               onClick={() => navigate('/authority/announcements')}
               className="text-sm text-blue-600 hover:underline cursor-pointer"
             >
-              Xem tất cả
-            </button>
-          </div>
+            Xem tất cả
+          </button>
+        </div>
 
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
@@ -379,7 +409,7 @@ export function AuthorityDashboard() {
                   const initials = announcement.reporterName
                     ? announcement.reporterName.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2)
                     : 'NN';
-                  
+
                   // Color mapping với style inline
                   const colorConfigs = [
                     { bg: 'bg-blue-100', text: 'text-blue-700' },
@@ -389,51 +419,51 @@ export function AuthorityDashboard() {
                     { bg: 'bg-pink-100', text: 'text-pink-700' }
                   ];
                   const colorConfig = colorConfigs[index % colorConfigs.length];
-                  
+
                   return (
                     <tr key={announcement.id} className="border-b border-gray-100 last:border-0 hover:bg-gray-50 transition-colors duration-150">
-                      <td className="py-4 px-6 align-top">
-                        <div className="flex items-center gap-3">
+                <td className="py-4 px-6 align-top">
+                  <div className="flex items-center gap-3">
                           <div className={`w-9 h-9 rounded-full ${colorConfig.bg} flex items-center justify-center text-xs font-semibold ${colorConfig.text}`}>
                             {initials}
-                          </div>
-                          <div>
+                    </div>
+                    <div>
                             <p className="text-sm font-medium text-gray-800">{announcement.reporterName || 'Chưa có'}</p>
                             <p className="text-xs text-gray-500">Căn hộ {announcement.roomNumber || 'N/A'}</p>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="py-4 px-6 align-top">
+                    </div>
+                  </div>
+                </td>
+                <td className="py-4 px-6 align-top">
                         <p className="text-sm font-medium text-gray-900">{announcement.title}</p>
-                        <p className="mt-1 text-xs text-gray-500 line-clamp-2">
+                  <p className="mt-1 text-xs text-gray-500 line-clamp-2">
                           {announcement.message || announcement.description || ''}
-                        </p>
-                      </td>
-                      <td className="py-4 px-6 align-top text-gray-700 whitespace-nowrap">
+                  </p>
+                </td>
+                <td className="py-4 px-6 align-top text-gray-700 whitespace-nowrap">
                         {formatTime(announcement.createdAt)}
-                      </td>
-                      <td className="py-4 px-6 align-top">
+                </td>
+                <td className="py-4 px-6 align-top">
                         <span className={`inline-flex px-3 py-1 rounded-full text-xs font-semibold border ${statusInfo.color}`}>
                           {statusInfo.label}
-                        </span>
-                      </td>
-                      <td className="py-4 px-6 align-top text-right">
-                        <button 
+                  </span>
+                </td>
+                <td className="py-4 px-6 align-top text-right">
+                        <button
                           onClick={() => navigate('/authority/announcements')}
                           className="text-sm font-semibold text-indigo-600 hover:text-indigo-900 hover:underline cursor-pointer"
                         >
-                          Xử lý ngay
-                        </button>
-                      </td>
-                    </tr>
+                    Xử lý ngay
+                  </button>
+                </td>
+              </tr>
                   );
                 })
               ) : (
                 <tr>
                   <td colSpan={5} className="py-8 text-center text-gray-500">
                     Không có tin báo nào
-                  </td>
-                </tr>
+                </td>
+              </tr>
               )}
             </tbody>
           </table>

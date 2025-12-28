@@ -2,12 +2,11 @@ import { Search, Plus, Calendar, Trash2, Home, ArrowRight, Eye } from 'lucide-re
 import { Modal } from './Modal'; 
 import { Toaster, toast } from 'sonner';
 import { useState, useEffect, useCallback } from 'react';
-import React from 'react';
 
 type ExtraFeeSummary = {
     id: string;
     title: string;
-    amount: number;
+    amount: string | number;
     feeDate: string;
     isBilled: boolean;
     apartmentLabel: string;
@@ -417,7 +416,8 @@ export function ExtraServiceManagement() {
                         <button
                             type="button"
                             onClick={submitCreate}
-                            className="flex-1 py-3 rounded-xl bg-gray-900 text-white font-bold"
+                            className="flex-1 py-3 rounded-xl font-bold"
+                            style={{ backgroundColor: '#111827', color: 'white' }}
                             disabled={isCreateSubmitting}
                         >
                             {isCreateSubmitting ? 'Đang tạo...' : 'Tạo khoản thu'}

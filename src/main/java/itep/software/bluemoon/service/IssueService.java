@@ -37,6 +37,7 @@ public class IssueService {
                 .type(request.getType())
                 .status(IssueStatus.UNPROCESSED)
                 .reporter(reporter)
+                .location(request.getLocation())
                 .build();
         return issueRepository.save(issue);
     }
@@ -61,9 +62,9 @@ public class IssueService {
     
     private boolean isValidTransition(IssueStatus from, IssueStatus to) {
         return switch (from) {
-            case UNPROCESSED -> to == IssueStatus.PROCESSING;
-            case PROCESSING  -> to == IssueStatus.PROCESSED;
-            case PROCESSED   -> false;
+        case UNPROCESSED -> to == IssueStatus.PROCESSING || to == IssueStatus.PROCESSED;
+        case PROCESSING  -> to == IssueStatus.PROCESSED;
+        case PROCESSED   -> false;
         };
     }
     

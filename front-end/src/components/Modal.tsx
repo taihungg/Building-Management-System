@@ -1,3 +1,4 @@
+import * as React from 'react';
 import { X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -36,6 +37,7 @@ export function Modal({ isOpen, onClose, title, children, size = 'md' }: ModalPr
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
               className={`bg-white rounded-xl border-2 border-gray-200 w-full ${sizeClasses[size]} max-h-[90vh] overflow-hidden`}
+              onClick={(e: React.MouseEvent) => e.stopPropagation()}
             >
               {/* Header */}
               <div className="flex items-center justify-between px-6 py-4 border-b-2 border-gray-200">
