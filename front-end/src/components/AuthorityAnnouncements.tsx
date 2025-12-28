@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Bell, AlertCircle, Search, FileText, Clock, CheckCircle, Loader, MapPin, ArrowRight, Package, Search as SearchIcon, CheckCircle2, Truck, Laptop, Wallet, Key, ChevronRight, X, Phone, User, Upload } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
-// import { getAnnouncements, subscribe as subscribeAnnouncements, type Announcement } from '../utils/announcements';
+// import { getAnnouncements, subscribe as subscribeAnnouncements, type Announcement } from '../utils/announcements'; 
 // import { formatRelativeTime } from '../utils/timeUtils'; // Giả định hàm này được định nghĩa
 
 // --- MOCK DATA TYPE (Nếu bạn đang sử dụng TypeScript) ---
@@ -66,13 +66,16 @@ export function AuthorityAnnouncements() {
       if (!response.ok) {
         throw new Error('Không thể tải danh sách tin báo');
       }
-      const issues = await response.json();
+      const res = await response.json();
+      console.log('API Response:', res);
+      const issues = res.data || []; // Lấy array từ response.data
+      console.log('Issues array:', issues.length, issues);
 
-      // Filter để chỉ lấy SECURITY hoặc STATE issues (nếu có)
-      // Hoặc có thể bỏ filter để hiển thị tất cả
+      // Filter để chỉ lấy SECURITY hoặc STATE issues
       const filteredIssues = issues.filter((issue: any) =>
         issue.type === 'SECURITY' || issue.type === 'STATE'
       );
+      console.log('Filtered SECURITY/STATE:', filteredIssues.length, filteredIssues);
 
       // Map IssueSummary to Announcement format
       // Sử dụng createdDate từ API nếu có, nếu không thì dùng thời gian hiện tại
@@ -179,18 +182,18 @@ export function AuthorityAnnouncements() {
       ann.title.toLowerCase().includes(searchLower) ||
       ann.message.toLowerCase().includes(searchLower)
     );
-
+    
     // Status filter
-    const matchesStatus = selectedStatus === 'all' ||
+    const matchesStatus = selectedStatus === 'all' || 
       (selectedStatus === 'pending' && ann.status === 'pending') ||
       (selectedStatus === 'in_progress' && ann.status === 'in_progress') ||
       (selectedStatus === 'handled' && ann.status === 'handled');
-
+    
     // Date range filter
     const now = new Date();
     const annDate = ann.createdAt;
     let matchesDateRange = true;
-
+    
     if (selectedDateRange === 'today') {
       const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
       matchesDateRange = annDate >= todayStart;
@@ -201,7 +204,7 @@ export function AuthorityAnnouncements() {
       const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
       matchesDateRange = annDate >= monthStart;
     }
-
+    
     return matchesSearch && matchesStatus && matchesDateRange;
   });
 
@@ -363,19 +366,24 @@ export function AuthorityAnnouncements() {
         <div className="flex items-center gap-4">
           {/* Status Filter Dropdown */}
           <div style={{ width: 'calc(13ch + 5.5rem)' }}>
+            <style>{`
+              [data-slot="select-content"] [data-slot="select-item"] > span:first-child {
+                display: none !important;
+              }
+            `}</style>
             <Select value={selectedStatus} onValueChange={setSelectedStatus}>
               <SelectTrigger className="h-12 px-4 bg-white border border-gray-200 rounded-xl text-sm hover:border-blue-400 transition-all w-full">
                 <SelectValue placeholder="Tất cả trạng thái" />
               </SelectTrigger>
               <SelectContent
                 align="start"
-                style={{ width: 'calc(13ch + 5.5rem)' }}
+                style={{ width: 'calc(13ch + 5.5rem)', backgroundColor: '#ffffff' }}
                 className="rounded-xl border border-gray-200 !bg-white shadow-xl ring-1 ring-gray-200/70 z-50"
               >
-                <SelectItem className="cursor-pointer rounded-lg px-3 py-2 text-sm text-gray-700 outline-none data-[highlighted]:bg-blue-50 data-[highlighted]:text-blue-700 data-[state=checked]:bg-blue-100 data-[state=checked]:font-semibold data-[state=checked]:text-blue-800" value="all">Tất cả trạng thái</SelectItem>
-                <SelectItem className="cursor-pointer rounded-lg px-3 py-2 text-sm text-gray-700 outline-none data-[highlighted]:bg-blue-50 data-[highlighted]:text-blue-700 data-[state=checked]:bg-blue-100 data-[state=checked]:font-semibold data-[state=checked]:text-blue-800" value="pending">Chưa xử lý</SelectItem>
-                <SelectItem className="cursor-pointer rounded-lg px-3 py-2 text-sm text-gray-700 outline-none data-[highlighted]:bg-blue-50 data-[highlighted]:text-blue-700 data-[state=checked]:bg-blue-100 data-[state=checked]:font-semibold data-[state=checked]:text-blue-800" value="in_progress">Đang xử lý</SelectItem>
-                <SelectItem className="cursor-pointer rounded-lg px-3 py-2 text-sm text-gray-700 outline-none data-[highlighted]:bg-blue-50 data-[highlighted]:text-blue-700 data-[state=checked]:bg-blue-100 data-[state=checked]:font-semibold data-[state=checked]:text-blue-800" value="handled">Đã xử lý</SelectItem>
+                <SelectItem className="cursor-pointer rounded-lg px-3 py-2 text-sm text-gray-700 outline-none data-[highlighted]:bg-blue-50 data-[highlighted]:text-blue-700 data-[state=checked]:bg-blue-100 data-[state=checked]:font-semibold data-[state=checked]:text-blue-800 pr-3" value="all">Tất cả trạng thái</SelectItem>
+                <SelectItem className="cursor-pointer rounded-lg px-3 py-2 text-sm text-gray-700 outline-none data-[highlighted]:bg-blue-50 data-[highlighted]:text-blue-700 data-[state=checked]:bg-blue-100 data-[state=checked]:font-semibold data-[state=checked]:text-blue-800 pr-3" value="pending">Chưa xử lý</SelectItem>
+                <SelectItem className="cursor-pointer rounded-lg px-3 py-2 text-sm text-gray-700 outline-none data-[highlighted]:bg-blue-50 data-[highlighted]:text-blue-700 data-[state=checked]:bg-blue-100 data-[state=checked]:font-semibold data-[state=checked]:text-blue-800 pr-3" value="in_progress">Đang xử lý</SelectItem>
+                <SelectItem className="cursor-pointer rounded-lg px-3 py-2 text-sm text-gray-700 outline-none data-[highlighted]:bg-blue-50 data-[highlighted]:text-blue-700 data-[state=checked]:bg-blue-100 data-[state=checked]:font-semibold data-[state=checked]:text-blue-800 pr-3" value="handled">Đã xử lý</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -388,13 +396,13 @@ export function AuthorityAnnouncements() {
               </SelectTrigger>
               <SelectContent
                 align="start"
-                style={{ width: 'calc(12ch + 5.5rem)' }}
+                style={{ width: 'calc(12ch + 5.5rem)', backgroundColor: '#ffffff' }}
                 className="rounded-xl border border-gray-200 !bg-white shadow-xl ring-1 ring-gray-200/70 z-50"
               >
-                <SelectItem className="cursor-pointer rounded-lg px-3 py-2 text-sm text-gray-700 outline-none data-[highlighted]:bg-blue-50 data-[highlighted]:text-blue-700 data-[state=checked]:bg-blue-100 data-[state=checked]:font-semibold data-[state=checked]:text-blue-800" value="all">Tất cả thời gian</SelectItem>
-                <SelectItem className="cursor-pointer rounded-lg px-3 py-2 text-sm text-gray-700 outline-none data-[highlighted]:bg-blue-50 data-[highlighted]:text-blue-700 data-[state=checked]:bg-blue-100 data-[state=checked]:font-semibold data-[state=checked]:text-blue-800" value="today">Hôm nay</SelectItem>
-                <SelectItem className="cursor-pointer rounded-lg px-3 py-2 text-sm text-gray-700 outline-none data-[highlighted]:bg-blue-50 data-[highlighted]:text-blue-700 data-[state=checked]:bg-blue-100 data-[state=checked]:font-semibold data-[state=checked]:text-blue-800" value="7days">7 ngày qua</SelectItem>
-                <SelectItem className="cursor-pointer rounded-lg px-3 py-2 text-sm text-gray-700 outline-none data-[highlighted]:bg-blue-50 data-[highlighted]:text-blue-700 data-[state=checked]:bg-blue-100 data-[state=checked]:font-semibold data-[state=checked]:text-blue-800" value="month">Tháng này</SelectItem>
+                <SelectItem className="cursor-pointer rounded-lg px-3 py-2 text-sm text-gray-700 outline-none data-[highlighted]:bg-blue-50 data-[highlighted]:text-blue-700 data-[state=checked]:bg-blue-100 data-[state=checked]:font-semibold data-[state=checked]:text-blue-800 pr-3" value="all">Tất cả thời gian</SelectItem>
+                <SelectItem className="cursor-pointer rounded-lg px-3 py-2 text-sm text-gray-700 outline-none data-[highlighted]:bg-blue-50 data-[highlighted]:text-blue-700 data-[state=checked]:bg-blue-100 data-[state=checked]:font-semibold data-[state=checked]:text-blue-800 pr-3" value="today">Hôm nay</SelectItem>
+                <SelectItem className="cursor-pointer rounded-lg px-3 py-2 text-sm text-gray-700 outline-none data-[highlighted]:bg-blue-50 data-[highlighted]:text-blue-700 data-[state=checked]:bg-blue-100 data-[state=checked]:font-semibold data-[state=checked]:text-blue-800 pr-3" value="7days">7 ngày qua</SelectItem>
+                <SelectItem className="cursor-pointer rounded-lg px-3 py-2 text-sm text-gray-700 outline-none data-[highlighted]:bg-blue-50 data-[highlighted]:text-blue-700 data-[state=checked]:bg-blue-100 data-[state=checked]:font-semibold data-[state=checked]:text-blue-800 pr-3" value="month">Tháng này</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -431,14 +439,14 @@ export function AuthorityAnnouncements() {
                   const location = getLocation(announcement.message, announcement.roomNumber);
                   const reporterName = announcement.reporterName || 'Chưa có';
                   const reporterAvatar = announcement.reporterAvatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(reporterName)}&background=3b82f6&color=fff`;
-
+            
             return (
                     <tr key={announcement.id} className="hover:bg-gray-50/80 transition-colors duration-150 border-b border-gray-100 last:border-0">
                       {/* Người báo: Avatar + Name */}
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-3">
-                          <img
-                            src={reporterAvatar}
+                          <img 
+                            src={reporterAvatar} 
                             alt={reporterName}
                             className="w-10 h-10 rounded-full bg-gray-200"
                             onError={(e) => {
@@ -513,7 +521,7 @@ export function AuthorityAnnouncements() {
                               }}
                             >
                               <div style={{ backgroundColor: '#ffffff', width: '100%', height: '100%' }}>
-                        <button
+                        <button 
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   handleStatusUpdate(announcement.id, 'pending');
@@ -616,7 +624,7 @@ export function AuthorityAnnouncements() {
 
       {/* Centered Modal for Detail View */}
       {isDrawerOpen && selectedAnnouncement && (
-        <div
+        <div 
           className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4"
           onClick={() => {
             setIsDrawerOpen(false);
@@ -624,7 +632,7 @@ export function AuthorityAnnouncements() {
           }}
         >
           {/* Modal Box */}
-          <div
+          <div 
             className="bg-white w-full max-w-md rounded-3xl shadow-[0_20px_50px_rgba(0,0,0,0.15)] overflow-hidden relative transform transition-all duration-300 ease-out"
             onClick={(e) => e.stopPropagation()}
             style={{
@@ -653,7 +661,7 @@ export function AuthorityAnnouncements() {
                   Thông tin người báo
                 </label>
                 <div className="flex items-center gap-4 p-4 bg-gray-50 rounded-lg">
-                  <img
+                  <img 
                     src={selectedAnnouncement.reporterAvatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(selectedAnnouncement.reporterName || 'Chưa có')}&background=3b82f6&color=fff`}
                     alt={selectedAnnouncement.reporterName || 'Chưa có'}
                     className="w-12 h-12 rounded-full bg-gray-200"

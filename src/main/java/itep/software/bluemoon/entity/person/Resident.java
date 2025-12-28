@@ -26,7 +26,7 @@ import lombok.experimental.SuperBuilder;
 @Table(name = "resident")
 @PrimaryKeyJoinColumn(name = "id")
 public class Resident extends Person {
-    @Column(name = "status", length = 8)
+    @Column(name = "status", length = 32)
     @Enumerated(EnumType.STRING)
     private ResidentStatus status;
 

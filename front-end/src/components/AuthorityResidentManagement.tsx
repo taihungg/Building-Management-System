@@ -396,20 +396,25 @@ export function AuthorityResidentManagement() {
         <div className="flex items-center gap-4">
           {/* Status Dropdown */}
           <div style={{ width: statusSelectWidth }}>
+            <style>{`
+              [data-slot="select-content"] [data-slot="select-item"] > span:first-child {
+                display: none !important;
+              }
+            `}</style>
             <Select value={selectedStatus} onValueChange={setSelectedStatus}>
               <SelectTrigger className="flex items-center justify-between w-full h-11 px-4 bg-white border border-gray-200 rounded-xl shadow-sm text-sm font-medium text-gray-700 hover:border-blue-400 transition-all">
                 <SelectValue placeholder="Tất cả trạng thái" />
               </SelectTrigger>
               <SelectContent
                 align="start"
-                style={{ width: statusSelectWidth }}
+                style={{ width: statusSelectWidth, backgroundColor: '#ffffff' }}
                 className="z-[100] rounded-xl border border-gray-200 !bg-white shadow-xl ring-1 ring-gray-200/70"
               >
                 {statusOptions.map((opt) => (
                   <SelectItem
                     key={opt.value}
                     value={opt.value}
-                    className="cursor-pointer rounded-lg px-3 py-2 text-sm text-gray-700 outline-none data-[highlighted]:bg-blue-50 data-[highlighted]:text-blue-700 data-[state=checked]:bg-blue-100 data-[state=checked]:font-semibold data-[state=checked]:text-blue-800"
+                    className="cursor-pointer rounded-lg px-3 py-2 text-sm text-gray-700 outline-none data-[highlighted]:bg-blue-50 data-[highlighted]:text-blue-700 data-[state=checked]:bg-blue-100 data-[state=checked]:font-semibold data-[state=checked]:text-blue-800 pr-3"
                   >
                     {opt.label}
                   </SelectItem>

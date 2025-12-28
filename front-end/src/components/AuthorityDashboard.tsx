@@ -113,10 +113,13 @@ export function AuthorityDashboard() {
       if (!response.ok) {
         throw new Error('Không thể tải danh sách tin báo');
       }
-      const issues = await response.json();
+      const res = await response.json();
+      const issues = res.data || [];
 
-      // Filter chỉ lấy các tin báo chưa xử lý (UNPROCESSED)
-      const unprocessedIssues = issues.filter((issue: any) => issue.status === 'UNPROCESSED');
+      // Filter lấy các tin báo chưa xử lý (UNPROCESSED) hoặc đang xử lý (PROCESSING) và type là SECURITY hoặc STATE
+      const unprocessedIssues = issues.filter((issue: any) => 
+        (issue.status === 'UNPROCESSED' || issue.status === 'PROCESSING') && (issue.type === 'SECURITY' || issue.type === 'STATE')
+      );
 
       // Map IssueSummary to Announcement format
       // Sử dụng createdDate từ API nếu có, nếu không thì dùng thời gian hiện tại

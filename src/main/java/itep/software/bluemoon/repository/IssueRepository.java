@@ -6,7 +6,8 @@ import java.util.UUID;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
-
+import java.util.Optional;
+import org.springframework.data.repository.query.Param;
 import itep.software.bluemoon.entity.Issue;
 import itep.software.bluemoon.enumeration.IssueStatus;
 import itep.software.bluemoon.enumeration.IssueType;
@@ -49,4 +50,19 @@ public interface IssueRepository extends JpaRepository<Issue, UUID> {
             WHERE i.type = :type
             """)
     List<IssueSummary> findIssueSummariesByType(IssueType type);
+    
+    @Query("""
+            SELECT i.id as id,
+                   a.roomNumber as roomNumber,
+                   r.fullName as reporterName,
+                   i.title as title,
+                   i.description as description,
+                   i.status as status,
+                   i.type as type
+            FROM Issue i
+            JOIN i.apartment a
+            JOIN i.reporter r
+            WHERE i.id = :id
+            """)
+    Optional<IssueSummary> findIssueSummaryById(@Param("id") UUID id);
 }
