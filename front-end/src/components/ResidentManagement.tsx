@@ -95,6 +95,7 @@ export function ResidentManagement() {
   const [searchTerm, setSearchTerm] = useState("");
 const [includeInactive, setIncludeInactive] = useState(false);
   const [statusFilter, setStatusFilter] = useState<ResidentStatusFilter>("ALL");
+  const [nameSort, setNameSort] = useState<"none" | "asc" | "desc">("none");
 
   // --- TẠO STATE CHO FORM "THÊM MỚI" ---
   const [newName, setNewName] = useState("");
@@ -207,6 +208,16 @@ const [includeInactive, setIncludeInactive] = useState(false);
       String(resident.email || "").toLowerCase().includes(keyword)
     );
   });
+
+  const displayedResidents =
+    nameSort === "none"
+      ? filteredResidents
+      : [...filteredResidents].sort((a, b) => {
+          const aName = String(a.fullName || "");
+          const bName = String(b.fullName || "");
+          const compare = aName.localeCompare(bName, "vi", { sensitivity: "base" });
+          return nameSort === "asc" ? compare : -compare;
+        });
 
   const statusCounts = residents.reduce(
     (acc, resident) => {
@@ -732,7 +743,17 @@ const [includeInactive, setIncludeInactive] = useState(false);
           <table className="w-full bg-white !bg-white">
             <thead className="bg-blue-600 border-b-2 border-blue-700">
               <tr>
-                <th className="text-left px-6 py-4 text-sm text-white">Cư dân</th>
+                <th className="text-left px-6 py-4 text-sm text-white">
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setNameSort((prev) => (prev === "none" ? "asc" : prev === "asc" ? "desc" : "none"))
+                    }
+                    className="inline-flex items-center font-medium text-white hover:text-white/90 active:text-white/80 select-none"
+                  >
+                    Cư dân
+                  </button>
+                </th>
                 <th className="text-left px-6 py-4 text-sm text-white">Số phòng</th>
                 <th className="text-left px-6 py-4 text-sm text-white">Liên hệ</th>
                 <th className="text-left px-6 py-4 text-sm text-white">Trạng thái</th>
@@ -740,7 +761,7 @@ const [includeInactive, setIncludeInactive] = useState(false);
               </tr>
             </thead>
             <tbody className="divide-y-2 divide-gray-200 bg-white !bg-white">
-              {filteredResidents.map((resident) => (
+              {displayedResidents.map((resident) => (
                 <tr key={resident.id} className="bg-white !bg-white hover:bg-gray-50 transition-colors">
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-3">
