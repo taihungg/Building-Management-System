@@ -12,7 +12,6 @@ Monorepo with a Spring Boot backend (Java) and a React + Vite frontend for manag
 - Run Locally (Dev)
 - Build & Deploy
 - API Documentation (OpenAPI/Swagger)
-- Full API Endpoints
 - Security Notes
 - License
 
@@ -107,19 +106,9 @@ Repository layout:
   <a href="https://vitejs.dev/">
     <img alt="Vite" src="https://vitejs.dev/logo.svg" height="48">
   </a>
-</p>
-
-<p align="center">
-  <a href="https://projectlombok.org/">
-    <img alt="Lombok" src="https://raw.githubusercontent.com/projectlombok/lombok.github.io/master/resources/images/lombok-logo.png" height="32">
-  </a>
   &nbsp;&nbsp;
   <a href="https://swagger.io/">
-    <img alt="Swagger / OpenAPI" src="https://raw.githubusercontent.com/swagger-api/swagger.io/wordpress/images/assets/SW-logo-clr.png" height="28">
-  </a>
-  &nbsp;&nbsp;
-  <a href="https://poi.apache.org/">
-    <img alt="Apache POI" src="https://poi.apache.org/resources/images/project-logo.png" height="28">
+    <img alt="Swagger / OpenAPI" src="https://raw.githubusercontent.com/swagger-api/swagger.io/wordpress/images/assets/SW-logo-clr.png" height="48">
   </a>
 </p>
 
@@ -243,84 +232,6 @@ Deployment:
 ## API Documentation (OpenAPI/Swagger)
 - Swagger UI: `http://localhost:8081/swagger-ui/index.html`
 - OpenAPI JSON: `http://localhost:8081/v3/api-docs`
-
-## Full API Endpoints
-Note: Some groups are versioned under `/api/v1/...` while others use `/api/...`.
-
-### Auth (`/api/v1/auth`)
-- `POST /login` — Authenticate user; returns account/person IDs and role
-- `POST /logout` — Logout (stateless placeholder)
-
-### Residents (`/api/v1/residents`)
-- `GET /dropdown?keyword=` — Search residents for dropdown
-- `GET /?keyword=&include_inactive=false` — Search residents with optional inactive
-- `GET /{id}` — Get resident detail
-- `POST /` — Create resident
-- `PUT /{id}` — Update resident
-- `DELETE /?id=UUID&hard=false` — Soft delete (inactive) or hard delete when `hard=true`
-- `POST /{id}/account` — Create account for resident
-
-### Buildings (`/api/v1/buildings`)
-- `GET /dropdown?keyword=` — Search buildings for dropdown
-- `POST /` — Create building
-- `DELETE /?id=UUID` — Delete building
-
-### Apartments (`/api/v1/apartments`)
-- `GET /dropdown?keyword=` — Search apartments for dropdown
-- `GET /?keyword=&building=&floor=` — Search apartments by keyword/building/floor
-- `GET /{id}` — Get apartment detail
-- `POST /` — Create apartment
-- `PUT /{id}?new_owner_id=` — Change apartment owner
-- `DELETE /?id=` — Delete apartment
-- `PUT /{apartmentId}/residents/add` — Add residents to an apartment
-- `PUT /{apartmentId}/residents/remove` — Remove residents from an apartment
-
-### Announcements (`/api/announcements`)
-- `POST /` — Create announcement
-- `GET /staff` — List all announcements (staff view)
-- `GET /{announcementId}/recipients` — List recipient read statuses
-- `GET /resident/{residentId}` — List announcements for a resident (with read status)
-- `PATCH /resident/{residentId}/announcement/{announcementId}/read` — Mark as read
-- `PUT /{id}` — Update announcement
-- `DELETE /{id}` — Delete announcement
-
-### Issues (`/api/issues`)
-- `POST /` — Create issue
-- `PATCH /{id}/status` — Update issue status
-- `GET /?type=` — List issues (all or by `type`)
-- `GET /count/security` — Count security issues
-- `GET /security` — List security issues
-
-### Accounting – Invoices & Dashboard (`/api/v1/accounting`)
-- `GET /invoices?month=&year=` — Get invoice summaries
-- `POST /invoices/generation?month=&year=` — Generate draft invoices (PENDING)
-- `GET /invoices/export?month=&year=` — Export invoices to Excel
-- `GET /dashboard/fourmetrics` — 4 KPIs for dashboard
-- `GET /dashboard/barchart?year=` — Monthly revenue (bar chart) for a year
-- `GET /dashboard/piechart?month=&year=` — Revenue distribution for month/year
-- `PATCH /invoices/confirm?month=&year=&staffId=` — Confirm and send notifications
-
-### Accounting – Extra Fee (`/api/v1/extrafee`)
-- `GET /{id}` — Extra fee detail
-- `GET /?keyword=` — Search extra fees
-- `POST /` — Create extra fee
-- `DELETE /{id}` — Delete extra fee
-
-### Accounting – Usage Import (`/api/v1/accounting/usage-import`)
-- `POST /preview` (multipart form) — Validate and preview file: `file`, `month`, `year`
-- `POST /save` (JSON body) — Persist validated records: body list + `month`, `year`
-- `GET /usage-records?month=&year=` — Query saved usage records by month/year
-
-### Voluntary Contributions – Campaigns (`/api/v1/campaigns`)
-- `POST /` — Create campaign
-- `GET /` — List campaigns (summary)
-- `GET /{id}` — Campaign detail (includes contributions)
-- `POST /contributions` — Add contributor record
-- `PUT /{id}` — Update campaign
-- `DELETE /{id}` — Delete campaign
-
-### Misc
-- `GET /test` — Health/test endpoint
 
 ## Security Notes
 - Do not commit DB credentials/secrets. Use environment variables or a secret manager.
