@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Search, Plus, Edit, Trash2, MoreVertical, MapPin, Phone, UserCircle, Mail, Eye, Home, Globe, Users, Clock, UserMinus } from "lucide-react"; 
@@ -131,7 +131,6 @@ const [includeInactive, setIncludeInactive] = useState(false);
   const [isLoadingDetail, setIsLoadingDetail] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false); 
 
-  const [createAccount, setCreateAccount] = useState(false);
   const [isCreatingAccount, setIsCreatingAccount] = useState(false);
 
   const hasAccount = selectedResident?.hasAccount === true;
@@ -141,15 +140,15 @@ const [includeInactive, setIncludeInactive] = useState(false);
       ? "Đang tạo tài khoản..."
       : "Tạo tài khoản cho cư dân";
 
-  useEffect(() => {
-    fetchResidents();
-  }, []) 
-
   // --- FETCH DỮ LIỆU CƯ DÂN ---
-  const fetchResidents = async () => {
+  const fetchResidents = useCallback(async () => {
     try {
       // Đổi sang domain ngrok mới của chú
-      let url = 'https://untoasted-jean-unsympathisingly.ngrok-free.dev/api/v1/residents';
+      const shouldIncludeInactive = includeInactive || statusFilter === "INACTIVE";
+      const params = new URLSearchParams({
+        include_inactive: String(shouldIncludeInactive),
+      });
+      const url = `https://untoasted-jean-unsympathisingly.ngrok-free.dev/api/v1/residents?${params.toString()}`;
 
       const response = await fetch(url, {
         method: 'GET',
@@ -173,7 +172,11 @@ const [includeInactive, setIncludeInactive] = useState(false);
       console.log(err);
       setError((err as Error).message);
     }
-  }
+  }, [includeInactive, statusFilter])
+
+  useEffect(() => {
+    void fetchResidents();
+  }, [fetchResidents])
 
   const handleCloseViewModal = () => {
     setIsViewModalOpen(false);
@@ -261,8 +264,13 @@ const [includeInactive, setIncludeInactive] = useState(false);
     const email = newEmail.trim();
     const phone = newPhone.trim();
 
-    if (createAccount && (!email || !phone)) {
-      toast.warning("Thiếu thông tin", { description: "Vui lòng nhập email và số điện thoại" });
+    if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      toast.warning("Email không hợp lệ", { description: "Vui lòng nhập đúng định dạng email" });
+      return;
+    }
+
+    if (phone && !/^\d+$/.test(phone)) {
+      toast.warning("Số điện thoại không hợp lệ", { description: "Số điện thoại chỉ được chứa chữ số" });
       return;
     }
 
@@ -286,10 +294,8 @@ const [includeInactive, setIncludeInactive] = useState(false);
         if (dob) dataform.dob = dob;
         if (homeTown) dataform.homeTown = homeTown;
         if (apartmentID) dataform.apartmentID = apartmentID;
-        if (createAccount) {
-          dataform.email = email;
-          dataform.phone = phone;
-        }
+        if (email) dataform.email = email;
+        if (phone) dataform.phone = phone;
 
         const createdRes = await createResident(dataform);
         const createdResident = normalizeResidentData((createdRes as any)?.data ?? createdRes);
@@ -301,9 +307,8 @@ const [includeInactive, setIncludeInactive] = useState(false);
         setNewHomeTown("");
         setNewAppartmentID("");
         setApartmentKeyword("");
-        setCreateAccount(false); // Reset checkbox
-        setNewEmail(''); // Reset email
-        setNewPhone(''); // Reset phone
+        setNewEmail('');
+        setNewPhone('');
         setIsAddDialogOpen(false);
 
         setSelectedResident(createdResident);
@@ -376,7 +381,10 @@ const [includeInactive, setIncludeInactive] = useState(false);
       }
       const response = await fetch(url, {
         method: "DELETE",
-        headers: {}
+        headers: {
+          "Content-Type": "application/json",
+          "ngrok-skip-browser-warning": "true"
+        }
       });
 
       const res = await response.json();
@@ -398,15 +406,40 @@ const [includeInactive, setIncludeInactive] = useState(false);
   // --- HANDLE UPDATE ---
   const handleUpdate = async () => {
     if (!selectedResident) return;
+
+    const fullName = updateName.trim();
+    const idCard = updateIDCard.trim();
+    const email = updateEmail.trim();
+    const phone = updatePhone.trim();
+
+    if (!fullName || !idCard) {
+      toast.warning("Thiếu thông tin", { description: "Vui lòng nhập tên và CMND/CCCD" });
+      return;
+    }
+
+    if (idCard.length > 14) {
+      toast.warning("CMND/CCCD không hợp lệ", { description: "Vui lòng nhập tối đa 14 ký tự" });
+      return;
+    }
+
+    if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      toast.warning("Email không hợp lệ", { description: "Vui lòng nhập đúng định dạng email" });
+      return;
+    }
+
+    if (phone && (!/^\d+$/.test(phone) || phone.length > 10)) {
+      toast.warning("Số điện thoại không hợp lệ", { description: "Số điện thoại chỉ được chứa chữ số và tối đa 10 ký tự" });
+      return;
+    }
     
     const updateAction = async () => {
       const dataToUpdate = {
-        fullName: updateName,
-        idCard: updateIDCard,
+        fullName,
+        idCard,
         dob: updateDOB,
         homeTown: updateHomeTown, 
-        email: updateEmail,
-        phone: updatePhone,
+        email,
+        phone,
         status: updateStatus,
       }
       
@@ -523,7 +556,7 @@ const [includeInactive, setIncludeInactive] = useState(false);
         setUpdateDOB(residentData.dob || "");
         setUpdateHomeTown(residentData.homeTown || ""); 
         setUpdateEmail(residentData.email || "");
-        setUpdatePhone(residentData.phoneNumber || "");
+        setUpdatePhone(String(residentData.phoneNumber || "").replace(/\D/g, "").slice(0, 10));
         setUpdateStatus(isEditableResidentStatus(residentData.status) ? residentData.status : "PERMANENT_RESIDENCE");
         
         setIsViewModalOpen(true); // Mở Modal
@@ -569,7 +602,7 @@ const [includeInactive, setIncludeInactive] = useState(false);
         setUpdateDOB(residentData.dob || "");
         setUpdateHomeTown(residentData.homeTown || ""); 
         setUpdateEmail(residentData.email || "");
-        setUpdatePhone(residentData.phoneNumber || "");
+        setUpdatePhone(String(residentData.phoneNumber || "").replace(/\D/g, "").slice(0, 10));
         setUpdateStatus(isEditableResidentStatus(residentData.status) ? residentData.status : "PERMANENT_RESIDENCE");
         
     } catch (err) {
@@ -607,84 +640,86 @@ const [includeInactive, setIncludeInactive] = useState(false);
         </Button>
       </div>
 
-      <div className="grid grid-cols-4 gap-4">
-        <div className="flex justify-between items-center p-6 rounded-xl shadow-md h-32 relative overflow-hidden" style={{ backgroundColor: '#10b981' }}>
-          <div className="flex flex-col">
-            <p className="text-4xl font-bold text-white">{statusCounts.permanent}</p>
-            <p className="text-sm font-medium mt-1 text-white">Thường trú</p>
+      <div className="flex gap-6 items-start">
+        <div className="grid grid-cols-4 gap-3 w-[820px] shrink-0">
+          <div className="flex justify-between items-center px-4 py-3 rounded-xl shadow-md h-20 w-full relative overflow-hidden" style={{ backgroundColor: '#10b981' }}>
+            <div className="flex flex-col">
+              <p className="text-3xl font-bold text-white leading-none">{statusCounts.permanent}</p>
+              <p className="text-sm font-medium mt-1 text-white">Thường trú</p>
+            </div>
+            <Home className="h-10 w-10 text-white opacity-80" />
           </div>
-          <Home className="h-12 w-12 text-white opacity-80" />
-        </div>
 
-        <div className="flex justify-between items-center p-6 rounded-xl shadow-md h-32 relative overflow-hidden" style={{ backgroundColor: '#f59e0b' }}>
-          <div className="flex flex-col">
-            <p className="text-4xl font-bold text-white">{statusCounts.temporary}</p>
-            <p className="text-sm font-medium mt-1 text-white">Tạm trú</p>
+          <div className="flex justify-between items-center px-4 py-3 rounded-xl shadow-md h-20 w-full relative overflow-hidden" style={{ backgroundColor: '#f59e0b' }}>
+            <div className="flex flex-col">
+              <p className="text-3xl font-bold text-white leading-none">{statusCounts.temporary}</p>
+              <p className="text-sm font-medium mt-1 text-white">Tạm trú</p>
+            </div>
+            <Clock className="h-10 w-10 text-white opacity-80" />
           </div>
-          <Clock className="h-12 w-12 text-white opacity-80" />
-        </div>
 
-        <div className="flex justify-between items-center p-6 rounded-xl shadow-md h-32 relative overflow-hidden" style={{ backgroundColor: '#8b5cf6' }}>
-          <div className="flex flex-col">
-            <p className="text-4xl font-bold text-white">{statusCounts.accommodation}</p>
-            <p className="text-sm font-medium mt-1 text-white">Lưu trú</p>
+          <div className="flex justify-between items-center px-4 py-3 rounded-xl shadow-md h-20 w-full relative overflow-hidden" style={{ backgroundColor: '#8b5cf6' }}>
+            <div className="flex flex-col">
+              <p className="text-3xl font-bold text-white leading-none">{statusCounts.accommodation}</p>
+              <p className="text-sm font-medium mt-1 text-white">Lưu trú</p>
+            </div>
+            <Globe className="h-10 w-10 text-white opacity-80" />
           </div>
-          <Globe className="h-12 w-12 text-white opacity-80" />
-        </div>
 
-        <div className="flex justify-between items-center p-6 rounded-xl shadow-md h-32 relative overflow-hidden" style={{ backgroundColor: '#3b82f6' }}>
-          <div className="flex flex-col">
-            <p className="text-4xl font-bold text-white">{statusCounts.absence}</p>
-            <p className="text-sm font-medium mt-1 text-white">Tạm vắng</p>
+          <div className="flex justify-between items-center px-4 py-3 rounded-xl shadow-md h-20 w-full relative overflow-hidden" style={{ backgroundColor: '#3b82f6' }}>
+            <div className="flex flex-col">
+              <p className="text-3xl font-bold text-white leading-none">{statusCounts.absence}</p>
+              <p className="text-sm font-medium mt-1 text-white">Tạm vắng</p>
+            </div>
+            <UserMinus className="h-10 w-10 text-white opacity-80" />
           </div>
-          <UserMinus className="h-12 w-12 text-white opacity-80" />
-        </div>
-      </div>
-
-      <div className="flex items-center justify-between gap-6 w-full bg-white p-2 rounded-2xl shadow-[0_2px_15px_-3px_rgba(0,0,0,0.07),0_10px_20px_-2px_rgba(0,0,0,0.04)] border border-gray-100">
-        <div className="relative w-1/3">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5 pointer-events-none" />
-          <input
-            type="text"
-            placeholder="Tìm tên, căn hộ..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full h-12 pl-12 pr-4 bg-gray-50/50 border-none rounded-xl text-sm focus:ring-2 focus:ring-blue-500/20 focus:bg-white transition-all placeholder:text-gray-400 outline-none"
-          />
         </div>
 
-        <div className="flex items-center gap-4">
-          <label className="flex items-center gap-2 text-sm text-gray-600 cursor-pointer whitespace-nowrap">
-            <input
-              type="checkbox"
-              checked={includeInactive}
-              onChange={(e) => setIncludeInactive(e.target.checked)}
-              className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-            />
-            Bao gồm đã chuyển đi
-          </label>
+        <div className="flex-1 min-w-0 bg-white p-3 rounded-2xl shadow-[0_2px_15px_-3px_rgba(0,0,0,0.07),0_10px_20px_-2px_rgba(0,0,0,0.04)] border border-gray-100">
+          <div className="flex items-center gap-3">
+            <div className="relative flex-1 min-w-[240px]">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5 pointer-events-none" />
+              <input
+                type="text"
+                placeholder="Tìm tên, căn hộ..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full h-12 pl-12 pr-4 bg-gray-50/50 border-none rounded-xl text-sm focus:ring-2 focus:ring-blue-500/20 focus:bg-white transition-all placeholder:text-gray-400 outline-none"
+              />
+            </div>
 
-          <div className="w-52">
-            <Select value={statusFilter} onValueChange={(value: string) => setStatusFilter(value as ResidentStatusFilter)}>
-              <SelectTrigger className="flex items-center justify-between w-full h-11 px-4 bg-white border border-gray-200 rounded-xl shadow-sm text-sm font-medium text-gray-700 hover:border-blue-400 transition-all">
-                <SelectValue placeholder="Tất cả trạng thái" />
-              </SelectTrigger>
-              <SelectContent
-                align="start"
-                className="z-[9999] w-[var(--radix-popper-anchor-width)] min-w-[var(--radix-popper-anchor-width)] rounded-xl border border-gray-200 !bg-white !opacity-100 shadow-xl ring-1 ring-gray-200/70 [&_[data-slot=select-viewport]]:!bg-white [&_[data-slot=select-viewport]]:!opacity-100"
-              >
-                {RESIDENT_STATUS_FILTER_OPTIONS.map((opt) => (
-                  <SelectItem
-                    key={opt.value}
-                    value={opt.value}
-                    hideIndicator
-                    className="cursor-pointer rounded-lg px-3 py-2 text-sm text-gray-700 outline-none data-[highlighted]:bg-blue-50 data-[highlighted]:text-blue-700 data-[state=checked]:bg-blue-100 data-[state=checked]:font-semibold data-[state=checked]:text-blue-800 !pr-3"
-                  >
-                    {opt.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <label className="flex items-center gap-2 text-sm text-gray-600 cursor-pointer whitespace-nowrap shrink-0">
+              <input
+                type="checkbox"
+                checked={includeInactive}
+                onChange={(e) => setIncludeInactive(e.target.checked)}
+                className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+              />
+              Bao gồm đã chuyển đi
+            </label>
+
+            <div className="w-48 shrink-0">
+              <Select value={statusFilter} onValueChange={(value: string) => setStatusFilter(value as ResidentStatusFilter)}>
+                <SelectTrigger className="flex items-center justify-between w-full h-11 px-4 bg-white border border-gray-200 rounded-xl shadow-sm text-sm font-medium text-gray-700 hover:border-blue-400 transition-all">
+                  <SelectValue placeholder="Tất cả trạng thái" />
+                </SelectTrigger>
+                <SelectContent
+                  align="start"
+                  className="z-[9999] w-[var(--radix-popper-anchor-width)] min-w-[var(--radix-popper-anchor-width)] rounded-xl border border-gray-200 !bg-white !opacity-100 shadow-xl ring-1 ring-gray-200/70 [&_[data-slot=select-viewport]]:!bg-white [&_[data-slot=select-viewport]]:!opacity-100"
+                >
+                  {RESIDENT_STATUS_FILTER_OPTIONS.map((opt) => (
+                    <SelectItem
+                      key={opt.value}
+                      value={opt.value}
+                      hideIndicator
+                      className="cursor-pointer rounded-lg px-3 py-2 text-sm text-gray-700 outline-none data-[highlighted]:bg-blue-50 data-[highlighted]:text-blue-700 data-[state=checked]:bg-blue-100 data-[state=checked]:font-semibold data-[state=checked]:text-blue-800 !pr-3"
+                    >
+                      {opt.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
         </div>
       </div>
@@ -771,7 +806,7 @@ const [includeInactive, setIncludeInactive] = useState(false);
     isOpen={isAddDialogOpen}
     onClose={() => setIsAddDialogOpen(false)}
     title="Thêm Cư Dân Mới"
-    size="lg"
+    size="md"
 >
     <div className="p-6 space-y-4">
         {/* --- CÁC TRƯỜNG THÔNG TIN CƠ BẢN --- */}
@@ -832,96 +867,78 @@ const [includeInactive, setIncludeInactive] = useState(false);
                 type="text"
                 placeholder="Tìm kiếm căn hộ bằng số phòng..."
                 value={apartmentKeyword}
-                onChange={(e) => setApartmentKeyword(e.target.value)}
+                onChange={(e) => {
+                  setApartmentKeyword(e.target.value);
+                  setNewAppartmentID("");
+                }}
                 className="w-full"
               />
-              
-              <select 
-                id="newApartmentSelect"
-                value={newAppartmentID} 
-                onChange={(e) => setNewAppartmentID(e.target.value)}
-                className="w-full p-2 border border-gray-300 rounded-lg bg-white mt-1"
-              >
-                <option value="" disabled>Chọn căn hộ</option>
-                {apartmentList && Array.isArray(apartmentList) && apartmentList.length > 0 ? (
-                  apartmentList.map((apt) => (
-                    <option key={apt.id} value={String(apt.id)}>
-                      {apt.label}
-                    </option>
-                  ))
-                ) : (
-                    <option value="" disabled>
-                        {apartmentKeyword ? "Không tìm thấy căn hộ" : "Nhập để tìm kiếm..."}
-                    </option>
-                )}
-              </select>
-              
-              {newAppartmentID && apartmentList && apartmentList.find(apt => String(apt.id) === newAppartmentID) && (
-                <p className="text-sm text-green-600 mt-1">
-                  Đã chọn: {apartmentList.find(apt => String(apt.id) === newAppartmentID)?.label || 'N/A'}
-                </p>
-              )}
+
+              {apartmentKeyword.trim() && !newAppartmentID ? (
+                <div className="w-full border border-gray-200 rounded-lg bg-white overflow-hidden">
+                  {apartmentList && Array.isArray(apartmentList) && apartmentList.length > 0 ? (
+                    <div className="max-h-48 overflow-auto">
+                      {apartmentList.slice(0, 8).map((apt) => (
+                        <button
+                          key={apt.id}
+                          type="button"
+                          onClick={() => {
+                            setNewAppartmentID(String(apt.id));
+                            setApartmentKeyword(apt.label);
+                          }}
+                          className="w-full px-3 py-2 text-left text-sm hover:bg-gray-50"
+                        >
+                          {apt.label}
+                        </button>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="px-3 py-2 text-sm text-gray-500">
+                      {apartmentKeyword ? "Không tìm thấy căn hộ" : "Nhập để tìm kiếm..."}
+                    </div>
+                  )}
+                </div>
+              ) : null}
+
+              {newAppartmentID ? (
+                <p className="text-sm text-green-600 mt-1">Đã chọn: {apartmentKeyword}</p>
+              ) : null}
             </div>
         </div>
+
         {/* --- KẾT THÚC TRƯỜNG CHỌN APARTMENT ĐÃ SỬA --- */}
 
+        <div className="pt-4 border-t mt-6 space-y-4">
+          <div>
+              <Label htmlFor="newEmail">Email</Label>
+              <Input
+                id="newEmail"
+                type="email"
+                placeholder="Nhập email"
+                value={newEmail}
+                onChange={(e) => setNewEmail(e.target.value)}
+                className="mt-1"
+              />
+          </div>
 
-        <div className="pt-4 border-t mt-6">
-            {/* --- CHECKBOX (TICKBOX) TẠO TÀI KHOẢN --- */}
-            <div className="flex items-center space-x-2">
-                <input 
-                    type="checkbox"
-                    id="createAccount" 
-                    checked={createAccount}
-                    onChange={(e) => setCreateAccount(e.target.checked)}
-                    className="h-4 w-4 text-blue-600 border-gray-300 rounded"
-                />
-                <Label 
-                    htmlFor="createAccount"
-                    className="text-base font-medium text-slate-700 cursor-pointer"
-                >
-                    Tạo tài khoản (Cổng cư dân)
-                </Label>
-            </div>
+          <div>
+              <Label htmlFor="newPhone">Số Điện Thoại (SĐT)</Label>
+              <Input
+                id="newPhone"
+                type="tel"
+                placeholder="Nhập số điện thoại"
+                value={newPhone}
+                inputMode="numeric"
+                pattern="\\d*"
+                onChange={(e) => {
+                  const nextValue = e.target.value.replace(/\D/g, "").slice(0, 10);
+                  setNewPhone(nextValue);
+                }}
+                maxLength={10}
+                className="mt-1"
+              />
+          </div>
         </div>
-
-        {/* --- CÁC TRƯỜNG NHẬP CÓ ĐIỀU KIỆN (EMAIL & PHONE) --- */}
-        {createAccount && (
-            <div className="space-y-4 pt-2">
-                <div className="text-sm font-semibold text-blue-600 border-b pb-2 mb-2">
-                    Thông tin Tài khoản
-                </div>
-                
-                {/* Email Field */}
-                <div>
-                    <Label htmlFor="newEmail">Email</Label>
-                    <Input
-                      id="newEmail"
-                      type="email"
-                      placeholder="Nhập email (dùng để đăng nhập)"
-                      value={newEmail}
-                      onChange={(e) => setNewEmail(e.target.value)}
-                      required={createAccount}
-                      className="mt-1"
-                    />
-                </div>
-
-                {/* Phone Field */}
-                <div>
-                    <Label htmlFor="newPhone">Số Điện Thoại (SĐT)</Label>
-                    <Input
-                      id="newPhone"
-                      type="tel"
-                      placeholder="Nhập số điện thoại"
-                      value={newPhone}
-                      onChange={(e) => setNewPhone(e.target.value)}
-                      maxLength={10}
-                      required={createAccount}
-                      className="mt-1"
-                    />
-                </div>
-            </div>
-        )}
 
         {/* --- NÚT SUBMIT --- */}
         <div className="flex gap-3 pt-4 border-t mt-6">
@@ -934,7 +951,7 @@ const [includeInactive, setIncludeInactive] = useState(false);
             </Button>
             <Button
               onClick={handleSubmit}
-              className="flex-1 bg-blue-600 hover:bg-blue-700"
+              className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
             >
               Thêm cư dân
             </Button>
@@ -1035,13 +1052,13 @@ const [includeInactive, setIncludeInactive] = useState(false);
             </div>
 
             {/* 2. NỘI DUNG CHÍNH (Conditional Rendering) */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 px-2">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 px-6 pb-6">
                 
                 {isEditMode ? (
                     /* --- CHẾ ĐỘ CHỈNH SỬA (EDIT MODE) - ĐÃ DỊCH --- */
                     <>
                         {/* CỘT TRÁI: Form Cá nhân */}
-                        <div className="space-y-4">
+                        <div className="space-y-4 rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
                             <h3 className="text-sm font-bold text-gray-500 uppercase tracking-wider border-b pb-2">
                                 Thông Tin Cá Nhân
                             </h3>
@@ -1061,13 +1078,13 @@ const [includeInactive, setIncludeInactive] = useState(false);
                         </div>
 
                         {/* CỘT PHẢI: Form Liên lạc */}
-                        <div className="space-y-4">
+                        <div className="space-y-4 rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
                             <h3 className="text-sm font-bold text-gray-500 uppercase tracking-wider border-b pb-2">
                                 Thông Tin Liên Hệ
                             </h3>
                             <div className="space-y-3">
                                 <div><Label htmlFor="updatePhone">Số Điện Thoại</Label>
-                                <Input id="updatePhone" type="tel" value={updatePhone} onChange={(e) => setUpdatePhone(e.target.value)} maxLength={10} className="mt-1 h-11 rounded-xl bg-white border-gray-200 px-4"/></div>
+                                <Input id="updatePhone" type="tel" value={updatePhone} inputMode="numeric" pattern="\\d*" onChange={(e) => setUpdatePhone(e.target.value.replace(/\D/g, "").slice(0, 10))} maxLength={10} className="mt-1 h-11 rounded-xl bg-white border-gray-200 px-4"/></div>
                                 
                                 <div><Label htmlFor="updateEmail">Email</Label>
                                 <Input id="updateEmail" type="email" value={updateEmail} onChange={(e) => setUpdateEmail(e.target.value)} className="mt-1 h-11 rounded-xl bg-white border-gray-200 px-4"/></div>
@@ -1109,7 +1126,7 @@ const [includeInactive, setIncludeInactive] = useState(false);
                     /* --- CHẾ ĐỘ XEM (VIEW MODE) - ĐÃ DỊCH --- */
                     <>
                         {/* CỘT TRÁI: Thông tin cá nhân */}
-                        <div className="space-y-4">
+                        <div className="space-y-4 rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
                             <h3 className="text-sm font-bold text-gray-500 uppercase tracking-wider border-b pb-2">
                                 Thông Tin Cá Nhân
                             </h3>
@@ -1148,7 +1165,7 @@ const [includeInactive, setIncludeInactive] = useState(false);
                         </div>
 
                         {/* CỘT PHẢI: Liên lạc & Căn hộ */}
-                        <div className="space-y-4">
+                        <div className="space-y-4 rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
                             <h3 className="text-sm font-bold text-gray-500 uppercase tracking-wider border-b pb-2">
                                 Liên Hệ & Cư Trú
                             </h3>
@@ -1191,7 +1208,7 @@ const [includeInactive, setIncludeInactive] = useState(false);
             </div>
 
             {/* 3. FOOTER (Conditional Buttons) - ĐÃ DỊCH VÀ THÊM NÚT TẠO TK */}
-            <div className="mt-8 flex justify-end pt-4 border-t gap-3">
+            <div className="mt-6 flex justify-end px-6 pb-6 pt-4 border-t gap-3">
                 
                 {isEditMode ? (
                     <>
