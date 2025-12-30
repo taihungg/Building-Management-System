@@ -47,6 +47,7 @@ import { AuthorityProfile } from './components/AuthorityProfile';
 
 // Auth
 import { Login } from './components/Login'; 
+import { AccountingExtraFee } from './components/AccountingExtraFee';
 
 // === Định nghĩa kiểu và Maps ===
 type UserRole = 'management' | 'resident' | 'accounting' | 'authority' | null; 
@@ -77,6 +78,7 @@ const accountingTabToPath: Record<string, string> = {
   'accounting-dashboard': '/accounting/dashboard', 'debt-management': '/accounting/debt',
   'invoice-creation': '/accounting/invoice', 'profile': '/accounting/profile',
   'settings': '/accounting/settings', 'accounting-voluntary-contribution': '/accounting/voluntary-contribution'
+  , 'extra-services':'/accoungting/extra-services'
 };
 
 const authorityTabToPath: Record<string, string> = {
@@ -244,6 +246,8 @@ function AppContent() {
                 <Route path="/profile" element={<AccountingProfile />} />
                 <Route path="/settings" element={<Settings />} />
                 <Route path="/voluntary-contribution" element={<AccountingVoluntaryContribution />} />
+                <Route path="/extra-services" element={<AccountingExtraFee/>} />
+
             </>
         );
         baseUrl = '/accounting/*';
@@ -258,6 +262,7 @@ function AppContent() {
                 <Route path="/announcements" element={<AuthorityAnnouncements />} />
                 <Route path="/profile" element={<AuthorityProfile />} />
                 <Route path="/settings" element={<Settings />} />
+
             </>
         );
         baseUrl = '/authority/*';
