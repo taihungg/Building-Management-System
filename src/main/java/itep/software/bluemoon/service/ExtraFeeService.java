@@ -108,4 +108,11 @@ public class ExtraFeeService {
 
         extraFeeRepository.delete(extraFee);
     }
+    
+    public List<ExtraFeeSummary> getExtraFeesByApartment(UUID apartmentId) {
+        Apartment apartment = apartmentRepository.findById(apartmentId)
+                .orElseThrow(() -> new RuntimeException("Apartment not found!"));
+        
+        return extraFeeRepository.findByApartment(apartment);
+    }
 }

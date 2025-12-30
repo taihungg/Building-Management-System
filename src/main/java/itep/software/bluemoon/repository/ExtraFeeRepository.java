@@ -34,4 +34,17 @@ public interface ExtraFeeRepository extends JpaRepository<ExtraFee, UUID> {
     @Modifying
     @Query("UPDATE ExtraFee e SET e.isBilled = :status WHERE e.id IN :ids")
     void updateStatusByIds(@Param("status") boolean status, @Param("ids") List<UUID> ids);
+    
+    @Query("SELECT e.id AS id, " +
+    	    "e.title AS title, " +
+    	    "e.amount AS amount, " +
+    	    "e.feeDate AS feeDate, " +
+    	    "e.isBilled AS isBilled, " +
+    	    "CONCAT('Căn hộ ', cast(a.roomNumber as String), ' - Tòa nhà ', b.name) AS apartmentLabel " + 
+    	    "FROM ExtraFee e " +
+    	    "JOIN e.apartment a " +
+    	    "JOIN a.building b " +
+    	    "WHERE a = :apartment " +
+    	    "ORDER BY e.feeDate DESC")
+    	List<ExtraFeeSummary> findByApartment(@Param("apartment") Apartment apartment);
 }
