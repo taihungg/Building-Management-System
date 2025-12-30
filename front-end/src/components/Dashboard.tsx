@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'; 
+import { useState, useEffect,useCallback } from 'react'; 
 import { Users, Building2, DollarSign, AlertCircle, ClipboardList, ChevronRight } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { Link } from 'react-router-dom';
@@ -15,7 +15,7 @@ export function Dashboard() {
   const [apartmentStats, setApartmentStats] = useState({ occupied: 0, total: 0 });
   const [monthlyRevenue, setMonthlyRevenue] = useState(0);
   const [chartData, setChartData] = useState<any[]>([]); 
-  const [pendingIssuesList, setPendingIssuesList] = useState<Issue[]>([]);
+  const [pendingIssuesList, setPendingIssuesList] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
 
   // Link deploy mới của chú
@@ -75,12 +75,7 @@ export function Dashboard() {
         }
 
         // 4. Fetch Issues
-        const resIssue = await fetch(`${BASE_URL}/api/issues`, { headers: NGROK_HEADERS });
-        const dataIssue = await resIssue.json();
-        if (resIssue.ok) {
-            const pending = (dataIssue as Issue[]).filter(i => i.status === 'UNPROCESSED');
-            setPendingIssuesList(pending);
-        }
+       
       } catch (err) {
         console.log("Lỗi Dashboard API:", err);
       } finally {
@@ -89,6 +84,28 @@ export function Dashboard() {
     };
     fetchDashboardData();
   }, []);
+  const fetchIssues = useCallback(async () => {
+    try {
+        const resIssue = await fetch(`${BASE_URL}/api/issues`, { 
+            headers: NGROK_HEADERS 
+        });
+        const dataIssue = await resIssue.json();
+        
+        if (resIssue.ok) {
+            // SỬA Ở ĐÂY: Kiểm tra nếu dataIssue.data tồn tại thì lọc trên đó, 
+            // nếu không thì mới lọc trực tiếp trên dataIssue
+            const sourceData = Array.isArray(dataIssue) ? dataIssue : (dataIssue.data || []);
+            
+            const pending = sourceData.filter((i: any) => i.status === 'UNPROCESSED');
+            setPendingIssuesList(pending);
+        }
+    } catch (err) {
+        console.error("Lỗi fetchIssues API:", err);
+    }
+}, [BASE_URL]); // Các phụ thuộc của hàm
+useEffect(()=>{
+  fetchIssues();
+})
 
   return (
     <div className="p-8 bg-[#f8fafc] min-h-screen text-slate-900 font-sans"> 
