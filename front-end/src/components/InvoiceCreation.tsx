@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
+import * as XLSX from 'xlsx';
 import { Upload, FileSpreadsheet, CheckCircle2, X, Save, AlertCircle, Loader2, Download, Trash2, Pencil, Calendar, Receipt, Database, Search } from 'lucide-react';
 import { toast, Toaster } from 'sonner';
 
@@ -162,6 +163,23 @@ export function InvoiceCreation() {
     setTableData(tableData.filter((_, i) => i !== index));
   };
 
+  const handleDownloadTemplate = () => {
+    const headers = ["Căn hộ", "Tòa nhà", "Dịch vụ", "Chỉ số cũ", "Chỉ số mới", "Sử dụng"];
+    const rows = tableData.map(item => [
+      item.apartmentCode,
+      item.buildingCode,
+      item.serviceCode === 'ELECTRICITY' ? 'ĐIỆN' : 'NƯỚC',
+      item.oldIndex,
+      item.newIndex,
+      item.quantity
+    ]);
+
+    const ws = XLSX.utils.aoa_to_sheet([headers, ...rows]);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Data");
+    XLSX.writeFile(wb, `Mau_Nhap_Lieu_Thang_${selectedMonth}_${selectedYear}.xlsx`);
+  };
+
   return (
     <div className="space-y-6 p-6 relative">
       <Toaster richColors position="top-right" />
@@ -281,7 +299,10 @@ export function InvoiceCreation() {
         <div className="flex items-center gap-3">
           <input ref={fileInputRef} type="file" hidden accept=".xlsx,.xls" onChange={handleFileUpload} />
 
-          <button className="h-12 flex items-center gap-2 px-4 py-2 rounded-xl font-medium border border-gray-300 text-gray-700 bg-white hover:bg-gray-50 transition-all">
+          <button
+            onClick={handleDownloadTemplate}
+            className="h-12 flex items-center gap-2 px-4 py-2 rounded-xl font-medium border border-gray-300 text-gray-700 bg-white hover:bg-gray-50 transition-all"
+          >
             <Download className="w-4 h-4" />
             <span>Mẫu Excel</span>
           </button>
