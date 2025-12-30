@@ -13,6 +13,8 @@ export function DebtManagement() {
   const [statusFilter, setStatusFilter] = useState('All');
   const [isCreateBillOpen, setIsCreateBillOpen] = useState(false);
   const [isUpdatePaymentOpen, setIsUpdatePaymentOpen] = useState(false);
+  const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
+  const [paymentAmount, setPaymentAmount] = useState<number | ''>('');
   const [selectedBill, setSelectedBill] = useState<any>(null);
   const [selectedInvoice, setSelectedInvoice] = useState<any>(null);
   const [paymentForm, setPaymentForm] = useState({
@@ -446,16 +448,64 @@ export function DebtManagement() {
     setEditingValue('');
   };
 
-  // Pay invoice (Thanh toán) - Chuyển từ UNPAID sang PAID
-  const handlePayInvoice = async (invoiceId: string) => {
-    try {
-      toast.info("Chưa hỗ trợ thanh toán trên hệ thống", {
-        description: "Backend hiện chưa có API /api/v1/accounting/invoices/{id}/pay",
+  // Open Payment Modal
+  const handlePaymentClick = (bill: any) => {
+    setSelectedBill(bill);
+    setPaymentAmount('');
+    setIsPaymentModalOpen(true);
+  };
+
+  // Confirm Payment
+  const handleConfirmPayment = async () => {
+    if (!selectedBill || !paymentAmount) return;
+
+    const amount = Number(paymentAmount);
+    const remaining = selectedBill.totalAmount - (selectedBill.paidAmount || 0);
+
+    // Validation
+    if (amount <= 0) {
+      toast.error('Số tiền phải lớn hơn 0');
+      return;
+    }
+    if (amount > remaining) {
+      toast.error('Số tiền thanh toán không được vượt quá số tiền còn nợ', {
+        description: `Còn nợ: ${formatCurrency(remaining)}`
       });
-      void invoiceId;
-    } catch (error) {
-      console.error("Lỗi thanh toán:", error);
-      toast.error("Lỗi thanh toán", { description: (error as Error).message });
+      return;
+    }
+
+    try {
+      const url = `https://untoasted-jean-unsympathisingly.ngrok-free.dev/api/v1/accounting/invoices/${selectedBill.id}/payment`;
+      const response = await fetch(url, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'ngrok-skip-browser-warning': 'true'
+        },
+        body: JSON.stringify({
+          paymentAmount: amount
+        })
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(errorText || 'Lỗi thanh toán');
+      }
+
+      toast.success('Thanh toán thành công', {
+        description: `Đã thanh toán ${formatCurrency(amount)} cho hóa đơn ${selectedBill.apartmentLabel}`
+      });
+
+      setIsPaymentModalOpen(false);
+      setPaymentAmount('');
+      setSelectedBill(null);
+
+      // Reload data
+      fetchBills();
+
+    } catch (error: any) {
+      console.error('Payment error:', error);
+      toast.error('Thanh toán thất bại', { description: error.message });
     }
   };
 
@@ -498,7 +548,14 @@ export function DebtManagement() {
         acc.paidAmount += amount;
       } else if (bill.status === 'PENDING') {
         acc.pendingAmount += amount;
+      } else if (bill.status === 'PARTIAL') {
+        // Partial means some paid, some unpaid. The totalAmount is the full invoice amount.
+        // We should add the remaining debt to unpaidAmount.
+        // Or if we strictly want "Status-based" stats:
+        acc.unpaidAmount += (amount - (bill.paidAmount || 0));
+        acc.paidAmount += (bill.paidAmount || 0);
       } else {
+        // UNPAID
         acc.unpaidAmount += amount;
       }
 
@@ -783,6 +840,16 @@ export function DebtManagement() {
             <AlertCircle className="w-4 h-4" />
             Chưa thanh toán
           </button>
+          <button
+            onClick={() => setStatusFilter('PARTIAL')}
+            className={`rounded-xl border shadow-sm px-4 py-2 text-sm font-medium flex items-center justify-center gap-2 hover:bg-gray-50 cursor-pointer transition-all ${statusFilter === 'PARTIAL'
+              ? 'bg-orange-50 text-orange-700 border-orange-500'
+              : 'bg-white border-gray-200 text-gray-600'
+              }`}
+          >
+            <Clock className="w-4 h-4" />
+            Thanh toán một phần
+          </button>
         </div>
 
         {/* Hidden file input */}
@@ -969,29 +1036,50 @@ export function DebtManagement() {
                           ? 'bg-green-100 text-green-700'
                           : bill.status === 'PENDING'
                             ? 'bg-yellow-100 text-yellow-700'
-                            : 'bg-red-100 text-red-700'
+                            : bill.status === 'PARTIAL'
+                              ? 'bg-orange-100 text-orange-700'
+                              : 'bg-red-100 text-red-700'
                           }`}>
                           {bill.status === 'PAID' && <CheckCircle className="w-4 h-4" />}
                           {bill.status === 'PENDING' && <Clock className="w-4 h-4" />}
+                          {bill.status === 'PARTIAL' && <Clock className="w-4 h-4" />}
                           {bill.status === 'UNPAID' && <AlertCircle className="w-4 h-4" />}
                           {bill.status === 'PAID' ? 'Đã thanh toán' :
                             bill.status === 'PENDING' ? 'Chờ duyệt' :
-                              'Chưa thanh toán'}
+                              bill.status === 'PARTIAL' ? 'Thanh toán một phần' :
+                                'Chưa thanh toán'}
                         </span>
                       </td>
 
                       <td className="px-6 py-4 text-center align-middle">
                         <div className="flex items-center justify-center gap-2">
                           {/* Xem chi tiết - Luôn có */}
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleViewDetail(bill.id);
-                            }}
-                            className="px-3 py-1.5 bg-blue-50 text-blue-600 rounded-lg text-sm font-medium hover:bg-blue-100 transition-colors"
-                          >
-                            Xem chi tiết
-                          </button>
+                          {/* Action Buttons */}
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleViewDetail(bill.id);
+                              }}
+                              className="px-3 py-1.5 bg-blue-50 text-blue-600 rounded-lg text-sm font-medium hover:bg-blue-100 transition-colors"
+                            >
+                              Xem chi tiết
+                            </button>
+
+                            {/* Payment Button - Only for UNPAID or PARTIAL */}
+                            {(bill.status === 'UNPAID' || bill.status === 'PARTIAL' || (bill.paidAmount || 0) < bill.totalAmount) && (
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handlePaymentClick(bill);
+                                }}
+                                className="px-3 py-1.5 bg-green-50 text-green-600 rounded-lg text-sm font-medium hover:bg-green-100 transition-colors flex items-center gap-1"
+                              >
+                                <DollarSign className="w-4 h-4" />
+                                Thanh toán
+                              </button>
+                            )}
+                          </div>
 
                           {/* PDF Download Button */}
                           <button
@@ -1171,6 +1259,80 @@ export function DebtManagement() {
               Lưu cập nhật
             </button>
           </div>
+        </div>
+      </Modal>
+
+      {/* Payment Modal */}
+      <Modal
+        isOpen={isPaymentModalOpen}
+        onClose={() => setIsPaymentModalOpen(false)}
+        title="Thanh toán hóa đơn"
+      >
+        <div className="p-6">
+          {selectedBill && (
+            <div className="space-y-4">
+              <div className="bg-gray-50 p-4 rounded-lg space-y-2">
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Căn hộ:</span>
+                  <span className="font-semibold text-gray-900">{selectedBill.apartmentLabel}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Tổng hóa đơn:</span>
+                  <span className="font-medium text-gray-900">{formatCurrency(selectedBill.totalAmount)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Đã thanh toán:</span>
+                  <span className="font-medium text-green-600">{formatCurrency(selectedBill.paidAmount || 0)}</span>
+                </div>
+                <div className="flex justify-between pt-2 border-t border-gray-200">
+                  <span className="text-gray-600 font-medium">Còn nợ:</span>
+                  <span className="font-bold text-red-600">
+                    {formatCurrency(selectedBill.totalAmount - (selectedBill.paidAmount || 0))}
+                  </span>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Số tiền thanh toán
+                </label>
+                <div className="relative">
+                  <input
+                    type="text"
+                    value={paymentAmount === '' ? '' : Number(paymentAmount).toLocaleString('vi-VN')}
+                    onChange={(e) => {
+                      const val = e.target.value.replace(/\D/g, '');
+                      setPaymentAmount(val === '' ? '' : Number(val));
+                    }}
+                    className="w-full pr-12 pl-4 py-4 text-2xl font-bold text-blue-600 border-2 border-gray-200 rounded-2xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all text-right shadow-inner bg-gray-50/30"
+                    placeholder="0"
+                    autoFocus
+                  />
+                  <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xl font-bold text-gray-400">₫</span>
+                </div>
+                <p className="text-xs text-gray-500 mt-1">
+                  Nhập số tiền khách hàng thanh toán (không vượt quá số tiền còn nợ)
+                </p>
+              </div>
+
+              <div className="flex justify-end gap-3 pt-4">
+                <button
+                  onClick={() => setIsPaymentModalOpen(false)}
+                  className="px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+                >
+                  Hủy
+                </button>
+                <button
+                  onClick={handleConfirmPayment}
+                  disabled={!paymentAmount || Number(paymentAmount) <= 0}
+                  className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                >
+                  <DollarSign className="w-4 h-4" />
+                  Xác nhận thanh toán
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </Modal>
 
