@@ -37,14 +37,31 @@ public class ExcelExportService {
 
 
     public ByteArrayInputStream exportInvoicesToExcel(Integer month, Integer year) {
-        List<Invoice> invoices = invoiceRepository.findByMonthAndYear(month, year);
-
+    	List<Invoice> invoices = invoiceRepository.findByMonthAndYearWithDetails(month, year);
+        
+        invoices.sort((inv1, inv2) -> {
+            int room1 = inv1.getApartment().getRoomNumber();
+            int room2 = inv2.getApartment().getRoomNumber();
+            return Integer.compare(room1, room2);
+        });
+        
         try (Workbook workbook = new XSSFWorkbook();
             ByteArrayOutputStream out = new ByteArrayOutputStream()) {
 
             Sheet sheet = workbook.createSheet("Hóa đơn T" + month + "-" + year);
-
-            Row headerRow = sheet.createRow(0);
+            
+            CellStyle titleStyle = workbook.createCellStyle();
+            Font titleFont = workbook.createFont();
+            titleFont.setBold(true);
+            titleFont.setFontHeightInPoints((short) 14);
+            titleStyle.setFont(titleFont);
+            titleStyle.setAlignment(HorizontalAlignment.CENTER);
+            
+            Row titleRow = sheet.createRow(0);
+            Cell titleCell = titleRow.createCell(0);
+            titleCell.setCellValue("HÓA ĐƠN THÁNG " + month + "/" + year);
+            titleCell.setCellStyle(titleStyle);
+            sheet.addMergedRegion(new CellRangeAddress(0, 0, 0, 4));
 
             CellStyle headerStyle = workbook.createCellStyle();
             Font font = workbook.createFont();
@@ -53,29 +70,58 @@ public class ExcelExportService {
             headerStyle.setFillForegroundColor(IndexedColors.GREY_25_PERCENT.getIndex());
             headerStyle.setFillPattern(FillPatternType.SOLID_FOREGROUND);
 
-            String[] columns = {"Tòa nhà", "Căn hộ", "Chủ hộ", "Tháng", "Năm", "Tổng tiền (VNĐ)", "Trạng thái", "Ngày thanh toán"};
+            CellStyle amountStyle = workbook.createCellStyle();
+            amountStyle.setAlignment(HorizontalAlignment.RIGHT);
+            
+            Row headerRow = sheet.createRow(2);
+            String[] columns = {"Số phòng", "Tòa nhà", "Chủ căn hộ", "Tổng hóa đơn (VNĐ)", "Trạng thái"};
+            
             for (int i = 0; i < columns.length; i++) {
                 Cell cell = headerRow.createCell(i);
                 cell.setCellValue(columns[i]);
                 cell.setCellStyle(headerStyle);
             }
 
-            int rowIdx = 1;
+            int rowIdx = 3;
             for (Invoice inv : invoices) {
                 Row row = sheet.createRow(rowIdx++);
-
-                row.createCell(0).setCellValue(inv.getApartment().getBuilding().getName());
-                row.createCell(1).setCellValue(inv.getApartment().getRoomNumber());
+                Cell roomCell = row.createCell(0);
+                roomCell.setCellValue(String.valueOf(inv.getApartment().getRoomNumber()));
+                
+                row.createCell(1).setCellValue(inv.getApartment().getBuilding().getName());
                 String ownerName = (inv.getApartment().getOwner() != null)
-                        ? inv.getApartment().getOwner().getFullName() : "Apartment has no owner";
+                        ? inv.getApartment().getOwner().getFullName() 
+                        : "Chưa xác định";
                 row.createCell(2).setCellValue(ownerName);
 
-                row.createCell(3).setCellValue(inv.getMonth());
-                row.createCell(4).setCellValue(inv.getYear());
+                Cell amountCell = row.createCell(3);
+                amountCell.setCellValue(inv.getTotalAmount().doubleValue());
+                amountCell.setCellStyle(amountStyle);
 
-                row.createCell(5).setCellValue(inv.getTotalAmount().doubleValue());
-
-                row.createCell(6).setCellValue(inv.getStatus().name());
+                String status = "";
+                switch (inv.getStatus()) {
+                    case PENDING:
+                        status = "Chờ xác nhận";
+                        break;
+                    case UNPAID:
+                        status = "Chưa thanh toán";
+                        break;
+                    case PARTIAL:
+                        status = "Thanh toán một phần";
+                        break;
+                    case PAID:
+                        status = "Đã thanh toán";
+                        break;
+                    case OVERDUE:
+                        status = "Quá hạn";
+                        break;
+                    case CANCELED:
+                        status = "Đã hủy";
+                        break;
+                    default:
+                        status = inv.getStatus().name();
+                }
+                row.createCell(4).setCellValue(status);
             }
 
             for (int i = 0; i < columns.length; i++) {
@@ -86,7 +132,7 @@ public class ExcelExportService {
             return new ByteArrayInputStream(out.toByteArray());
 
         } catch (IOException e) {
-            throw new RuntimeException("Error when create Excel file: " + e.getMessage());
+            throw new RuntimeException("Lỗi khi tạo file Excel: " + e.getMessage());
         }
     }
     

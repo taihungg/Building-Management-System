@@ -91,4 +91,13 @@ public interface InvoiceRepository extends JpaRepository<Invoice, UUID> {
             ORDER BY i.year DESC, i.month DESC
             """)
     List<InvoiceSummary> findInvoiceSummariesByApartmentId(@Param("apartmentId") UUID apartmentId);
+    
+    @Query("SELECT i FROM Invoice i " +
+           "JOIN FETCH i.apartment a " +
+           "JOIN FETCH a.building " +
+           "LEFT JOIN FETCH a.owner " +
+           "WHERE i.month = :month AND i.year = :year " +
+           "ORDER BY a.roomNumber ASC")
+    List<Invoice> findByMonthAndYearWithDetails(@Param("month") Integer month, 
+                                                @Param("year") Integer year);
 }
