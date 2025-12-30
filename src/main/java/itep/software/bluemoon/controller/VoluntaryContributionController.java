@@ -1,8 +1,10 @@
 package itep.software.bluemoon.controller;
 
+import java.io.ByteArrayInputStream;
 import java.util.List;
 import java.util.UUID;
 
+import org.springframework.core.io.InputStreamResource;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -13,6 +15,8 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 
 import itep.software.bluemoon.entity.accounting.ContributionRecord;
 import itep.software.bluemoon.entity.accounting.VoluntaryContribution;
@@ -20,6 +24,7 @@ import itep.software.bluemoon.model.DTO.accounting.AddContributionRequestDTO;
 import itep.software.bluemoon.model.DTO.accounting.CreateCampaignRequestDTO;
 import itep.software.bluemoon.model.projection.CampaignSummary;
 import itep.software.bluemoon.response.ApiResponse;
+import itep.software.bluemoon.service.ExcelExportService;
 import itep.software.bluemoon.service.VoluntaryContributionService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -30,7 +35,7 @@ import lombok.RequiredArgsConstructor;
 public class VoluntaryContributionController {
 
     private final VoluntaryContributionService campaignService;
-
+    private final ExcelExportService excelExportService;
     /**
      * Tạo mới một chiến dịch quyên góp
      */
@@ -115,5 +120,18 @@ public class VoluntaryContributionController {
                 "Campaign deleted successfully", 
                 null
         );
+    }
+    
+    
+    @GetMapping("/{campaignId}/export/excel")
+    public ResponseEntity<InputStreamResource> exportContributionsToExcel(@PathVariable UUID campaignId) {
+        InputStreamResource file = new InputStreamResource(excelExportService.exportContributionsToExcel(campaignId));
+        
+        String fileName = "DanhSachDongGop_" + campaignId + ".xlsx";
+        
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=" + fileName)
+                .contentType(MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
+                .body(file);
     }
 }
