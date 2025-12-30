@@ -15,7 +15,6 @@ import lombok.RequiredArgsConstructor;
 public class UsageRecordService {
     private final UsageRecordRepository usageRecordRepository;
     
-    @Transactional(readOnly = true)
     public List<UsageRecordSummary> getUsageRecordsByMonthYear(int month, int year) {
         return usageRecordRepository.findUsageRecordSummariesByMonthYear(month, year);
     }

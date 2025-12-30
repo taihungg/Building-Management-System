@@ -5,11 +5,10 @@ import java.util.UUID;
 
 public interface UsageRecordSummary {
     UUID getId();
-    String getApartmentLabel();
-    String getServiceName();
+    String getApartmentCode();
+    String getBuildingCode();
+    String getServiceCode();
     BigDecimal getOldIndex();
     BigDecimal getNewIndex();
     BigDecimal getQuantity();
-    Integer getMonth();
-    Integer getYear();
 }
