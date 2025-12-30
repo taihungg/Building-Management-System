@@ -69,7 +69,7 @@ public class Invoice extends BaseEntity {
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false, length = 10)
     @Builder.Default
-    private InvoiceStatus status = InvoiceStatus.UNPAID;
+    private InvoiceStatus status = InvoiceStatus.PENDING;
 
     @Column(name = "paid_amount", precision = 20, scale = 2)
     @Builder.Default

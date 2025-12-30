@@ -7,7 +7,8 @@ import {
   Settings,
   User,
   LogOut,
-  Heart
+  Heart,
+  AlertTriangle
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion'; 
 import React from 'react';
@@ -25,8 +26,8 @@ const menuItems = [
   { to: '/resident/announcements', label: 'Thông báo', icon: Bell },
   { to: '/resident/invoice', label: 'Hóa đơn', icon: Receipt }, 
   { to: '/resident/rules', label: 'Nội quy', icon: FileText },
-  {to:'/resident/voluntary-contribution', label: 'Quỹ đóng góp tự nguyện', icon: Heart }
-
+  { to: '/resident/issue-report', label: 'Báo cáo sự cố', icon: AlertTriangle },
+  { to: '/resident/voluntary-contribution', label: 'Quỹ đóng góp tự nguyện', icon: Heart }
 ];
 
 const bottomItems = [
