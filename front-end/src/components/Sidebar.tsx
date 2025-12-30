@@ -1,10 +1,10 @@
-import { 
-  LayoutDashboard, 
-  Users, 
-  Building2, 
-  Receipt, 
-  Wrench, 
-  Bell, 
+import {
+  LayoutDashboard,
+  Users,
+  Building2,
+  Receipt,
+  Wrench,
+  Bell,
   Lightbulb,
   ChevronLeft,
   Settings,
@@ -13,7 +13,7 @@ import {
   Heart
 } from 'lucide-react';
 // Sửa lỗi: Import đúng từ 'framer-motion'
-import { motion, AnimatePresence } from 'framer-motion'; 
+import { motion, AnimatePresence } from 'framer-motion';
 // 1. Import NavLink và useNavigate
 import { NavLink, useNavigate } from 'react-router-dom';
 import React from 'react'
@@ -34,20 +34,20 @@ const menuItems = [
   { id: 'services', label: 'Sự Cố/Yêu Cầu', icon: Wrench, path: '/management/services' },
   { id: 'notifications', label: 'Thông Báo', icon: Bell, path: '/management/notifications' },
   { id: 'extra-services', label: 'Dịch vụ phát sinh', icon: Lightbulb, path: '/management/extra-services' },
-  {id: 'voluntary-contributions', label: 'Khoản thu tự nguyện', icon: Heart, path: '/management/voluntary-contributions'}
+  { id: 'voluntary-contributions', label: 'Khoản thu tự nguyện', icon: Heart, path: '/management/voluntary-contributions' }
 ];
 
 const bottomItems = [
   // Đã Dịch
   { id: 'settings', label: 'Cài Đặt', icon: Settings, path: '/management/settings' },
   { id: 'profile', label: 'Hồ Sơ', icon: User, path: '/management/profile' },
-  { id: 'logout', label: 'Đăng Xuất', icon: LogOut, path: null }, 
+  { id: 'logout', label: 'Đăng Xuất', icon: LogOut, path: null },
 ];
 
 // Hàm này không cần logic logout, chỉ cần gọi prop được truyền từ AppContent
 export function Sidebar({ isOpen, onClose, onLogout }: SidebarProps) {
   // Không cần useNavigate ở đây vì đã dùng NavLink và onLogout được truyền từ ngoài
-  
+
   return (
     <>
       <AnimatePresence>
@@ -72,8 +72,11 @@ export function Sidebar({ isOpen, onClose, onLogout }: SidebarProps) {
             >
               {/* Tiêu đề */}
               <div className="p-6 border-b-2 border-gray-100 flex items-center justify-between">
-                <h1 className="text-xl font-bold text-cyan-600">BuildingHub</h1>
-                <button 
+                <div className="flex items-center gap-2">
+                  <img src="/avatar.png" alt="Logo" className="w-8 h-8 object-contain" />
+                  <h1 className="text-xl font-bold text-cyan-600">BuildingHub</h1>
+                </div>
+                <button
                   onClick={onClose}
                   className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
                 >
@@ -85,15 +88,15 @@ export function Sidebar({ isOpen, onClose, onLogout }: SidebarProps) {
               <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
                 {menuItems.map((item) => {
                   const Icon = item.icon;
-                  
+
                   return (
                     <NavLink
                       key={item.id}
                       to={item.path}
-                      onClick={onClose} 
+                      onClick={onClose}
                       className={({ isActive }) => `
                         w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-medium
-                        ${isActive 
+                        ${isActive
                           ? 'bg-cyan-500 text-white shadow-md shadow-cyan-200'
                           : 'text-gray-600 hover:bg-gray-50 hover:text-cyan-600'
                         }
@@ -110,7 +113,7 @@ export function Sidebar({ isOpen, onClose, onLogout }: SidebarProps) {
               <div className="p-4 border-t-2 border-gray-100 space-y-1">
                 {bottomItems.map((item) => {
                   const Icon = item.icon;
-                  
+
                   if (item.id === 'logout') {
                     return (
                       <button
@@ -131,8 +134,8 @@ export function Sidebar({ isOpen, onClose, onLogout }: SidebarProps) {
                       onClick={onClose}
                       className={({ isActive }) => `
                         w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-medium
-                        ${isActive 
-                          ? 'bg-gray-100 text-cyan-600' 
+                        ${isActive
+                          ? 'bg-gray-100 text-cyan-600'
                           : 'text-gray-600 hover:bg-gray-50'
                         }
                       `}

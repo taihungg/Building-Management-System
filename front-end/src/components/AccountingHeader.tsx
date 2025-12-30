@@ -12,9 +12,9 @@ interface AccountingHeaderProps {
 export function AccountingHeader({ onMenuClick, onNavigate }: AccountingHeaderProps) {
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const profileRef = useRef<HTMLDivElement>(null);
-  
+
   // Lấy thời gian thực từ hook
-  const currentTime = useRealtime(1000); 
+  const currentTime = useRealtime(1000);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -33,7 +33,7 @@ export function AccountingHeader({ onMenuClick, onNavigate }: AccountingHeaderPr
   };
 
   const currentPeriod = getCurrentPeriod();
-  
+
   // Định dạng thời gian và ngày tháng
   const formattedTime = currentTime.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
   const formattedDate = currentTime.toLocaleDateString('vi-VN', { weekday: 'short', month: 'short', day: 'numeric' });
@@ -46,14 +46,12 @@ export function AccountingHeader({ onMenuClick, onNavigate }: AccountingHeaderPr
           <button onClick={onMenuClick} className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
             <Menu className="w-6 h-6 text-gray-700" />
           </button>
-          
-          <button 
+
+          <button
             onClick={() => onNavigate('accounting-dashboard')}
             className="flex items-center gap-3 hover:opacity-85 transition-opacity"
           >
-            <div className="w-10 h-10 rounded-full flex items-center justify-center shadow-sm" style={{ backgroundImage: 'linear-gradient(135deg, #22d3ee 0%, #2563eb 100%)' }}>
-              <span className="text-white text-xl font-bold">B</span>
-            </div>
+            <img src="/avatar.png" alt="Logo" className="w-10 h-10 rounded-full object-contain shadow-sm" />
             <div className="text-left">
               <h1 className="text-xl font-semibold text-gray-900">BuildingHub</h1>
               <p className="text-xs text-gray-600">Phòng kế toán</p>
@@ -73,24 +71,24 @@ export function AccountingHeader({ onMenuClick, onNavigate }: AccountingHeaderPr
         </div>
 
         <div className="flex items-center gap-6">
-          
+
           {/* Digital Badge: Clock Display */}
           <div className="hidden sm:flex items-center gap-3 bg-slate-100 px-6 py-2 rounded-full">
-             <Clock className="w-4 h-4 text-gray-600 flex-shrink-0" />
-             <div className="flex items-center gap-2">
-                <span className="font-mono font-semibold text-gray-800">
-                    {formattedTime}
-                </span>
-                <span className="text-gray-400">|</span>
-                <span className="text-sm text-gray-600">
-                    {currentPeriod} ({formattedDate})
-                </span>
-             </div>
+            <Clock className="w-4 h-4 text-gray-600 flex-shrink-0" />
+            <div className="flex items-center gap-2">
+              <span className="font-mono font-semibold text-gray-800">
+                {formattedTime}
+              </span>
+              <span className="text-gray-400">|</span>
+              <span className="text-sm text-gray-600">
+                {currentPeriod} ({formattedDate})
+              </span>
+            </div>
           </div>
           {/* --- End: Digital Badge Clock --- */}
-          
+
           <div className="relative" ref={profileRef}>
-            <button 
+            <button
               onClick={() => setIsProfileOpen(!isProfileOpen)}
               className="w-10 h-10 rounded-full flex items-center justify-center text-white font-semibold shadow-md transition-transform hover:scale-105"
               style={{ backgroundImage: 'linear-gradient(135deg, #22d3ee 0%, #2563eb 100%)' }}

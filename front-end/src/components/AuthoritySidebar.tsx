@@ -44,18 +44,16 @@ const bottomItems: MenuItem[] = [
 // --- Hàm Tiện Ích: Định nghĩa Class cho NavLink ---
 
 const getTopNavLinkClass = ({ isActive }: { isActive: boolean }) =>
-  `w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all no-underline text-sm font-medium ${
-    isActive
-      ? 'bg-blue-600 text-white shadow-lg'
-      : 'text-gray-700 hover:bg-gray-100'
+  `w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all no-underline text-sm font-medium ${isActive
+    ? 'bg-blue-600 text-white shadow-lg'
+    : 'text-gray-700 hover:bg-gray-100'
   }`;
 
 const getBottomNavLinkClass = ({ isActive }: { isActive: boolean }) =>
-    `w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all no-underline text-sm ${
-        isActive
-            ? 'bg-blue-100 text-blue-700 font-medium'
-            : 'text-gray-700 hover:bg-gray-100 font-normal'
-    }`;
+  `w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all no-underline text-sm ${isActive
+    ? 'bg-blue-100 text-blue-700 font-medium'
+    : 'text-gray-700 hover:bg-gray-100 font-normal'
+  }`;
 
 // --- Component Chính (Sử dụng Named Export) ---
 
@@ -124,7 +122,10 @@ export function AuthoritySidebar({ isOpen, onClose, onLogout }: AuthoritySidebar
           >
             {/* Header */}
             <div className="p-6 border-b border-gray-100 flex items-center justify-between">
-              <h1 className="text-xl text-blue-600 font-extrabold tracking-tight">BuildingHub</h1>
+              <div className="flex items-center gap-2">
+                <img src="/avatar.png" alt="Logo" className="w-8 h-8 object-contain" />
+                <h1 className="text-xl text-blue-600 font-extrabold tracking-tight">BuildingHub</h1>
+              </div>
               <button
                 onClick={onClose}
                 className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
