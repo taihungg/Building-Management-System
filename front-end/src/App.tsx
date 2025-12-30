@@ -27,7 +27,6 @@ import { ResidentBills } from './components/ResidentBills';
 import { BuildingRules } from './components/BuildingRules';
 import { ResidentProfile } from './components/ResidentProfile';
 import { ResidentSettings } from './components/ResidentSettings';
-import { ResidentIssueReport } from './components/ResidentIssueReport';
 
 // Accounting
 import { AccountingSidebar } from './components/AccountingSidebar';
@@ -73,9 +72,7 @@ const managementTabToPath: Record<string, string> = {
 const residentTabToPath: Record<string, string> = {
   'resident-dashboard': '/resident/dashboard', 'resident-announcements': '/resident/announcements',
   'resident-bills': '/resident/invoice', 'building-rules': '/resident/rules',
-  'profile': '/resident/profile', 'settings': '/resident/settings', 'resident-voluntary-contribution':'/resident/voluntary-contribution',
-  'resident-issue-report': '/resident/issue-report'
-
+  'profile': '/resident/profile', 'settings': '/resident/settings', 'resident-voluntary-contribution':'/resident/voluntary-contribution'
 };
 
 const accountingTabToPath: Record<string, string> = {
@@ -225,7 +222,7 @@ function AppContent() {
         baseUrl = '/management/*';
     } else if (userRole === 'resident') {
         sidebar = <ResidentSidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} onLogout={handleLogout} />;
-        header = <ResidentHeader onMenuClick={() => setIsSidebarOpen(true)} onNavigate={(p) => p === 'logout' ? handleLogout() : handleSetActiveTab(p)} />;
+        header = <ResidentHeader onMenuClick={() => setIsSidebarOpen(true)} onNavigate={(p) => p === 'logout' ? handleLogout() : navigate(`/resident/${p}`)} />;
         routes = (
             <>
                 <Route path="/" element={<Navigate to="dashboard" replace />} />
@@ -233,7 +230,6 @@ function AppContent() {
                 <Route path="/announcements" element={<ResidentAnnouncements />} />
                 <Route path="/invoice" element={<ResidentBills />} />
                 <Route path="/rules" element={<BuildingRules />} />
-                <Route path="/issue-report" element={<ResidentIssueReport />} />
                 <Route path="/profile" element={<ResidentProfile />} />
                 <Route path="/settings" element={<ResidentSettings />} />
                 <Route path="/voluntary-contribution" element={<ResidentVoluntaryContribution />} />
