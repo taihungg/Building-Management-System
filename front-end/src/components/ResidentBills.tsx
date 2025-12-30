@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Search, Download, Clock, CheckCircle, AlertCircle, Receipt, Calendar, CheckCircle2, Wallet, Banknote, AlertTriangle } from 'lucide-react';
 import { authProvider } from './auth';
+import { Toaster, toast } from 'sonner';
 
 type BillDetail = {
   item: string;
@@ -217,7 +218,7 @@ export function ResidentBills() {
   const filteredBills = bills.filter(bill => {
     const matchesSearch = bill.type.toLowerCase().includes(searchTerm.toLowerCase()) ||
       bill.period.toLowerCase().includes(searchTerm.toLowerCase());
-    
+
     let matchesStatus = false;
     if (statusFilter === 'All') {
       matchesStatus = true;
@@ -227,7 +228,7 @@ export function ResidentBills() {
     } else {
       matchesStatus = bill.status === statusFilter;
     }
-    
+
     return matchesSearch && matchesStatus;
   });
 
@@ -353,9 +354,40 @@ export function ResidentBills() {
     document.body.removeChild(link);
   };
 
+  const handleDownloadPDF = async (invoiceId: string, apartmentLabel: string) => {
+    try {
+      toast.info("Đang tải xuống PDF...");
+      const url = `https://untoasted-jean-unsympathisingly.ngrok-free.dev/api/v1/accounting/${invoiceId}/export-pdf`;
+
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'ngrok-skip-browser-warning': 'true',
+        },
+      });
+
+      if (!response.ok) throw new Error("Lỗi tải PDF");
+
+      const blob = await response.blob();
+      const href = window.URL.createObjectURL(blob);
+      const anchorElement = document.createElement('a');
+      anchorElement.href = href;
+      anchorElement.download = `HoaDon_${apartmentLabel}.pdf`;
+      document.body.appendChild(anchorElement);
+      anchorElement.click();
+      document.body.removeChild(anchorElement);
+      window.URL.revokeObjectURL(href);
+      toast.success("Tải PDF thành công");
+    } catch (error) {
+      console.error(error);
+      toast.error("Không thể tải PDF");
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div>
+        <Toaster position="top-center" richColors />
         <h1 className="text-3xl text-gray-900">Quản lý tài chính</h1>
       </div>
 
@@ -423,19 +455,18 @@ export function ResidentBills() {
             <button
               key={status}
               onClick={() => setStatusFilter(status as typeof statusFilter)}
-              className={`px-6 py-3 rounded-xl transition-all ${
-                statusFilter === status
-                  ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-lg'
-                  : 'bg-white text-gray-700 border-2 border-gray-200 hover:bg-gray-50'
-              }`}
+              className={`px-6 py-3 rounded-xl transition-all ${statusFilter === status
+                ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-lg'
+                : 'bg-white text-gray-700 border-2 border-gray-200 hover:bg-gray-50'
+                }`}
             >
-              {status === 'All' ? 'Tất cả' : 
-               status === 'Paid' ? 'Đã thanh toán' :
-               status === 'Pending' ? 'Chưa thanh toán' : 'Quá hạn'}
+              {status === 'All' ? 'Tất cả' :
+                status === 'Paid' ? 'Đã thanh toán' :
+                  status === 'Pending' ? 'Chưa thanh toán' : 'Quá hạn'}
             </button>
           ))}
         </div>
-        <button 
+        <button
           onClick={handleExport}
           disabled={isLoading || bills.length === 0}
           className="flex items-center gap-2 px-6 py-3 bg-white text-gray-700 border-2 border-gray-200 rounded-xl hover:bg-gray-50 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
@@ -454,32 +485,29 @@ export function ResidentBills() {
         )}
         {filteredBills.map((bill) => {
           const isOverdue = bill.status === 'Pending' && new Date(bill.dueDate) < new Date();
-          
+
           return (
-            <div 
-              key={bill.id} 
-              className={`bg-white rounded-2xl p-6 border-2 transition-all hover:shadow-md ${
-                isOverdue ? 'border-red-200 bg-red-50/30' : 'border-gray-200'
-              }`}
+            <div
+              key={bill.id}
+              className={`bg-white rounded-2xl p-6 border-2 transition-all hover:shadow-md ${isOverdue ? 'border-red-200 bg-red-50/30' : 'border-gray-200'
+                }`}
             >
               <div className="flex items-start justify-between">
                 <div className="flex-1">
                   <div className="flex items-center gap-4 mb-3">
-                    <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${
-                      bill.status === 'Paid' ? 'bg-emerald-100' :
+                    <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${bill.status === 'Paid' ? 'bg-emerald-100' :
                       isOverdue ? 'bg-red-100' : 'bg-blue-100'
-                    }`}>
-                      <Receipt className={`w-6 h-6 ${
-                        bill.status === 'Paid' ? 'text-emerald-600' :
+                      }`}>
+                      <Receipt className={`w-6 h-6 ${bill.status === 'Paid' ? 'text-emerald-600' :
                         isOverdue ? 'text-red-600' : 'text-blue-600'
-                      }`} />
+                        }`} />
                     </div>
                     <div>
                       <h3 className="text-lg font-semibold text-gray-900">{bill.type}</h3>
                       <p className="text-sm text-gray-500">{bill.period}</p>
                     </div>
                   </div>
-                  
+
                   <div className="grid grid-cols-3 gap-4 mb-4">
                     <div>
                       <p className="text-xs text-gray-500 mb-1">Số tiền</p>
@@ -494,16 +522,15 @@ export function ResidentBills() {
                     </div>
                     <div>
                       <p className="text-xs text-gray-500 mb-1">Trạng thái</p>
-                      <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm ${
-                        bill.status === 'Paid' ? 'bg-emerald-100 text-emerald-800' :
+                      <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm ${bill.status === 'Paid' ? 'bg-emerald-100 text-emerald-800' :
                         isOverdue ? 'bg-red-100 text-red-800' :
-                        'bg-blue-100 text-blue-800'
-                      }`}>
+                          'bg-blue-100 text-blue-800'
+                        }`}>
                         {bill.status === 'Paid' && <CheckCircle className="w-4 h-4" />}
                         {(bill.status === 'Pending' && !isOverdue) && <Clock className="w-4 h-4" />}
                         {isOverdue && <AlertCircle className="w-4 h-4" />}
-                        {bill.status === 'Paid' ? 'Đã thanh toán' : 
-                         isOverdue ? 'Quá hạn' : 'Chưa thanh toán'}
+                        {bill.status === 'Paid' ? 'Đã thanh toán' :
+                          isOverdue ? 'Quá hạn' : 'Chưa thanh toán'}
                       </span>
                     </div>
                   </div>
@@ -520,8 +547,16 @@ export function ResidentBills() {
                   >
                     Xem chi tiết
                   </button>
+                  <button
+                    onClick={() => handleDownloadPDF(bill.id, apartmentLabel || '')}
+                    className="px-4 py-2 bg-gray-100 text-gray-700 text-sm rounded-lg hover:bg-gray-200 transition-colors flex items-center justify-center gap-2"
+                  >
+                    <Download className="w-4 h-4" />
+                    Tải hóa đơn
+                  </button>
+
                   {bill.status === 'Pending' && !bill.paidDate && (
-                    <button 
+                    <button
                       onClick={() => handlePayBill(bill)}
                       disabled={isLoading}
                       className="px-4 py-2 bg-white text-blue-600 border-2 border-blue-600 text-sm rounded-lg hover:bg-blue-50 transition-colors"
@@ -549,7 +584,7 @@ export function ResidentBills() {
                 ✕
               </button>
             </div>
-            
+
             <div className="space-y-4 mb-6">
               <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
                 <span className="text-gray-700">Loại hóa đơn:</span>
@@ -563,7 +598,7 @@ export function ResidentBills() {
                 <span className="text-gray-700">Hạn thanh toán:</span>
                 <span className="font-semibold text-gray-900">{selectedBill.dueDate}</span>
               </div>
-              
+
               <div className="border-t-2 border-gray-200 pt-4">
                 <h3 className="text-lg font-semibold text-gray-900 mb-3">Chi tiết các khoản phí:</h3>
                 <div className="space-y-2">
@@ -589,7 +624,7 @@ export function ResidentBills() {
                 Đóng
               </button>
               {selectedBill.status === 'Pending' && !selectedBill.paidDate && (
-                <button 
+                <button
                   onClick={() => handlePayBill(selectedBill)}
                   disabled={isLoading}
                   className="flex-1 px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl hover:shadow-lg transition-all"
@@ -611,11 +646,11 @@ export function ResidentBills() {
 
       {/* Success Modal */}
       {showSuccessModal && paidBill && (
-        <div 
+        <div
           className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
           onClick={() => setShowSuccessModal(false)}
         >
-          <div 
+          <div
             className="bg-white rounded-2xl p-8 max-w-md w-full border-2 border-gray-200"
             onClick={(e) => e.stopPropagation()}
           >
@@ -626,7 +661,7 @@ export function ResidentBills() {
               <h2 className="text-2xl font-bold text-gray-900 mb-2">Đã gửi yêu cầu thanh toán</h2>
               <p className="text-gray-600">Yêu cầu thanh toán của bạn đã được ghi nhận.</p>
             </div>
-            
+
             <div className="bg-gray-50 rounded-xl p-4 mb-6">
               <div className="space-y-2">
                 <div className="flex justify-between">

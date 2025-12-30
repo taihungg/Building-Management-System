@@ -611,7 +611,7 @@ export function DebtManagement() {
     try {
       toast.info("Đang tải xuống PDF...");
       // Assuming GET endpoint for PDF download
-      const url = `https://untoasted-jean-unsympathisingly.ngrok-free.dev/api/v1/accounting/invoices/${invoiceId}/download-pdf`;
+      const url = `https://untoasted-jean-unsympathisingly.ngrok-free.dev/api/v1/accounting/${invoiceId}/export-pdf`;
 
       const response = await fetch(url, {
         method: 'GET',

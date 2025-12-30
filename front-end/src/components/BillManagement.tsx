@@ -1,58 +1,58 @@
-import { Search, Clock, CheckCircle, AlertCircle, Calendar, FileText, Settings, DollarSign, List } from 'lucide-react'; 
-import { Modal } from './Modal'; 
-import { Toaster, toast } from 'sonner'; 
-import { useState, useEffect, useCallback } from 'react'; 
+import { Search, Clock, CheckCircle, AlertCircle, Calendar, FileText, Settings, DollarSign, List, Download } from 'lucide-react';
+import { Modal } from './Modal';
+import { Toaster, toast } from 'sonner';
+import { useState, useEffect, useCallback } from 'react';
 import React from 'react';
 
 const STATUS_OPTIONS = [
-    { label: 'Tất cả', value: 'All', color: 'gray' }, 
-    { label: 'Đã thanh toán', value: 'PAID', icon: CheckCircle, color: 'green' }, 
-    { label: 'Đang chờ', value: 'PENDING', icon: Clock, color: 'blue' },
-    { label: 'Chưa thanh toán', value: 'UNPAID', icon: AlertCircle, color: 'orange' }, 
+  { label: 'Tất cả', value: 'All', color: 'gray' },
+  { label: 'Đã thanh toán', value: 'PAID', icon: CheckCircle, color: 'green' },
+  { label: 'Đang chờ', value: 'PENDING', icon: Clock, color: 'blue' },
+  { label: 'Chưa thanh toán', value: 'UNPAID', icon: AlertCircle, color: 'orange' },
 ];
 
 const parseLocalDateTime = (value) => {
-    if (!value) return null;
-    if (Array.isArray(value)) {
-        const [year, month, day, hour = 0, minute = 0, second = 0, nano = 0] = value;
-        const millisecond = Math.floor(nano / 1_000_000);
-        return new Date(year, month - 1, day, hour, minute, second, millisecond);
+  if (!value) return null;
+  if (Array.isArray(value)) {
+    const [year, month, day, hour = 0, minute = 0, second = 0, nano = 0] = value;
+    const millisecond = Math.floor(nano / 1_000_000);
+    return new Date(year, month - 1, day, hour, minute, second, millisecond);
+  }
+  if (typeof value === 'string' || typeof value === 'number') {
+    const date = new Date(value);
+    return Number.isNaN(date.getTime()) ? null : date;
+  }
+  if (typeof value === 'object') {
+    const year = value.year;
+    const month = value.monthValue ?? value.month;
+    const day = value.dayOfMonth ?? value.day;
+    const hour = value.hour ?? 0;
+    const minute = value.minute ?? 0;
+    const second = value.second ?? 0;
+    const nano = value.nano ?? 0;
+    if (typeof year === 'number' && typeof month === 'number' && typeof day === 'number') {
+      const millisecond = Math.floor(nano / 1_000_000);
+      return new Date(year, month - 1, day, hour, minute, second, millisecond);
     }
-    if (typeof value === 'string' || typeof value === 'number') {
-        const date = new Date(value);
-        return Number.isNaN(date.getTime()) ? null : date;
-    }
-    if (typeof value === 'object') {
-        const year = value.year;
-        const month = value.monthValue ?? value.month;
-        const day = value.dayOfMonth ?? value.day;
-        const hour = value.hour ?? 0;
-        const minute = value.minute ?? 0;
-        const second = value.second ?? 0;
-        const nano = value.nano ?? 0;
-        if (typeof year === 'number' && typeof month === 'number' && typeof day === 'number') {
-            const millisecond = Math.floor(nano / 1_000_000);
-            return new Date(year, month - 1, day, hour, minute, second, millisecond);
-        }
-    }
-    return null;
+  }
+  return null;
 };
 
 const formatDate = (value) => {
-    const date = parseLocalDateTime(value);
-    if (!date) return '—';
-    return date.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' });
+  const date = parseLocalDateTime(value);
+  if (!date) return '—';
+  return date.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' });
 };
 
 export function BillManagement() {
   const currentDate = new Date();
-  
+
   const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState('All'); 
+  const [statusFilter, setStatusFilter] = useState('All');
   const [isCreateBillOpen, setIsCreateBillOpen] = useState(false);
-  const [bills, setBills] = useState([]);
+  const [bills, setBills] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [selectedMonth, setSelectedMonth] = useState(currentDate.getMonth() + 1); 
+  const [selectedMonth, setSelectedMonth] = useState(currentDate.getMonth() + 1);
   const [selectedYear, setSelectedYear] = useState(currentDate.getFullYear());
 
   // Đã cập nhật đầy đủ các trường đếm (count) để Stat Card hiển thị được
@@ -66,14 +66,14 @@ export function BillManagement() {
     pendingCount: 0,
     unpaidCount: 0
   });
-  
+
   const fetchBills = useCallback(async () => {
     setIsLoading(true);
     try {
       // 1. Thay domain sang ngrok mới
       let url = `https://untoasted-jean-unsympathisingly.ngrok-free.dev/api/v1/accounting/invoices?year=${selectedYear}`;
-      if (selectedMonth > 0) url += `&month=${selectedMonth}`; 
-      
+      if (selectedMonth > 0) url += `&month=${selectedMonth}`;
+
       const response = await fetch(url, {
         method: 'GET',
         headers: {
@@ -109,16 +109,16 @@ export function BillManagement() {
         const amount = Number(bill.totalAmount) || 0;
         acc.totalRevenue += amount;
         acc.totalCount += 1; // Tăng tổng số bill
-        
+
         if (bill.status === 'PAID') {
-            acc.paidAmount += amount;
-            acc.paidCount += 1;
+          acc.paidAmount += amount;
+          acc.paidCount += 1;
         } else if (bill.status === 'PENDING') {
-            acc.pendingAmount += amount;
-            acc.pendingCount += 1;
+          acc.pendingAmount += amount;
+          acc.pendingCount += 1;
         } else {
-            acc.unpaidAmount += amount;
-            acc.unpaidCount += 1;
+          acc.unpaidAmount += amount;
+          acc.unpaidCount += 1;
         }
         return acc;
       },
@@ -133,7 +133,7 @@ export function BillManagement() {
     }).format(amount);
 
   const filteredBills = bills.filter(bill => {
-    const matchStatus = statusFilter === 'All' || bill.status === statusFilter; 
+    const matchStatus = statusFilter === 'All' || bill.status === statusFilter;
     const term = searchTerm.toLowerCase();
     const matchSearch = bill.apartmentLabel && bill.apartmentLabel.toLowerCase().includes(term);
     return matchStatus && matchSearch;
@@ -143,42 +143,72 @@ export function BillManagement() {
 
   const handleExportToExcel = () => {
     const promise = new Promise(async (resolve, reject) => {
-        try {
-            const url = `https://untoasted-jean-unsympathisingly.ngrok-free.dev/api/v1/accounting/invoices/export?month=${selectedMonth}&year=${selectedYear}`;
-            
-            const response = await fetch(url, {
-                method: 'GET',
-                headers: {
-                    // Header quan trọng nhất để ngrok nhả file Excel ra
-                    'ngrok-skip-browser-warning': 'true'
-                }
-            });
+      try {
+        const url = `https://untoasted-jean-unsympathisingly.ngrok-free.dev/api/v1/accounting/invoices/export?month=${selectedMonth}&year=${selectedYear}`;
 
-            if (!response.ok) throw new Error("Lỗi xuất báo cáo");
+        const response = await fetch(url, {
+          method: 'GET',
+          headers: {
+            // Header quan trọng nhất để ngrok nhả file Excel ra
+            'ngrok-skip-browser-warning': 'true'
+          }
+        });
 
-            const blob = await response.blob();
-            const href = window.URL.createObjectURL(blob);
-            const anchorElement = document.createElement('a');
-            anchorElement.href = href;
-            anchorElement.download = `HoaDon_${selectedMonth}_${selectedYear}.xlsx`;
-            document.body.appendChild(anchorElement);
-            anchorElement.click();
-            document.body.removeChild(anchorElement);
-            window.URL.revokeObjectURL(href); // Dọn dẹp bộ nhớ sau khi tải xong
-            
-            resolve(`Xuất file thành công!`);
-        } catch (error) { 
-            console.log(error); // Log lỗi chuẩn cú pháp chú dặn
-            reject(error); 
-        }
+        if (!response.ok) throw new Error("Lỗi xuất báo cáo");
+
+        const blob = await response.blob();
+        const href = window.URL.createObjectURL(blob);
+        const anchorElement = document.createElement('a');
+        anchorElement.href = href;
+        anchorElement.download = `HoaDon_${selectedMonth}_${selectedYear}.xlsx`;
+        document.body.appendChild(anchorElement);
+        anchorElement.click();
+        document.body.removeChild(anchorElement);
+        window.URL.revokeObjectURL(href); // Dọn dẹp bộ nhớ sau khi tải xong
+
+        resolve(`Xuất file thành công!`);
+      } catch (error) {
+        console.log(error); // Log lỗi chuẩn cú pháp chú dặn
+        reject(error);
+      }
     });
 
-    toast.promise(promise, { 
-        loading: `Đang xuất báo cáo...`, 
-        success: (m) => m, 
-        error: (e) => e.message 
+    toast.promise(promise, {
+      loading: `Đang xuất báo cáo...`,
+      success: (m) => m,
+      error: (e) => e.message
     });
-};
+  };
+
+  const handleDownloadPDF = async (invoiceId, apartmentLabel) => {
+    try {
+      toast.info("Đang tải xuống PDF...");
+      const url = `https://untoasted-jean-unsympathisingly.ngrok-free.dev/api/v1/accounting/${invoiceId}/export-pdf`;
+
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'ngrok-skip-browser-warning': 'true',
+        },
+      });
+
+      if (!response.ok) throw new Error("Lỗi tải PDF");
+
+      const blob = await response.blob();
+      const href = window.URL.createObjectURL(blob);
+      const anchorElement = document.createElement('a');
+      anchorElement.href = href;
+      anchorElement.download = `HoaDon_${apartmentLabel}.pdf`;
+      document.body.appendChild(anchorElement);
+      anchorElement.click();
+      document.body.removeChild(anchorElement);
+      window.URL.revokeObjectURL(href);
+      toast.success("Tải PDF thành công");
+    } catch (error) {
+      console.error(error);
+      toast.error("Không thể tải PDF");
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -201,37 +231,37 @@ export function BillManagement() {
               {[currentDate.getFullYear() - 1, currentDate.getFullYear(), currentDate.getFullYear() + 1].map(y => <option key={y} value={y}>Năm {y}</option>)}
             </select>
           </div>
-          
+
           <button onClick={handleExportToExcel} className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-black rounded-xl shadow-md hover:bg-emerald-700 transition duration-150">
             <FileText className="w-5 h-5" /> Xuất báo cáo
           </button>
         </div>
       </div>
-      
+
       {/* SEARCH AND FILTER BUTTONS ROW */}
       <div className="flex items-start gap-4">
         <div className="flex gap-4 w-full" style={{ alignItems: 'center' }}>
-            <div className="bg-white rounded-xl shadow-lg border border-gray-100" style={{ padding: '0.75rem', width : '20%', flexShrink: 0 }}>
-                <div className="relative">
-                    <input type="text" placeholder="Tìm theo số phòng..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)}
-                        className="w-full bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm px-10 py-2 h-9"
-                    />
-                </div>
+          <div className="bg-white rounded-xl shadow-lg border border-gray-100" style={{ padding: '0.75rem', width: '20%', flexShrink: 0 }}>
+            <div className="relative">
+              <input type="text" placeholder="Tìm theo số phòng..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm px-10 py-2 h-9"
+              />
             </div>
-            <div className="flex flex-wrap gap-2"> 
-                {STATUS_OPTIONS.map(option => (
-                    <button key={option.value} onClick={() => setStatusFilter(option.value)}
-                        style={{
-                            backgroundColor: statusFilter === option.value ? (option.color === 'green' ? '#16a34a' : option.color === 'blue' ? '#2563eb' : option.color === 'orange' ? '#ea580c' : '#4b5563') : '#ffffff',
-                            color: statusFilter === option.value ? '#ffffff' : '#4b5563'
-                        }}
-                        className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-medium transition duration-150 border ${statusFilter !== option.value ? 'border-gray-300 hover:bg-gray-50' : 'border-transparent shadow-md'}`}
-                    >
-                        {option.icon && <option.icon className="w-4 h-4" />}
-                        {option.label}
-                    </button>
-                ))}
-            </div>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {STATUS_OPTIONS.map(option => (
+              <button key={option.value} onClick={() => setStatusFilter(option.value)}
+                style={{
+                  backgroundColor: statusFilter === option.value ? (option.color === 'green' ? '#16a34a' : option.color === 'blue' ? '#2563eb' : option.color === 'orange' ? '#ea580c' : '#4b5563') : '#ffffff',
+                  color: statusFilter === option.value ? '#ffffff' : '#4b5563'
+                }}
+                className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-medium transition duration-150 border ${statusFilter !== option.value ? 'border-gray-300 hover:bg-gray-50' : 'border-transparent shadow-md'}`}
+              >
+                {option.icon && <option.icon className="w-4 h-4" />}
+                {option.label}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
@@ -244,8 +274,8 @@ export function BillManagement() {
           <div style={{ marginTop: '20px' }}>
             <p style={{ fontSize: '13px', fontWeight: 400, color: '#64748b', margin: 0 }}>Tổng doanh thu tháng {selectedMonth}</p>
             <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px' }}>
-                <p style={{ fontSize: '22px', fontWeight: 700, color: '#1e293b', margin: '2px 0 0 0' }}>{formatCurrency(stats.totalRevenue)}</p>
-                <p style={{ fontSize: '12px', fontWeight: 500, color: '#94a3b8' }}>{stats.totalCount} bill</p>
+              <p style={{ fontSize: '22px', fontWeight: 700, color: '#1e293b', margin: '2px 0 0 0' }}>{formatCurrency(stats.totalRevenue)}</p>
+              <p style={{ fontSize: '12px', fontWeight: 500, color: '#94a3b8' }}>{stats.totalCount} bill</p>
             </div>
           </div>
         </div>
@@ -257,8 +287,8 @@ export function BillManagement() {
           <div style={{ marginTop: '20px' }}>
             <p style={{ fontSize: '13px', fontWeight: 400, color: '#64748b', margin: 0 }}>Đã thanh toán</p>
             <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px' }}>
-                <p style={{ fontSize: '22px', fontWeight: 700, color: '#059669', margin: '2px 0 0 0' }}>{formatCurrency(stats.paidAmount)}</p>
-                <p style={{ fontSize: '12px', fontWeight: 500, color: '#94a3b8' }}>{stats.paidCount} bill</p>
+              <p style={{ fontSize: '22px', fontWeight: 700, color: '#059669', margin: '2px 0 0 0' }}>{formatCurrency(stats.paidAmount)}</p>
+              <p style={{ fontSize: '12px', fontWeight: 500, color: '#94a3b8' }}>{stats.paidCount} bill</p>
             </div>
           </div>
         </div>
@@ -270,8 +300,8 @@ export function BillManagement() {
           <div style={{ marginTop: '20px' }}>
             <p style={{ fontSize: '13px', fontWeight: 400, color: '#64748b', margin: 0 }}>Đang chờ xử lý</p>
             <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px' }}>
-                <p style={{ fontSize: '22px', fontWeight: 700, color: '#2563eb', margin: '2px 0 0 0' }}>{formatCurrency(stats.pendingAmount)}</p>
-                <p style={{ fontSize: '12px', fontWeight: 500, color: '#94a3b8' }}>{stats.pendingCount} bill</p>
+              <p style={{ fontSize: '22px', fontWeight: 700, color: '#2563eb', margin: '2px 0 0 0' }}>{formatCurrency(stats.pendingAmount)}</p>
+              <p style={{ fontSize: '12px', fontWeight: 500, color: '#94a3b8' }}>{stats.pendingCount} bill</p>
             </div>
           </div>
         </div>
@@ -283,8 +313,8 @@ export function BillManagement() {
           <div style={{ marginTop: '20px' }}>
             <p style={{ fontSize: '13px', fontWeight: 400, color: '#64748b', margin: 0 }}>Chưa thanh toán</p>
             <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px' }}>
-                <p style={{ fontSize: '22px', fontWeight: 700, color: '#e11d48', margin: '2px 0 0 0' }}>{formatCurrency(stats.unpaidAmount)}</p>
-                <p style={{ fontSize: '12px', fontWeight: 500, color: '#94a3b8' }}>{stats.unpaidCount} bill</p>
+              <p style={{ fontSize: '22px', fontWeight: 700, color: '#e11d48', margin: '2px 0 0 0' }}>{formatCurrency(stats.unpaidAmount)}</p>
+              <p style={{ fontSize: '12px', fontWeight: 500, color: '#94a3b8' }}>{stats.unpaidCount} bill</p>
             </div>
           </div>
         </div>
@@ -293,7 +323,7 @@ export function BillManagement() {
       {/* TABLE */}
       <div className="bg-white rounded-2xl shadow-md border border-gray-200 overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full min-w-max"> 
+          <table className="w-full min-w-max">
             <thead className="bg-gradient-to-r from-indigo-100 to-purple-100/70 text-gray-700">
               <tr>
                 <th className="px-6 py-3 text-left font-semibold">Căn hộ</th>
@@ -301,6 +331,7 @@ export function BillManagement() {
                 <th className="px-6 py-3 text-left font-semibold">Ngày tạo</th>
                 <th className="px-6 py-3 text-left font-semibold">Ngày thanh toán</th>
                 <th className="px-6 py-3 text-left font-semibold">Trạng thái</th>
+                <th className="px-6 py-3 text-left font-semibold">Thao tác</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
@@ -322,6 +353,17 @@ export function BillManagement() {
                         ${bill.status === 'PAID' ? 'bg-emerald-100 text-emerald-800' : bill.status === 'PENDING' ? 'bg-blue-100 text-blue-800' : 'bg-rose-100 text-rose-800'}`}>
                         {bill.status === 'PAID' ? 'Đã thanh toán' : bill.status === 'PENDING' ? 'Đang chờ' : 'Chưa thanh toán'}
                       </span>
+                    </td>
+                    <td className="px-6 py-4">
+
+                      <button
+                        onClick={() => handleDownloadPDF(bill.id, bill.apartmentLabel)}
+                        className="p-2 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                        title="Tải hóa đơn PDF"
+                      >
+                        <Download className="w-5 h-5" />
+                      </button>
+
                     </td>
                   </tr>
                 ))
