@@ -384,6 +384,52 @@ export function ResidentBills() {
     }
   };
 
+  const handleViewDetail = async (bill: Bill) => {
+    setIsLoading(true);
+    try {
+      const url = `${API_BASE_URL}/api/v1/accounting/invoices/${bill.id}`;
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          ...NGROK_HEADERS,
+        },
+      });
+
+      if (!response.ok) {
+        const errorBody = await response.text();
+        console.error("Fetch detail error:", response.status, errorBody);
+        throw new Error(`Lỗi tải chi tiết: ${response.status}`);
+      }
+
+      const res = await response.json();
+      const { invoice, details: apiDetails } = res.data;
+
+      // Use raw details
+      const details = apiDetails || [];
+
+      // If no details found, fallback to total
+      if (details.length === 0 && invoice.totalAmount) {
+        details.push({ serviceTitle: 'Tổng hóa đơn', amount: invoice.totalAmount });
+      }
+
+      setSelectedBill({
+        ...bill,
+        ...invoice, // update with fresh invoice data
+        details: details
+      });
+
+    } catch (error) {
+      console.error(error);
+      toast.error("Lỗi tải chi tiết hóa đơn");
+      // Fallback to showing rudimentary info if fetch fails, or just don't show modal?
+      // Let's show existing info but warn
+      setSelectedBill(bill);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div>
@@ -542,10 +588,11 @@ export function ResidentBills() {
 
                 <div className="flex flex-col gap-2 ml-4">
                   <button
-                    onClick={() => setSelectedBill(bill)}
-                    className="px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white text-sm rounded-lg hover:shadow-lg transition-all"
+                    onClick={() => handleViewDetail(bill)}
+                    disabled={isLoading}
+                    className="px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white text-sm rounded-lg hover:shadow-lg transition-all disabled:opacity-70"
                   >
-                    Xem chi tiết
+                    {isLoading ? 'Đang tải...' : 'Xem chi tiết'}
                   </button>
                   <button
                     onClick={() => handleDownloadPDF(bill.id, apartmentLabel || '')}
@@ -601,14 +648,38 @@ export function ResidentBills() {
 
               <div className="border-t-2 border-gray-200 pt-4">
                 <h3 className="text-lg font-semibold text-gray-900 mb-3">Chi tiết các khoản phí:</h3>
-                <div className="space-y-2">
-                  {selectedBill.details.map((detail, index) => (
-                    <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                      <span className="text-gray-700">{detail.item}</span>
-                      <span className="font-semibold text-gray-900">{detail.amount.toLocaleString('vi-VN')} đ</span>
-                    </div>
-                  ))}
+                <div className="overflow-hidden rounded-lg border border-gray-200">
+                  <table className="w-full text-sm text-left">
+                    <thead className="bg-gray-50 text-gray-500 font-medium">
+                      <tr>
+                        <th className="px-4 py-2">Dịch vụ</th>
+                        <th className="px-4 py-2 text-center">SL</th>
+                        <th className="px-4 py-2 text-right">Thành tiền</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100">
+                      {selectedBill.details.map((detail: any, index: number) => (
+                        <tr key={index} className="hover:bg-gray-50">
+                          <td className="px-4 py-3">
+                            <div className="font-medium text-gray-900">{detail.serviceTitle || detail.item || 'Dịch vụ'}</div>
+                            {(detail.oldIndex != null && detail.newIndex != null) && (
+                              <div className="text-xs text-gray-500 mt-0.5">
+                                Chỉ số: {detail.oldIndex} → {detail.newIndex}
+                              </div>
+                            )}
+                          </td>
+                          <td className="px-4 py-3 text-center text-gray-600">
+                            {detail.quantity ? `${detail.quantity} ${(detail.serviceTitle === 'Phí quản lý' || detail.item === 'Phí quản lý') ? '' : (detail.serviceUnit || '')}` : '-'}
+                          </td>
+                          <td className="px-4 py-3 text-right font-medium text-gray-900">
+                            {detail.amount?.toLocaleString('vi-VN')} đ
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
+
                 <div className="flex items-center justify-between p-4 bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl mt-4">
                   <span className="text-lg font-semibold text-gray-900">Tổng cộng:</span>
                   <span className="text-xl font-bold text-gray-900">{selectedBill.amount.toLocaleString('vi-VN')} đ</span>

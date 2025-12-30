@@ -1,4 +1,4 @@
-import { Search, Clock, CheckCircle, AlertCircle, Calendar, FileText, Settings, DollarSign, List, Download } from 'lucide-react';
+import { Search, Clock, CheckCircle, AlertCircle, Calendar, FileText, Settings, DollarSign, List, Download, Eye } from 'lucide-react';
 import { Modal } from './Modal';
 import { Toaster, toast } from 'sonner';
 import { useState, useEffect, useCallback } from 'react';
@@ -52,6 +52,7 @@ export function BillManagement() {
   const [isCreateBillOpen, setIsCreateBillOpen] = useState(false);
   const [bills, setBills] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [selectedBill, setSelectedBill] = useState<any>(null); // For detail modal
   const [selectedMonth, setSelectedMonth] = useState(currentDate.getMonth() + 1);
   const [selectedYear, setSelectedYear] = useState(currentDate.getFullYear());
 
@@ -210,6 +211,51 @@ export function BillManagement() {
     }
   };
 
+  const handleViewDetail = async (billId: string) => {
+    // Show modal with loading state potentially, or fetch then show.
+    // Let's set a temp selectedBills with loading state or just modify modal to handle loading?
+    // Using simple fetch-then-show for consistency with ResidentBills
+    try {
+      // Find basic info locally first to show immediately
+      const basicBill = bills.find(b => b.id === billId);
+      if (basicBill) {
+        setSelectedBill({ ...basicBill, details: [], isLoadingDetails: true });
+      }
+
+      const url = `https://untoasted-jean-unsympathisingly.ngrok-free.dev/api/v1/accounting/invoices/${billId}`;
+      console.log(`Fetching detail for billId: ${billId} at URL: ${url}`);
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'ngrok-skip-browser-warning': 'true'
+        }
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error(`Fetch failed: ${response.status} ${response.statusText}`, errorText);
+        throw new Error(`Lỗi tải chi tiết: ${response.status} ${errorText}`);
+      }
+
+      const res = await response.json();
+      const { invoice, details: apiDetails } = res.data;
+
+      const details = apiDetails || [];
+
+      setSelectedBill(prev => ({
+        ...prev,
+        ...invoice, // Merge invoice info from API
+        details: details,
+        isLoadingDetails: false
+      }));
+
+    } catch (error: any) {
+      console.error("Detailed error in handleViewDetail:", error);
+      toast.error(error.message || "Không thể tải chi tiết hóa đơn");
+    }
+  };
+
   return (
     <div className="space-y-6">
       <Toaster position="top-right" richColors />
@@ -244,8 +290,7 @@ export function BillManagement() {
           <div className="bg-white rounded-xl shadow-lg border border-gray-100" style={{ padding: '0.75rem', width: '20%', flexShrink: 0 }}>
             <div className="relative">
               <input type="text" placeholder="Tìm theo số phòng..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm px-10 py-2 h-9"
-              />
+                className="w-full bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm px-10 py-2 h-9" />
             </div>
           </div>
           <div className="flex flex-wrap gap-2">
@@ -356,14 +401,15 @@ export function BillManagement() {
                     </td>
                     <td className="px-6 py-4">
 
-                      <button
-                        onClick={() => handleDownloadPDF(bill.id, bill.apartmentLabel)}
-                        className="p-2 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                        title="Tải hóa đơn PDF"
-                      >
-                        <Download className="w-5 h-5" />
-                      </button>
-
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => handleViewDetail(bill.id)}
+                          className="p-2 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                          title="Xem chi tiết"
+                        >
+                          <Eye className="w-5 h-5" />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))
@@ -371,11 +417,98 @@ export function BillManagement() {
             </tbody>
           </table>
         </div>
-      </div>
-
-      <Modal isOpen={isCreateBillOpen} onClose={() => setIsCreateBillOpen(false)} title="Tạo Hóa Đơn Mới">
+      </div><Modal isOpen={isCreateBillOpen} onClose={() => setIsCreateBillOpen(false)} title="Tạo Hóa Đơn Mới">
         <div className="p-6"><p>Nội dung form tạo hóa đơn...</p></div>
       </Modal>
-    </div>
+
+      {/* DETAIL MODAL */}
+      <Modal
+        isOpen={!!selectedBill}
+        onClose={() => setSelectedBill(null)}
+        title={selectedBill ? `Chi tiết hóa đơn - ${selectedBill.apartmentLabel}` : 'Chi tiết'}
+      >
+        <div className="p-6 space-y-4">
+          {selectedBill && (
+            <>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="p-3 bg-gray-50 rounded-lg">
+                  <p className="text-sm text-gray-500">Kỳ hóa đơn</p>
+                  <p className="font-semibold text-gray-900">Tháng {selectedMonth}/{selectedYear}</p>
+                </div>
+                <div className="p-3 bg-gray-50 rounded-lg">
+                  <p className="text-sm text-gray-500">Trạng thái</p>
+                  <span className={`inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-bold
+                        ${selectedBill.status === 'PAID' ? 'bg-green-100 text-green-700' : selectedBill.status === 'PENDING' ? 'bg-blue-100 text-blue-700' : 'bg-red-100 text-red-700'}`}>
+                    {selectedBill.status}
+                  </span>
+                </div>
+              </div>
+
+              <div className="border-t pt-4">
+
+                <h4 className="font-semibold mb-3">Chi tiết dịch vụ</h4>
+                {selectedBill.isLoadingDetails ? (
+                  <p className="text-center text-gray-500 py-4">Đang tải chi tiết...</p>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm text-left">
+                      <thead className="text-xs text-gray-500 uppercase bg-gray-50">
+                        <tr>
+                          <th className="px-3 py-2">Dịch vụ</th>
+                          <th className="px-3 py-2">Sử dụng</th>
+                          <th className="px-3 py-2 text-right">Đơn giá</th>
+                          <th className="px-3 py-2 text-right">VAT/Phí</th>
+                          <th className="px-3 py-2 text-right">Thành tiền</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-100">
+                        {(selectedBill.details || []).map((d: any, idx: number) => (
+                          <tr key={idx} className="hover:bg-gray-50">
+                            <td className="px-3 py-2 font-medium text-gray-900">
+                              {d.serviceTitle || d.serviceName || d.description}
+                              {d.description && d.serviceTitle && d.description !== d.serviceTitle && (
+                                <p className="text-xs text-gray-500 font-normal">{d.description}</p>
+                              )}
+                            </td>
+                            <td className="px-3 py-2 text-gray-600">
+                              <div className="flex flex-col">
+                                <span>{d.quantity} {(d.serviceTitle === 'Phí quản lý' || d.item === 'Phí quản lý') ? 'm2' : d.serviceUnit}</span>
+                                {(d.oldIndex != null && d.newIndex != null) && (
+                                  <span className="text-xs text-gray-400">
+                                    (Cũ: {d.oldIndex} - Mới: {d.newIndex})
+                                  </span>
+                                )}
+                              </div>
+                            </td>
+                            <td className="px-3 py-2 text-right">
+                              {d.unitPrice ? formatCurrency(d.unitPrice) : '-'}
+                            </td>
+                            <td className="px-3 py-2 text-right text-xs text-gray-500">
+                              {d.vat ? `VAT: ${formatCurrency(d.vat)}` : ''}
+                              {d.env ? `\nENV: ${formatCurrency(d.env)}` : ''}
+                            </td>
+                            <td className="px-3 py-2 text-right font-bold text-gray-900">
+                              {formatCurrency(d.amount)}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                    {(!selectedBill.details || selectedBill.details.length === 0) && (
+                      <p className="text-sm text-gray-400 italic text-center py-4">Không có thông tin chi tiết dịch vụ</p>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              <div className="flex justify-between items-center pt-4 border-t mt-4">
+                <span className="text-lg font-bold text-gray-900">Tổng cộng</span>
+                <span className="text-xl font-bold text-blue-600">{formatCurrency(selectedBill.totalAmount)}</span>
+              </div>
+            </>
+          )}
+        </div>
+      </Modal>
+    </div >
   );
 }

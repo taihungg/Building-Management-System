@@ -638,6 +638,45 @@ export function DebtManagement() {
     }
   };
 
+  const handleViewDetail = async (billId: string) => {
+    try {
+      // Find basic info locally first to show immediately
+      const basicBill = bills.find(b => b.id === billId);
+      if (basicBill) {
+        setSelectedInvoice({ ...basicBill, details: [], isLoadingDetails: true });
+      }
+
+      const url = `https://untoasted-jean-unsympathisingly.ngrok-free.dev/api/v1/accounting/invoices/${billId}`;
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: { 'ngrok-skip-browser-warning': 'true' }
+      });
+
+      if (!response.ok) {
+        const err = await response.text();
+        console.error("Error fetching invoice details:", response.status, err);
+        throw new Error(`Không thể tải chi tiết (${response.status})`);
+      }
+
+      const res = await response.json();
+      const { invoice, details } = res.data;
+
+      // Keep raw details for full display
+      const processedDetails = details || [];
+
+      setSelectedInvoice((prev: any) => ({
+        ...prev,
+        ...invoice,
+        details: processedDetails,
+        isLoadingDetails: false
+      }));
+
+    } catch (error) {
+      console.error(error);
+      toast.error("Không thể tải chi tiết hóa đơn");
+    }
+  };
+
   return (
     <div className="space-y-6">
       <style>{`
@@ -947,7 +986,7 @@ export function DebtManagement() {
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
-                              setSelectedInvoice(bill);
+                              handleViewDetail(bill.id);
                             }}
                             className="px-3 py-1.5 bg-blue-50 text-blue-600 rounded-lg text-sm font-medium hover:bg-blue-100 transition-colors"
                           >
@@ -1168,61 +1207,73 @@ export function DebtManagement() {
                     <p className="text-xs text-gray-500 mb-1">Căn hộ</p>
                     <p className="text-sm font-medium text-gray-900">{selectedInvoice.apartmentLabel || 'N/A'}</p>
                   </div>
-                  <div>
-                    <p className="text-xs text-gray-500 mb-1">Tòa nhà</p>
-                    <p className="text-sm font-medium text-gray-900">Landmark 81</p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-gray-500 mb-1">Chủ hộ</p>
-                    <p className="text-sm font-medium text-gray-900">Nguyễn Văn A</p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-gray-500 mb-1">SĐT</p>
-                    <p className="text-sm font-medium text-gray-900">0987.654.321</p>
-                  </div>
                 </div>
               </div>
+
 
               {/* Section B: Bill Breakdown */}
               <div className="mb-6">
                 <h3 className="text-sm font-semibold text-gray-900 mb-3">Chi tiết phí</h3>
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-gray-600">Tiền điện</span>
-                    <span className="text-sm font-medium text-gray-900">
-                      {formatCurrency((selectedInvoice.totalAmount || 0) * 0.6)}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-gray-600">Tiền nước</span>
-                    <span className="text-sm font-medium text-gray-900">
-                      {formatCurrency((selectedInvoice.totalAmount || 0) * 0.1)}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-gray-600">Tiền dịch vụ</span>
-                    <span className="text-sm font-medium text-gray-900">
-                      {formatCurrency((selectedInvoice.totalAmount || 0) * 0.2)}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-gray-600">Tiền gửi xe</span>
-                    <span className="text-sm font-medium text-gray-900">
-                      {formatCurrency((selectedInvoice.totalAmount || 0) * 0.1)}
-                    </span>
-                  </div>
 
-                  {/* Separator */}
-                  <div className="border-t border-dashed border-gray-300 my-3" />
+                {selectedInvoice.isLoadingDetails ? (
+                  <div className="flex justify-center py-4"><Loader2 className="animate-spin text-blue-500" /></div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm text-left">
+                      <thead className="text-xs text-gray-500 uppercase bg-gray-50">
+                        <tr>
+                          <th className="px-2 py-2">Dịch vụ</th>
+                          <th className="px-2 py-2 text-center">SL</th>
+                          <th className="px-2 py-2 text-right">Đơn giá</th>
+                          <th className="px-2 py-2 text-right">Thành tiền</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-100">
+                        {(selectedInvoice.details || []).map((detail: any, idx: number) => (
+                          <tr key={idx}>
+                            <td className="px-2 py-2">
+                              <div className="font-medium text-gray-900">{detail.serviceTitle || detail.serviceName || detail.description}</div>
+                              {(detail.oldIndex != null && detail.newIndex != null) && (
+                                <div className="text-xs text-gray-500">
+                                  {detail.oldIndex} → {detail.newIndex}
+                                </div>
+                              )}
+                              {detail.description && detail.description !== detail.serviceTitle && (
+                                <div className="text-xs text-gray-400 truncate max-w-[150px]" title={detail.description}>
+                                  {detail.description}
+                                </div>
+                              )}
+                            </td>
+                            <td className="px-2 py-2 text-center text-gray-600">
+                              {detail.quantity} <span className="text-xs">{(detail.serviceTitle === 'Phí quản lý') ? '' : detail.serviceUnit}</span>
+                            </td>
+                            <td className="px-2 py-2 text-right text-gray-600">
+                              {detail.unitPrice ? formatCurrency(detail.unitPrice) : '-'}
+                            </td>
+                            <td className="px-2 py-2 text-right font-bold text-gray-900">
+                              {formatCurrency(detail.amount)}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
 
-                  {/* Total */}
-                  <div className="flex items-center justify-between">
-                    <span className="text-base font-bold text-gray-900">TỔNG CỘNG</span>
-                    <span className="text-lg font-bold text-blue-600">
-                      {formatCurrency(selectedInvoice.totalAmount || 0)}
-                    </span>
+                    {(!selectedInvoice.details || selectedInvoice.details.length === 0) && (
+                      <p className="text-sm text-gray-500 italic text-center py-2">Không có chi tiết dịch vụ.</p>
+                    )}
+
+                    {/* Separator */}
+                    <div className="border-t border-dashed border-gray-300 my-3" />
+
+                    {/* Total */}
+                    <div className="flex items-center justify-between">
+                      <span className="text-base font-bold text-gray-900">TỔNG CỘNG</span>
+                      <span className="text-lg font-bold text-blue-600">
+                        {formatCurrency(selectedInvoice.totalAmount || 0)}
+                      </span>
+                    </div>
                   </div>
-                </div>
+                )}
               </div>
 
               {/* Close Button */}
@@ -1235,7 +1286,8 @@ export function DebtManagement() {
             </div>
           </div>
         </>
-      )}
-    </div>
+      )
+      }
+    </div >
   );
 }
