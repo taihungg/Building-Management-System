@@ -433,24 +433,30 @@ export function VoluntaryContribution() {
             <Toaster position="top-right" richColors />
 
             {/* HEADER - ÉP NÚT SANG PHẢI BẰNG INLINE CSS */}
-            <div className="relative z-10 flex flex-col md:flex-row md:items-end md:justify-between gap-4 w-full mb-8">
+            <div className="relative z-10 flex flex-row items-center justify-between gap-4 w-full mb-8">
                 <div className="flex-1">
-                    <h1 className="text-[30px] font-normal text-gray-900 m-0 tracking-[-0.5px]">Quỹ đóng góp tự nguyện</h1>
-                    <p className="text-sm text-gray-500 mt-1 mb-0">Quản lý các chiến dịch thiện nguyện và cộng đồng (Không tính vào hóa đơn)</p>
+                    <h1 className="text-xl font-bold text-gray-900 m-0 tracking-[-0.5px] leading-tight">
+                        Quỹ đóng góp tự nguyện
+                    </h1>
+                    <p className="text-[26px] text-gray-500 mt-1 mb-0">
+                        Quản lý các chiến dịch thiện nguyện và cộng đồng (Không tính vào hóa đơn)
+                    </p>
                 </div>
 
+                {/* Nút đã thu nhỏ và nằm bên phải ngang hàng */}
                 <button
                     onClick={openCreateModal}
                     disabled={isLoadingCampaigns}
-                    className="w-full md:w-[220px] h-[52px] flex items-center justify-center gap-2 px-6 rounded-2xl font-bold text-white hover:scale-105 active:scale-95 transition-all disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:scale-100"
+                    className="flex items-center justify-center gap-2 px-6 h-[44px] rounded-xl font-bold text-white hover:scale-105 active:scale-95 transition-all disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:scale-100 whitespace-nowrap"
                     style={{
                         backgroundColor: '#e11d48',
                         border: 'none',
-                        boxShadow: '0 10px 15px -3px rgba(225, 29, 72, 0.3)',
+                        fontSize: '14px', // Làm chữ nhỏ lại một chút cho tinh tế
+                        boxShadow: '0 8px 12px -3px rgba(225, 29, 72, 0.25)',
                     }}
                 >
-                    {isLoadingCampaigns ? <Loader2 className="w-5 h-5 animate-spin" /> : <Plus size={20} />}
-                    {isLoadingCampaigns ? 'Đang tải...' : 'Tạo Campaign mới'}
+                    {isLoadingCampaigns ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus size={18} />}
+                    {isLoadingCampaigns ? 'Đang tải...' : 'Tạo Campaign'}
                 </button>
             </div>
 
@@ -578,11 +584,6 @@ export function VoluntaryContribution() {
                                             boxShadow: isSuccess ? '0 0 10px rgba(16, 185, 129, 0.4)' : 'none'
                                         }}
                                     ></div>
-                                </div>
-                                
-                                <div className="flex justify-between text-[10px] font-bold text-slate-400 uppercase">
-                                    <span>Mục tiêu: {formatCurrency(goal)}</span>
-                                    <span>{cp.totalContributors ?? 0} người</span>
                                 </div>
                             </div>
 
