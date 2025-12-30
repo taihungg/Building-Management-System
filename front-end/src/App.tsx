@@ -72,7 +72,7 @@ const managementTabToPath: Record<string, string> = {
 const residentTabToPath: Record<string, string> = {
   'resident-dashboard': '/resident/dashboard', 'resident-announcements': '/resident/announcements',
   'resident-bills': '/resident/invoice', 'building-rules': '/resident/rules',
-  'profile': '/resident/profile', 'settings': '/resident/settings',   'extra-services':'/resident/extra-services'
+  'profile': '/resident/profile', 'settings': '/resident/settings',   'resident-voluntary-contribution':'/resident/voluntary-contribution'
 
 };
 
@@ -233,7 +233,7 @@ function AppContent() {
                 <Route path="/rules" element={<BuildingRules />} />
                 <Route path="/profile" element={<ResidentProfile />} />
                 <Route path="/settings" element={<ResidentSettings />} />
-                <Route path="/voluntary-contributions" element={<ResidentVoluntaryContribution />} />
+                <Route path="/voluntary-contribution" element={<ResidentVoluntaryContribution />} />
 
             </>
         );
