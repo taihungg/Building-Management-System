@@ -80,7 +80,7 @@ const accountingTabToPath: Record<string, string> = {
   'accounting-dashboard': '/accounting/dashboard', 'debt-management': '/accounting/debt',
   'invoice-creation': '/accounting/invoice', 'profile': '/accounting/profile',
   'settings': '/accounting/settings', 'accounting-voluntary-contribution': '/accounting/voluntary-contribution'
-  , 'extra-services':'/accoungting/extra-services'
+  , 'extra-services':'/accounting/extra-services', 'payment-requests': '/accounting/payment-requests'
 };
 
 const authorityTabToPath: Record<string, string> = {
@@ -222,7 +222,7 @@ function AppContent() {
         );
         baseUrl = '/management/*';
     } else if (userRole === 'resident') {
-        sidebar = <ResidentSidebar activeTab={activeTab} setActiveTab={handleSetActiveTab} isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} onLogout={handleLogout} />;
+        sidebar = <ResidentSidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} onLogout={handleLogout} />;
         header = <ResidentHeader onMenuClick={() => setIsSidebarOpen(true)} onLogout={handleLogout} />;
         routes = (
             <>
@@ -239,7 +239,7 @@ function AppContent() {
         );
         baseUrl = '/resident/*';
     } else if (userRole === 'accounting') {
-        sidebar = <AccountingSidebar activeTab={activeTab} setActiveTab={handleSetActiveTab} isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} onLogout={handleLogout} />;
+        sidebar = <AccountingSidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} onLogout={handleLogout} />;
         header = <AccountingHeader onMenuClick={() => setIsSidebarOpen(true)} onNavigate={(p) => p === 'logout' ? handleLogout() : navigate(`/accounting/${p}`)} />;
         routes = (
             <>
@@ -247,6 +247,7 @@ function AppContent() {
                 <Route path="/dashboard" element={<AccountingDashboard />} />
                 <Route path="/debt" element={<DebtManagement />} />
                 <Route path="/invoice" element={<InvoiceCreation />} />
+                <Route path="/payment-requests" element={<ServiceManagement issueType="COMPLAINT" mode="payment_requests" title="Yêu cầu thanh toán" subtitle="Danh sách yêu cầu cư dân gửi khi thanh toán hóa đơn" />} />
                 <Route path="/profile" element={<AccountingProfile />} />
                 <Route path="/settings" element={<Settings />} />
                 <Route path="/voluntary-contribution" element={<AccountingVoluntaryContribution />} />
@@ -256,7 +257,7 @@ function AppContent() {
         );
         baseUrl = '/accounting/*';
     } else if (userRole === 'authority') {
-        sidebar = <AuthoritySidebar activeTab={activeTab} setActiveTab={handleSetActiveTab} isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} onLogout={handleLogout} />;
+        sidebar = <AuthoritySidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} onLogout={handleLogout} />;
         header = <AuthorityHeader onMenuClick={() => setIsSidebarOpen(true)} onLogout={handleLogout} />;
         routes = (
             <>

@@ -1,8 +1,54 @@
-import { Bell, AlertCircle, Info, CheckCircle, Calendar, FileText, X, AlertTriangle, Wallet, Megaphone } from 'lucide-react';
+import { Bell, X, AlertTriangle, Wallet, Megaphone } from 'lucide-react';
 import { useState, useEffect, useMemo } from 'react';
-import { getAnnouncements, markAsRead, markAllAsRead, getUnreadCount, subscribe, type Announcement } from '../utils/announcements';
 import { formatRelativeTime, formatDate } from '../utils/timeUtils';
 import { useRealtime } from '../hooks/useRealtime';
+import { authProvider } from './auth';
+
+type ApiEnvelope<T> = {
+  message?: string;
+  data?: T;
+};
+
+type AnnouncementApi = {
+  id: string;
+  title: string;
+  message: string;
+  senderName?: string;
+  createdDate?: string;
+  isRead?: boolean;
+};
+
+type Announcement = {
+  id: string;
+  type: 'alert' | 'info' | 'success';
+  title: string;
+  message: string;
+  createdAt: string;
+  read: boolean;
+};
+
+const API_BASE_URL = 'https://untoasted-jean-unsympathisingly.ngrok-free.dev';
+const NGROK_HEADERS = { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' };
+
+const inferAnnouncementType = (title: string, message: string): Announcement['type'] => {
+  const text = `${title} ${message}`.toLowerCase();
+
+  if (
+    text.includes('khẩn') ||
+    text.includes('cảnh báo') ||
+    text.includes('bảo trì') ||
+    text.includes('hệ thống') ||
+    text.includes('maintenance')
+  ) {
+    return 'alert';
+  }
+
+  if (text.includes('hoàn thành') || text.includes('xong') || text.includes('đã hoàn tất')) {
+    return 'success';
+  }
+
+  return 'info';
+};
 
 // Icon mapping function to match summary cards
 const getNotificationIcon = (announcement: Announcement) => {
@@ -45,19 +91,62 @@ const getNotificationIcon = (announcement: Announcement) => {
 
 export function ResidentAnnouncements() {
   const [filter, setFilter] = useState<'all' | 'unread' | 'read'>('all');
-  const [announcements, setAnnouncements] = useState<Announcement[]>(getAnnouncements());
+  const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [selectedAnnouncement, setSelectedAnnouncement] = useState<Announcement | null>(null);
-  const [unreadCount, setUnreadCount] = useState(getUnreadCount());
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const currentTime = useRealtime(60000); // Update every minute for real-time time display
 
   useEffect(() => {
-    const unsubscribe = subscribe((updatedAnnouncements) => {
-      setAnnouncements(updatedAnnouncements);
-      setUnreadCount(getUnreadCount());
-    });
-    return () => {
-      unsubscribe();
+    const fetchAnnouncements = async () => {
+      setIsLoading(true);
+      setError(null);
+
+      try {
+        const residentId = authProvider.getPersonId();
+        if (!residentId) {
+          throw new Error('Không tìm thấy thông tin cư dân');
+        }
+
+        const res = await fetch(`${API_BASE_URL}/api/announcements/resident/${residentId}`, {
+          method: 'GET',
+          headers: NGROK_HEADERS,
+        });
+        const json = (await res.json()) as ApiEnvelope<AnnouncementApi[]>;
+
+        if (!res.ok) {
+          throw new Error(json.message || 'Không thể tải danh sách thông báo');
+        }
+
+        const list = Array.isArray(json.data) ? json.data : [];
+        const mapped: Announcement[] = list
+          .filter((a) => !!a.id)
+          .map((a) => {
+            const createdAt = a.createdDate || new Date().toISOString();
+            return {
+              id: a.id,
+              type: inferAnnouncementType(a.title || '', a.message || ''),
+              title: a.title || '',
+              message: a.message || '',
+              createdAt,
+              read: !!a.isRead,
+            };
+          })
+          .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
+        setAnnouncements(mapped);
+        setUnreadCount(mapped.filter((a) => !a.read).length);
+      } catch (e) {
+        setError((e as Error).message);
+        setAnnouncements([]);
+        setUnreadCount(0);
+      } finally {
+        setIsLoading(false);
+      }
     };
+
+    void fetchAnnouncements();
   }, []);
 
   // Memoize filtered announcements with real-time time formatting
@@ -70,23 +159,71 @@ export function ResidentAnnouncements() {
       })
       .map(ann => ({
         ...ann,
-        displayTime: ann.createdAt ? formatRelativeTime(ann.createdAt) : ann.time
+        displayTime: ann.createdAt ? formatRelativeTime(ann.createdAt) : 'Không rõ'
       }));
   }, [announcements, filter, currentTime]);
 
-  const handleMarkAsRead = (id: number) => {
-    markAsRead(id);
+  const handleMarkAsRead = async (id: string) => {
+    try {
+      const residentId = authProvider.getPersonId();
+      if (!residentId) {
+        throw new Error('Không tìm thấy thông tin cư dân');
+      }
+
+      const res = await fetch(`${API_BASE_URL}/api/announcements/resident/${residentId}/announcement/${id}/read`, {
+        method: 'PATCH',
+        headers: NGROK_HEADERS,
+      });
+      const json = (await res.json()) as ApiEnvelope<null>;
+
+      if (!res.ok) {
+        throw new Error(json.message || 'Không thể đánh dấu đã đọc');
+      }
+
+      setAnnouncements((prev) => prev.map((a) => (a.id === id ? { ...a, read: true } : a)));
+      setUnreadCount((prev) => Math.max(0, prev - 1));
+    } catch (e) {
+      setError((e as Error).message);
+    }
   };
 
-  const handleMarkAllAsRead = () => {
-    markAllAsRead();
+  const handleMarkAllAsRead = async () => {
+    setError(null);
+    const unread = announcements.filter((a) => !a.read);
+    if (unread.length === 0) return;
+
+    try {
+      const residentId = authProvider.getPersonId();
+      if (!residentId) {
+        throw new Error('Không tìm thấy thông tin cư dân');
+      }
+
+      const results = await Promise.allSettled(
+        unread.map((a) =>
+          fetch(`${API_BASE_URL}/api/announcements/resident/${residentId}/announcement/${a.id}/read`, {
+            method: 'PATCH',
+            headers: NGROK_HEADERS,
+          })
+        )
+      );
+
+      const hasFailure = results.some((r) => r.status === 'rejected' || (r.status === 'fulfilled' && !r.value.ok));
+      if (hasFailure) {
+        throw new Error('Không thể đánh dấu tất cả đã đọc');
+      }
+
+      setAnnouncements((prev) => prev.map((a) => ({ ...a, read: true })));
+      setUnreadCount(0);
+    } catch (e) {
+      setError((e as Error).message);
+    }
   };
 
   const handleAnnouncementClick = (announcement: Announcement) => {
     setSelectedAnnouncement(announcement);
     // Auto mark as read when clicked
     if (!announcement.read) {
-      markAsRead(announcement.id);
+      void handleMarkAsRead(announcement.id);
     }
   };
 
@@ -95,6 +232,12 @@ export function ResidentAnnouncements() {
       <div>
         <h1 className="text-3xl text-gray-900">Hộp thư cư dân</h1>
       </div>
+
+      {error && (
+        <div className="bg-white rounded-2xl p-4 border-2 border-red-200 text-red-700">
+          {error}
+        </div>
+      )}
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
@@ -179,6 +322,12 @@ export function ResidentAnnouncements() {
 
       {/* Announcements List */}
       <div className="space-y-3">
+        {isLoading && (
+          <div className="bg-white rounded-2xl p-6 border-2 border-gray-200 text-gray-600">
+            Đang tải thông báo...
+          </div>
+        )}
+
         {filteredAnnouncements.map((announcement) => {
           const { Icon, bgClass, textClass } = getNotificationIcon(announcement);
           
@@ -210,7 +359,7 @@ export function ResidentAnnouncements() {
                   <p className="text-gray-600 mb-2 line-clamp-2">{announcement.message}</p>
                   <div className="flex items-center justify-between">
                     <span className="text-xs text-gray-500">
-                      Ngày đăng: {announcement.createdAt ? formatDate(announcement.createdAt) : announcement.date}
+                      Ngày đăng: {announcement.createdAt ? formatDate(announcement.createdAt) : 'Không rõ'}
                     </span>
                     {!announcement.read && (
                       <button
@@ -254,9 +403,9 @@ export function ResidentAnnouncements() {
                 <div className="flex-1">
                   <h2 className="text-2xl font-bold text-gray-900 mb-2">{selectedAnnouncement.title}</h2>
                     <div className="flex items-center gap-4 text-sm text-gray-500">
-                      <span>Ngày đăng: {selectedAnnouncement.createdAt ? formatDate(selectedAnnouncement.createdAt) : selectedAnnouncement.date}</span>
+                      <span>Ngày đăng: {selectedAnnouncement.createdAt ? formatDate(selectedAnnouncement.createdAt) : 'Không rõ'}</span>
                       <span>•</span>
-                      <span>{selectedAnnouncement.createdAt ? formatRelativeTime(selectedAnnouncement.createdAt) : selectedAnnouncement.time}</span>
+                      <span>{selectedAnnouncement.createdAt ? formatRelativeTime(selectedAnnouncement.createdAt) : 'Không rõ'}</span>
                     </div>
                 </div>
               </div>
@@ -291,7 +440,7 @@ export function ResidentAnnouncements() {
         </div>
       )}
 
-      {filteredAnnouncements.length === 0 && (
+      {!isLoading && filteredAnnouncements.length === 0 && (
         <div className="bg-white rounded-2xl p-12 border-2 border-gray-200 text-center">
           <Bell className="w-16 h-16 text-gray-400 mx-auto mb-4" />
           <p className="text-gray-600 text-lg">Không có thông báo nào</p>
@@ -300,4 +449,3 @@ export function ResidentAnnouncements() {
     </div>
   );
 }
-
