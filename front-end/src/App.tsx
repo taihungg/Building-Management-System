@@ -73,7 +73,6 @@ const residentTabToPath: Record<string, string> = {
   'resident-dashboard': '/resident/dashboard', 'resident-announcements': '/resident/announcements',
   'resident-bills': '/resident/invoice', 'building-rules': '/resident/rules',
   'profile': '/resident/profile', 'settings': '/resident/settings',   'resident-voluntary-contribution':'/resident/voluntary-contribution'
-
 };
 
 const accountingTabToPath: Record<string, string> = {

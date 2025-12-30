@@ -80,6 +80,18 @@ export function ApartmentManagement() {
   const [residentToAdd, setResidentToAdd] = useState("");
   const [isProcessingResident, setIsProcessingResident] = useState(false);
   
+  // --- STATE CHO SEARCHABLE DROPDOWNS
+  const [ownerSearchKeyword, setOwnerSearchKeyword] = useState("");
+  const [ownerSearchResults, setOwnerSearchResults] = useState([]);
+  const [showOwnerDropdown, setShowOwnerDropdown] = useState(false);
+  const [residentSearchKeyword, setResidentSearchKeyword] = useState("");
+  const [residentSearchResults, setResidentSearchResults] = useState([]);
+  const [showResidentDropdown, setShowResidentDropdown] = useState(false);
+  // State cho dropdown "Chọn Chủ Sở Hữu" trong form thêm căn hộ
+  const [newOwnerSearchKeyword, setNewOwnerSearchKeyword] = useState("");
+  const [newOwnerSearchResults, setNewOwnerSearchResults] = useState([]);
+  const [showNewOwnerDropdown, setShowNewOwnerDropdown] = useState(false);
+  
 
   // 1. Fetch Danh sách căn hộ
   const fetchApartments = async () => {
@@ -120,6 +132,33 @@ export function ApartmentManagement() {
     }
   };
 
+  // Search residents by keyword
+  const searchResidents = async (keyword: string) => {
+    if (!keyword || keyword.trim() === '') {
+      return [];
+    }
+    try {
+      const NGROK_HEADERS = { 
+        'Content-Type': 'application/json',
+        'ngrok-skip-browser-warning': 'true' 
+      };
+      const response = await fetch(`https://untoasted-jean-unsympathisingly.ngrok-free.dev/api/v1/residents?keyword=${encodeURIComponent(keyword)}`, {
+        headers: NGROK_HEADERS
+      });
+      if (response.ok) {
+        const json = await response.json();
+        // API có thể trả về { success: true, data: [...] } hoặc { data: [...] }
+        const data = json.success ? json.data : (json.data || json);
+        return Array.isArray(data) ? data : [];
+      }
+      console.error('Search residents failed:', response.status);
+      return [];
+    } catch (err) {
+      console.error('Error searching residents:', err);
+      return [];
+    }
+  };
+
   // 2. Fetch Dropdown Data (Buildings & Owners)
   const fetchFormDependencies = async () => {
     try {
@@ -157,8 +196,10 @@ export function ApartmentManagement() {
     if (selectedApartment && isViewModalOpen) {
         if (selectedApartment.owner) {
             setEditingOwnerId(selectedApartment.owner.id);
+            setOwnerSearchKeyword(selectedApartment.owner.fullName);
         } else {
             setEditingOwnerId("none");
+            setOwnerSearchKeyword("");
         }
     }
   }, [selectedApartment, isViewModalOpen]);
@@ -239,7 +280,10 @@ export function ApartmentManagement() {
             setNewRoomNumber(""); 
             setNewFloor(""); 
             setNewArea(""); 
+            setNewBuildingId("");
             setNewOwnerId("none");
+            setNewOwnerSearchKeyword("");
+            setShowNewOwnerDropdown(false);
             
             // Chú nhớ đảm bảo hàm fetchApartments cũng đã được đổi domain ngrok nhé
             await fetchApartments();
@@ -398,7 +442,10 @@ export function ApartmentManagement() {
             await handleViewDetail(selectedApartment.id); 
             await fetchApartments(); 
             
+            // Clear input và dropdown sau khi thêm thành công
             setResidentToAdd("");
+            setResidentSearchKeyword("");
+            setShowResidentDropdown(false);
             return "Đã thêm cư dân vào căn hộ!";
         } catch (err) {
             // Log lỗi chuẩn cú pháp chú dặn
@@ -658,7 +705,16 @@ export function ApartmentManagement() {
       {/* --- MODAL 1: ADD NEW UNIT (ĐÃ DỊCH) --- */}
       <Modal
     isOpen={isAddUnitOpen}
-    onClose={() => setIsAddUnitOpen(false)}
+    onClose={() => {
+        setIsAddUnitOpen(false);
+        setNewRoomNumber("");
+        setNewFloor("");
+        setNewArea("");
+        setNewBuildingId("");
+        setNewOwnerId("none");
+        setNewOwnerSearchKeyword("");
+        setShowNewOwnerDropdown(false);
+    }}
     title="Thêm Đơn Vị Căn Hộ Mới"
     size="lg" // Giữ nguyên kích thước lớn (lg) để có không gian
 >
@@ -763,71 +819,71 @@ export function ApartmentManagement() {
                 </h3>
                 
                 <div className="col-span-2">
-    <Label className="mb-2 block font-medium text-gray-700">Chọn Chủ Sở Hữu</Label>
-
-    {/* --- BẮT ĐẦU SELECT HTML THUẦN ĐÃ ĐƯỢC TÙY CHỈNH --- */}
-    <div className="relative w-full">
-        <select
-            value={newOwnerId}
-            onChange={(e) => setNewOwnerId(e.target.value)}
-            className="
-                appearance-none /* Loại bỏ giao diện mặc định */
-                bg-white 
-                border border-purple-300 /* Viền màu tím nổi bật */
-                text-gray-700 
-                py-2 
-                pl-4 
-                pr-8 /* Khoảng đệm cho icon */
-                rounded-lg 
-                shadow-sm 
-                font-medium 
-                w-full /* Chiếm toàn bộ chiều rộng */
-                h-10 
-                hover:border-purple-400 
-                focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500
-                transition-all
-                cursor-pointer
-            "
-        >
-            {/* Tùy chọn mặc định */}
-            <option value="none" className="font-semibold text-gray-500">
-                -- Chưa Có Chủ Sở Hữu --
-            </option>
-
-            {/* Tạo các tùy chọn từ danh sách potentialOwners */}
-            {potentialOwners.map(res => (
-                <option key={res.id} value={res.id}>
-                    {/* Kết hợp Tên và Số điện thoại */}
-                    {res.fullName} {res.phoneNumber ? `(${res.phoneNumber})` : ''}
-                </option>
-            ))}
-        </select>
-
-        {/* Icon mũi tên tùy chỉnh (Thay thế mũi tên mặc định) */}
-        <div className="
-            pointer-events-none 
-            absolute 
-            inset-y-0 
-            right-0 
-            flex 
-            items-center 
-            px-2 
-            text-gray-500
-        ">
-            <svg 
-                className="w-4 h-4" 
-                xmlns="http://www.w3.org/2000/svg" 
-                viewBox="0 0 20 20" 
-                fill="currentColor"
-            >
-                <path 
-                    fillRule="evenodd" 
-                    d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" 
-                    clipRule="evenodd" 
-                />
-            </svg>
-        </div>
-    </div>
+                    <Label className="mb-2 block font-medium text-gray-700">Chọn Chủ Sở Hữu</Label>
+                    <div className="relative w-full" style={{ zIndex: showNewOwnerDropdown ? 1001 : 1000 }}>
+                        <input
+                            type="text"
+                            value={newOwnerSearchKeyword}
+                            onChange={async (e) => {
+                                const keyword = e.target.value;
+                                setNewOwnerSearchKeyword(keyword);
+                                if (keyword.trim()) {
+                                    setShowNewOwnerDropdown(true);
+                                    const results = await searchResidents(keyword);
+                                    setNewOwnerSearchResults(results);
+                                } else {
+                                    setNewOwnerSearchResults([]);
+                                    setShowNewOwnerDropdown(false);
+                                    setNewOwnerId("none");
+                                }
+                            }}
+                            onFocus={() => {
+                                if (newOwnerSearchKeyword.trim() || newOwnerSearchResults.length > 0) {
+                                    setShowNewOwnerDropdown(true);
+                                }
+                            }}
+                            onBlur={() => {
+                                setTimeout(() => setShowNewOwnerDropdown(false), 200);
+                            }}
+                            placeholder="Tìm kiếm chủ sở hữu..."
+                            className="w-full h-10 px-4 py-2 bg-white border-2 border-purple-300 text-gray-700 rounded-xl shadow-sm font-medium hover:border-purple-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all"
+                        />
+                        {showNewOwnerDropdown && newOwnerSearchKeyword.trim() && (
+                            <div 
+                                className="absolute z-[9999] w-full mt-1 bg-white border-2 border-gray-300 rounded-xl shadow-xl max-h-60 overflow-y-auto"
+                                onMouseDown={(e) => e.preventDefault()}
+                                style={{ position: 'absolute', top: '100%', left: 0, right: 0 }}
+                            >
+                                <div
+                                    className="px-4 py-3 hover:bg-gray-100 cursor-pointer text-sm transition-colors"
+                                    onClick={() => {
+                                        setNewOwnerId("none");
+                                        setNewOwnerSearchKeyword("");
+                                        setShowNewOwnerDropdown(false);
+                                    }}
+                                >
+                                    -- Chưa Có Chủ Sở Hữu --
+                                </div>
+                                {newOwnerSearchResults.length > 0 ? (
+                                    newOwnerSearchResults.map(res => (
+                                        <div
+                                            key={res.id}
+                                            className="px-4 py-3 hover:bg-gray-100 cursor-pointer text-sm transition-colors"
+                                            onClick={() => {
+                                                setNewOwnerId(res.id);
+                                                setNewOwnerSearchKeyword(res.fullName);
+                                                setShowNewOwnerDropdown(false);
+                                            }}
+                                        >
+                                            {res.fullName} {res.phoneNumber ? `(${res.phoneNumber})` : ''}
+                                        </div>
+                                    ))
+                                ) : (
+                                    <div className="px-4 py-3 text-sm text-gray-500">Không tìm thấy</div>
+                                )}
+                            </div>
+                        )}
+                    </div>
     
     <p className="text-xs text-gray-500 mt-2">
         Nếu chủ sở hữu chưa có trong danh sách cư dân, hãy thêm họ trước.
@@ -839,7 +895,16 @@ export function ApartmentManagement() {
             <div className="flex gap-3 pt-6 border-t mt-6">
                 <Button 
                     variant="outline" 
-                    onClick={() => setIsAddUnitOpen(false)} 
+                    onClick={() => {
+                        setIsAddUnitOpen(false);
+                        setNewRoomNumber("");
+                        setNewFloor("");
+                        setNewArea("");
+                        setNewBuildingId("");
+                        setNewOwnerId("none");
+                        setNewOwnerSearchKeyword("");
+                        setShowNewOwnerDropdown(false);
+                    }} 
                     className="flex-1 h-11 border-gray-300 hover:bg-gray-100 transition-all"
                 >
                     Hủy Bỏ
@@ -934,7 +999,7 @@ export function ApartmentManagement() {
 
                     {/* RIGHT COL: Giữ nguyên Thông tin chủ sở hữu */}
                     <div className="md:col-span-7">
-                        <div className="bg-white border border-indigo-100 rounded-xl shadow-sm h-full flex flex-col overflow-hidden relative">
+                        <div className="bg-white border border-indigo-100 rounded-xl shadow-sm h-full flex flex-col overflow-visible relative">
                             <div className="h-1.5 w-full bg-gradient-to-r from-indigo-400 to-purple-400"></div>
                             <div className="p-5 flex flex-col h-full gap-5">
                                 <div className="flex justify-between items-center">
@@ -959,15 +1024,81 @@ export function ApartmentManagement() {
                                 </div>
                                 <div className="mt-auto pt-4 border-t border-dashed border-gray-200">
                                     <Label className="text-xs font-medium text-gray-500 mb-2 block uppercase">Chỉ định chủ mới</Label>
-                                    <Select value={editingOwnerId} onValueChange={setEditingOwnerId}>
-                                        <SelectTrigger className="w-full h-10 border-indigo-100"><SelectValue placeholder="Chọn người..." /></SelectTrigger>
-                                        <SelectContent position="popper">
-                                            <SelectItem value="none">-- Gỡ chủ sở hữu --</SelectItem>
-                                            {potentialOwners.map(res => (
-                                                <SelectItem key={res.id} value={res.id}>{res.fullName}</SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
+                                    <div className="relative" style={{ zIndex: showOwnerDropdown ? 1001 : 1000 }}>
+                                        <input
+                                            type="text"
+                                            value={ownerSearchKeyword}
+                                            onChange={async (e) => {
+                                                const keyword = e.target.value;
+                                                setOwnerSearchKeyword(keyword);
+                                                // Đóng dropdown resident nếu đang mở
+                                                setShowResidentDropdown(false);
+                                                console.log('Owner keyword changed:', keyword);
+                                                if (keyword.trim()) {
+                                                    setShowOwnerDropdown(true);
+                                                    console.log('Setting showOwnerDropdown to true');
+                                                    const results = await searchResidents(keyword);
+                                                    console.log('Owner search results:', results);
+                                                    setOwnerSearchResults(results);
+                                                } else {
+                                                    setOwnerSearchResults([]);
+                                                    setShowOwnerDropdown(false);
+                                                }
+                                            }}
+                                            onFocus={() => {
+                                                // Đóng dropdown resident nếu đang mở
+                                                setShowResidentDropdown(false);
+                                                // Hiển thị dropdown nếu có keyword hoặc có kết quả
+                                                if (ownerSearchKeyword.trim() || ownerSearchResults.length > 0) {
+                                                    setShowOwnerDropdown(true);
+                                                }
+                                            }}
+                                            onBlur={() => {
+                                                setTimeout(() => setShowOwnerDropdown(false), 200);
+                                            }}
+                                            placeholder="Tìm kiếm chủ sở hữu..."
+                                            className="w-full h-10 px-3 border border-indigo-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                        />
+                                        {(() => {
+                                            const shouldShow = showOwnerDropdown && ownerSearchKeyword.trim();
+                                            console.log('Owner dropdown render check:', { showOwnerDropdown, keyword: ownerSearchKeyword, shouldShow });
+                                            return shouldShow ? (
+                                            <div 
+                                                className="absolute z-[9999] w-full mt-1 bg-white border-2 border-gray-300 rounded-xl shadow-xl max-h-60 overflow-y-auto"
+                                                onMouseDown={(e) => e.preventDefault()}
+                                                style={{ position: 'absolute', top: '100%', left: 0, right: 0 }}
+                                            >
+                                                <div
+                                                    className="px-4 py-3 hover:bg-gray-100 cursor-pointer text-sm transition-colors"
+                                                    onClick={() => {
+                                                        setEditingOwnerId("none");
+                                                        setOwnerSearchKeyword("");
+                                                        setShowOwnerDropdown(false);
+                                                    }}
+                                                >
+                                                    -- Gỡ chủ sở hữu --
+                                                </div>
+                                                {ownerSearchResults.length > 0 ? (
+                                                    ownerSearchResults.map(res => (
+                                                        <div
+                                                            key={res.id}
+                                                            className="px-4 py-3 hover:bg-gray-100 cursor-pointer text-sm transition-colors"
+                                                            onClick={() => {
+                                                                setEditingOwnerId(res.id);
+                                                                setOwnerSearchKeyword(res.fullName);
+                                                                setShowOwnerDropdown(false);
+                                                            }}
+                                                        >
+                                                            {res.fullName}
+                                                        </div>
+                                                    ))
+                                                ) : (
+                                                    <div className="px-4 py-3 text-sm text-gray-500">Không tìm thấy</div>
+                                                )}
+                                            </div>
+                                            ) : null;
+                                        })()}
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -976,7 +1107,84 @@ export function ApartmentManagement() {
 
                 {/* 3. RESIDENTS LIST: PHẦN CÓ THAY ĐỔI */}
                 <div className="pt-2">
-                    <div className="flex items-center justify-between mb-3">
+                    {/* Thanh tìm kiếm và nút THÊM */}
+                    <div className="flex gap-3 items-center justify-between mb-6">
+                        <div className="relative flex-1" style={{ zIndex: showResidentDropdown ? 1001 : 1000 }}>
+                            <input
+                                type="text"
+                                value={residentSearchKeyword}
+                                onChange={async (e) => {
+                                    const keyword = e.target.value;
+                                    setResidentSearchKeyword(keyword);
+                                    // Đóng dropdown owner nếu đang mở
+                                    setShowOwnerDropdown(false);
+                                    console.log('Resident keyword changed:', keyword);
+                                    if (keyword.trim()) {
+                                        setShowResidentDropdown(true);
+                                        console.log('Setting showResidentDropdown to true');
+                                        const results = await searchResidents(keyword);
+                                        console.log('Resident search results:', results);
+                                        setResidentSearchResults(results);
+                                    } else {
+                                        setResidentSearchResults([]);
+                                        setShowResidentDropdown(false);
+                                    }
+                                }}
+                                onFocus={() => {
+                                    // Đóng dropdown owner nếu đang mở
+                                    setShowOwnerDropdown(false);
+                                    // Hiển thị dropdown nếu có keyword hoặc có kết quả
+                                    if (residentSearchKeyword.trim() || residentSearchResults.length > 0) {
+                                        setShowResidentDropdown(true);
+                                    }
+                                }}
+                                onBlur={() => {
+                                    setTimeout(() => setShowResidentDropdown(false), 200);
+                                }}
+                                placeholder="Tìm kiếm cư dân để thêm vào căn hộ..."
+                                className="w-full h-10 px-4 py-2 text-sm border-2 border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 shadow-sm transition-all"
+                            />
+                            {(() => {
+                                const shouldShow = showResidentDropdown && residentSearchKeyword.trim();
+                                console.log('Resident dropdown render check:', { showResidentDropdown, keyword: residentSearchKeyword, shouldShow });
+                                return shouldShow ? (
+                                <div 
+                                    className="absolute z-[9999] w-full mt-1 bg-white border-2 border-gray-300 rounded-xl shadow-xl max-h-60 overflow-y-auto"
+                                    onMouseDown={(e) => e.preventDefault()}
+                                    style={{ position: 'absolute', top: '100%', left: 0, right: 0 }}
+                                >
+                                    {residentSearchResults.length > 0 ? (
+                                        residentSearchResults.map(res => (
+                                            <div
+                                                key={res.id}
+                                                className="px-4 py-3 hover:bg-gray-100 cursor-pointer text-sm transition-colors"
+                                                onClick={() => {
+                                                    setResidentToAdd(res.id);
+                                                    setResidentSearchKeyword(res.fullName);
+                                                    setShowResidentDropdown(false);
+                                                }}
+                                            >
+                                                {res.fullName}
+                                            </div>
+                                        ))
+                                    ) : (
+                                        <div className="px-4 py-3 text-sm text-gray-500">Không tìm thấy</div>
+                                    )}
+                                </div>
+                                ) : null;
+                            })()}
+                        </div>
+                        <Button 
+                            onClick={handleAddResident}
+                            disabled={isProcessingResident || !residentToAdd || residentToAdd === "none"}
+                            className="h-10 px-6 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-sm font-semibold shadow-md hover:shadow-lg transition-all whitespace-nowrap"
+                        >
+                            <Plus className="w-4 h-4 mr-2" /> THÊM
+                        </Button>
+                    </div>
+
+                    {/* Title Danh Sách Cư Dân - dòng riêng */}
+                    <div className="mb-3">
                         <h3 className="font-bold text-gray-900 flex items-center gap-2 text-sm uppercase tracking-wide">
                             <Users className="w-4 h-4 text-gray-500" /> 
                             Danh Sách Cư Dân 
@@ -984,26 +1192,6 @@ export function ApartmentManagement() {
                                 {selectedApartment.residents?.length || 0}
                             </span>
                         </h3>
-
-                        <div className="flex gap-2 items-center">
-                            <select
-                                value={residentToAdd}
-                                onChange={(e) => setResidentToAdd(e.target.value)}
-                                className="text-xs border border-gray-300 rounded-lg px-2 py-1.5 h-6 min-w-[150px] focus:ring-1 focus:ring-blue-500 outline-none shadow-sm"
-                            >
-                                <option value="none">-- Thêm cư dân --</option>
-                                {potentialOwners.map(res => (
-                                    <option key={res.id} value={res.id}>{res.fullName}</option>
-                                ))}
-                            </select>
-                            <Button 
-                                onClick={handleAddResident}
-                                disabled={isProcessingResident || !residentToAdd || residentToAdd === "none"}
-                                className="h-6 px-4 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-bold"
-                            >
-                                <Plus className="w-3.5 h-3.5 mr-1" /> THÊM
-                            </Button>
-                        </div>
                     </div>
                     
                     <div className="border border-gray-200 rounded-xl overflow-hidden shadow-sm">
@@ -1049,7 +1237,7 @@ export function ApartmentManagement() {
                 {/* 4. FOOTER ACTIONS: Giữ nguyên */}
                 <div className="flex justify-end pt-4 border-t gap-3 mt-2">
                     <Button variant="outline" onClick={() => setIsViewModalOpen(false)} className="rounded-full px-6 border-gray-300">Hủy Bỏ</Button>
-                    <Button onClick={handleUpdateOwner} disabled={isSaving} className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-full px-6 shadow-lg">
+                    <Button onClick={handleUpdateOwner} disabled={isSaving} className="bg-blue-600 hover:bg-blue-700 text-white rounded-full px-6 shadow-lg">
                         {isSaving ? "Đang Lưu..." : <><Save className="w-4 h-4 mr-2" /> Lưu Thay Đổi</>}
                     </Button>
                 </div>
