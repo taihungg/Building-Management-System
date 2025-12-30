@@ -12,14 +12,14 @@ interface HeaderProps {
 
 // Hàm tiện ích để định dạng thời gian
 const formatTime = (date: Date) => {
-    // Định dạng giờ:phút:giây và Ngày, Tháng, Năm (dùng locale 'vi-VN' để đảm bảo tiếng Việt)
-    const timeOptions: Intl.DateTimeFormatOptions = { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false };
-    const dateOptions: Intl.DateTimeFormatOptions = { weekday: 'short', month: 'short', day: 'numeric' };
-    
-    const timeStr = date.toLocaleTimeString('vi-VN', timeOptions);
-    const dateStr = date.toLocaleDateString('vi-VN', dateOptions);
+  // Định dạng giờ:phút:giây và Ngày, Tháng, Năm (dùng locale 'vi-VN' để đảm bảo tiếng Việt)
+  const timeOptions: Intl.DateTimeFormatOptions = { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false };
+  const dateOptions: Intl.DateTimeFormatOptions = { weekday: 'short', month: 'short', day: 'numeric' };
 
-    return { timeStr, dateStr };
+  const timeStr = date.toLocaleTimeString('vi-VN', timeOptions);
+  const dateStr = date.toLocaleDateString('vi-VN', dateOptions);
+
+  return { timeStr, dateStr };
 };
 
 type HeaderNotificationItem = {
@@ -168,7 +168,7 @@ export function Header({ onMenuClick, onNavigate, onLogout }: HeaderProps) {
       });
       try {
         localStorage.setItem(management_NOTIFICATIONS_READ_IDS_KEY, JSON.stringify(Object.keys(next)));
-      } catch {}
+      } catch { }
       return next;
     });
 
@@ -176,7 +176,7 @@ export function Header({ onMenuClick, onNavigate, onLogout }: HeaderProps) {
       setNotificationsLastReadAt(latestUnreadIso);
       try {
         localStorage.setItem(management_NOTIFICATIONS_LAST_READ_AT_KEY, latestUnreadIso);
-      } catch {}
+      } catch { }
     }
   }, [unreadNotifications]);
 
@@ -282,14 +282,12 @@ export function Header({ onMenuClick, onNavigate, onLogout }: HeaderProps) {
           >
             <Menu className="w-6 h-6 text-gray-700" />
           </button>
-          
-          <button 
+
+          <button
             onClick={() => handleNavigate('dashboard')}
             className="flex items-center gap-2 hover:opacity-80 transition-opacity"
           >
-            <div className="w-10 h-10 bg-gradient-to-br from-cyan-500 to-blue-500 rounded-lg flex items-center justify-center">
-              <span className="text-white text-xl">B</span>
-            </div>
+            <img src="/avatar.png" alt="Logo" className="w-10 h-10 rounded-lg object-contain" />
             <div className="text-left">
               <h1 className="text-xl text-gray-900 font-bold">BuildingHub</h1>
               <p className="text-xs text-gray-600">Cổng Quản Lý</p> {/* Dịch */}
@@ -303,24 +301,24 @@ export function Header({ onMenuClick, onNavigate, onLogout }: HeaderProps) {
             <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
             <input
               type="text"
-              placeholder="Tìm kiếm cư dân, căn hộ, hóa đơn..." 
+              placeholder="Tìm kiếm cư dân, căn hộ, hóa đơn..."
               className="w-full pl-12 pr-4 py-3 bg-gray-50 border-2 border-gray-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 text-gray-700 text-sm"
             />
           </div>
         </div>
 
         {/* Phải: Đồng hồ, Thông báo & Hồ sơ */}
-        <div className="flex items-center gap-6"> 
-        
+        <div className="flex items-center gap-6">
+
           {/* Đồng hồ Thời gian Thực */}
           <div className="hidden sm:flex items-center gap-2 bg-gray-50 p-2 rounded-lg border border-gray-200">
-             <Clock className="w-5 h-5 text-cyan-600" />
-             <div className="text-sm">
-                <p className="font-semibold text-gray-800">{currentTime.timeStr}</p>
-                <p className="text-xs text-gray-500">{currentTime.dateStr}</p>
-             </div>
+            <Clock className="w-5 h-5 text-cyan-600" />
+            <div className="text-sm">
+              <p className="font-semibold text-gray-800">{currentTime.timeStr}</p>
+              <p className="text-xs text-gray-500">{currentTime.dateStr}</p>
+            </div>
           </div>
-        
+
           {/* Chuông Thông Báo */}
           <div className="relative" ref={notificationRef}>
             <button
@@ -450,7 +448,7 @@ export function Header({ onMenuClick, onNavigate, onLogout }: HeaderProps) {
 
           {/* Ảnh Đại Diện và Menu Tùy Chọn */}
           <div className="relative" ref={profileRef}>
-            <button 
+            <button
               onClick={() => setIsProfileOpen(!isProfileOpen)}
               className="w-10 h-10 rounded-full bg-cyan-500 flex items-center justify-center text-white hover:bg-cyan-600 transition-colors"
             >
@@ -459,19 +457,19 @@ export function Header({ onMenuClick, onNavigate, onLogout }: HeaderProps) {
 
             {/* Menu Tùy Chọn Hồ Sơ */}
             {isProfileOpen && (
-              <div className="absolute right-0 mt-2 w-64 bg-white rounded-2xl shadow-xl border border-gray-200 overflow-hidden z-50"> 
+              <div className="absolute right-0 mt-2 w-64 bg-white rounded-2xl shadow-xl border border-gray-200 overflow-hidden z-50">
                 <div className="p-4 border-b border-gray-100">
                   <h3 className="text-lg font-semibold text-gray-900">Tài Khoản Của Tôi</h3> {/* Dịch */}
                   <p className="text-sm text-gray-500">managementistrator@hub.vn</p>
                 </div>
                 <div className="py-1">
-                  <button 
+                  <button
                     onClick={() => handleProfileItemClick('profile')}
                     className="w-full px-4 py-3 text-left text-gray-700 hover:bg-gray-50 transition-colors flex items-center"
                   >
                     Hồ Sơ
                   </button>
-                  <button 
+                  <button
                     onClick={() => handleProfileItemClick('settings')}
                     className="w-full px-4 py-3 text-left text-gray-700 hover:bg-gray-50 transition-colors flex items-center"
                   >
@@ -479,7 +477,7 @@ export function Header({ onMenuClick, onNavigate, onLogout }: HeaderProps) {
                   </button>
                 </div>
                 <div className="border-t border-gray-100">
-                  <button 
+                  <button
                     onClick={() => handleProfileItemClick('logout')}
                     className="w-full px-4 py-3 text-left text-red-600 hover:bg-red-50 transition-colors font-medium"
                   >

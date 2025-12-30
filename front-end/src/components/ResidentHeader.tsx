@@ -80,32 +80,32 @@ const mapApiAnnouncement = (a: ApiAnnouncementWithReadStatus): ResidentAnnouncem
 // Icon mapping for notification types
 const getNotificationTypeIcon = (announcement: ResidentAnnouncement) => {
   const title = announcement.title.toLowerCase();
-  
+
   // Meetings/Events (Lịch họp, Họp) - Check FIRST to avoid conflicts
   if (title.includes('lịch họp') || title.includes('họp cư dân') || title.includes('cuộc họp')) {
     return { Icon: Calendar, bgClass: 'bg-purple-50', textClass: 'text-purple-600' };
   }
-  
+
   // Maintenance/Technical (Bảo trì, Hệ thống)
   if (title.includes('bảo trì') || title.includes('maintenance') || title.includes('hoàn thành bảo trì')) {
     return { Icon: Wrench, bgClass: 'bg-blue-50', textClass: 'text-blue-600' };
   }
-  
+
   // Financial (Thu phí, Hóa đơn, Thanh toán)
   if (title.includes('thu phí') || title.includes('hóa đơn') || (title.includes('phí dịch vụ') && !title.includes('nội quy')) || title.includes('thanh toán') || title.includes('payment')) {
     return { Icon: Wallet, bgClass: 'bg-emerald-50', textClass: 'text-emerald-600' };
   }
-  
+
   // Utilities/Services (Tiện ích, Dịch vụ tiện ích)
   if (title.includes('tiện ích') || title.includes('dịch vụ tiện ích') || title.includes('khu tiện ích')) {
     return { Icon: LayoutGrid, bgClass: 'bg-indigo-50', textClass: 'text-indigo-600' };
   }
-  
+
   // Rules/Regulations (Nội quy, Quy định)
   if (title.includes('nội quy') || title.includes('quy định') || title.includes('rules')) {
     return { Icon: Info, bgClass: 'bg-orange-50', textClass: 'text-orange-600' };
   }
-  
+
   // Default
   return { Icon: AlertCircle, bgClass: 'bg-blue-50', textClass: 'text-blue-600' };
 };
@@ -115,7 +115,7 @@ const formatTimeAndDate = (date: Date) => {
   // Định dạng giờ:phút:giây và Ngày, Tháng, Năm
   const timeOptions: Intl.DateTimeFormatOptions = { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false };
   const dateOptions: Intl.DateTimeFormatOptions = { weekday: 'short', month: 'short', day: 'numeric' };
-  
+
   const timeStr = date.toLocaleTimeString('vi-VN', timeOptions);
   const dateStr = date.toLocaleDateString('vi-VN', dateOptions);
 
@@ -263,14 +263,12 @@ export function ResidentHeader({ onMenuClick, onNavigate }: ResidentHeaderProps)
           >
             <Menu className="w-6 h-6 text-gray-700" />
           </button>
-          
-          <button 
+
+          <button
             onClick={() => onNavigate('resident-dashboard')}
             className="flex items-center gap-2 hover:opacity-80 transition-opacity"
           >
-            <div className="w-10 h-10 bg-gradient-to-br from-cyan-500 to-blue-500 rounded-lg flex items-center justify-center">
-              <span className="text-white text-xl">B</span>
-            </div>
+            <img src="/avatar.png" alt="Logo" className="w-10 h-10 rounded-lg object-contain" />
             <div className="text-left">
               <h1 className="text-xl text-gray-900">BuildingHub</h1>
               <p className="text-xs text-gray-600">Cổng Thông Tin Cư Dân</p>
@@ -308,7 +306,7 @@ export function ResidentHeader({ onMenuClick, onNavigate }: ResidentHeaderProps)
 
           {/* Notification Bell */}
           <div className="relative" ref={notificationRef}>
-            <button 
+            <button
               onClick={() => {
                 if (isNotificationOpen) {
                   handleCloseNotifications();
@@ -341,7 +339,7 @@ export function ResidentHeader({ onMenuClick, onNavigate }: ResidentHeaderProps)
                   ) : (
                     openedAnnouncements.map((announcement) => {
                       const { Icon, bgClass, textClass } = getNotificationTypeIcon(announcement);
-                      
+
                       return (
                         <button
                           key={announcement.id}
@@ -394,7 +392,7 @@ export function ResidentHeader({ onMenuClick, onNavigate }: ResidentHeaderProps)
 
           {/* Profile Avatar with Dropdown */}
           <div className="relative" ref={profileRef}>
-            <button 
+            <button
               onClick={() => setIsProfileOpen(!isProfileOpen)}
               className="w-10 h-10 rounded-full bg-cyan-500 flex items-center justify-center text-white hover:bg-cyan-600 transition-colors"
             >
@@ -408,13 +406,13 @@ export function ResidentHeader({ onMenuClick, onNavigate }: ResidentHeaderProps)
                   <h3 className="text-xl text-gray-900">Tài Khoản Của Tôi</h3>
                 </div>
                 <div className="py-2">
-                  <button 
+                  <button
                     onClick={() => handleProfileItemClick('profile')}
                     className="w-full px-6 py-4 text-left text-gray-700 hover:bg-gray-50 transition-colors"
                   >
                     Hồ Sơ
                   </button>
-                  <button 
+                  <button
                     onClick={() => handleProfileItemClick('settings')}
                     className="w-full px-6 py-4 text-left text-gray-700 hover:bg-gray-50 transition-colors"
                   >
@@ -422,7 +420,7 @@ export function ResidentHeader({ onMenuClick, onNavigate }: ResidentHeaderProps)
                   </button>
                 </div>
                 <div className="border-t-2 border-gray-100">
-                  <button 
+                  <button
                     onClick={() => handleProfileItemClick('logout')}
                     className="w-full px-6 py-4 text-left text-red-600 hover:bg-red-50 transition-colors"
                   >

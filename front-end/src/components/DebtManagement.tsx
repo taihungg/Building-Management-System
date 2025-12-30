@@ -607,6 +607,37 @@ export function DebtManagement() {
     }
   };
 
+  const handleDownloadPDF = async (invoiceId: string, invoiceCode: string) => {
+    try {
+      toast.info("Đang tải xuống PDF...");
+      // Assuming GET endpoint for PDF download
+      const url = `https://untoasted-jean-unsympathisingly.ngrok-free.dev/api/v1/accounting/invoices/${invoiceId}/download-pdf`;
+
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'ngrok-skip-browser-warning': 'true'
+        }
+      });
+
+      if (!response.ok) throw new Error('Không thể tải xuống PDF');
+
+      const blob = await response.blob();
+      const downloadUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = downloadUrl;
+      link.download = `Hoa_don_${invoiceCode}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(downloadUrl);
+      toast.success("Tải xuống PDF thành công");
+    } catch (error) {
+      console.error("Download PDF error:", error);
+      toast.error("Lỗi tải xuống PDF");
+    }
+  };
+
   return (
     <div className="space-y-6">
       <style>{`
@@ -921,6 +952,18 @@ export function DebtManagement() {
                             className="px-3 py-1.5 bg-blue-50 text-blue-600 rounded-lg text-sm font-medium hover:bg-blue-100 transition-colors"
                           >
                             Xem chi tiết
+                          </button>
+
+                          {/* PDF Download Button */}
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDownloadPDF(bill.id, bill.apartmentLabel || bill.apartmentNumber || 'Unknown');
+                            }}
+                            className="px-3 py-1.5 bg-red-50 text-red-600 rounded-lg text-sm font-medium hover:bg-red-100 transition-colors flex items-center gap-1"
+                            title="Tải PDF"
+                          >
+                            <Download className="w-4 h-4" />
                           </button>
                         </div>
                       </td>

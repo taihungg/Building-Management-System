@@ -17,7 +17,7 @@ const menuItems = [
   { id: 'invoice-creation', label: 'Dữ liệu sử dụng', icon: PlusCircle, path: '/accounting/invoice' },
   { id: 'payment-requests', label: 'Yêu cầu thanh toán', icon: Receipt, path: '/accounting/payment-requests' },
   { id: 'extra-services', label: 'Dịch vụ phát sinh', icon: Lightbulb, path: '/accounting/extra-services' },
-  {id:'accounting-voluntary-contribution', label: 'Quỹ đóng góp tự nguyện', icon: Heart, path:'/accounting/voluntary-contribution' }
+  { id: 'accounting-voluntary-contribution', label: 'Quỹ đóng góp tự nguyện', icon: Heart, path: '/accounting/voluntary-contribution' }
 ];
 
 const bottomItems = [
@@ -34,19 +34,17 @@ export function AccountingSidebar({ isOpen, onClose, onLogout }: AccountingSideb
   };
 
   const getNavLinkClass = ({ isActive }: { isActive: boolean }) =>
-  `w-full flex items-center gap-3 px-4 py-3 rounded-xl font-medium transition-all no-underline ${
-    isActive 
-      ? 'bg-cyan-500 text-white shadow-md' 
+    `w-full flex items-center gap-3 px-4 py-3 rounded-xl font-medium transition-all no-underline ${isActive
+      ? 'bg-cyan-500 text-white shadow-md'
       : 'text-gray-700 hover:bg-gray-100'
-  }`;
+    }`;
 
   const getBottomNavLinkClass = ({ isActive }: { isActive: boolean }) =>
-    `w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all no-underline ${
-        isActive
-          ? 'bg-cyan-100 text-cyan-700 font-medium'
-          : 'text-gray-700 hover:bg-gray-100'
+    `w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all no-underline ${isActive
+      ? 'bg-cyan-100 text-cyan-700 font-medium'
+      : 'text-gray-700 hover:bg-gray-100'
     }`;
-    
+
   return (
     <AnimatePresence>
       {isOpen && (
@@ -70,7 +68,10 @@ export function AccountingSidebar({ isOpen, onClose, onLogout }: AccountingSideb
           >
             {/* Header và nút đóng */}
             <div className="p-6 border-b-2 border-gray-100 flex items-center justify-between">
-              <h1 className="text-xl font-semibold text-cyan-600">BuildingHub</h1>
+              <div className="flex items-center gap-2">
+                <img src="/avatar.png" alt="Logo" className="w-8 h-8 object-contain" />
+                <h1 className="text-xl font-semibold text-cyan-600">BuildingHub</h1>
+              </div>
               <button
                 onClick={onClose}
                 className="p-1 hover:bg-gray-100 rounded-full transition-colors"
@@ -104,16 +105,16 @@ export function AccountingSidebar({ isOpen, onClose, onLogout }: AccountingSideb
                 const Icon = item.icon;
 
                 if (item.id === 'logout') {
-                    return (
-                        <button
-                            key={item.id}
-                            onClick={handleLogoutClick}
-                            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all text-gray-700 hover:bg-gray-100`}
-                        >
-                            <Icon className="w-5 h-5" />
-                            <span className="text-sm">{item.label}</span>
-                        </button>
-                    );
+                  return (
+                    <button
+                      key={item.id}
+                      onClick={handleLogoutClick}
+                      className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all text-gray-700 hover:bg-gray-100`}
+                    >
+                      <Icon className="w-5 h-5" />
+                      <span className="text-sm">{item.label}</span>
+                    </button>
+                  );
                 }
 
                 if (!item.path) return null;
