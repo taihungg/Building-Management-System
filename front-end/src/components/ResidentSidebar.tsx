@@ -6,7 +6,8 @@ import {
   ChevronLeft,
   Settings,
   User,
-  LogOut
+  LogOut,
+  Heart
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion'; 
 import React from 'react';
@@ -32,6 +33,8 @@ const bottomItems = [
   { to: '/resident/profile', label: 'Hồ sơ', icon: User },
   // Mục logout không cần NavLink
   { id: 'logout', label: 'Đăng xuất', icon: LogOut }, 
+  {id:'resident-voluntary-contribution', label: 'Quỹ đóng góp tự nguyện', icon: Heart, path:'/resident/voluntary-contribution' }
+
 ];
 
 // Hàm cấu hình NavLink class

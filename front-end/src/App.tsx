@@ -48,6 +48,7 @@ import { AuthorityProfile } from './components/AuthorityProfile';
 // Auth
 import { Login } from './components/Login'; 
 import { AccountingExtraFee } from './components/AccountingExtraFee';
+import { ResidentVoluntaryContribution } from './components/ResidentVoluntaryContribution';
 
 // === Định nghĩa kiểu và Maps ===
 type UserRole = 'management' | 'resident' | 'accounting' | 'authority' | null; 
@@ -65,13 +66,14 @@ const managementTabToPath: Record<string, string> = {
   'dashboard': '/management/dashboard', 'residents': '/management/residents', 'apartments': '/management/apartments',
   'bills': '/management/bills', 'services': '/management/services', 'notifications': '/management/notifications',
   'profile': '/management/profile', 'settings': '/management/settings', 'extra-services': '/management/extra-services', 
-  'voluntary-contributions': '/management/voluntary-contributions'
+  'voluntary-contributions': '/management/voluntary-contributions',
 };
 
 const residentTabToPath: Record<string, string> = {
   'resident-dashboard': '/resident/dashboard', 'resident-announcements': '/resident/announcements',
   'resident-bills': '/resident/invoice', 'building-rules': '/resident/rules',
-  'profile': '/resident/profile', 'settings': '/resident/settings',
+  'profile': '/resident/profile', 'settings': '/resident/settings',   'extra-services':'/resident/extra-services'
+
 };
 
 const accountingTabToPath: Record<string, string> = {
@@ -231,6 +233,8 @@ function AppContent() {
                 <Route path="/rules" element={<BuildingRules />} />
                 <Route path="/profile" element={<ResidentProfile />} />
                 <Route path="/settings" element={<ResidentSettings />} />
+                <Route path="/voluntary-contributions" element={<ResidentVoluntaryContribution />} />
+
             </>
         );
         baseUrl = '/resident/*';
