@@ -140,9 +140,7 @@ export function DebtManagement() {
     }
   };
 
-  // Handle file upload click
   const handleGenerateInvoices = async () => {
-    // Kiểm tra xem chú đã chọn tháng chưa
     if (!selectedMonth) {
       toast.error("Vui lòng chọn tháng trước khi tạo hóa đơn");
       return;
@@ -176,8 +174,7 @@ export function DebtManagement() {
         description: "Hệ thống đã tính toán tiền điện, nước và phí dịch vụ.",
       });
 
-      // Nếu chú muốn sau khi tạo xong thì load lại danh sách để xem, chú gọi hàm fetch ở đây:
-      // fetchBills(); 
+      fetchBills();
 
     } catch (error: any) {
       console.error("Lỗi:", error);
@@ -679,8 +676,8 @@ export function DebtManagement() {
           <button
             onClick={() => setStatusFilter('All')}
             className={`rounded-xl border shadow-sm px-4 py-2 text-sm font-medium flex items-center justify-center gap-2 hover:bg-gray-50 cursor-pointer transition-all ${statusFilter === 'All'
-                ? 'bg-blue-50 text-blue-700 border-blue-500'
-                : 'bg-white border-gray-200 text-gray-600'
+              ? 'bg-blue-50 text-blue-700 border-blue-500'
+              : 'bg-white border-gray-200 text-gray-600'
               }`}
           >
             <List className="w-4 h-4" />
@@ -689,8 +686,8 @@ export function DebtManagement() {
           <button
             onClick={() => setStatusFilter('PAID')}
             className={`rounded-xl border shadow-sm px-4 py-2 text-sm font-medium flex items-center justify-center gap-2 hover:bg-gray-50 cursor-pointer transition-all ${statusFilter === 'PAID'
-                ? 'bg-green-50 text-green-700 border-green-500'
-                : 'bg-white border-gray-200 text-gray-600'
+              ? 'bg-green-50 text-green-700 border-green-500'
+              : 'bg-white border-gray-200 text-gray-600'
               }`}
           >
             <CheckCircle className="w-4 h-4" />
@@ -699,8 +696,8 @@ export function DebtManagement() {
           <button
             onClick={() => setStatusFilter('PENDING')}
             className={`rounded-xl border shadow-sm px-4 py-2 text-sm font-medium flex items-center justify-center gap-2 hover:bg-gray-50 cursor-pointer transition-all ${statusFilter === 'PENDING'
-                ? 'bg-yellow-50 text-yellow-700 border-yellow-500'
-                : 'bg-white border-gray-200 text-gray-600'
+              ? 'bg-yellow-50 text-yellow-700 border-yellow-500'
+              : 'bg-white border-gray-200 text-gray-600'
               }`}
           >
             <Clock className="w-4 h-4" />
@@ -709,8 +706,8 @@ export function DebtManagement() {
           <button
             onClick={() => setStatusFilter('UNPAID')}
             className={`rounded-xl border shadow-sm px-4 py-2 text-sm font-medium flex items-center justify-center gap-2 hover:bg-gray-50 cursor-pointer transition-all ${statusFilter === 'UNPAID'
-                ? 'bg-red-50 text-red-700 border-red-500'
-                : 'bg-white border-gray-200 text-gray-600'
+              ? 'bg-red-50 text-red-700 border-red-500'
+              : 'bg-white border-gray-200 text-gray-600'
               }`}
           >
             <AlertCircle className="w-4 h-4" />
@@ -735,8 +732,8 @@ export function DebtManagement() {
             onClick={handleGenerateInvoices}
             disabled={isUploading || isGenerating}
             className={`px-4 py-2 rounded-xl font-semibold transition-all flex items-center gap-2 ${isUploading || isGenerating
-                ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                : 'bg-blue-600 text-white hover:bg-blue-700 shadow-md hover:shadow-lg'
+              ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+              : 'bg-blue-600 text-white hover:bg-blue-700 shadow-md hover:shadow-lg'
               }`}
           >
             {isUploading || isGenerating ? (
@@ -758,8 +755,8 @@ export function DebtManagement() {
               onClick={handleConfirmInvoices}
               disabled={isApproving}
               className={`px-4 py-2 rounded-xl font-semibold transition-all flex items-center gap-2 shadow-md hover:shadow-lg ${isApproving
-                  ? 'bg-green-400 cursor-not-allowed' // Màu nhạt đi khi đang xử lý
-                  : 'bg-green-600 text-white hover:bg-green-700'
+                ? 'bg-green-400 cursor-not-allowed' // Màu nhạt đi khi đang xử lý
+                : 'bg-green-600 text-white hover:bg-green-700'
                 }`}
             >
               {isApproving ? (
@@ -899,10 +896,10 @@ export function DebtManagement() {
 
                       <td className="px-6 py-4 text-center align-middle">
                         <span className={`rounded-full px-3 py-1 inline-flex items-center gap-2 w-fit text-sm font-medium ${bill.status === 'PAID'
-                            ? 'bg-green-100 text-green-700'
-                            : bill.status === 'PENDING'
-                              ? 'bg-yellow-100 text-yellow-700'
-                              : 'bg-red-100 text-red-700'
+                          ? 'bg-green-100 text-green-700'
+                          : bill.status === 'PENDING'
+                            ? 'bg-yellow-100 text-yellow-700'
+                            : 'bg-red-100 text-red-700'
                           }`}>
                           {bill.status === 'PAID' && <CheckCircle className="w-4 h-4" />}
                           {bill.status === 'PENDING' && <Clock className="w-4 h-4" />}
