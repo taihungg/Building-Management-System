@@ -467,8 +467,8 @@ public class InvoiceService {
                 invoiceBatch.add(invoice);
                 if (invoiceBatch.size() >= BATCH_SIZE) {
                     invoiceRepository.saveAll(invoiceBatch);
-                    invoiceRepository.flush(); // Đẩy lệnh SQL đi ngay để giải phóng bộ nhớ
-                    invoiceBatch.clear();       // Xóa danh sách tạm
+                    invoiceRepository.flush();
+                    invoiceBatch.clear();
                 }
             } catch (Exception e) {
                 log.error("Error comfirming invoice {}: {}", invoice.getId(), e.getMessage());

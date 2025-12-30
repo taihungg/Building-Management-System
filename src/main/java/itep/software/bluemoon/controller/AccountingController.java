@@ -14,6 +14,8 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -21,8 +23,10 @@ import org.springframework.web.bind.annotation.RestController;
 import itep.software.bluemoon.model.DTO.accounting.AccountingDashboardResponseDTO;
 import itep.software.bluemoon.model.DTO.accounting.MonthlyRevenueDTO;
 import itep.software.bluemoon.model.DTO.accounting.RevenueDistributionDTO;
+import itep.software.bluemoon.model.DTO.accounting.UpdatePaymentRequestDTO;
 import itep.software.bluemoon.model.DTO.accounting.invoice.InvoicePdfDTO;
 import itep.software.bluemoon.model.projection.InvoiceSummary;
+import itep.software.bluemoon.repository.PaymentService;
 import itep.software.bluemoon.response.ApiResponse;
 import itep.software.bluemoon.service.AccountingService;
 import itep.software.bluemoon.service.ExcelExportService;
@@ -40,6 +44,7 @@ public class AccountingController {
     private final AccountingService accountingService;
     private final PdfMappingService pdfMappingService;
     private final PdfGenerationService pdfGenerationService;
+    private final PaymentService paymentService;
 
     // Filter lọc theo trạng thái thanh toán thì front-end tự lọc
     @GetMapping("/invoices")
@@ -160,7 +165,6 @@ public class AccountingController {
         );
     }
     
-
     @GetMapping("/{id}/export-pdf")
         public ResponseEntity<byte[]> exportInvoicePdf(@PathVariable UUID id) {
         InvoicePdfDTO pdfDTO = pdfMappingService.convertToPdfDTO(id);
@@ -173,5 +177,13 @@ public class AccountingController {
                 .body(pdfBytes);
         }
         
-        
+        @PutMapping("/invoices/{id}/payment")
+        public ResponseEntity<Object> updatePayment(@PathVariable UUID id, @RequestBody UpdatePaymentRequestDTO request) {
+                paymentService.updateInvoicePayment(id, request);
+                return ApiResponse.responseBuilder(
+                HttpStatus.OK,
+                "Payment successfully!",
+                null
+        );
+        }
 }
