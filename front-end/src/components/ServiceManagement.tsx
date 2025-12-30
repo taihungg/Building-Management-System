@@ -7,6 +7,15 @@ import React from 'react';
 // UUID giả định để khắc phục lỗi 400 Bad Request khi gửi 'default-admin-reporter-id'
 const FALLBACK_REPORTER_UUID = '00000000-0000-0000-0000-000000000001'; 
 const PAYMENT_REQUEST_MARKER = '[PAYMENT_REQUEST]';
+const isPaymentRequestIssue = (title: string, description: string) => {
+  const safeTitle = String(title ?? '');
+  const safeDescription = String(description ?? '');
+  const haystack = `${safeTitle}\n${safeDescription}`;
+  if (haystack.includes(PAYMENT_REQUEST_MARKER)) return true;
+  const lowerTitle = safeTitle.toLowerCase();
+  const lowerDescription = safeDescription.toLowerCase();
+  return lowerTitle.includes('yêu cầu xác nhận thanh toán') && lowerDescription.includes('invoiceid:');
+};
 
 const categoryIcons: Record<string, any> = {
   Plumbing: Droplet,
@@ -231,12 +240,8 @@ export function ServiceManagement({ issueType, title, subtitle, mode = 'default'
         });
 
         const filteredData = isPaymentRequestsMode
-          ? transformedData.filter((x) => {
-              const haystack = `${x.title}\n${x.description}`;
-              if (haystack.includes(PAYMENT_REQUEST_MARKER)) return true;
-              return x.description.includes('InvoiceId:') && x.title.toLowerCase().includes('yêu cầu xác nhận thanh toán');
-            })
-          : transformedData;
+          ? transformedData.filter((x) => isPaymentRequestIssue(x.title, x.description))
+          : transformedData.filter((x) => !isPaymentRequestIssue(x.title, x.description));
 
         setAllIssue(filteredData);
         
