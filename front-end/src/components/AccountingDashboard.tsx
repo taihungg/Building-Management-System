@@ -110,7 +110,7 @@ export function AccountingDashboard() {
             <div className="relative z-10 h-full flex flex-col justify-center pr-12">
               <p className="text-sm font-medium text-white opacity-90 uppercase tracking-wider">{stat.label}</p>
               <p className="text-2xl font-bold text-white mt-1">{stat.value}</p>
-              <p className="text-[10px] text-white/80 mt-1 font-medium">{stat.count} hóa đơn</p>
+              <p className="text-[10px] text-white mt-1 font-medium">{stat.count} hóa đơn</p>
             </div>
           </div>
         ))}
