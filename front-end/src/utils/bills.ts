@@ -5,12 +5,15 @@ export interface BillDetail {
   amount: number;
 }
 
+export type BillStatus = 'Paid' | 'Pending' | 'Unpaid';
+
 export interface Bill {
   id: number;
+  invoiceId?: string;
   type: string;
   amount: number;
   dueDate: string;
-  status: 'Paid' | 'Pending';
+  status: BillStatus;
   paidDate: string | null;
   period: string;
   details: BillDetail[];
@@ -24,7 +27,7 @@ const initialBills: Bill[] = [
     type: 'Hóa đơn tháng', 
     amount: 15800000, 
     dueDate: '2025-07-05', 
-    status: 'Pending', 
+    status: 'Unpaid', 
     paidDate: null,
     period: 'Tháng 7/2025',
     apartmentNumber: '304',
@@ -93,7 +96,7 @@ export const payBillsInPeriod = (period: string): Bill[] => {
   const today = new Date().toISOString().split('T')[0];
   const paid: Bill[] = [];
   billsState = billsState.map(b => {
-    if (b.period === period && b.status === 'Pending') {
+    if (b.period === period && b.status !== 'Paid') {
       const updated = { ...b, status: 'Paid' as const, paidDate: today };
       paid.push(updated);
       return updated;
@@ -128,7 +131,7 @@ export const exportToCSV = (bills: Bill[]): void => {
     bill.period,
     bill.amount.toLocaleString('vi-VN'),
     bill.dueDate,
-    bill.status === 'Paid' ? 'Đã thanh toán' : 'Chưa thanh toán',
+    bill.status === 'Paid' ? 'Đã thanh toán' : bill.status === 'Pending' ? 'Chờ duyệt' : 'Chưa thanh toán',
     bill.paidDate || '-'
   ]);
 
@@ -169,5 +172,70 @@ export const resetBills = (): void => {
   notifyListeners();
 };
 
+type PaymentRequestStatus = 'Pending' | 'Paid';
 
+type PaymentRequestRecord = {
+  status: PaymentRequestStatus;
+  requestedAt: string;
+  approvedAt?: string | null;
+};
 
+const PAYMENT_REQUESTS_STORAGE_KEY = 'invoice_payment_requests_v1';
+
+const readPaymentRequests = (): Record<string, PaymentRequestRecord> => {
+  try {
+    const raw = localStorage.getItem(PAYMENT_REQUESTS_STORAGE_KEY);
+    if (!raw) return {};
+    const parsed = JSON.parse(raw) as unknown;
+    if (!parsed || typeof parsed !== 'object') return {};
+    return parsed as Record<string, PaymentRequestRecord>;
+  } catch {
+    return {};
+  }
+};
+
+const writePaymentRequests = (data: Record<string, PaymentRequestRecord>) => {
+  localStorage.setItem(PAYMENT_REQUESTS_STORAGE_KEY, JSON.stringify(data));
+  try {
+    window.dispatchEvent(new Event('invoicePaymentRequestsUpdated'));
+  } catch {
+  }
+};
+
+export const getPaymentRequest = (invoiceId: string): PaymentRequestRecord | null => {
+  const key = String(invoiceId ?? '').trim();
+  if (!key) return null;
+  const all = readPaymentRequests();
+  return all[key] ?? null;
+};
+
+export const requestPayment = (invoiceId: string): PaymentRequestRecord | null => {
+  const key = String(invoiceId ?? '').trim();
+  if (!key) return null;
+  const all = readPaymentRequests();
+  const existing = all[key];
+  const now = new Date().toISOString();
+  const next: PaymentRequestRecord = {
+    status: 'Pending',
+    requestedAt: existing?.requestedAt || now,
+    approvedAt: existing?.approvedAt ?? null,
+  };
+  all[key] = next;
+  writePaymentRequests(all);
+  return next;
+};
+
+export const approvePayment = (invoiceId: string): PaymentRequestRecord | null => {
+  const key = String(invoiceId ?? '').trim();
+  if (!key) return null;
+  const all = readPaymentRequests();
+  const now = new Date().toISOString();
+  const next: PaymentRequestRecord = {
+    status: 'Paid',
+    requestedAt: all[key]?.requestedAt || now,
+    approvedAt: now,
+  };
+  all[key] = next;
+  writePaymentRequests(all);
+  return next;
+};

@@ -1,12 +1,84 @@
 import { Menu, Search, Clock, Bell, Wrench, Wallet, Info, AlertCircle, MoreVertical, MessageCircle, Users, Calendar, LayoutGrid } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
-import { Link } from 'react-router-dom';
 import { getCurrentPeriod } from '../utils/timeUtils';
-import { getAnnouncements, getUnreadCount, subscribe, markAsRead, markAllAsRead, type Announcement } from '../utils/announcements';
 import { formatRelativeTime } from '../utils/timeUtils';
 
+type ApiAnnouncementWithReadStatus = {
+  id: string;
+  title: string;
+  message: string;
+  senderName?: string | null;
+  createdDate?: string | null;
+  isRead?: boolean | null;
+};
+
+type ResidentAnnouncement = {
+  id: string;
+  title: string;
+  message: string;
+  createdAt: string;
+  read: boolean;
+};
+
+const API_BASE_URL = 'https://untoasted-jean-unsympathisingly.ngrok-free.dev';
+const SEEN_STORAGE_KEY = 'resident_seen_announcement_ids';
+const MAX_SEEN_IDS = 2000;
+const MAX_HEADER_NOTIFICATIONS = 10;
+
+const getResidentId = () => {
+  const id =
+    localStorage.getItem('person_id') ||
+    localStorage.getItem('personId') ||
+    localStorage.getItem('resident_id') ||
+    localStorage.getItem('residentId') ||
+    '';
+  if (id && !localStorage.getItem('person_id')) localStorage.setItem('person_id', id);
+  return id;
+};
+
+const loadSeenIds = (): string[] => {
+  try {
+    const raw = localStorage.getItem(SEEN_STORAGE_KEY);
+    const parsed = raw ? JSON.parse(raw) : [];
+    return Array.isArray(parsed) ? parsed.map((x) => String(x)) : [];
+  } catch {
+    return [];
+  }
+};
+
+const saveSeenIds = (ids: string[]) => {
+  try {
+    localStorage.setItem(SEEN_STORAGE_KEY, JSON.stringify(ids.slice(-MAX_SEEN_IDS)));
+  } catch {
+    return;
+  }
+};
+
+const addSeenIds = (ids: string[]) => {
+  if (ids.length === 0) return;
+  const existing = loadSeenIds();
+  const set = new Set(existing);
+  const merged: string[] = [...existing];
+  for (const id of ids) {
+    const sid = String(id);
+    if (!set.has(sid)) {
+      set.add(sid);
+      merged.push(sid);
+    }
+  }
+  saveSeenIds(merged);
+};
+
+const mapApiAnnouncement = (a: ApiAnnouncementWithReadStatus): ResidentAnnouncement => ({
+  id: String(a.id),
+  title: String(a.title ?? ''),
+  message: String(a.message ?? ''),
+  createdAt: a.createdDate ? new Date(a.createdDate).toISOString() : new Date().toISOString(),
+  read: Boolean(a.isRead),
+});
+
 // Icon mapping for notification types
-const getNotificationTypeIcon = (announcement: Announcement) => {
+const getNotificationTypeIcon = (announcement: ResidentAnnouncement) => {
   const title = announcement.title.toLowerCase();
   
   // Meetings/Events (Lịch họp, Họp) - Check FIRST to avoid conflicts
@@ -58,10 +130,11 @@ interface ResidentHeaderProps {
 export function ResidentHeader({ onMenuClick, onNavigate }: ResidentHeaderProps) {
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isNotificationOpen, setIsNotificationOpen] = useState(false);
-  const [notificationFilter, setNotificationFilter] = useState<'all' | 'unread'>('all');
   const [currentTime, setCurrentTime] = useState(formatTimeAndDate(new Date()));
-  const [announcements, setAnnouncements] = useState<Announcement[]>(getAnnouncements());
-  const [unreadCount, setUnreadCount] = useState(getUnreadCount());
+  const [announcements, setAnnouncements] = useState<ResidentAnnouncement[]>([]);
+  const [openedAnnouncements, setOpenedAnnouncements] = useState<Array<ResidentAnnouncement & { displayTime: string }>>([]);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const unseenIdsRef = useRef<string[]>([]);
   const profileRef = useRef<HTMLDivElement>(null);
   const notificationRef = useRef<HTMLDivElement>(null);
   const currentPeriod = getCurrentPeriod();
@@ -73,6 +146,7 @@ export function ResidentHeader({ onMenuClick, onNavigate }: ResidentHeaderProps)
       }
       if (notificationRef.current && !notificationRef.current.contains(event.target as Node)) {
         setIsNotificationOpen(false);
+        setOpenedAnnouncements([]);
       }
     };
 
@@ -83,27 +157,95 @@ export function ResidentHeader({ onMenuClick, onNavigate }: ResidentHeaderProps)
       setCurrentTime(formatTimeAndDate(new Date()));
     }, 1000);
 
-    // Subscribe to announcements
-    const unsubscribeAnnouncements = subscribe((updatedAnnouncements) => {
-      setAnnouncements(updatedAnnouncements);
-      setUnreadCount(getUnreadCount());
-    });
+    const fetchAnnouncements = async () => {
+      const residentId = getResidentId();
+      if (!residentId) {
+        setAnnouncements([]);
+        setUnreadCount(0);
+        return;
+      }
+
+      try {
+        const response = await fetch(`${API_BASE_URL}/api/announcements/resident/${residentId}`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            'ngrok-skip-browser-warning': 'true',
+          },
+        });
+
+        if (!response.ok) return;
+
+        const json = await response.json().catch(() => ({} as any));
+        const data = Array.isArray(json?.data) ? (json.data as ApiAnnouncementWithReadStatus[]) : [];
+        const mapped = data.map(mapApiAnnouncement).sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+        const seen = new Set(loadSeenIds());
+        const newOnes = mapped.filter((x) => !x.read && !seen.has(x.id));
+        unseenIdsRef.current = newOnes.map((x) => x.id);
+        setAnnouncements(newOnes.slice(0, MAX_HEADER_NOTIFICATIONS));
+        setUnreadCount(newOnes.length);
+      } catch {
+        setAnnouncements([]);
+        unseenIdsRef.current = [];
+        setUnreadCount(0);
+      }
+    };
+
+    fetchAnnouncements();
+
+    const onUpdated = () => {
+      fetchAnnouncements();
+    };
+    window.addEventListener('residentAnnouncementsUpdated', onUpdated);
 
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
       clearInterval(timerId);
-      unsubscribeAnnouncements();
+      window.removeEventListener('residentAnnouncementsUpdated', onUpdated);
     };
   }, []);
 
-  // Filter and format announcements
-  const filteredAnnouncements = announcements
-    .filter(ann => notificationFilter === 'all' || !ann.read)
-    .slice(0, 10)
-    .map(ann => ({
+  const markAsReadApi = async (announcementId: string) => {
+    const residentId = getResidentId();
+    if (!residentId) return;
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/announcements/resident/${residentId}/announcement/${announcementId}/read`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'ngrok-skip-browser-warning': 'true',
+        },
+      });
+      if (!response.ok) {
+        window.dispatchEvent(new Event('residentAnnouncementsUpdated'));
+        return;
+      }
+      window.dispatchEvent(new Event('residentAnnouncementsUpdated'));
+    } catch {
+      window.dispatchEvent(new Event('residentAnnouncementsUpdated'));
+    }
+  };
+
+  const handleOpenNotifications = () => {
+    setIsNotificationOpen(true);
+
+    const snapshot = announcements.map((ann) => ({
       ...ann,
-      displayTime: ann.createdAt ? formatRelativeTime(ann.createdAt) : ann.time
+      displayTime: formatRelativeTime(ann.createdAt),
     }));
+    setOpenedAnnouncements(snapshot);
+
+    addSeenIds(unseenIdsRef.current);
+    unseenIdsRef.current = [];
+    setAnnouncements([]);
+    setUnreadCount(0);
+  };
+
+  const handleCloseNotifications = () => {
+    setIsNotificationOpen(false);
+    setOpenedAnnouncements([]);
+  };
 
   const handleProfileItemClick = (page: string) => {
     setIsProfileOpen(false);
@@ -167,7 +309,13 @@ export function ResidentHeader({ onMenuClick, onNavigate }: ResidentHeaderProps)
           {/* Notification Bell */}
           <div className="relative" ref={notificationRef}>
             <button 
-              onClick={() => setIsNotificationOpen(!isNotificationOpen)}
+              onClick={() => {
+                if (isNotificationOpen) {
+                  handleCloseNotifications();
+                  return;
+                }
+                handleOpenNotifications();
+              }}
               className="relative p-2 hover:text-blue-500 text-gray-500 transition-colors rounded-lg hover:bg-gray-50"
             >
               <Bell className="w-6 h-6" />
@@ -181,51 +329,25 @@ export function ResidentHeader({ onMenuClick, onNavigate }: ResidentHeaderProps)
               <div className="absolute right-0 mt-2 w-[480px] bg-white rounded-2xl shadow-2xl border border-gray-100 z-[999] overflow-hidden flex flex-col">
                 {/* Header */}
                 <div className="p-4">
-                  <h3 className="text-2xl font-bold text-gray-900">Thông báo</h3>
-                </div>
-
-                {/* Filter Tabs */}
-                <div className="flex gap-2 px-4 pb-3">
-                  <button
-                    onClick={() => setNotificationFilter('all')}
-                    className={`px-4 py-1.5 rounded-full text-[15px] font-medium transition-colors ${
-                      notificationFilter === 'all'
-                        ? 'bg-blue-100 text-blue-600'
-                        : 'text-gray-600 hover:bg-gray-100'
-                    }`}
-                  >
-                    Tất cả
-                  </button>
-                  <button
-                    onClick={() => setNotificationFilter('unread')}
-                    className={`px-4 py-1.5 rounded-full text-[15px] font-medium transition-colors ${
-                      notificationFilter === 'unread'
-                        ? 'bg-blue-100 text-blue-600'
-                        : 'text-gray-600 hover:bg-gray-100'
-                    }`}
-                  >
-                    Chưa đọc
-                  </button>
+                  <h3 className="text-2xl font-bold text-gray-900">Thông báo mới</h3>
                 </div>
 
                 {/* Notification List - Scrollable */}
-                <div className="min-h-[300px] max-h-[500px] overflow-y-auto">
-                  {filteredAnnouncements.length === 0 ? (
+                <div className="min-h-[240px] max-h-[360px] overflow-y-auto">
+                  {openedAnnouncements.length === 0 ? (
                     <div className="px-4 py-8 text-center text-gray-500">
                       <p className="text-sm">Không có thông báo</p>
                     </div>
                   ) : (
-                    filteredAnnouncements.map((announcement) => {
+                    openedAnnouncements.map((announcement) => {
                       const { Icon, bgClass, textClass } = getNotificationTypeIcon(announcement);
                       
                       return (
                         <button
                           key={announcement.id}
                           onClick={() => {
-                            if (!announcement.read) {
-                              markAsRead(announcement.id);
-                            }
-                            setIsNotificationOpen(false);
+                            markAsReadApi(announcement.id);
+                            handleCloseNotifications();
                             onNavigate('resident-announcements');
                           }}
                           className="w-full flex items-start gap-4 p-4 hover:bg-gray-50 transition-colors cursor-pointer"
@@ -243,9 +365,6 @@ export function ResidentHeader({ onMenuClick, onNavigate }: ResidentHeaderProps)
                               <h4 className="text-[14.5px] font-semibold text-gray-800 truncate flex-1 text-left">
                                 {announcement.title}
                               </h4>
-                              {!announcement.read && (
-                                <div className="w-2 h-2 bg-red-500 rounded-full flex-shrink-0" />
-                              )}
                             </div>
                             <p className="text-xs text-gray-400 mt-1 text-left">
                               {announcement.displayTime}
@@ -260,7 +379,7 @@ export function ResidentHeader({ onMenuClick, onNavigate }: ResidentHeaderProps)
                 {/* Footer - Xem tất cả Button */}
                 <button
                   onClick={() => {
-                    setIsNotificationOpen(false);
+                    handleCloseNotifications();
                     if (onNavigate) {
                       onNavigate('resident-announcements');
                     }
@@ -318,6 +437,3 @@ export function ResidentHeader({ onMenuClick, onNavigate }: ResidentHeaderProps)
     </header>
   );
 }
-
-
-

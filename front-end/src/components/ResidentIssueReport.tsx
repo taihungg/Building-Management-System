@@ -8,6 +8,22 @@ const NGROK_HEADERS = {
   'Content-Type': 'application/json',
   'ngrok-skip-browser-warning': 'true'
 };
+const PAYMENT_REQUEST_MARKER = '[PAYMENT_REQUEST]';
+const isPaymentRequestIssue = (title: string, description: string) => {
+  const safeTitle = String(title ?? '');
+  const safeDescription = String(description ?? '');
+  const haystack = `${safeTitle}\n${safeDescription}`;
+  if (haystack.includes(PAYMENT_REQUEST_MARKER)) return true;
+  const lowerTitle = safeTitle.toLowerCase();
+  const lowerDescription = safeDescription.toLowerCase();
+  return lowerTitle.includes('yêu cầu xác nhận thanh toán') && lowerDescription.includes('invoiceid:');
+};
+
+type ApiEnvelope<T> = {
+  statusCode?: number;
+  message?: string;
+  data?: T;
+};
 
 interface Issue {
   id: string;
@@ -87,55 +103,60 @@ export function ResidentIssueReport() {
         });
 
         if (!residentResponse.ok) {
-          throw new Error('Không thể lấy thông tin cư dân');
+          const errJson = (await residentResponse.json().catch(() => ({}))) as ApiEnvelope<unknown>;
+          throw new Error(errJson?.message || 'Không thể lấy thông tin cư dân');
         }
 
-        const residentRes = await residentResponse.json();
-        if (residentRes.success && residentRes.data) {
-          const roomNumber = residentRes.data.roomNumber;
-          const building = residentRes.data.building;
+        const residentRes = (await residentResponse.json().catch(() => ({}))) as ApiEnvelope<{
+          id?: string;
+          roomNumber?: number | string;
+          building?: string;
+        }>;
+        const residentData = residentRes?.data;
+        if (residentData) {
+          const roomNumber = residentData.roomNumber;
+          const building = residentData.building;
           
           // If we have room number, try to find apartment ID
           let apartmentId: string | undefined = undefined;
           if (roomNumber) {
             try {
-              // Search for apartment by room number
-              const apartmentKeyword = roomNumber.toString();
+              const roomDigits = String(roomNumber).trim().replace(/^P\./i, '');
               const apartmentResponse = await fetch(
-                `${BASE_URL}/api/v1/apartments?keyword=${encodeURIComponent(apartmentKeyword)}`,
+                `${BASE_URL}/api/v1/apartments/dropdown?keyword=${encodeURIComponent(roomDigits)}`,
                 { headers: NGROK_HEADERS }
               );
-              
-              if (apartmentResponse.ok) {
-                const apartmentRes = await apartmentResponse.json();
-                if (apartmentRes.success && apartmentRes.data && apartmentRes.data.length > 0) {
-                  // Find matching apartment by room number and building name if available
-                  const matchingApartment = apartmentRes.data.find((apt: any) => {
-                    const roomMatch = apt.roomNumber === roomNumber;
-                    // If building name is available, also match by building
-                    if (building && apt.buildingName) {
-                      return roomMatch && apt.buildingName === building;
-                    }
-                    return roomMatch;
-                  });
-                  
-                  if (matchingApartment) {
-                    apartmentId = matchingApartment.id;
-                  } else if (apartmentRes.data.length === 1) {
-                    // If only one result, use it
-                    apartmentId = apartmentRes.data[0].id;
-                  }
-                }
+
+              if (!apartmentResponse.ok) {
+                const errJson = (await apartmentResponse.json().catch(() => ({}))) as ApiEnvelope<unknown>;
+                throw new Error(errJson?.message || 'Không thể lấy thông tin căn hộ');
               }
+
+              const apartmentRes = (await apartmentResponse.json().catch(() => ({}))) as ApiEnvelope<
+                Array<{ id?: string; label?: string }>
+              >;
+              const list = Array.isArray(apartmentRes?.data) ? apartmentRes.data : [];
+              const needle = `P.${roomDigits}`.toUpperCase();
+
+              const matchingApartment =
+                list.find((apt) => String(apt?.label ?? '').trim().toUpperCase().includes(needle)) ??
+                list.find((apt) => {
+                  if (!building) return false;
+                  const hay = String(apt?.label ?? '').trim().toUpperCase();
+                  return hay.includes(needle) && hay.includes(String(building).trim().toUpperCase());
+                }) ??
+                (list.length === 1 ? list[0] : undefined);
+
+              if (matchingApartment?.id) apartmentId = String(matchingApartment.id);
             } catch (aptError) {
               console.warn('Could not fetch apartment ID:', aptError);
             }
           }
 
           setResidentDetail({
-            id: residentRes.data.id,
+            id: String(residentData.id ?? personId),
             apartmentId: apartmentId,
-            roomNumber: roomNumber,
+            roomNumber: typeof roomNumber === 'number' ? roomNumber : Number(roomNumber),
             building: building
           });
         }
@@ -169,18 +190,13 @@ export function ResidentIssueReport() {
       });
 
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
+        const errorData = (await response.json().catch(() => ({}))) as ApiEnvelope<unknown>;
         throw new Error(errorData.message || 'Không thể tải danh sách sự cố');
       }
 
-      const res = await response.json();
-      if (res.success && res.data) {
-        // Ensure data is an array
-        const issuesData = Array.isArray(res.data) ? res.data : [];
-        setIssues(issuesData);
-      } else {
-        setIssues([]);
-      }
+      const res = (await response.json().catch(() => ({}))) as ApiEnvelope<Issue[]>;
+      const issuesData = Array.isArray(res?.data) ? res.data : [];
+      setIssues(issuesData.filter((x) => !isPaymentRequestIssue(x.title, x.description)));
     } catch (error: any) {
       console.error('Error fetching issues:', error);
       toast.error(error.message || 'Không thể tải danh sách sự cố');
@@ -237,25 +253,20 @@ export function ResidentIssueReport() {
       });
 
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
+        const errorData = (await response.json().catch(() => ({}))) as ApiEnvelope<unknown>;
         throw new Error(errorData.message || 'Không thể tạo báo cáo sự cố');
       }
 
-      const res = await response.json();
-      if (res.success) {
-        toast.success('Báo cáo sự cố đã được gửi thành công!');
-        setFormData({
-          title: '',
-          description: '',
-          type: 'MAINTENANCE',
-          location: ''
-        });
-        setShowForm(false);
-        // Refresh issues list
-        await fetchIssues();
-      } else {
-        throw new Error(res.message || 'Không thể tạo báo cáo sự cố');
-      }
+      await response.json().catch(() => ({}));
+      toast.success('Báo cáo sự cố đã được gửi thành công!');
+      setFormData({
+        title: '',
+        description: '',
+        type: 'MAINTENANCE',
+        location: ''
+      });
+      setShowForm(false);
+      await fetchIssues();
     } catch (error: any) {
       console.error('Error creating issue:', error);
       toast.error(error.message || 'Không thể tạo báo cáo sự cố');
@@ -303,7 +314,6 @@ export function ResidentIssueReport() {
     <div className="space-y-6">
       <div>
         <h1 className="text-3xl text-gray-900">Báo cáo sự cố</h1>
-        <p className="text-gray-600 mt-1">Báo cáo và theo dõi các sự cố trong tòa nhà</p>
       </div>
 
       {/* Create Issue Form */}
@@ -630,4 +640,3 @@ export function ResidentIssueReport() {
     </div>
   );
 }
-

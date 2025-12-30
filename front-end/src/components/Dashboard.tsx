@@ -8,6 +8,7 @@ interface Issue {
     title: string;
     roomNumber?: string;
     status: string;
+    description?: string | null;
 }
 
 export function Dashboard() {
@@ -21,6 +22,16 @@ export function Dashboard() {
   // Link deploy mới của chú
   const BASE_URL = 'https://untoasted-jean-unsympathisingly.ngrok-free.dev';
   const NGROK_HEADERS = { 'ngrok-skip-browser-warning': 'true' };
+  const PAYMENT_REQUEST_MARKER = '[PAYMENT_REQUEST]';
+  const isPaymentRequestIssue = (title: string, description: string) => {
+    const safeTitle = String(title ?? '');
+    const safeDescription = String(description ?? '');
+    const haystack = `${safeTitle}\n${safeDescription}`;
+    if (haystack.includes(PAYMENT_REQUEST_MARKER)) return true;
+    const lowerTitle = safeTitle.toLowerCase();
+    const lowerDescription = safeDescription.toLowerCase();
+    return lowerTitle.includes('yêu cầu xác nhận thanh toán') && lowerDescription.includes('invoiceid:');
+  };
 
   const occupancyRate = apartmentStats.total > 0 
     ? ((apartmentStats.occupied / apartmentStats.total) * 100).toFixed(1) 
@@ -97,7 +108,8 @@ export function Dashboard() {
             const sourceData = Array.isArray(dataIssue) ? dataIssue : (dataIssue.data || []);
             
             const pending = sourceData.filter((i: any) => i.status === 'UNPROCESSED');
-            setPendingIssuesList(pending);
+            const filteredPending = pending.filter((i: any) => !isPaymentRequestIssue(i.title, i.description));
+            setPendingIssuesList(filteredPending);
         }
     } catch (err) {
         console.error("Lỗi fetchIssues API:", err);
