@@ -1,4 +1,4 @@
-## Blue Moon Management – Apartment/Condo Management System
+## Blue Moon Management – Building Management System
 
 Monorepo with a Spring Boot backend (Java) and a React + Vite frontend for managing residents, apartments, announcements, issues, accounting (invoices, extra fees, voluntary contributions), usage imports, and Excel exports.
 
@@ -12,7 +12,6 @@ Monorepo with a Spring Boot backend (Java) and a React + Vite frontend for manag
 - Run Locally (Dev)
 - Build & Deploy
 - API Documentation (OpenAPI/Swagger)
-- Full API Endpoints
 - Security Notes
 - License
 
@@ -22,31 +21,6 @@ Monorepo with a Spring Boot backend (Java) and a React + Vite frontend for manag
 - Goal: Operate a condo/apartment management system across multiple roles (resident/authority/accounting/management) with announcements, fee charging/billing, issue tracking, reporting, and more.
 
 ## Architecture & Repository Structure
-
-High-level data flow:
-
-```mermaid
-flowchart TD
-  subgraph Client [Client]
-    A[Browser / React 18 + Vite]
-  end
-
-  subgraph Backend [Spring Boot 3 (Java 21)]
-    B1[Controllers<br/>@RestController]
-    B2[Services]
-    B3[Repositories<br/>Spring Data JPA]
-    B4[(PostgreSQL)]
-    B5[Excel Export<br/>Apache POI]
-  end
-
-  A -->|HTTP JSON| B1
-  B1 --> B2
-  B2 --> B3
-  B3 --> B4
-  B2 -->|Export invoices| B5
-  A -->|OpenAPI UI| C[Swagger UI /swagger-ui]
-```
-
 Repository layout:
 ```
 .
@@ -101,6 +75,59 @@ Repository layout:
   - React Hook Form
   - Lucide React (icons)
   - Utilities: clsx, class-variance-authority, etc.
+
+### Tech Stack Logos & Badges
+
+<p align="center">
+  <a href="https://www.java.com/">
+    <img alt="Java" src="https://raw.githubusercontent.com/devicons/devicon/master/icons/java/java-original.svg" height="48">
+  </a>
+  &nbsp;&nbsp;
+  <a href="https://spring.io/projects/spring-boot">
+    <img alt="Spring Boot" src="https://raw.githubusercontent.com/devicons/devicon/master/icons/spring/spring-original.svg" height="48">
+  </a>
+  &nbsp;&nbsp;
+  <a href="https://www.postgresql.org/">
+    <img alt="PostgreSQL" src="https://raw.githubusercontent.com/devicons/devicon/master/icons/postgresql/postgresql-original.svg" height="48">
+  </a>
+  &nbsp;&nbsp;
+  <a href="https://maven.apache.org/">
+    <img alt="Maven" src="https://raw.githubusercontent.com/devicons/devicon/master/icons/maven/maven-original.svg" height="48">
+  </a>
+  &nbsp;&nbsp;
+  <a href="https://react.dev/">
+    <img alt="React" src="https://raw.githubusercontent.com/devicons/devicon/master/icons/react/react-original.svg" height="48">
+  </a>
+  &nbsp;&nbsp;
+  <a href="https://www.typescriptlang.org/">
+    <img alt="TypeScript" src="https://raw.githubusercontent.com/devicons/devicon/master/icons/typescript/typescript-original.svg" height="48">
+  </a>
+  &nbsp;&nbsp;
+  <a href="https://vitejs.dev/">
+    <img alt="Vite" src="https://vitejs.dev/logo.svg" height="48">
+  </a>
+  &nbsp;&nbsp;
+  <a href="https://swagger.io/">
+    <img alt="Swagger / OpenAPI" src="https://raw.githubusercontent.com/swagger-api/swagger.io/wordpress/images/assets/SW-logo-clr.png" height="48">
+  </a>
+</p>
+
+Badges:
+
+![Java 21](https://img.shields.io/badge/Java-21-007396?logo=java&logoColor=white)
+![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.x-6DB33F?logo=springboot&logoColor=white)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-14%2B-4169E1?logo=postgresql&logoColor=white)
+![Maven](https://img.shields.io/badge/Maven-Build-C71A36?logo=apachemaven&logoColor=white)
+![React 18](https://img.shields.io/badge/React-18-61DAFB?logo=react&logoColor=black)
+![TypeScript](https://img.shields.io/badge/TypeScript-5.x-3178C6?logo=typescript&logoColor=white)
+![Vite](https://img.shields.io/badge/Vite-6-646CFF?logo=vite&logoColor=white)
+![Radix UI](https://img.shields.io/badge/Radix%20UI-Components-161618)
+![Recharts](https://img.shields.io/badge/Recharts-Charts-00C49F)
+![React Router](https://img.shields.io/badge/React%20Router-7-EA4335?logo=reactrouter&logoColor=white)
+![React Hook Form](https://img.shields.io/badge/React%20Hook%20Form-7-EC5990)
+![Lombok](https://img.shields.io/badge/Lombok-Annotations-FF5733)
+![OpenAPI](https://img.shields.io/badge/OpenAPI-3.0-6BA539)
+![Apache%20POI](https://img.shields.io/badge/Apache%20POI-XLSX-1565C0)
 
 ## Key Features
 - Manage residents, apartments, buildings
@@ -205,84 +232,6 @@ Deployment:
 ## API Documentation (OpenAPI/Swagger)
 - Swagger UI: `http://localhost:8081/swagger-ui/index.html`
 - OpenAPI JSON: `http://localhost:8081/v3/api-docs`
-
-## Full API Endpoints
-Note: Some groups are versioned under `/api/v1/...` while others use `/api/...`.
-
-### Auth (`/api/v1/auth`)
-- `POST /login` — Authenticate user; returns account/person IDs and role
-- `POST /logout` — Logout (stateless placeholder)
-
-### Residents (`/api/v1/residents`)
-- `GET /dropdown?keyword=` — Search residents for dropdown
-- `GET /?keyword=&include_inactive=false` — Search residents with optional inactive
-- `GET /{id}` — Get resident detail
-- `POST /` — Create resident
-- `PUT /{id}` — Update resident
-- `DELETE /?id=UUID&hard=false` — Soft delete (inactive) or hard delete when `hard=true`
-- `POST /{id}/account` — Create account for resident
-
-### Buildings (`/api/v1/buildings`)
-- `GET /dropdown?keyword=` — Search buildings for dropdown
-- `POST /` — Create building
-- `DELETE /?id=UUID` — Delete building
-
-### Apartments (`/api/v1/apartments`)
-- `GET /dropdown?keyword=` — Search apartments for dropdown
-- `GET /?keyword=&building=&floor=` — Search apartments by keyword/building/floor
-- `GET /{id}` — Get apartment detail
-- `POST /` — Create apartment
-- `PUT /{id}?new_owner_id=` — Change apartment owner
-- `DELETE /?id=` — Delete apartment
-- `PUT /{apartmentId}/residents/add` — Add residents to an apartment
-- `PUT /{apartmentId}/residents/remove` — Remove residents from an apartment
-
-### Announcements (`/api/announcements`)
-- `POST /` — Create announcement
-- `GET /staff` — List all announcements (staff view)
-- `GET /{announcementId}/recipients` — List recipient read statuses
-- `GET /resident/{residentId}` — List announcements for a resident (with read status)
-- `PATCH /resident/{residentId}/announcement/{announcementId}/read` — Mark as read
-- `PUT /{id}` — Update announcement
-- `DELETE /{id}` — Delete announcement
-
-### Issues (`/api/issues`)
-- `POST /` — Create issue
-- `PATCH /{id}/status` — Update issue status
-- `GET /?type=` — List issues (all or by `type`)
-- `GET /count/security` — Count security issues
-- `GET /security` — List security issues
-
-### Accounting – Invoices & Dashboard (`/api/v1/accounting`)
-- `GET /invoices?month=&year=` — Get invoice summaries
-- `POST /invoices/generation?month=&year=` — Generate draft invoices (PENDING)
-- `GET /invoices/export?month=&year=` — Export invoices to Excel
-- `GET /dashboard/fourmetrics` — 4 KPIs for dashboard
-- `GET /dashboard/barchart?year=` — Monthly revenue (bar chart) for a year
-- `GET /dashboard/piechart?month=&year=` — Revenue distribution for month/year
-- `PATCH /invoices/confirm?month=&year=&staffId=` — Confirm and send notifications
-
-### Accounting – Extra Fee (`/api/v1/extrafee`)
-- `GET /{id}` — Extra fee detail
-- `GET /?keyword=` — Search extra fees
-- `POST /` — Create extra fee
-- `DELETE /{id}` — Delete extra fee
-
-### Accounting – Usage Import (`/api/v1/accounting/usage-import`)
-- `POST /preview` (multipart form) — Validate and preview file: `file`, `month`, `year`
-- `POST /save` (JSON body) — Persist validated records: body list + `month`, `year`
-- `GET /usage-records?month=&year=` — Query saved usage records by month/year
-
-### Voluntary Contributions – Campaigns (`/api/v1/campaigns`)
-- `POST /` — Create campaign
-- `GET /` — List campaigns (summary)
-- `GET /{id}` — Campaign detail (includes contributions)
-- `POST /contributions` — Add contributor record
-- `PUT /{id}` — Update campaign
-- `DELETE /{id}` — Delete campaign
-
-### Misc
-- `GET /test` — Health/test endpoint
 
 ## Security Notes
 - Do not commit DB credentials/secrets. Use environment variables or a secret manager.
