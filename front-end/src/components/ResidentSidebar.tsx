@@ -6,7 +6,8 @@ import {
   ChevronLeft,
   Settings,
   User,
-  LogOut
+  LogOut,
+  Heart
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion'; 
 import React from 'react';
@@ -22,9 +23,10 @@ interface ResidentSidebarProps {
 const menuItems = [
   { to: '/resident/dashboard', label: 'Quản lý căn hộ', icon: LayoutDashboard },
   { to: '/resident/announcements', label: 'Thông báo', icon: Bell },
-  // Dùng '/invoice' vì trong App.tsx Route là /invoice
   { to: '/resident/invoice', label: 'Hóa đơn', icon: Receipt }, 
   { to: '/resident/rules', label: 'Nội quy', icon: FileText },
+  {to:'/resident/voluntary-contribution', label: 'Quỹ đóng góp tự nguyện', icon: Heart }
+
 ];
 
 const bottomItems = [
@@ -32,6 +34,7 @@ const bottomItems = [
   { to: '/resident/profile', label: 'Hồ sơ', icon: User },
   // Mục logout không cần NavLink
   { id: 'logout', label: 'Đăng xuất', icon: LogOut }, 
+
 ];
 
 // Hàm cấu hình NavLink class

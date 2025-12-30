@@ -47,6 +47,8 @@ import { AuthorityProfile } from './components/AuthorityProfile';
 
 // Auth
 import { Login } from './components/Login'; 
+import { AccountingExtraFee } from './components/AccountingExtraFee';
+import { ResidentVoluntaryContribution } from './components/ResidentVoluntaryContribution';
 
 // === Định nghĩa kiểu và Maps ===
 type UserRole = 'management' | 'resident' | 'accounting' | 'authority' | null; 
@@ -64,19 +66,21 @@ const managementTabToPath: Record<string, string> = {
   'dashboard': '/management/dashboard', 'residents': '/management/residents', 'apartments': '/management/apartments',
   'bills': '/management/bills', 'services': '/management/services', 'notifications': '/management/notifications',
   'profile': '/management/profile', 'settings': '/management/settings', 'extra-services': '/management/extra-services', 
-  'voluntary-contributions': '/management/voluntary-contributions'
+  'voluntary-contributions': '/management/voluntary-contributions',
 };
 
 const residentTabToPath: Record<string, string> = {
   'resident-dashboard': '/resident/dashboard', 'resident-announcements': '/resident/announcements',
   'resident-bills': '/resident/invoice', 'building-rules': '/resident/rules',
-  'profile': '/resident/profile', 'settings': '/resident/settings',
+  'profile': '/resident/profile', 'settings': '/resident/settings',   'resident-voluntary-contribution':'/resident/voluntary-contribution'
+
 };
 
 const accountingTabToPath: Record<string, string> = {
   'accounting-dashboard': '/accounting/dashboard', 'debt-management': '/accounting/debt',
   'invoice-creation': '/accounting/invoice', 'profile': '/accounting/profile',
   'settings': '/accounting/settings', 'accounting-voluntary-contribution': '/accounting/voluntary-contribution'
+  , 'extra-services':'/accoungting/extra-services'
 };
 
 const authorityTabToPath: Record<string, string> = {
@@ -229,6 +233,8 @@ function AppContent() {
                 <Route path="/rules" element={<BuildingRules />} />
                 <Route path="/profile" element={<ResidentProfile />} />
                 <Route path="/settings" element={<ResidentSettings />} />
+                <Route path="/voluntary-contribution" element={<ResidentVoluntaryContribution />} />
+
             </>
         );
         baseUrl = '/resident/*';
@@ -244,6 +250,8 @@ function AppContent() {
                 <Route path="/profile" element={<AccountingProfile />} />
                 <Route path="/settings" element={<Settings />} />
                 <Route path="/voluntary-contribution" element={<AccountingVoluntaryContribution />} />
+                <Route path="/extra-services" element={<AccountingExtraFee/>} />
+
             </>
         );
         baseUrl = '/accounting/*';
@@ -258,6 +266,7 @@ function AppContent() {
                 <Route path="/announcements" element={<AuthorityAnnouncements />} />
                 <Route path="/profile" element={<AuthorityProfile />} />
                 <Route path="/settings" element={<Settings />} />
+
             </>
         );
         baseUrl = '/authority/*';
