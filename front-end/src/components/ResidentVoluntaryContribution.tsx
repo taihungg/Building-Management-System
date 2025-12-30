@@ -1,8 +1,7 @@
-import { Search, Heart, Plus, Download, Users, TrendingUp, Calendar, Trash2, ExternalLink, X, Phone, Home, Clock, Info, ShieldCheck, UserCheck, Globe } from 'lucide-react';
+import { Search, Heart, Users, Calendar, ExternalLink, Clock, Info } from 'lucide-react';
 import { Modal } from './Modal';
 import { Toaster, toast } from 'sonner';
 import { useState, useEffect } from 'react';
-import React from 'react';
 
 // Định nghĩa đầy đủ kiểu dữ liệu từ API
 interface Campaign {
@@ -30,20 +29,25 @@ interface Contribution {
 
 export function ResidentVoluntaryContribution() {
     const [campaigns, setCampaigns] = useState<Campaign[]>([]);
-    const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+    const [searchTerm, setSearchTerm] = useState('');
     const [selectedCampaign, setSelectedCampaign] = useState<Campaign | null>(null);
     const [contributions, setContributions] = useState<Contribution[]>([]);
     const [isLoadingDetails, setIsLoadingDetails] = useState(false);
+    const [isLoadingCampaigns, setIsLoadingCampaigns] = useState(false);
     const [animate, setAnimate] = useState(false);
 
+    const API_BASE_URL = 'https://untoasted-jean-unsympathisingly.ngrok-free.dev';
+    const NGROK_HEADERS = {
+        'Content-Type': 'application/json',
+        'ngrok-skip-browser-warning': 'true',
+    };
+
     const fetchCampaigns = async () => {
+        setIsLoadingCampaigns(true);
         try {
-            const response = await fetch('https://untoasted-jean-unsympathisingly.ngrok-free.dev/api/v1/campaigns', {
+            const response = await fetch(`${API_BASE_URL}/api/v1/campaigns`, {
                 method: 'GET',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'ngrok-skip-browser-warning': 'true' // Vượt rào ngrok
-                }
+                headers: NGROK_HEADERS
             });
             const result = await response.json();
             // Kiểm tra statusCode theo format của chú
@@ -54,38 +58,8 @@ export function ResidentVoluntaryContribution() {
         } catch (error) {
             console.log(error); // Chuẩn cú pháp chú dặn
             toast.error("Không thể tải danh sách chiến dịch");
-        }
-    };
-
-    // 2. Xử lý xoá Campaign - Đã sửa lỗi trùng lặp URL
-    const handleDeleteCampaign = async (e: React.MouseEvent, id: string, title: string) => {
-        e.stopPropagation(); 
-        
-        if (!window.confirm(`Chú có chắc chắn muốn xoá chiến dịch "${title}" không? Dữ liệu đã xoá sẽ không thể khôi phục.`)) {
-            return;
-        }
-
-        try {
-            // Sửa lại URL: Bỏ đoạn /campaignId/api/v1 dư thừa
-            const response = await fetch(`https://untoasted-jean-unsympathisingly.ngrok-free.dev/api/v1/campaigns/${id}`, {
-                method: 'DELETE',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'ngrok-skip-browser-warning': 'true'
-                }
-            });
-            
-            const result = await response.json().catch(() => ({}));
-
-            if (response.ok || result.statusCode === 200) {
-                toast.success(`Đã xoá thành công chiến dịch: ${title}`);
-                setCampaigns(prev => prev.filter(item => item.id !== id));
-            } else {
-                toast.error(result.message || "Có lỗi xảy ra khi xoá");
-            }
-        } catch (error) {
-            console.log(error); 
-            toast.error("Lỗi kết nối server khi xoá");
+        } finally {
+            setIsLoadingCampaigns(false);
         }
     };
 
@@ -95,12 +69,9 @@ export function ResidentVoluntaryContribution() {
         setIsLoadingDetails(true);
         try {
             // Sửa lại URL: Truy cập thẳng vào ID chiến dịch
-            const response = await fetch(`https://untoasted-jean-unsympathisingly.ngrok-free.dev/api/v1/campaigns/${campaign.id}`, {
+            const response = await fetch(`${API_BASE_URL}/api/v1/campaigns/${campaign.id}`, {
                 method: 'GET',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'ngrok-skip-browser-warning': 'true'
-                }
+                headers: NGROK_HEADERS
             });
             const result = await response.json();
             
@@ -121,26 +92,56 @@ export function ResidentVoluntaryContribution() {
     const formatCurrency = (amount: number) =>
         new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND', maximumFractionDigits: 0 }).format(amount);
 
+    const filteredCampaigns = campaigns.filter((cp) => {
+        const q = searchTerm.trim().toLowerCase();
+        if (!q) return true;
+        return (cp.title || '').toLowerCase().includes(q) || (cp.description || '').toLowerCase().includes(q);
+    });
+
     return (
         <div className="space-y-8 p-2">
             <Toaster position="top-right" richColors />
 
             {/* HEADER - GIỮ NGUYÊN */}
-            <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', width: '100%', marginBottom: '32px' }}>
+            <div className="flex items-end justify-between gap-4 w-full mb-8">
                 <div style={{ flex: 1 }}>
                     <h1 style={{ fontSize: '30px', fontWeight: '400', color: '#111827', margin: 0, letterSpacing: '-0.5px' }}>
                         Quỹ đóng góp tự nguyện
                     </h1>
                     <p style={{ fontSize: '14px', color: '#6b7280', marginTop: '4px', marginBottom: 0 }}>
-                        Quản lý các chiến dịch thiện nguyện và cộng đồng (Không tính vào hóa đơn)
+                        Theo dõi các chiến dịch thiện nguyện và cộng đồng
                     </p>
                 </div>
-                
             </div>
 
-            {/* GRID DANH SÁCH - THÊM NÚT XOÁ */}
+            <div className="relative">
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                <input
+                    type="text"
+                    placeholder="Tìm kiếm chiến dịch..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="w-full pl-12 pr-4 py-3 bg-white border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
+                />
+            </div>
+
+            {isLoadingCampaigns ? (
+                <div className="bg-white rounded-2xl p-6 border-2 border-gray-200 text-gray-600">
+                    Đang tải danh sách chiến dịch...
+                </div>
+            ) : null}
+
+            {!isLoadingCampaigns && filteredCampaigns.length === 0 ? (
+                <div className="bg-white rounded-2xl p-12 border-2 border-gray-200 text-center">
+                    <Heart className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                    <p className="text-gray-700 font-semibold">Không có chiến dịch phù hợp</p>
+                    <p className="text-gray-500 text-sm mt-1">Thử đổi từ khóa tìm kiếm hoặc quay lại sau.</p>
+                </div>
+            ) : null}
+
+            {/* GRID DANH SÁCH - CHỈ XEM */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {campaigns.map((cp) => {
+                {filteredCampaigns.map((cp) => {
                     const percent = cp.goalAmount > 0 ? Math.round((cp.totalCollected / cp.goalAmount) * 100) : 0;
                     const isSuccess = percent >= 100;
                     return (
@@ -149,19 +150,9 @@ export function ResidentVoluntaryContribution() {
                                 <div style={{ padding: '12px', backgroundColor: isSuccess ? '#ecfdf5' : '#fff1f2', color: isSuccess ? '#10b981' : '#e11d48', borderRadius: '16px' }}>
                                     <Heart size={22} fill={isSuccess ? '#10b981' : 'none'} />
                                 </div>
-                                <div className="flex items-center gap-2">
-                                    <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider ${cp.status === 'ACTIVE' ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-500'}`}>
-                                        {cp.status === 'ACTIVE' ? ' Đang kêu gọi' : cp.status === 'CLOSED' ? 'Đã kết thúc' : 'Bản nháp'}
-                                    </span>
-                                    {/* NÚT XOÁ THÊM VÀO ĐÂY */}
-                                    <button 
-                                        onClick={(e) => handleDeleteCampaign(e, cp.id, cp.title)}
-                                        className="p-1.5 text-slate-300 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-all cursor-pointer"
-                                        title="Xoá chiến dịch"
-                                    >
-                                        <Trash2 size={18} />
-                                    </button>
-                                </div>
+                                <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider ${cp.status === 'ACTIVE' ? 'bg-emerald-100 text-emerald-700' : cp.status === 'CLOSED' ? 'bg-slate-200 text-slate-600' : 'bg-gray-100 text-gray-500'}`}>
+                                    {cp.status === 'ACTIVE' ? 'Đang kêu gọi' : cp.status === 'CLOSED' ? 'Đã kết thúc' : 'Đang chuẩn bị'}
+                                </span>
                             </div>
                             
                             <h3 className="font-bold text-xl text-slate-800 mb-6 leading-tight h-12 line-clamp-2">{cp.title}</h3>
@@ -179,9 +170,6 @@ export function ResidentVoluntaryContribution() {
                                 </div>
                             </div>
                             <div className="flex gap-3">
-                                <button className="flex-1 flex items-center justify-center gap-2 py-3 bg-slate-50 text-slate-600 rounded-xl text-xs font-bold hover:bg-slate-100 transition-all border border-slate-100 cursor-pointer">
-                                    <Download size={14} /> Danh sách
-                                </button>
                                 <button onClick={() => fetchCampaignDetail(cp)} className="flex-1 flex items-center justify-center gap-2 py-3 bg-rose-50 text-rose-600 rounded-xl text-xs font-bold hover:bg-rose-100 transition-all cursor-pointer">
                                     <ExternalLink size={14} /> Chi tiết
                                 </button>
@@ -192,13 +180,13 @@ export function ResidentVoluntaryContribution() {
             </div>
 
             {/* MODAL CHI TIẾT - GIỮ NGUYÊN UI VÀ ĐẦY ĐỦ TRƯỜNG */}
-            <Modal isOpen={!!selectedCampaign} onClose={() => { setSelectedCampaign(null); setContributions([]); }} title="Thông tin chi tiết chiến dịch" width="900px">
+            <Modal isOpen={!!selectedCampaign} onClose={() => { setSelectedCampaign(null); setContributions([]); }} title="Thông tin chi tiết chiến dịch" size="lg">
                 {selectedCampaign && (
                     <div className="p-8 space-y-8 max-h-[85vh] overflow-y-auto">
                         <div className="p-6 bg-slate-50 rounded-[32px] border border-slate-100 relative overflow-hidden">
                             <div className="absolute top-4 right-4 flex gap-2">
                                 <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase ${selectedCampaign.isPublic ? 'bg-blue-100 text-blue-600' : 'bg-slate-200 text-slate-500'}`}>
-                                    {selectedCampaign.isPublic ? '🌐 Công khai' : '🔒 Nội bộ'}
+                                    {selectedCampaign.isPublic ? 'Công khai' : 'Nội bộ'}
                                 </span>
                             </div>
 
@@ -248,6 +236,11 @@ export function ResidentVoluntaryContribution() {
 
                         {/* Danh sách cư dân */}
                         <div className="bg-white border border-slate-100 rounded-[24px] overflow-hidden shadow-sm min-h-[250px] relative">
+                            <div className="px-6 py-4 bg-slate-50 border-b border-slate-100 flex justify-between items-center">
+                                <h3 className="text-sm font-black text-slate-700 uppercase tracking-wider">
+                                    Danh sách đóng góp ({contributions.length})
+                                </h3>
+                            </div>
                             {isLoadingDetails ? (
                                 <div className="absolute inset-0 flex items-center justify-center bg-white/50 z-10"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-rose-600"></div></div>
                             ) : (

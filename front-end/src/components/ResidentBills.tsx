@@ -1,21 +1,217 @@
 import { useState, useEffect } from 'react';
-import { Search, Download, Clock, CheckCircle, AlertCircle, DollarSign, Receipt, Calendar, CheckCircle2, Wallet, Banknote, AlertTriangle } from 'lucide-react';
-import { getBills, payBill, subscribe, exportToCSV, type Bill } from '../utils/bills';
-import { addAnnouncement } from '../utils/announcements';
+import { Search, Download, Clock, CheckCircle, AlertCircle, Receipt, Calendar, CheckCircle2, Wallet, Banknote, AlertTriangle } from 'lucide-react';
+import { authProvider } from './auth';
+
+type BillDetail = {
+  item: string;
+  amount: number;
+};
+
+type Bill = {
+  id: string;
+  type: string;
+  amount: number;
+  dueDate: string;
+  status: 'Paid' | 'Pending';
+  paidDate: string | null;
+  period: string;
+  details: BillDetail[];
+};
+
+type ApiEnvelope<T> = {
+  message?: string;
+  data?: T;
+};
+
+type InvoiceSummaryApi = {
+  id: string;
+  apartmentLabel?: string;
+  totalAmount?: number;
+  status?: 'PAID' | 'UNPAID' | 'PENDING' | string;
+  createdDate?: string;
+};
+
+type ApartmentDropdownItem = {
+  id: string;
+  label?: string;
+};
+
+type IssueTypeEnum = 'COMPLAINT' | (string & {});
+
+type IssueCreateRequest = {
+  apartmentId: string;
+  title: string;
+  description: string;
+  type: IssueTypeEnum;
+  reporterId: string;
+};
+
+const API_BASE_URL = 'https://untoasted-jean-unsympathisingly.ngrok-free.dev';
+const NGROK_HEADERS = { 'ngrok-skip-browser-warning': 'true' };
+const PAYMENT_REQUEST_STORAGE_KEY = 'payment_requests_v1';
+const PAYMENT_REQUEST_MARKER = '[PAYMENT_REQUEST]';
+
+const pad2 = (n: number) => String(n).padStart(2, '0');
+
+const toIsoDate = (date: Date) => `${date.getFullYear()}-${pad2(date.getMonth() + 1)}-${pad2(date.getDate())}`;
+
+const readPaymentRequestMap = (): Record<string, string> => {
+  try {
+    const raw = localStorage.getItem(PAYMENT_REQUEST_STORAGE_KEY);
+    if (!raw) return {};
+    const parsed = JSON.parse(raw) as unknown;
+    if (!parsed || typeof parsed !== 'object') return {};
+    return parsed as Record<string, string>;
+  } catch {
+    return {};
+  }
+};
+
+const writePaymentRequestMap = (value: Record<string, string>) => {
+  try {
+    localStorage.setItem(PAYMENT_REQUEST_STORAGE_KEY, JSON.stringify(value));
+  } catch {
+    // ignore
+  }
+};
+
+const getRecentPeriods = (count: number) => {
+  const periods: Array<{ month: number; year: number }> = [];
+  const now = new Date();
+  for (let i = 0; i < count; i++) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    periods.push({ month: d.getMonth() + 1, year: d.getFullYear() });
+  }
+  return periods;
+};
+
+const normalizeApartmentLabel = (roomNumber: number | string) => {
+  const raw = String(roomNumber ?? '').trim();
+  const normalized = raw.toUpperCase().startsWith('P.') ? raw.slice(2) : raw;
+  return `P.${normalized}`;
+};
 
 export function ResidentBills() {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<'All' | 'Paid' | 'Pending' | 'Overdue'>('All');
   const [selectedBill, setSelectedBill] = useState<Bill | null>(null);
-  const [bills, setBills] = useState<Bill[]>(getBills());
+  const [bills, setBills] = useState<Bill[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [paidBill, setPaidBill] = useState<Bill | null>(null);
+  const [residentId, setResidentId] = useState<string | null>(null);
+  const [roomNumber, setRoomNumber] = useState<string | null>(null);
+  const [apartmentId, setApartmentId] = useState<string | null>(null);
+  const [apartmentLabel, setApartmentLabel] = useState<string | null>(null);
 
   useEffect(() => {
-    const unsubscribe = subscribe((updatedBills) => {
-      setBills(updatedBills);
-    });
-    return unsubscribe;
+    const load = async () => {
+      setIsLoading(true);
+      setError(null);
+      try {
+        const personId = authProvider.getPersonId();
+        if (!personId) throw new Error('Vui lòng đăng nhập lại');
+        setResidentId(personId);
+
+        const residentRes = await fetch(`${API_BASE_URL}/api/v1/residents/${personId}`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            ...NGROK_HEADERS,
+          },
+        });
+        const residentJson = (await residentRes.json().catch(() => ({}))) as ApiEnvelope<{ roomNumber?: number | string }>;
+        if (!residentRes.ok) throw new Error(residentJson?.message || 'Không thể tải thông tin cư dân');
+
+        const roomNumberRaw = residentJson?.data?.roomNumber;
+        const roomNumber = roomNumberRaw == null ? '' : String(roomNumberRaw);
+        if (!roomNumber) throw new Error('Cư dân chưa được gán căn hộ');
+        setRoomNumber(roomNumber);
+        const apartmentLabel = normalizeApartmentLabel(roomNumber);
+        setApartmentLabel(apartmentLabel);
+
+        try {
+          const roomDigits = String(roomNumber).trim().replace(/^P\./i, '');
+          const dropdownRes = await fetch(
+            `${API_BASE_URL}/api/v1/apartments/dropdown?keyword=${encodeURIComponent(roomDigits)}`,
+            {
+              method: 'GET',
+              headers: {
+                'Content-Type': 'application/json',
+                ...NGROK_HEADERS,
+              },
+            }
+          );
+          const dropdownJson = (await dropdownRes.json().catch(() => ({}))) as ApiEnvelope<ApartmentDropdownItem[]>;
+          const list = Array.isArray(dropdownJson?.data) ? dropdownJson.data : [];
+          const normalizedNeedle = `P.${roomDigits}`.trim().toUpperCase();
+          const match =
+            list.find((x) => String(x?.label ?? '').trim().toUpperCase().includes(normalizedNeedle)) ??
+            list.find((x) => String(x?.label ?? '').trim().toUpperCase().includes(roomDigits.trim().toUpperCase()));
+          setApartmentId(match?.id ? String(match.id) : null);
+        } catch {
+          setApartmentId(null);
+        }
+
+        const periods = getRecentPeriods(12);
+        const invoicesByPeriod = await Promise.all(
+          periods.map(async ({ month, year }) => {
+            const invoiceRes = await fetch(`${API_BASE_URL}/api/v1/accounting/invoices?month=${month}&year=${year}`, {
+              method: 'GET',
+              headers: {
+                'Content-Type': 'application/json',
+                ...NGROK_HEADERS,
+              },
+            });
+            const invoiceJson = (await invoiceRes.json().catch(() => ({}))) as ApiEnvelope<InvoiceSummaryApi[]>;
+            if (!invoiceRes.ok) throw new Error(invoiceJson?.message || 'Không thể tải danh sách hóa đơn');
+            const invoiceList = Array.isArray(invoiceJson?.data) ? invoiceJson.data : [];
+            return { month, year, invoiceList };
+          })
+        );
+
+        const mappedBills: Bill[] = invoicesByPeriod.flatMap(({ month, year, invoiceList }) => {
+          const period = `Tháng ${month}/${year}`;
+          const dueDate = `${year}-${pad2(month)}-05`;
+
+          return invoiceList
+            .filter((invoice) => String(invoice?.apartmentLabel ?? '').trim() === apartmentLabel)
+            .map((invoice) => {
+              const amount = Number(invoice.totalAmount ?? 0);
+              const apiStatus = String(invoice.status ?? '').toUpperCase();
+              const isPaid = apiStatus === 'PAID';
+
+              return {
+                id: String(invoice.id),
+                type: 'Hóa đơn tháng',
+                amount: Number.isFinite(amount) ? amount : 0,
+                dueDate,
+                status: isPaid ? 'Paid' : 'Pending',
+                paidDate: null,
+                period,
+                details: [{ item: 'Tổng hóa đơn', amount: Number.isFinite(amount) ? amount : 0 }],
+              };
+            });
+        });
+
+        mappedBills.sort((a, b) => new Date(b.dueDate).getTime() - new Date(a.dueDate).getTime());
+        const requestMap = readPaymentRequestMap();
+        setBills(
+          mappedBills.map((b) => {
+            const requestedAt = requestMap[b.id];
+            return requestedAt ? { ...b, paidDate: requestedAt } : b;
+          })
+        );
+      } catch (e) {
+        setBills([]);
+        setError((e as Error).message);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    void load();
   }, []);
 
   const filteredBills = bills.filter(bill => {
@@ -46,31 +242,115 @@ export function ResidentBills() {
     return false;
   }).reduce((sum, b) => sum + b.amount, 0);
 
-  const handlePayBill = (bill: Bill) => {
-    const updatedBill = payBill(bill.id);
-    if (updatedBill) {
-      setPaidBill(updatedBill);
+  const createIssueApi = async (issueData: IssueCreateRequest) => {
+    const response = await fetch(`${API_BASE_URL}/api/issues`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...NGROK_HEADERS,
+      },
+      body: JSON.stringify(issueData),
+    });
+
+    const json = (await response.json().catch(() => ({}))) as ApiEnvelope<unknown>;
+    if (!response.ok) {
+      throw new Error(json?.message || `Lỗi: ${response.status} khi tạo yêu cầu.`);
+    }
+
+    return json?.data;
+  };
+
+  const ensureApartmentId = async () => {
+    if (apartmentId) return apartmentId;
+    if (!roomNumber) return null;
+    const roomDigits = String(roomNumber).trim().replace(/^P\./i, '');
+
+    const dropdownRes = await fetch(`${API_BASE_URL}/api/v1/apartments/dropdown?keyword=${encodeURIComponent(roomDigits)}`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        ...NGROK_HEADERS,
+      },
+    });
+    const dropdownJson = (await dropdownRes.json().catch(() => ({}))) as ApiEnvelope<ApartmentDropdownItem[]>;
+    const list = Array.isArray(dropdownJson?.data) ? dropdownJson.data : [];
+    const normalizedNeedle = `P.${roomDigits}`.trim().toUpperCase();
+    const match =
+      list.find((x) => String(x?.label ?? '').trim().toUpperCase().includes(normalizedNeedle)) ??
+      list.find((x) => String(x?.label ?? '').trim().toUpperCase().includes(roomDigits.trim().toUpperCase()));
+    const nextId = match?.id ? String(match.id) : null;
+    setApartmentId(nextId);
+    return nextId;
+  };
+
+  const handlePayBill = async (bill: Bill) => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      if (bill.paidDate) return;
+      if (!residentId) throw new Error('Vui lòng đăng nhập lại');
+      if (!apartmentLabel) throw new Error('Không tìm thấy thông tin căn hộ để gửi yêu cầu');
+      const resolvedApartmentId = await ensureApartmentId();
+      if (!resolvedApartmentId) throw new Error('Không tìm thấy thông tin căn hộ để gửi yêu cầu');
+
+      const requestedAt = toIsoDate(new Date());
+      const issueTitle = `${PAYMENT_REQUEST_MARKER} Yêu cầu xác nhận thanh toán hóa đơn ${bill.period}`;
+      const issueDescription = [
+        PAYMENT_REQUEST_MARKER,
+        `Căn hộ: ${apartmentLabel}`,
+        `InvoiceId: ${bill.id}`,
+        `Kỳ: ${bill.period}`,
+        `Số tiền: ${bill.amount.toLocaleString('vi-VN')} đ`,
+        `Hạn thanh toán: ${bill.dueDate}`,
+        `Ngày yêu cầu: ${requestedAt}`,
+        `Người gửi (residentId): ${residentId}`,
+      ].join('\n');
+
+      await createIssueApi({
+        apartmentId: resolvedApartmentId,
+        title: issueTitle,
+        description: issueDescription,
+        type: 'COMPLAINT',
+        reporterId: residentId,
+      });
+
+      const requestMap = readPaymentRequestMap();
+      writePaymentRequestMap({ ...requestMap, [bill.id]: requestedAt });
+
+      setBills((prev) => prev.map((b) => (b.id === bill.id ? { ...b, paidDate: requestedAt } : b)));
+      setPaidBill({ ...bill, status: 'Pending', paidDate: requestedAt });
       setShowSuccessModal(true);
       setSelectedBill(null);
-      
-      // Add success announcement
-      const now = new Date();
-      const timeAgo = 'Vừa xong';
-      addAnnouncement({
-        type: 'success',
-        icon: null,
-        title: `Thanh toán thành công: ${bill.type}`,
-        message: `Bạn đã thanh toán thành công hóa đơn ${bill.type} - ${bill.period} với số tiền ${bill.amount.toLocaleString('vi-VN')} đ. Cảm ơn bạn đã thanh toán đúng hạn!`,
-        time: timeAgo,
-        date: now.toISOString().split('T')[0],
-        read: false,
-        color: 'emerald'
-      });
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setIsLoading(false);
     }
   };
 
   const handleExport = () => {
-    exportToCSV(bills);
+    const headers = ['Loại hóa đơn', 'Kỳ', 'Số tiền', 'Hạn thanh toán', 'Trạng thái', 'Ngày thanh toán'];
+    const rows = bills.map((bill) => [
+      bill.type,
+      bill.period,
+      bill.amount.toLocaleString('vi-VN'),
+      bill.dueDate,
+      bill.status === 'Paid' ? 'Đã thanh toán' : 'Chưa thanh toán',
+      bill.paidDate || '-',
+    ]);
+
+    const csvContent = [headers.join(','), ...rows.map((row) => row.join(','))].join('\n');
+    const BOM = '\uFEFF';
+    const blob = new Blob([BOM + csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+
+    link.setAttribute('href', url);
+    link.setAttribute('download', `hoa_don_${toIsoDate(new Date())}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   return (
@@ -78,6 +358,12 @@ export function ResidentBills() {
       <div>
         <h1 className="text-3xl text-gray-900">Quản lý tài chính</h1>
       </div>
+
+      {error && (
+        <div className="bg-red-50 border-2 border-red-200 text-red-800 rounded-2xl p-4">
+          {error}
+        </div>
+      )}
 
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
@@ -151,7 +437,8 @@ export function ResidentBills() {
         </div>
         <button 
           onClick={handleExport}
-          className="flex items-center gap-2 px-6 py-3 bg-white text-gray-700 border-2 border-gray-200 rounded-xl hover:bg-gray-50 transition-colors"
+          disabled={isLoading || bills.length === 0}
+          className="flex items-center gap-2 px-6 py-3 bg-white text-gray-700 border-2 border-gray-200 rounded-xl hover:bg-gray-50 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
         >
           <Download className="w-5 h-5" />
           Xuất file
@@ -160,6 +447,11 @@ export function ResidentBills() {
 
       {/* Bills List */}
       <div className="space-y-3">
+        {isLoading && (
+          <div className="bg-white rounded-2xl p-12 border-2 border-gray-200 text-center">
+            <p className="text-gray-600 text-lg">Đang tải hóa đơn...</p>
+          </div>
+        )}
         {filteredBills.map((bill) => {
           const isOverdue = bill.status === 'Pending' && new Date(bill.dueDate) < new Date();
           
@@ -217,7 +509,7 @@ export function ResidentBills() {
                   </div>
 
                   {bill.paidDate && (
-                    <p className="text-xs text-gray-500">Đã thanh toán vào: {bill.paidDate}</p>
+                    <p className="text-xs text-gray-500">Đã gửi yêu cầu: {bill.paidDate}</p>
                   )}
                 </div>
 
@@ -228,9 +520,10 @@ export function ResidentBills() {
                   >
                     Xem chi tiết
                   </button>
-                  {bill.status === 'Pending' && (
+                  {bill.status === 'Pending' && !bill.paidDate && (
                     <button 
                       onClick={() => handlePayBill(bill)}
+                      disabled={isLoading}
                       className="px-4 py-2 bg-white text-blue-600 border-2 border-blue-600 text-sm rounded-lg hover:bg-blue-50 transition-colors"
                     >
                       Thanh toán
@@ -295,9 +588,10 @@ export function ResidentBills() {
               >
                 Đóng
               </button>
-              {selectedBill.status === 'Pending' && (
+              {selectedBill.status === 'Pending' && !selectedBill.paidDate && (
                 <button 
                   onClick={() => handlePayBill(selectedBill)}
+                  disabled={isLoading}
                   className="flex-1 px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl hover:shadow-lg transition-all"
                 >
                   Thanh toán ngay
@@ -308,7 +602,7 @@ export function ResidentBills() {
         </div>
       )}
 
-      {filteredBills.length === 0 && (
+      {filteredBills.length === 0 && !isLoading && (
         <div className="bg-white rounded-2xl p-12 border-2 border-gray-200 text-center">
           <Receipt className="w-16 h-16 text-gray-400 mx-auto mb-4" />
           <p className="text-gray-600 text-lg">Không tìm thấy hóa đơn nào</p>
@@ -326,11 +620,11 @@ export function ResidentBills() {
             onClick={(e) => e.stopPropagation()}
           >
             <div className="text-center mb-6">
-              <div className="w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <CheckCircle2 className="w-8 h-8 text-emerald-600" />
+              <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <CheckCircle2 className="w-8 h-8 text-blue-600" />
               </div>
-              <h2 className="text-2xl font-bold text-gray-900 mb-2">Thanh toán thành công!</h2>
-              <p className="text-gray-600">Hóa đơn của bạn đã được thanh toán thành công.</p>
+              <h2 className="text-2xl font-bold text-gray-900 mb-2">Đã gửi yêu cầu thanh toán</h2>
+              <p className="text-gray-600">Yêu cầu thanh toán của bạn đã được ghi nhận.</p>
             </div>
             
             <div className="bg-gray-50 rounded-xl p-4 mb-6">
@@ -348,7 +642,7 @@ export function ResidentBills() {
                   <span className="font-semibold text-gray-900">{paidBill.amount.toLocaleString('vi-VN')} đ</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-600">Ngày thanh toán:</span>
+                  <span className="text-gray-600">Ngày yêu cầu:</span>
                   <span className="font-semibold text-gray-900">{paidBill.paidDate}</span>
                 </div>
               </div>
@@ -358,7 +652,7 @@ export function ResidentBills() {
               <div className="flex items-start gap-3">
                 <CheckCircle className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
                 <p className="text-sm text-blue-800">
-                  Thông báo thanh toán đã được gửi đến hệ thống. Bạn có thể xem trong mục Thông Báo.
+                  Bạn có thể theo dõi trạng thái xử lý trong mục Thông Báo hoặc trang hóa đơn.
                 </p>
               </div>
             </div>
@@ -378,4 +672,3 @@ export function ResidentBills() {
     </div>
   );
 }
-
