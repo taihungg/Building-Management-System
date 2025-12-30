@@ -27,6 +27,7 @@ import { ResidentBills } from './components/ResidentBills';
 import { BuildingRules } from './components/BuildingRules';
 import { ResidentProfile } from './components/ResidentProfile';
 import { ResidentSettings } from './components/ResidentSettings';
+import { ResidentIssueReport } from './components/ResidentIssueReport';
 
 // Accounting
 import { AccountingSidebar } from './components/AccountingSidebar';
@@ -230,6 +231,7 @@ function AppContent() {
                 <Route path="/announcements" element={<ResidentAnnouncements />} />
                 <Route path="/invoice" element={<ResidentBills />} />
                 <Route path="/rules" element={<BuildingRules />} />
+                <Route path="/issue-report" element={<ResidentIssueReport />} />
                 <Route path="/profile" element={<ResidentProfile />} />
                 <Route path="/settings" element={<ResidentSettings />} />
                 <Route path="/voluntary-contribution" element={<ResidentVoluntaryContribution />} />
