@@ -35,15 +35,15 @@ export function DebtManagement() {
   const [isApproving, setIsApproving] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isConfirming, setIsConfirming] = useState(false);
-  
+
   // Không dùng localStorage nữa, chỉ dùng API thật
-  
+
   // State cho inline editing
   const [editingCell, setEditingCell] = useState<{ row: string; col: string } | null>(null);
   const [editingValue, setEditingValue] = useState<string>('');
-  
+
   // Bắt buộc chọn tháng (không có "Tất cả các tháng")
-  const [selectedMonth, setSelectedMonth] = useState(currentDate.getMonth() + 1); 
+  const [selectedMonth, setSelectedMonth] = useState(currentDate.getMonth() + 1);
   const [selectedYear, setSelectedYear] = useState(currentDate.getFullYear());
   const [isLoadingData, setIsLoadingData] = useState(false);
 
@@ -56,21 +56,21 @@ export function DebtManagement() {
   const handleConfirmInvoices = async () => {
     // 1. Lấy thông tin từ "kho" authProvider
     const staffId = authProvider.getPersonId();
-    
+
     if (!staffId) {
       toast.error("Không tìm thấy thông tin nhân viên. Vui lòng đăng nhập lại!");
       return;
     }
     setIsApproving(true);
-  
+
     // Xác nhận lại với người dùng cho chắc (Eliminate Waste - tránh bấm nhầm)
-    
-  
+
+
     setIsConfirming(true);
     try {
       // 2. Xây dựng URL với các tham số từ State và authProvider
       const url = `https://untoasted-jean-unsympathisingly.ngrok-free.dev/api/v1/accounting/invoices/confirm?month=${selectedMonth}&year=${selectedYear}&staffId=${authProvider.getPersonId()}`;
-  
+
       const response = await fetch(url, {
         method: 'PATCH', // Thường confirm là hành động thay đổi dữ liệu nên dùng POST
         headers: {
@@ -78,20 +78,20 @@ export function DebtManagement() {
           'ngrok-skip-browser-warning': 'true'
         }
       });
-  
+
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.message || "Lỗi khi xác nhận hóa đơn");
       }
-  
+
       // 3. Thông báo thành công (Amplify Learning - Phản hồi ngay cho người dùng)
       toast.success("Xác nhận hóa đơn thành công!", {
         description: `Hệ thống đã chốt dữ liệu tháng ${selectedMonth}/${selectedYear}`
       });
-  
+
       // 4. Load lại danh sách để cập nhật trạng thái mới nhất trên màn hình
       await fetchBills();
-  
+
     } catch (error: any) {
       console.error("Lỗi Confirm:", error);
       toast.error("Xác nhận thất bại", { description: error.message });
@@ -106,8 +106,8 @@ export function DebtManagement() {
     try {
       // Bắt buộc có tháng và năm
       const url = `https://untoasted-jean-unsympathisingly.ngrok-free.dev/api/v1/accounting/invoices?year=${selectedYear}&month=${selectedMonth}`;
-      
-      const response = await fetch(url,{
+
+      const response = await fetch(url, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -116,18 +116,18 @@ export function DebtManagement() {
         }
       });
       if (!response.ok) throw new Error("Không thể tải dữ liệu hóa đơn");
-      
+
       const res = await response.json();
       const data = res.data || [];
-      
+
       // Chỉ dùng dữ liệu từ API, không dùng localStorage
       console.log('fetchBills - data from API:', data.length);
-      
+
       // Chỉ dùng dữ liệu từ API
       setBills(data);
       calculateStats(data);
       setIsDataLoaded(data.length > 0);
-      
+
     } catch (error) {
       console.error("Lỗi tải hóa đơn:", error);
       const errorMessage = error instanceof Error ? error.message : "Không thể tải dữ liệu hóa đơn";
@@ -140,20 +140,18 @@ export function DebtManagement() {
     }
   };
 
-  // Handle file upload click
   const handleGenerateInvoices = async () => {
-    // Kiểm tra xem chú đã chọn tháng chưa
     if (!selectedMonth) {
       toast.error("Vui lòng chọn tháng trước khi tạo hóa đơn");
       return;
     }
 
     setIsLoadingData(true);// Tận dụng state loading có sẵn
-    
+
     try {
       // Gọi API POST với month và year trên URL
       const url = `https://untoasted-jean-unsympathisingly.ngrok-free.dev/api/v1/accounting/invoices/generation?month=${selectedMonth}&year=${selectedYear}`;
-      
+
       const response = await fetch(url, {
         method: 'POST',
         headers: {
@@ -161,7 +159,7 @@ export function DebtManagement() {
           'ngrok-skip-browser-warning': 'true'
         },
         // Vì chú bảo không cần file, nên body có thể để trống hoặc gửi {}
-        body: JSON.stringify({}), 
+        body: JSON.stringify({}),
       });
 
       if (!response.ok) {
@@ -170,14 +168,13 @@ export function DebtManagement() {
       }
 
       const res = await response.json();
-      
+
       // Thông báo thành công rực rỡ
       toast.success(`Đã khởi tạo hóa đơn thành công cho tháng ${selectedMonth}/${selectedYear}`, {
         description: "Hệ thống đã tính toán tiền điện, nước và phí dịch vụ.",
       });
 
-      // Nếu chú muốn sau khi tạo xong thì load lại danh sách để xem, chú gọi hàm fetch ở đây:
-      // fetchBills(); 
+      fetchBills();
 
     } catch (error: any) {
       console.error("Lỗi:", error);
@@ -265,7 +262,7 @@ export function DebtManagement() {
       const reader = new FileReader();
       reader.onload = async (e) => {
         let jsonData: any[] = [];
-        
+
         try {
           const data = new Uint8Array(e.target?.result as ArrayBuffer);
           const workbook = XLSX.read(data, { type: 'array' });
@@ -306,18 +303,18 @@ export function DebtManagement() {
           }
 
           const res = await response.json();
-          
+
           // Lấy dữ liệu từ API response
           if (!res.data || res.data.length === 0) {
             throw new Error("API không trả về dữ liệu hóa đơn");
           }
-          
+
           const newInvoices = res.data;
-          
+
           // Chỉ lưu vào state tạm thời, KHÔNG lưu vào localStorage
           setBills(prev => [...prev, ...newInvoices]);
           setIsDataLoaded(true);
-          
+
           toast.success("Tạo hóa đơn thành công", { description: res.message || `Đã tạo ${newInvoices.length} hóa đơn từ file ở trạng thái Pending` });
         } catch (error) {
           console.error("Lỗi xử lý file:", error);
@@ -369,7 +366,7 @@ export function DebtManagement() {
     setIsApproving(true);
     try {
       // Gọi API để duyệt tất cả hóa đơn PENDING
-      const response = await fetch(`https://untoasted-jean-unsympathisingly.ngrok-free.dev/api/v1/accounting/invoices/approve-all?month=${selectedMonth}&year=${selectedYear}`, { 
+      const response = await fetch(`https://untoasted-jean-unsympathisingly.ngrok-free.dev/api/v1/accounting/invoices/approve-all?month=${selectedMonth}&year=${selectedYear}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -383,10 +380,10 @@ export function DebtManagement() {
       }
 
       const res = await response.json();
-      
+
       // Reload dữ liệu từ API sau khi duyệt
       await fetchBills();
-      
+
       toast.success("Đã duyệt tất cả hóa đơn", { description: res.message || `Đã duyệt ${pendingBills.length} hóa đơn` });
     } catch (error) {
       console.error("Lỗi duyệt hóa đơn:", error);
@@ -482,26 +479,26 @@ export function DebtManagement() {
 
   useEffect(() => {
     fetchBills();
-  }, [selectedMonth, selectedYear]); 
-  
+  }, [selectedMonth, selectedYear]);
+
   const calculateStats = (data: any[]) => {
-    const initialStats: { totalRevenue: number; pendingAmount: number; paidAmount: number; unpaidAmount: number } = { 
-      totalRevenue: 0, 
-      pendingAmount: 0, 
-      paidAmount: 0, 
-      unpaidAmount: 0 
+    const initialStats: { totalRevenue: number; pendingAmount: number; paidAmount: number; unpaidAmount: number } = {
+      totalRevenue: 0,
+      pendingAmount: 0,
+      paidAmount: 0,
+      unpaidAmount: 0
     };
-    
+
     const calculated = data.reduce((acc: typeof initialStats, bill: any) => {
-      const amount = Number(bill?.totalAmount || 0); 
-      
+      const amount = Number(bill?.totalAmount || 0);
+
       acc.totalRevenue += amount;
-      
+
       if (bill.status === 'PAID') {
         acc.paidAmount += amount;
       } else if (bill.status === 'PENDING') {
         acc.pendingAmount += amount;
-      } else { 
+      } else {
         acc.unpaidAmount += amount;
       }
 
@@ -512,24 +509,24 @@ export function DebtManagement() {
   };
 
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('vi-VN', { 
-        style: 'currency', 
-        currency: 'VND',
-        maximumFractionDigits: 0 
+    return new Intl.NumberFormat('vi-VN', {
+      style: 'currency',
+      currency: 'VND',
+      maximumFractionDigits: 0
     }).format(amount);
   };
-  
+
   // Logic lọc client-side cho bảng
   const filteredBills = bills.filter(bill => {
-      const matchStatus = statusFilter === 'All' || bill.status === statusFilter;
-      const term = searchTerm.toLowerCase();
-      const matchSearch = (bill.apartmentLabel && bill.apartmentLabel.toLowerCase().includes(term)); 
-      return matchStatus && matchSearch;
+    const matchStatus = statusFilter === 'All' || bill.status === statusFilter;
+    const term = searchTerm.toLowerCase();
+    const matchSearch = (bill.apartmentLabel && bill.apartmentLabel.toLowerCase().includes(term));
+    return matchStatus && matchSearch;
   });
-  
+
   // Tạo nhãn thời gian hiển thị
   const periodLabel = `Tháng ${selectedMonth}/${selectedYear}`;
-  
+
   // Kiểm tra xem đã có hóa đơn chưa
   const hasInvoices = bills.length > 0;
 
@@ -562,7 +559,7 @@ export function DebtManagement() {
       toast.error('Vui lòng điền đầy đủ thông tin', { description: 'Căn hộ và số tiền là bắt buộc' });
       return;
     }
-    
+
     console.log('Creating new bill:', createBillForm);
     toast.success('Đã tạo hóa đơn thành công', { description: `Hóa đơn cho ${createBillForm.apartment} đã được tạo` });
     setIsCreateBillOpen(false);
@@ -580,7 +577,7 @@ export function DebtManagement() {
     try {
       // API đúng như chú gửi
       const url = `https://untoasted-jean-unsympathisingly.ngrok-free.dev/api/v1/accounting/invoices/export?month=${selectedMonth}&year=${selectedYear}`;
-      
+
       const response = await fetch(url, {
         method: 'GET',
         headers: {
@@ -612,20 +609,26 @@ export function DebtManagement() {
 
   return (
     <div className="space-y-6">
+      <style>{`
+        @keyframes spin {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
+        }
+      `}</style>
       <Toaster position="top-right" richColors />
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl text-gray-900">Quản lý hóa đơn</h1>
         </div>
-        
+
       </div>
-      
+
       {/* First Row: Date Filter + Search */}
       <div className="flex items-center gap-3 mb-4">
         {/* Date/Year Filter */}
         <div className="flex items-center bg-white border border-gray-200 rounded-lg shadow-sm px-3 py-2 transition-all hover:border-blue-400 hover:shadow-md">
           <Calendar className="w-4 h-4 text-gray-500 flex-shrink-0 mr-2" />
-          
+
           {/* Select MONTH - Bắt buộc chọn */}
           <select
             value={selectedMonth}
@@ -637,10 +640,10 @@ export function DebtManagement() {
               <option key={month} value={month}>Tháng {month}</option>
             ))}
           </select>
-          
+
           {/* Divider */}
           <div className="w-px h-4 bg-gray-300 mx-2"></div>
-          
+
           {/* Select YEAR */}
           <select
             value={selectedYear}
@@ -672,44 +675,40 @@ export function DebtManagement() {
         <div className="flex gap-3">
           <button
             onClick={() => setStatusFilter('All')}
-            className={`rounded-xl border shadow-sm px-4 py-2 text-sm font-medium flex items-center justify-center gap-2 hover:bg-gray-50 cursor-pointer transition-all ${
-              statusFilter === 'All'
-                ? 'bg-blue-50 text-blue-700 border-blue-500'
-                : 'bg-white border-gray-200 text-gray-600'
-            }`}
+            className={`rounded-xl border shadow-sm px-4 py-2 text-sm font-medium flex items-center justify-center gap-2 hover:bg-gray-50 cursor-pointer transition-all ${statusFilter === 'All'
+              ? 'bg-blue-50 text-blue-700 border-blue-500'
+              : 'bg-white border-gray-200 text-gray-600'
+              }`}
           >
             <List className="w-4 h-4" />
             Tất cả
           </button>
           <button
             onClick={() => setStatusFilter('PAID')}
-            className={`rounded-xl border shadow-sm px-4 py-2 text-sm font-medium flex items-center justify-center gap-2 hover:bg-gray-50 cursor-pointer transition-all ${
-              statusFilter === 'PAID'
-                ? 'bg-green-50 text-green-700 border-green-500'
-                : 'bg-white border-gray-200 text-gray-600'
-            }`}
+            className={`rounded-xl border shadow-sm px-4 py-2 text-sm font-medium flex items-center justify-center gap-2 hover:bg-gray-50 cursor-pointer transition-all ${statusFilter === 'PAID'
+              ? 'bg-green-50 text-green-700 border-green-500'
+              : 'bg-white border-gray-200 text-gray-600'
+              }`}
           >
             <CheckCircle className="w-4 h-4" />
             Đã thanh toán
           </button>
           <button
             onClick={() => setStatusFilter('PENDING')}
-            className={`rounded-xl border shadow-sm px-4 py-2 text-sm font-medium flex items-center justify-center gap-2 hover:bg-gray-50 cursor-pointer transition-all ${
-              statusFilter === 'PENDING'
-                ? 'bg-yellow-50 text-yellow-700 border-yellow-500'
-                : 'bg-white border-gray-200 text-gray-600'
-            }`}
+            className={`rounded-xl border shadow-sm px-4 py-2 text-sm font-medium flex items-center justify-center gap-2 hover:bg-gray-50 cursor-pointer transition-all ${statusFilter === 'PENDING'
+              ? 'bg-yellow-50 text-yellow-700 border-yellow-500'
+              : 'bg-white border-gray-200 text-gray-600'
+              }`}
           >
             <Clock className="w-4 h-4" />
             Chờ duyệt
           </button>
           <button
             onClick={() => setStatusFilter('UNPAID')}
-            className={`rounded-xl border shadow-sm px-4 py-2 text-sm font-medium flex items-center justify-center gap-2 hover:bg-gray-50 cursor-pointer transition-all ${
-              statusFilter === 'UNPAID'
-                ? 'bg-red-50 text-red-700 border-red-500'
-                : 'bg-white border-gray-200 text-gray-600'
-            }`}
+            className={`rounded-xl border shadow-sm px-4 py-2 text-sm font-medium flex items-center justify-center gap-2 hover:bg-gray-50 cursor-pointer transition-all ${statusFilter === 'UNPAID'
+              ? 'bg-red-50 text-red-700 border-red-500'
+              : 'bg-white border-gray-200 text-gray-600'
+              }`}
           >
             <AlertCircle className="w-4 h-4" />
             Chưa thanh toán
@@ -732,11 +731,10 @@ export function DebtManagement() {
           <button
             onClick={handleGenerateInvoices}
             disabled={isUploading || isGenerating}
-            className={`px-4 py-2 rounded-xl font-semibold transition-all flex items-center gap-2 ${
-              isUploading || isGenerating
-                ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                : 'bg-blue-600 text-white hover:bg-blue-700 shadow-md hover:shadow-lg'
-            }`}
+            className={`px-4 py-2 rounded-xl font-semibold transition-all flex items-center gap-2 ${isUploading || isGenerating
+              ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+              : 'bg-blue-600 text-white hover:bg-blue-700 shadow-md hover:shadow-lg'
+              }`}
           >
             {isUploading || isGenerating ? (
               <>
@@ -751,33 +749,32 @@ export function DebtManagement() {
             )}
           </button>
 
-         {/* Duyệt Button - Hiển thị khi có hóa đơn PENDING */}
-      {bills.some(bill => bill.status === 'PENDING') && (
-        <button
-          onClick={handleConfirmInvoices}
-          disabled={isApproving}
-          className={`px-4 py-2 rounded-xl font-semibold transition-all flex items-center gap-2 shadow-md hover:shadow-lg ${
-            isApproving 
-              ? 'bg-green-400 cursor-not-allowed' // Màu nhạt đi khi đang xử lý
-              : 'bg-green-600 text-white hover:bg-green-700'
-          }`}
-        >
-          {isApproving ? (
-            <>
-              <Loader2 className="w-4 h-4 animate-spin" /> {/* Icon quay quay */}
-              <span>Đang duyệt...</span>
-            </>
-          ) : (
-            <>
-              <CheckCircle className="w-4 h-4" />
-              <span>Duyệt</span>
-            </>
+          {/* Duyệt Button - Hiển thị khi có hóa đơn PENDING */}
+          {bills.some(bill => bill.status === 'PENDING') && (
+            <button
+              onClick={handleConfirmInvoices}
+              disabled={isApproving}
+              className={`px-4 py-2 rounded-xl font-semibold transition-all flex items-center gap-2 shadow-md hover:shadow-lg ${isApproving
+                ? 'bg-green-400 cursor-not-allowed' // Màu nhạt đi khi đang xử lý
+                : 'bg-green-600 text-white hover:bg-green-700'
+                }`}
+            >
+              {isApproving ? (
+                <>
+                  <Loader2 className="w-4 h-4" style={{ animation: 'spin 1s linear infinite' }} /> {/* Icon quay quay */}
+                  <span>Đang duyệt...</span>
+                </>
+              ) : (
+                <>
+                  <CheckCircle className="w-4 h-4" />
+                  <span>Duyệt</span>
+                </>
+              )}
+            </button>
           )}
-        </button>
-      )}
 
           {/* Thanh toán Button - Hiển thị khi có hóa đơn đã duyệt (UNPAID) */}
-         
+
           <button
             onClick={handleExportExcel}
             disabled={isExporting}
@@ -805,24 +802,24 @@ export function DebtManagement() {
         <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40 backdrop-blur-sm">
           <div className="bg-white p-6 rounded-2xl shadow-xl flex flex-col items-center gap-3">
             {/* Vòng xoay quay tròn */}
-            <div 
-  style={{
-    width: '80px',
-    height: '80px',
-    border: '4px solid #e2e8f0', // Màu xám nhạt (blue-200)
-    borderTop: '4px solid #2563eb', // Màu xanh đậm (blue-600)
-    borderRadius: '50%',
-    animation: 'spin 1s linear infinite',
-  }}
->
-  {/* Nhúng trực tiếp keyframes vào để trình duyệt hiểu lệnh 'spin' */}
-  <style>{`
+            <div
+              style={{
+                width: '80px',
+                height: '80px',
+                border: '4px solid #e2e8f0', // Màu xám nhạt (blue-200)
+                borderTop: '4px solid #2563eb', // Màu xanh đậm (blue-600)
+                borderRadius: '50%',
+                animation: 'spin 1s linear infinite',
+              }}
+            >
+              {/* Nhúng trực tiếp keyframes vào để trình duyệt hiểu lệnh 'spin' */}
+              <style>{`
     @keyframes spin {
       from { transform: rotate(0deg); }
       to { transform: rotate(360deg); }
     }
   `}</style>
-            </div>            
+            </div>
             <p className="text-sm font-bold text-gray-700">Đang xử lý, đợi tí...</p>
           </div>
         </div>
@@ -850,8 +847,8 @@ export function DebtManagement() {
                   <tr><td colSpan={6} className="text-center py-6 text-gray-500">Không tìm thấy hóa đơn nào phù hợp với bộ lọc.</td></tr>
                 ) : (
                   filteredBills.map((bill, index) => (
-                    <tr 
-                      key={bill.id} 
+                    <tr
+                      key={bill.id}
                       className="hover:bg-gray-50 transition-colors"
                     >
                       <td className="px-6 py-4 text-center align-middle text-gray-700 text-sm">
@@ -865,7 +862,7 @@ export function DebtManagement() {
                       <td className="px-6 py-4 text-center text-gray-700 text-sm align-middle">
                         {selectedMonth}/{selectedYear}
                       </td>
-                      <td 
+                      <td
                         className="px-6 py-4 text-center align-middle"
                         onClick={() => {
                           if (bill.status === 'PENDING' && isDataLoaded) {
@@ -896,24 +893,23 @@ export function DebtManagement() {
                           </span>
                         )}
                       </td>
-      
+
                       <td className="px-6 py-4 text-center align-middle">
-                        <span className={`rounded-full px-3 py-1 inline-flex items-center gap-2 w-fit text-sm font-medium ${
-                          bill.status === 'PAID' 
-                            ? 'bg-green-100 text-green-700' 
-                            : bill.status === 'PENDING'
+                        <span className={`rounded-full px-3 py-1 inline-flex items-center gap-2 w-fit text-sm font-medium ${bill.status === 'PAID'
+                          ? 'bg-green-100 text-green-700'
+                          : bill.status === 'PENDING'
                             ? 'bg-yellow-100 text-yellow-700'
                             : 'bg-red-100 text-red-700'
-                        }`}>
+                          }`}>
                           {bill.status === 'PAID' && <CheckCircle className="w-4 h-4" />}
                           {bill.status === 'PENDING' && <Clock className="w-4 h-4" />}
                           {bill.status === 'UNPAID' && <AlertCircle className="w-4 h-4" />}
-                          {bill.status === 'PAID' ? 'Đã thanh toán' : 
-                           bill.status === 'PENDING' ? 'Chờ duyệt' : 
-                           'Chưa thanh toán'}
+                          {bill.status === 'PAID' ? 'Đã thanh toán' :
+                            bill.status === 'PENDING' ? 'Chờ duyệt' :
+                              'Chưa thanh toán'}
                         </span>
                       </td>
-                      
+
                       <td className="px-6 py-4 text-center align-middle">
                         <div className="flex items-center justify-center gap-2">
                           {/* Xem chi tiết - Luôn có */}
@@ -948,7 +944,7 @@ export function DebtManagement() {
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm text-gray-700 mb-2">Chọn căn hộ</label>
-              <select 
+              <select
                 value={createBillForm.apartment}
                 onChange={(e) => setCreateBillForm({ ...createBillForm, apartment: e.target.value })}
                 className="w-full px-4 py-3 bg-gray-100 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -962,7 +958,7 @@ export function DebtManagement() {
 
             <div>
               <label className="block text-sm text-gray-700 mb-2">Loại hóa đơn</label>
-              <select 
+              <select
                 value={createBillForm.billType}
                 onChange={(e) => setCreateBillForm({ ...createBillForm, billType: e.target.value })}
                 className="w-full px-4 py-3 bg-gray-100 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -1006,7 +1002,7 @@ export function DebtManagement() {
             >
               Hủy
             </button>
-            <button 
+            <button
               onClick={handleCreateBill}
               className="flex-1 px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl hover:shadow-xl transition-all cursor-pointer"
               type="button"
@@ -1100,14 +1096,14 @@ export function DebtManagement() {
       {selectedInvoice && (
         <>
           {/* Overlay */}
-          <div 
+          <div
             className="fixed inset-0 bg-black/50 z-[9999]"
             onClick={() => setSelectedInvoice(null)}
           />
-          
+
           {/* Modal Card */}
           <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
-            <div 
+            <div
               className="bg-white rounded-xl max-w-md w-full p-6 shadow-xl relative"
               onClick={(e) => e.stopPropagation()}
             >
@@ -1172,10 +1168,10 @@ export function DebtManagement() {
                       {formatCurrency((selectedInvoice.totalAmount || 0) * 0.1)}
                     </span>
                   </div>
-                  
+
                   {/* Separator */}
                   <div className="border-t border-dashed border-gray-300 my-3" />
-                  
+
                   {/* Total */}
                   <div className="flex items-center justify-between">
                     <span className="text-base font-bold text-gray-900">TỔNG CỘNG</span>
