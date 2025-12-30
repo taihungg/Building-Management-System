@@ -202,7 +202,7 @@ function AppContent() {
     let sidebar, header, routes, baseUrl;
 
     if (userRole === 'management') {
-        sidebar = <Sidebar activeTab={activeTab} setActiveTab={handleSetActiveTab} isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} onLogout={handleLogout} />;
+        sidebar = <Sidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} onLogout={handleLogout} />;
         header = <Header onMenuClick={() => setIsSidebarOpen(true)} onLogout={handleLogout} />;
         routes = (
             <>
@@ -221,8 +221,8 @@ function AppContent() {
         );
         baseUrl = '/management/*';
     } else if (userRole === 'resident') {
-        sidebar = <ResidentSidebar activeTab={activeTab} setActiveTab={handleSetActiveTab} isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} onLogout={handleLogout} />;
-        header = <ResidentHeader onMenuClick={() => setIsSidebarOpen(true)} onLogout={handleLogout} />;
+        sidebar = <ResidentSidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} onLogout={handleLogout} />;
+        header = <ResidentHeader onMenuClick={() => setIsSidebarOpen(true)} onNavigate={(p) => p === 'logout' ? handleLogout() : navigate(`/resident/${p}`)} />;
         routes = (
             <>
                 <Route path="/" element={<Navigate to="dashboard" replace />} />
@@ -238,7 +238,7 @@ function AppContent() {
         );
         baseUrl = '/resident/*';
     } else if (userRole === 'accounting') {
-        sidebar = <AccountingSidebar activeTab={activeTab} setActiveTab={handleSetActiveTab} isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} onLogout={handleLogout} />;
+        sidebar = <AccountingSidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} onLogout={handleLogout} />;
         header = <AccountingHeader onMenuClick={() => setIsSidebarOpen(true)} onNavigate={(p) => p === 'logout' ? handleLogout() : navigate(`/accounting/${p}`)} />;
         routes = (
             <>
@@ -255,7 +255,7 @@ function AppContent() {
         );
         baseUrl = '/accounting/*';
     } else if (userRole === 'authority') {
-        sidebar = <AuthoritySidebar activeTab={activeTab} setActiveTab={handleSetActiveTab} isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} onLogout={handleLogout} />;
+        sidebar = <AuthoritySidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} onLogout={handleLogout} />;
         header = <AuthorityHeader onMenuClick={() => setIsSidebarOpen(true)} onLogout={handleLogout} />;
         routes = (
             <>

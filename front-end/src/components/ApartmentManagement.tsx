@@ -192,6 +192,23 @@ export function ApartmentManagement() {
     fetchFormDependencies(); 
   }, []);
 
+  // Sync newOwnerSearchKeyword với newOwnerId khi modal mở
+  useEffect(() => {
+    if (isAddUnitOpen) {
+      if (newOwnerId && newOwnerId !== "none") {
+        // Tìm owner trong potentialOwners để hiển thị tên
+        const owner = potentialOwners.find((o: any) => o.id === newOwnerId);
+        if (owner) {
+          setNewOwnerSearchKeyword(owner.fullName);
+        } else {
+          setNewOwnerSearchKeyword("");
+        }
+      } else {
+        setNewOwnerSearchKeyword("");
+      }
+    }
+  }, [isAddUnitOpen, newOwnerId, potentialOwners]);
+
   useEffect(() => {
     if (selectedApartment && isViewModalOpen) {
         if (selectedApartment.owner) {
@@ -1033,12 +1050,9 @@ export function ApartmentManagement() {
                                                 setOwnerSearchKeyword(keyword);
                                                 // Đóng dropdown resident nếu đang mở
                                                 setShowResidentDropdown(false);
-                                                console.log('Owner keyword changed:', keyword);
                                                 if (keyword.trim()) {
                                                     setShowOwnerDropdown(true);
-                                                    console.log('Setting showOwnerDropdown to true');
                                                     const results = await searchResidents(keyword);
-                                                    console.log('Owner search results:', results);
                                                     setOwnerSearchResults(results);
                                                 } else {
                                                     setOwnerSearchResults([]);
@@ -1061,7 +1075,6 @@ export function ApartmentManagement() {
                                         />
                                         {(() => {
                                             const shouldShow = showOwnerDropdown && ownerSearchKeyword.trim();
-                                            console.log('Owner dropdown render check:', { showOwnerDropdown, keyword: ownerSearchKeyword, shouldShow });
                                             return shouldShow ? (
                                             <div 
                                                 className="absolute z-[9999] w-full mt-1 bg-white border-2 border-gray-300 rounded-xl shadow-xl max-h-60 overflow-y-auto"
@@ -1118,12 +1131,9 @@ export function ApartmentManagement() {
                                     setResidentSearchKeyword(keyword);
                                     // Đóng dropdown owner nếu đang mở
                                     setShowOwnerDropdown(false);
-                                    console.log('Resident keyword changed:', keyword);
                                     if (keyword.trim()) {
                                         setShowResidentDropdown(true);
-                                        console.log('Setting showResidentDropdown to true');
                                         const results = await searchResidents(keyword);
-                                        console.log('Resident search results:', results);
                                         setResidentSearchResults(results);
                                     } else {
                                         setResidentSearchResults([]);
@@ -1146,7 +1156,6 @@ export function ApartmentManagement() {
                             />
                             {(() => {
                                 const shouldShow = showResidentDropdown && residentSearchKeyword.trim();
-                                console.log('Resident dropdown render check:', { showResidentDropdown, keyword: residentSearchKeyword, shouldShow });
                                 return shouldShow ? (
                                 <div 
                                     className="absolute z-[9999] w-full mt-1 bg-white border-2 border-gray-300 rounded-xl shadow-xl max-h-60 overflow-y-auto"
