@@ -4,6 +4,7 @@ import { Toaster, toast } from 'sonner';
 import { useState, useEffect, useRef } from 'react';
 import React from 'react';
 import * as XLSX from 'xlsx';
+import { authProvider } from './auth';
 
 
 export function DebtManagement() {
@@ -33,6 +34,7 @@ export function DebtManagement() {
   const [isDataLoaded, setIsDataLoaded] = useState(false);
   const [isApproving, setIsApproving] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isConfirming, setIsConfirming] = useState(false);
   
   // Không dùng localStorage nữa, chỉ dùng API thật
   
@@ -51,7 +53,53 @@ export function DebtManagement() {
     paidAmount: 0,
     unpaidAmount: 0
   });
+  const handleConfirmInvoices = async () => {
+    // 1. Lấy thông tin từ "kho" authProvider
+    const staffId = authProvider.getPersonId();
+    
+    if (!staffId) {
+      toast.error("Không tìm thấy thông tin nhân viên. Vui lòng đăng nhập lại!");
+      return;
+    }
+    setIsApproving(true);
   
+    // Xác nhận lại với người dùng cho chắc (Eliminate Waste - tránh bấm nhầm)
+    
+  
+    setIsConfirming(true);
+    try {
+      // 2. Xây dựng URL với các tham số từ State và authProvider
+      const url = `https://untoasted-jean-unsympathisingly.ngrok-free.dev/api/v1/accounting/invoices/confirm?month=${selectedMonth}&year=${selectedYear}&staffId=${authProvider.getPersonId()}`;
+  
+      const response = await fetch(url, {
+        method: 'PATCH', // Thường confirm là hành động thay đổi dữ liệu nên dùng POST
+        headers: {
+          'Content-Type': 'application/json',
+          'ngrok-skip-browser-warning': 'true'
+        }
+      });
+  
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Lỗi khi xác nhận hóa đơn");
+      }
+  
+      // 3. Thông báo thành công (Amplify Learning - Phản hồi ngay cho người dùng)
+      toast.success("Xác nhận hóa đơn thành công!", {
+        description: `Hệ thống đã chốt dữ liệu tháng ${selectedMonth}/${selectedYear}`
+      });
+  
+      // 4. Load lại danh sách để cập nhật trạng thái mới nhất trên màn hình
+      await fetchBills();
+  
+    } catch (error: any) {
+      console.error("Lỗi Confirm:", error);
+      toast.error("Xác nhận thất bại", { description: error.message });
+    } finally {
+      setIsConfirming(false);
+      setIsApproving(false)
+    }
+  };
 
   const fetchBills = async () => {
     setIsLoading(true);
@@ -736,41 +784,33 @@ export function DebtManagement() {
             )}
           </button>
 
-          {/* Duyệt Button - Hiển thị khi đã upload file */}
-          {isDataLoaded && bills.some(bill => bill.status === 'PENDING') && (
-            <button
-              onClick={handleApproveAll}
-              disabled={isApproving}
-              className={`px-4 py-2 rounded-xl font-semibold transition-all flex items-center gap-2 ${
-                isApproving
-                  ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                  : 'bg-green-600 text-white hover:bg-green-700 shadow-md hover:shadow-lg'
-              }`}
-            >
-              {isApproving ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  Đang duyệt...
-                </>
-              ) : (
-                <>
-                  <CheckCircle className="w-4 h-4" />
-                  Duyệt
-                </>
-              )}
-            </button>
+         {/* Duyệt Button - Hiển thị khi có hóa đơn PENDING */}
+      {bills.some(bill => bill.status === 'PENDING') && (
+        <button
+          onClick={handleConfirmInvoices}
+          disabled={isApproving}
+          className={`px-4 py-2 rounded-xl font-semibold transition-all flex items-center gap-2 shadow-md hover:shadow-lg ${
+            isApproving 
+              ? 'bg-green-400 cursor-not-allowed' // Màu nhạt đi khi đang xử lý
+              : 'bg-green-600 text-white hover:bg-green-700'
+          }`}
+        >
+          {isApproving ? (
+            <>
+              <Loader2 className="w-4 h-4 animate-spin" /> {/* Icon quay quay */}
+              <span>Đang duyệt...</span>
+            </>
+          ) : (
+            <>
+              <CheckCircle className="w-4 h-4" />
+              <span>Duyệt</span>
+            </>
           )}
+        </button>
+      )}
 
           {/* Thanh toán Button - Hiển thị khi có hóa đơn đã duyệt (UNPAID) */}
-          {bills.some(bill => bill.status === 'UNPAID') && (
-            <button
-              onClick={handlePayAll}
-              className="px-4 py-2 rounded-xl font-semibold transition-all flex items-center gap-2 bg-green-600 text-white hover:bg-green-700 shadow-md hover:shadow-lg"
-            >
-              <CreditCard className="w-4 h-4" />
-              Thanh toán
-            </button>
-          )}
+         
           <button
             onClick={handleExportExcel}
             disabled={isExporting}
