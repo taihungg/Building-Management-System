@@ -2,6 +2,7 @@ package itep.software.bluemoon.controller;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 import org.springframework.core.io.InputStreamResource;
@@ -147,6 +148,18 @@ public class AccountingController {
                 invoices
         );
     }
+    
+    @GetMapping("/invoices/{invoiceId}")
+    public ResponseEntity<Object> getInvoiceWithDetails(@PathVariable UUID invoiceId) {
+        Map<String, Object> data = invoiceService.getInvoiceWithDetails(invoiceId);
+        
+        return ApiResponse.responseBuilder(
+                HttpStatus.OK,
+                "Get invoice with details successfully!",
+                data
+        );
+    }
+    
 
     @GetMapping("/{id}/export-pdf")
         public ResponseEntity<byte[]> exportInvoicePdf(@PathVariable UUID id) {
@@ -159,4 +172,6 @@ public class AccountingController {
                 .contentType(MediaType.APPLICATION_PDF)
                 .body(pdfBytes);
         }
+        
+        
 }

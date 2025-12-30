@@ -10,7 +10,8 @@ import lombok.Data;
 @Builder
 public class InvoiceDetailResponseDTO {
     private UUID id;
-    private String title;
+    private String serviceTitle;
+    private String serviceUnit;
     private BigDecimal quantity;
     private BigDecimal unitPrice;
     private BigDecimal amountInitial;
@@ -19,5 +20,7 @@ public class InvoiceDetailResponseDTO {
     private BigDecimal amount;
     private String description;
     
-    private Object lineItems; 
+    // Cho điện/nước
+    private BigDecimal oldIndex;
+    private BigDecimal newIndex;
 }

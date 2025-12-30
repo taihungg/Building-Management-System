@@ -12,6 +12,8 @@ import org.springframework.stereotype.Repository;
 
 import itep.software.bluemoon.entity.accounting.Invoice;
 import itep.software.bluemoon.enumeration.InvoiceStatus;
+import itep.software.bluemoon.model.DTO.accounting.invoice.InvoiceDetailResponseDTO;
+import itep.software.bluemoon.model.projection.InvoiceInfoSummary;
 import itep.software.bluemoon.model.projection.InvoiceSummary;
 
 @Repository
@@ -108,4 +110,45 @@ public interface InvoiceRepository extends JpaRepository<Invoice, UUID> {
               "ORDER BY a.roomNumber ASC")
        List<Invoice> findByMonthAndYearWithDetails(@Param("month") Integer month, 
                                                 @Param("year") Integer year);
+       
+       
+       @Query("""
+    		    SELECT
+    		        i.id AS id,
+    		        CONCAT('Tòa ', b.name, ' - Phòng ', a.roomNumber) AS apartmentLabel,
+    		        i.month AS month,
+    		        i.year AS year,
+    		        i.totalAmount AS totalAmount,
+    		        i.paidAmount AS paidAmount,
+    		        i.status AS status
+    		    FROM Invoice i
+    		    JOIN i.apartment a
+    		    JOIN a.building b
+    		    WHERE i.id = :invoiceId
+    		    """)
+    		Optional<InvoiceInfoSummary> findInvoiceInfoById(@Param("invoiceId") UUID invoiceId);
+
+    		@Query("""
+    		    SELECT new itep.software.bluemoon.model.DTO.accounting.invoice.InvoiceDetailResponseDTO(
+    		        d.id,
+    		        st.title,
+    		        st.unit,
+    		        d.quantity,
+    		        d.unitPrice,
+    		        d.amountInitial,
+    		        d.vat,
+    		        d.env,
+    		        d.amount,
+    		        d.description,
+    		        ur.oldIndex,
+    		        ur.newIndex
+    		    )
+    		    FROM InvoiceDetail d
+    		    JOIN d.serviceType st
+    		    LEFT JOIN d.usageRecord ur
+    		    WHERE d.invoice.id = :invoiceId
+    		    ORDER BY st.code
+    		    """)
+    		List<InvoiceDetailResponseDTO> findInvoiceDetailsByInvoiceId(
+    		        @Param("invoiceId") UUID invoiceId);
 }

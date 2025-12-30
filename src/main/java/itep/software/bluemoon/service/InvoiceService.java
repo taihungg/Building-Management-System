@@ -8,6 +8,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -32,8 +33,10 @@ import itep.software.bluemoon.enumeration.AnnouncementTargetType;
 import itep.software.bluemoon.enumeration.InvoiceStatus;
 import itep.software.bluemoon.enumeration.ServiceCode;
 import itep.software.bluemoon.enumeration.TierCode;
+import itep.software.bluemoon.model.DTO.accounting.invoice.InvoiceDetailResponseDTO;
 import itep.software.bluemoon.model.DTO.accounting.invoice.InvoiceLineItemDTO;
 import itep.software.bluemoon.model.DTO.announcement.AnnouncementCreateRequestDTO;
+import itep.software.bluemoon.model.projection.InvoiceInfoSummary;
 import itep.software.bluemoon.model.projection.InvoiceSummary;
 import itep.software.bluemoon.repository.ApartmentRepository;
 import itep.software.bluemoon.repository.ExtraFeeRepository;
@@ -505,5 +508,20 @@ public class InvoiceService {
             throw new RuntimeException("Apartment not found with ID: " + apartmentId);
         }
         return invoiceRepository.findInvoiceSummariesByApartmentId(apartmentId);
+    }
+    
+    
+    
+    
+    public Map<String, Object> getInvoiceWithDetails(UUID invoiceId) {
+        InvoiceInfoSummary invoice = invoiceRepository.findInvoiceInfoById(invoiceId)
+                .orElseThrow(() -> new RuntimeException("Invoice not found with ID: " + invoiceId));
+
+        List<InvoiceDetailResponseDTO> details = invoiceRepository.findInvoiceDetailsByInvoiceId(invoiceId);
+        Map<String, Object> response = new LinkedHashMap<>();
+        response.put("invoice", invoice);
+        response.put("details", details);
+        
+        return response;
     }
 }
