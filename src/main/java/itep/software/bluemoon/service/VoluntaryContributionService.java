@@ -28,6 +28,7 @@ public class VoluntaryContributionService {
     private final VoluntaryContributionRepository voluntaryContributionRepository;
     private final ContributionRecordRepository contributionRecordRepository;
     
+    @SuppressWarnings("null")
     public VoluntaryContribution createCampaign(CreateCampaignRequestDTO request) {
         validateCampaignDates(request);
         
@@ -75,6 +76,7 @@ public class VoluntaryContributionService {
     /**
      * Thêm đóng góp thủ công
      */
+    @SuppressWarnings("null")
     public ContributionRecord addContribution(AddContributionRequestDTO request) {
         VoluntaryContribution campaign = voluntaryContributionRepository.findById(request.getCampaignId())
                 .orElseThrow(() -> new IllegalArgumentException("Campaign not found"));

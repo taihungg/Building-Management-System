@@ -32,7 +32,7 @@ import itep.software.bluemoon.enumeration.AnnouncementTargetType;
 import itep.software.bluemoon.enumeration.InvoiceStatus;
 import itep.software.bluemoon.enumeration.ServiceCode;
 import itep.software.bluemoon.enumeration.TierCode;
-import itep.software.bluemoon.model.DTO.accounting.InvoiceLineItemDTO;
+import itep.software.bluemoon.model.DTO.accounting.invoice.InvoiceLineItemDTO;
 import itep.software.bluemoon.model.DTO.announcement.AnnouncementCreateRequestDTO;
 import itep.software.bluemoon.model.projection.InvoiceSummary;
 import itep.software.bluemoon.repository.ApartmentRepository;

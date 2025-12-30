@@ -1,11 +1,12 @@
 package itep.software.bluemoon.controller;
 
-import java.io.ByteArrayInputStream;
 import java.util.List;
 import java.util.UUID;
 
 import org.springframework.core.io.InputStreamResource;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -15,8 +16,6 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.MediaType;
 
 import itep.software.bluemoon.entity.accounting.ContributionRecord;
 import itep.software.bluemoon.entity.accounting.VoluntaryContribution;
@@ -123,6 +122,7 @@ public class VoluntaryContributionController {
     }
     
     
+    @SuppressWarnings("null")
     @GetMapping("/{campaignId}/export/excel")
     public ResponseEntity<InputStreamResource> exportContributionsToExcel(@PathVariable UUID campaignId) {
         InputStreamResource file = new InputStreamResource(excelExportService.exportContributionsToExcel(campaignId));

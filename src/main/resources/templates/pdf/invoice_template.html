@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8"/>
+    <style>
+        @page { size: A4; margin: 1.5cm 1cm; }
+        body { font-family: 'VietnamFont', serif; font-size: 11pt; line-height: 1.3; color: #000; }
+        
+        table { width: 100%; border-collapse: collapse; }
+        .text-right { text-align: right; }
+        .text-center { text-align: center; }
+        .bold { font-weight: bold; }
+        .italic { font-style: italic; }
+        .uppercase { text-transform: uppercase; }
+        .valign-top { vertical-align: top; }
+
+        /* Main Table Style */
+        .main-table th {
+            border: 1px solid #000; background-color: #f0f0f0;
+            padding: 5px; font-weight: bold; font-size: 10pt;
+        }
+        .main-table td { border: 1px solid #000; padding: 4px 5px; font-size: 10pt; }
+        
+        /* Sub-rows (Bậc thang, Xe con) - Bỏ border trên để nhìn liền mạch */
+        .no-border-top td { border-top: 1px dotted #ccc; }
+        .indent { padding-left: 20px; }
+    </style>
+</head>
+<body>
+
+    <table style="border: none; margin-bottom: 20px;">
+        <tr>
+            <td width="20%">
+                <div style="font-weight: bold; color: #555;">HOUSINCO PREMIUM</div>
+            </td>
+            <td width="60%" class="text-center">
+                <div style="font-size: 16pt; font-weight: bold;">PHIẾU THÔNG BÁO</div>
+                <div style="font-size: 12pt; font-weight: bold;">
+                    PHÍ DỊCH VỤ VÀ GỬI XE <span th:text="${data.billingMonthTitle}"></span>
+                </div>
+            </td>
+            <td width="20%" class="text-right">QR_CODE</td>
+        </tr>
+    </table>
+
+    <table style="border: none; margin-bottom: 10px;">
+        <tr>
+            <td style="border: none;">Khách hàng: <b th:text="${data.customerName}"></b></td>
+            <td style="border: none;" class="text-right"><span th:text="${data.billingMonthTitle}"></span></td>
+        </tr>
+        <tr>
+            <td style="border: none;">Căn hộ: <b th:text="${data.roomNumber}"></b></td>
+            <td style="border: none;" class="text-right">Ngày: <span th:text="${data.dateStr}"></span></td>
+        </tr>
+    </table>
+
+    <table class="main-table">
+        <thead>
+            <tr>
+                <th width="5%">STT</th>
+                <th>Hạng mục</th>
+                <th width="8%">SL</th>
+                <th width="12%">Đơn giá</th>
+                <th width="12%">Thành tiền</th>
+                <th width="10%">Phí BVMT</th>
+                <th width="8%">VAT</th>
+                <th width="12%">Tổng tiền</th>
+            </tr>
+        </thead>
+        <tbody>
+            
+            <tr th:if="${data.managementFee != null}">
+                <td class="text-center" th:text="${counter.getAndIncrement()}"></td>
+                <td th:text="${data.managementFee.title}"></td>
+                <td class="text-center" th:text="${data.managementFee.quantity}"></td>
+                <td class="text-right" th:text="${data.managementFee.unitPrice}"></td>
+                <td class="text-right" th:text="${data.managementFee.totalAmount}"></td>
+                <td></td><td></td>
+                <td class="text-right bold" th:text="${data.managementFee.totalAmount}"></td>
+            </tr>
+
+            <tr th:if="${data.electricity != null}">
+                <td class="text-center" th:text="${counter.getAndIncrement()}"></td>
+                <td>
+                    <span class="bold">Tiền điện:</span> Từ <span th:text="${data.electricity.startDate}"></span> đến <span th:text="${data.electricity.endDate}"></span><br/>
+                    <span class="italic indent">
+                        Chỉ số đầu: <span th:text="${data.electricity.oldIndex}"></span> - Cuối: <span th:text="${data.electricity.newIndex}"></span>
+                    </span><br/>
+                    <span class="italic indent">
+                        Sản lượng tiêu thụ: <span th:text="${data.electricity.consumption}"></span>
+                    </span>
+                </td>
+                <td class="text-center" th:text="${data.electricity.consumption}"></td>
+                <td></td>
+                <td class="text-right" th:text="${data.electricity.totalAmountNoTax}"></td>
+                <td></td>
+                <td class="text-right" th:text="${data.electricity.vat}"></td>
+                <td class="text-right bold" th:text="${data.electricity.totalAmountWithTax}"></td>
+            </tr>
+            <tr th:each="tier : ${data.electricity.tiers}" class="no-border-top">
+                <td></td>
+                <td class="indent italic" th:text="${tier.description}">Bậc 1</td>
+                <td class="text-center" th:text="${#numbers.formatDecimal(tier.quantity, 0, 'POINT', 0, 'POINT')}"></td>
+                <td class="text-right" th:text="${#numbers.formatDecimal(tier.unitPrice, 0, 'POINT', 0, 'POINT')}"></td>
+                <td class="text-right" th:text="${#numbers.formatDecimal(tier.amount, 0, 'POINT', 0, 'POINT')}"></td>
+                <td colspan="3"></td>
+            </tr>
+
+            <tr th:if="${data.water != null}">
+                <td class="text-center" th:text="${counter.getAndIncrement()}"></td>
+                <td>
+                    <span class="bold">Tiền nước:</span> Từ <span th:text="${data.water.startDate}"></span> đến <span th:text="${data.water.endDate}"></span><br/>
+                    <span class="italic indent">
+                        Chỉ số đầu: <span th:text="${data.water.oldIndex}"></span> - Cuối: <span th:text="${data.water.newIndex}"></span>
+                    </span>
+                </td>
+                <td class="text-center" th:text="${data.water.consumption}"></td>
+                <td></td>
+                <td class="text-right" th:text="${data.water.totalAmountNoTax}"></td>
+                <td class="text-right" th:text="${data.water.envFee}"></td>
+                <td class="text-right" th:text="${data.water.vat}"></td>
+                <td class="text-right bold" th:text="${data.water.totalAmountWithTax}"></td>
+            </tr>
+            <tr th:each="tier : ${data.water.tiers}" class="no-border-top">
+                <td></td>
+                <td class="indent italic" th:text="${tier.description}"></td>
+                <td class="text-center" th:text="${#numbers.formatDecimal(tier.quantity, 0, 'POINT', 0, 'POINT')}"></td>
+                <td class="text-right" th:text="${#numbers.formatDecimal(tier.unitPrice, 0, 'POINT', 0, 'POINT')}"></td>
+                <td class="text-right" th:text="${#numbers.formatDecimal(tier.amount, 0, 'POINT', 0, 'POINT')}"></td>
+                <td colspan="3"></td>
+            </tr>
+
+            <tr th:if="${data.vehicleFee != null}">
+                <td class="text-center" th:text="${counter.getAndIncrement()}"></td>
+                <td class="bold" th:text="${data.vehicleFee.title}"></td>
+                <td></td><td></td>
+                <td class="text-right" th:text="${data.vehicleFee.totalAmount}"></td>
+                <td></td><td></td>
+                <td class="text-right bold" th:text="${data.vehicleFee.totalAmount}"></td>
+            </tr>
+            <tr th:each="v : ${data.vehicleFee.subItems}" class="no-border-top">
+                <td></td>
+                <td class="indent" th:text="${v.description}"></td>
+                <td class="text-center" th:text="${#numbers.formatDecimal(v.quantity, 0, 'POINT', 0, 'POINT')}"></td>
+                <td class="text-right" th:text="${#numbers.formatDecimal(v.unitPrice, 0, 'POINT', 0, 'POINT')}"></td>
+                <td class="text-right" th:text="${#numbers.formatDecimal(v.amount, 0, 'POINT', 0, 'POINT')}"></td>
+                <td colspan="3"></td>
+            </tr>
+
+            <th:block th:each="extra : ${data.extraFees}">
+                <tr>
+                    <td class="text-center" th:text="${counter.getAndIncrement()}"></td>
+                    <td th:text="${extra.title}"></td>
+                    <td class="text-center" th:text="${extra.quantity}"></td>
+                    <td class="text-right" th:text="${extra.unitPrice}"></td>
+                    <td class="text-right" th:text="${extra.totalAmount}"></td>
+                    <td></td><td></td>
+                    <td class="text-right bold" th:text="${extra.totalAmount}"></td>
+                </tr>
+                <tr th:each="sub : ${extra.subItems}" class="no-border-top">
+                    <td></td>
+                    <td class="indent italic" th:text="${sub.description}"></td>
+                    <td class="text-center" th:text="${#numbers.formatDecimal(sub.quantity, 0, 'POINT', 0, 'POINT')}"></td>
+                    <td class="text-right" th:text="${#numbers.formatDecimal(sub.unitPrice, 0, 'POINT', 0, 'POINT')}"></td>
+                    <td class="text-right" th:text="${#numbers.formatDecimal(sub.amount, 0, 'POINT', 0, 'POINT')}"></td>
+                    <td colspan="3"></td>
+                </tr>
+            </th:block>
+
+            <tr>
+                <td colspan="7" class="text-right bold uppercase" style="padding: 10px;">Số còn phải nộp</td>
+                <td class="text-right bold" style="font-size: 13pt; padding: 10px;" th:text="${data.totalAmount}"></td>
+            </tr>
+
+        </tbody>
+    </table>
+
+    <div style="margin-top: 15px; font-weight: bold; font-style: italic;">
+        Đề nghị Quý Căn hộ thanh toán các khoản phí trên trước ngày 15.
+    </div>
+
+    <table class="no-border">
+        <tr>
+            <td width="55%" class="valign-top">
+                <div style="border: 1px solid #000; padding: 10px; margin-right: 10px;">
+                    <div class="bold">Thông tin chuyển khoản:</div>
+                    <div>Tên TK: <b class="uppercase">CÔNG TY CP QLDV BĐS BÌNH MINH XANH</b></div>
+                    <div>Số TK: <b style="font-size: 12pt;">1230082005</b></div>
+                    <div>Ngân hàng: <b>Techcombank</b></div>
+                    <div style="margin-top:5px; font-size: 9pt; font-style: italic;">
+                        Lưu ý: Chuyển khoản ghi rõ: [Căn hộ] thanh toan phi thang [MM/YYYY]
+                    </div>
+                </div>
+            </td>
+            <td width="45%" class="valign-top text-center" style="padding-left: 10px;">
+                <div class="italic bold" style="margin-bottom: 5px;">Trân trọng thông báo!</div>
+                <div style="font-size: 9pt; text-align: justify;">
+                    Nếu quý chủ căn hộ chưa thanh toán các khoản phí theo thông báo này, Công ty buộc phải tạm dừng cung cấp dịch vụ.
+                </div>
+                <div style="margin-top: 20px; font-weight: bold;">
+                    TM. BAN QUẢN LÝ TÒA NHÀ<br/><br/><br/>
+                    (Đã ký)
+                </div>
+            </td>
+        </tr>
+    </table>
+
+</body>
+</html>

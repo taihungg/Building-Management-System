@@ -36,7 +36,7 @@ public class ExcelExportService {
     private final ContributionRecordRepository contributionRecordRepository;
 
 
-    public ByteArrayInputStream exportInvoicesToExcel(Integer month, Integer year) {
+    public ByteArrayInputStream exportInvoicesToExcel(int month, int year) {
     	List<Invoice> invoices = invoiceRepository.findByMonthAndYearWithDetails(month, year);
         
         invoices.sort((inv1, inv2) -> {

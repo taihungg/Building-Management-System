@@ -11,19 +11,23 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.bind.annotation.PathVariable;
+
 import itep.software.bluemoon.model.DTO.accounting.AccountingDashboardResponseDTO;
 import itep.software.bluemoon.model.DTO.accounting.MonthlyRevenueDTO;
 import itep.software.bluemoon.model.DTO.accounting.RevenueDistributionDTO;
+import itep.software.bluemoon.model.DTO.accounting.invoice.InvoicePdfDTO;
 import itep.software.bluemoon.model.projection.InvoiceSummary;
 import itep.software.bluemoon.response.ApiResponse;
 import itep.software.bluemoon.service.AccountingService;
 import itep.software.bluemoon.service.ExcelExportService;
 import itep.software.bluemoon.service.InvoiceService;
+import itep.software.bluemoon.service.PdfGenerationService;
+import itep.software.bluemoon.service.PdfMappingService;
 import lombok.RequiredArgsConstructor;
 
 @RestController
@@ -33,6 +37,8 @@ public class AccountingController {
     private final InvoiceService invoiceService;
     private final ExcelExportService excelExportService;
     private final AccountingService accountingService;
+    private final PdfMappingService pdfMappingService;
+    private final PdfGenerationService pdfGenerationService;
 
     // Filter lọc theo trạng thái thanh toán thì front-end tự lọc
     @GetMapping("/invoices")
@@ -142,4 +148,15 @@ public class AccountingController {
         );
     }
 
+    @GetMapping("/{id}/export-pdf")
+        public ResponseEntity<byte[]> exportInvoicePdf(@PathVariable UUID id) {
+        InvoicePdfDTO pdfDTO = pdfMappingService.convertToPdfDTO(id);
+
+        byte[] pdfBytes = pdfGenerationService.generatePdf(pdfDTO);
+
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=Invoice_" + pdfDTO.getRoomNumber() + ".pdf")
+                .contentType(MediaType.APPLICATION_PDF)
+                .body(pdfBytes);
+        }
 }

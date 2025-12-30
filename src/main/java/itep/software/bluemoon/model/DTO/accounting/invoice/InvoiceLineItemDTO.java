@@ -1,8 +1,11 @@
-package itep.software.bluemoon.model.DTO.accounting;
-
-import lombok.*;
+package itep.software.bluemoon.model.DTO.accounting.invoice;
 
 import java.math.BigDecimal;
+
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
 @Data
 @Builder
