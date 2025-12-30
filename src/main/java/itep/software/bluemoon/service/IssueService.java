@@ -82,4 +82,12 @@ public class IssueService {
     public List<IssueSummary> getIssuesByType(IssueType type) {
         return issueRepository.findIssueSummariesByType(type);
     }
+    
+    @Transactional(readOnly = true)
+    public List<IssueSummary> getIssuesByReporterId(UUID reporterId) {
+        if (!residentRepository.existsById(reporterId)) {
+            throw new RuntimeException("Reporter not found with ID: " + reporterId);
+        }
+        return issueRepository.findIssueSummariesByReporterId(reporterId);
+    }
 }

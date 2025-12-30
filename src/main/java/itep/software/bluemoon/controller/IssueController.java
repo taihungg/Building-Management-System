@@ -100,4 +100,15 @@ public class IssueController {
                 issues
         );
     }
+    
+    @GetMapping("/reporter/{reporterId}")
+    public ResponseEntity<Object> getIssuesByReporter(@PathVariable UUID reporterId) {
+        List<IssueSummary> issues = issueService.getIssuesByReporterId(reporterId);
+        
+        return ApiResponse.responseBuilder(
+                HttpStatus.OK,
+                "Issues retrieved successfully for reporter",
+                issues
+        );
+    }
 }
