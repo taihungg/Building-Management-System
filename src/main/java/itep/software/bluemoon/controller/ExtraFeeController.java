@@ -70,4 +70,15 @@ public class ExtraFeeController {
                 null
         );
     }
+    
+    @GetMapping("/apartment/{apartmentId}")
+    public ResponseEntity<Object> getExtraFeesByApartment( @PathVariable UUID apartmentId) {
+        List<ExtraFeeSummary> data = extraFeeService.getExtraFeesByApartment(apartmentId);
+        
+        return ApiResponse.responseBuilder(
+                HttpStatus.OK, 
+                "Get extra fees by apartment successfully!",
+                data
+        );
+    }
 }
