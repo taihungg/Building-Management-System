@@ -50,7 +50,7 @@ export function InvoiceCreation() {
         oldIndex: item.oldIndex,
         newIndex: item.newIndex,
         quantity: item.quantity,
-        buildingCode: item.buildingCode || "N/A"
+        buildingCode: item.buildingLabel || item.buildingCode || "N/A"
       }));
 
       setTableData(mappedData);
@@ -114,6 +114,7 @@ export function InvoiceCreation() {
         month: selectedMonth,
         year: selectedYear,
         apartmentLabel: item.apartmentCode,
+        buildingLabel: item.buildingCode,
         // Đảm bảo tên dịch vụ đúng để Backend map vào Database
         serviceName: item.serviceCode === 'ELECTRICITY' ? 'Điện sinh hoạt' : 'Nước sinh hoạt'
       }));
@@ -134,10 +135,7 @@ export function InvoiceCreation() {
 
       toast.success(`Đã lưu thành công dữ liệu Tháng ${selectedMonth}`);
 
-      // MẸO Ở ĐÂY: Đợi 500ms để Database kịp "thở" rồi mới fetch lại
-      setTimeout(async () => {
-        await fetchExistingData();
-      }, 500);
+
 
     } catch (error: any) {
       toast.error("Lưu thất bại", { description: error.message });
