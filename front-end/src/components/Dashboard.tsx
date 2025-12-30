@@ -15,7 +15,7 @@ export function Dashboard() {
   const [apartmentStats, setApartmentStats] = useState({ occupied: 0, total: 0 });
   const [monthlyRevenue, setMonthlyRevenue] = useState(0);
   const [chartData, setChartData] = useState<any[]>([]); 
-  const [pendingIssuesList, setPendingIssuesList] = useState([]);
+  const [pendingIssuesList, setPendingIssuesList] = useState<Issue[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   // Link deploy mới của chú
@@ -215,7 +215,7 @@ useEffect(()=>{
                                     <p className="text-[11px] text-slate-400 mt-1 font-medium">Phòng {issue.roomNumber || '---'}</p>
                                 </td>
                                 <td className="py-4 px-6 text-right">
-                                    <Link to="/admin/services" className="inline-flex items-center text-[11px] font-bold text-indigo-500 hover:text-indigo-700 uppercase tracking-wider">
+                                    <Link to="/management/services" className="inline-flex items-center text-[11px] font-bold text-indigo-500 hover:text-indigo-700 uppercase tracking-wider">
                                         Chi tiết <ChevronRight size={14} className="ml-1" />
                                     </Link>
                                 </td>
@@ -227,7 +227,7 @@ useEffect(()=>{
                 </tbody>
             </table>
           </div>
-          <Link to="/admin/services" className="p-4 text-center text-xs font-bold border-t border-slate-100" style={{ backgroundColor: '#f8fafc', color: '#64748b' }}>
+          <Link to="/management/services" className="p-4 text-center text-xs font-bold border-t border-slate-100" style={{ backgroundColor: '#f8fafc', color: '#64748b' }}>
             XEM TẤT CẢ YÊU CẦU
           </Link>
         </div>
