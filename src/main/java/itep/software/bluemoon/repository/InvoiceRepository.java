@@ -78,4 +78,17 @@ public interface InvoiceRepository extends JpaRepository<Invoice, UUID> {
     	    @Param("year") int year,
     	    @Param("status") InvoiceStatus status
     	);
+    
+    @Query("""
+            SELECT i.id AS id,
+                   CONCAT('P.', a.roomNumber) AS apartmentLabel,
+                   i.totalAmount AS totalAmount,
+                   i.status AS status,
+                   i.createdDate AS createdDate
+            FROM Invoice i
+            JOIN i.apartment a
+            WHERE a.id = :apartmentId AND i.status != 'PENDING'
+            ORDER BY i.year DESC, i.month DESC
+            """)
+    List<InvoiceSummary> findInvoiceSummariesByApartmentId(@Param("apartmentId") UUID apartmentId);
 }
