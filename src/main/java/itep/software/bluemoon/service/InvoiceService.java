@@ -2,8 +2,12 @@ package itep.software.bluemoon.service;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -11,6 +15,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
+
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -81,6 +86,20 @@ public class InvoiceService {
         // 3. Lấy danh sách cần thiết
         List<Apartment> apartments = apartmentRepository.findApartmentsWithResidents();
         List<ServiceType> allServices = serviceTypeRepository.findAll();
+        List<UUID> apartmentIds = apartments.stream().map(Apartment::getId).toList();
+
+        Map<UUID, List<Vehicle>> vehicleMap = vehicleRepository
+            .findAllByApartmentIds(apartmentIds)
+            .stream()
+                .filter(v -> v.getOwner() != null && v.getOwner().getApartment() != null) // Safety check
+                .collect(Collectors.groupingBy(v -> v.getOwner().getApartment().getId()));
+
+        Map<ServiceCode, ServicePrice> priceConfigMap = new HashMap<>();
+        for (ServiceType type : allServices) {
+            if (type.getCode() != ServiceCode.OTHER) {
+                priceConfigMap.put(type.getCode(), getActivePriceConfig(type.getCode()));
+            }
+        }
 
         Map<UUID, UsageRecord> elecMap = usageRecordRepository
             .findAllByServiceCodeAndMonthAndYear(ServiceCode.ELECTRICITY, month, year)
@@ -100,7 +119,10 @@ public class InvoiceService {
                 (existing, replacement) -> existing
             ));
 
-        List<Invoice> newInvoices = new ArrayList<>();
+        LocalDateTime overdueDate = calculateOverdueDate(month, year);
+
+        int BATCH_SIZE = 50; 
+        List<Invoice> batchInvoices = new ArrayList<>();
 
         // 4. Duyệt qua từng căn hộ
         for (Apartment apartment : apartments) {
@@ -112,11 +134,13 @@ public class InvoiceService {
                         .totalAmount(BigDecimal.ZERO)
                         .status(InvoiceStatus.PENDING)
                         .paidAmount(BigDecimal.ZERO)
+                        .overdueDate(overdueDate)
                         .details(new ArrayList<>()) 
                         .build();
 
                 // 5. Duyệt qua từng loại dịch vụ
                 for (ServiceType type : allServices) {
+                    ServicePrice priceConfig = priceConfigMap.get(type.getCode());
                     
                     // CASE ĐẶC BIỆT: OTHER (Phí khác) -> Tạo nhiều dòng chi tiết
                     if (type.getCode() == ServiceCode.OTHER) {
@@ -127,7 +151,7 @@ public class InvoiceService {
                     } 
                     // CASE THƯỜNG: ĐIỆN, NƯỚC, GỬI XE, PQL -> Tạo 1 dòng chi tiết
                     else {
-                        InvoiceDetail detail = calculateStandardDetail(invoice, apartment, type, elecMap, waterMap);
+                        InvoiceDetail detail = calculateStandardDetail(invoice, apartment, type, elecMap, waterMap, vehicleMap, priceConfig);
                         if (detail != null) {
                             addDetailToInvoice(invoice, detail);
                         }
@@ -136,7 +160,13 @@ public class InvoiceService {
 
                 // Chỉ lưu hóa đơn nếu có phát sinh tiền
                 if (invoice.getTotalAmount().compareTo(BigDecimal.ZERO) > 0) {
-                    newInvoices.add(invoice);
+                    batchInvoices.add(invoice);
+                }
+
+                if (batchInvoices.size() >= BATCH_SIZE) {
+                    invoiceRepository.saveAll(batchInvoices);
+                    invoiceRepository.flush(); // Đẩy SQL xuống DB
+                    batchInvoices.clear();     // Giải phóng RAM list tạm
                 }
 
             } catch (Exception e) {
@@ -144,8 +174,12 @@ public class InvoiceService {
                 // Continue loop để không chặn các căn hộ khác
             }
         }
-        
-        invoiceRepository.saveAll(newInvoices);
+
+        // Lưu nốt số còn sót lại (nếu có)
+        if (!batchInvoices.isEmpty()) {
+            invoiceRepository.saveAll(batchInvoices);
+            invoiceRepository.flush();
+        }
 
         return getInvoiceSummary(month, year);
     }
@@ -159,23 +193,20 @@ public class InvoiceService {
     }
 
     // Xử lý các dịch vụ chuẩn (1 InvoiceDetail)
-    private InvoiceDetail calculateStandardDetail(Invoice invoice, Apartment apartment, ServiceType type, Map<UUID, UsageRecord> elecMap, Map<UUID, UsageRecord> waterMap){
+    private InvoiceDetail calculateStandardDetail(Invoice invoice, Apartment apartment, ServiceType type, Map<UUID, UsageRecord> elecMap, Map<UUID, UsageRecord> waterMap, Map<UUID, List<Vehicle>> vehicleMap, ServicePrice priceConfig){
         BigDecimal quantity = BigDecimal.ZERO;
         BigDecimal unitPrice = BigDecimal.ZERO; // Giá hiển thị (nếu là bậc thang thì có thể để 0 hoặc trung bình)
         BigDecimal amount = BigDecimal.ZERO;
         String description = "";
         UsageRecord usageRecord = null; // Link tới entity UsageRecord
         List<InvoiceLineItemDTO> subItems = new ArrayList<>();
-        ServicePrice priceConfig;
 
         switch(type.getCode()){
             case ServiceCode.MANAGEMENT -> {
-                priceConfig = getActivePriceConfig(ServiceCode.MANAGEMENT);
-                if (priceConfig.getFlatPrice() == null) {
+                if (priceConfig == null || priceConfig.getFlatPrice() == null) {
                     throw new RuntimeException("Management fees have not yet been configured!");
                 }
-
-                quantity = apartment.getArea();
+                quantity = apartment.getArea() != null ? apartment.getArea() : BigDecimal.ZERO;
                 unitPrice = priceConfig.getFlatPrice();
                 amount = VndUtils.multiply(quantity, unitPrice);
                 description = String.format("Management fees (%.2f m2 x %s)", quantity, VndUtils.format(unitPrice));
@@ -183,8 +214,8 @@ public class InvoiceService {
             }
 
             case ServiceCode.PARKING -> {
-                priceConfig = getActivePriceConfig(ServiceCode.PARKING);
-                List<Vehicle> vehicles = vehicleRepository.findByOwner_Apartment_Id(apartment.getId());
+                if (priceConfig == null) return null;
+                List<Vehicle> vehicles = vehicleMap.getOrDefault(apartment.getId(), Collections.emptyList());
                 int countBike = 0, countMoto = 0, countCar = 0;
                 for(Vehicle v : vehicles) {
                     if (null != v.getType()) switch (v.getType()) {
@@ -213,22 +244,31 @@ public class InvoiceService {
                     subItems.add(createLineItem("Car parking fee", countCar, priceCar, sub));
                     amount = VndUtils.add(amount, sub);
                 }
-                quantity = BigDecimal.valueOf(countBike + countMoto + countCar);
-                unitPrice = VndUtils.divide(amount, quantity);
+                int totalVehicles = countBike + countMoto + countCar;
+                quantity = BigDecimal.valueOf(totalVehicles);
+                if (totalVehicles > 0) {
+                    unitPrice = VndUtils.divide(amount, quantity);
+                } else {
+                    unitPrice = BigDecimal.ZERO;
+                }
                 description = "Parking fee";
             }
 
             case ServiceCode.ELECTRICITY -> {
-                return calculateUsageTierService(invoice, apartment, type, elecMap);
+                return calculateUsageTierService(invoice, apartment, type, elecMap, priceConfig);
             }
 
             case ServiceCode.WATER -> {
-                return calculateUsageTierService(invoice, apartment, type, waterMap);
+                return calculateUsageTierService(invoice, apartment, type, waterMap, priceConfig);
             }
 
             default -> {
                 return null;
             }
+        }
+
+        if (amount.compareTo(BigDecimal.ZERO) == 0 && subItems.isEmpty()) {
+            return null;
         }
 
         return InvoiceDetail.builder()
@@ -244,7 +284,7 @@ public class InvoiceService {
     }
 
     // Xử lý Điện/Nước (Bậc thang + Link UsageRecord)
-    private InvoiceDetail calculateUsageTierService(Invoice invoice, Apartment apartment, ServiceType type, Map<UUID, UsageRecord> usageMap) {
+    private InvoiceDetail calculateUsageTierService(Invoice invoice, Apartment apartment, ServiceType type, Map<UUID, UsageRecord> usageMap, ServicePrice priceConfig) {
         // 1. Tìm UsageRecord (Entity)
         UsageRecord usage = usageMap.get(apartment.getId());
 
@@ -253,16 +293,19 @@ public class InvoiceService {
             return null; 
         }
 
+        if (priceConfig == null) {
+             throw new RuntimeException("Price config missing for " + type.getCode());
+        }
+
         BigDecimal consumedQuantity = usage.getQuantity();
 
         // 2. Lấy giá
-        ServicePrice priceConfig = getActivePriceConfig(type.getCode());
         List<PriceTier> tiers = priceConfig.getTiers();
         tiers.sort(Comparator.comparing(PriceTier::getMinUsage));
 
         // 3. Tính toán bậc thang
         BigDecimal remaining = consumedQuantity;
-        BigDecimal totalAmount = BigDecimal.ZERO;
+        BigDecimal amountInitial = BigDecimal.ZERO;
         List<InvoiceLineItemDTO> items = new ArrayList<>();
 
         for (PriceTier tier : tiers) {
@@ -271,20 +314,28 @@ public class InvoiceService {
             BigDecimal amountInTier;
             // Logic tính limit của bậc: Nếu maxLimit null -> Vô cùng (bậc cuối)
             if (tier.getMaxUsage() != null) {
-                 BigDecimal limitSize = BigDecimal.valueOf(tier.getMaxUsage()).subtract(BigDecimal.valueOf(tier.getMinUsage())); 
-                 // Ví dụ bậc 0-50 -> Size = 50.
+                 BigDecimal limitSize = BigDecimal.valueOf(tier.getMaxUsage()).subtract(BigDecimal.valueOf(tier.getMinUsage())).add(BigDecimal.ONE); 
+                 // Ví dụ bậc 1-50 -> Size = 50.
                  amountInTier = remaining.min(limitSize);
             } else {
                  amountInTier = remaining;
             }
 
             BigDecimal tierCost = VndUtils.multiply(amountInTier, tier.getUnitPrice());
-            totalAmount = VndUtils.add(totalAmount, tierCost);
+            amountInitial = VndUtils.add(amountInitial, tierCost);
 
             items.add(createLineItem(tier.getCode().toString() + " (" + VndUtils.format(tier.getUnitPrice()) + ")", 
                                      amountInTier.intValue(), tier.getUnitPrice(), tierCost));
 
             remaining = remaining.subtract(amountInTier);
+        }
+
+        BigDecimal vat = VndUtils.multiply(amountInitial, priceConfig.getVatRate());
+        BigDecimal amount = VndUtils.add(amountInitial, vat);
+        BigDecimal env = null;
+        if(type.getCode().equals(ServiceCode.WATER)) {
+            env = VndUtils.multiply(amountInitial, priceConfig.getEnvRate());
+            amount = VndUtils.add(amount, env);
         }
 
         // 4. Tạo InvoiceDetail có link UsageRecord
@@ -293,7 +344,10 @@ public class InvoiceService {
                 .serviceType(type)
                 .quantity(consumedQuantity)
                 .unitPrice(BigDecimal.ZERO) // Giá bậc thang nên để 0
-                .amount(totalAmount)
+                .amountInitial(amountInitial)
+                .vat(vat)
+                .env(env)
+                .amount(amount)
                 .usageRecord(usage)
                 .description(String.format("New: %s - Old: %s", usage.getNewIndex(), usage.getOldIndex()))
                 .lineItems(convertToJson(items))
@@ -309,7 +363,10 @@ public class InvoiceService {
         for (ExtraFee fee : fees) {
             BigDecimal quantity = fee.getQuantity();
             BigDecimal amount = fee.getAmount();
-            BigDecimal unitPrice = VndUtils.divide(amount, amount);
+            BigDecimal unitPrice = BigDecimal.ZERO;
+            if (quantity.compareTo(BigDecimal.ZERO) != 0) {
+                unitPrice = VndUtils.divide(amount, quantity);
+            }
 
             InvoiceDetail detail = InvoiceDetail.builder()
                     .invoice(invoice)
@@ -345,6 +402,17 @@ public class InvoiceService {
 
     // --- HELPER METHODS ---
 
+    private LocalDateTime calculateOverdueDate(int month, int year) {
+        // Tạo ngày mùng 1 của tháng tính tiền
+        LocalDate billMonth = LocalDate.of(year, month, 1);
+        
+        // Cộng thêm 1 tháng -> Lấy ngày 10 -> Set giờ là cuối ngày
+        // Ví dụ: Bill tháng 12/2025 -> Hạn chót: 10/01/2026 23:59:59
+        return billMonth.plusMonths(1)
+                        .withDayOfMonth(10) // Có thể thay số 10 bằng cấu hình từ DB
+                        .atTime(LocalTime.MAX);
+    }
+
     private ServicePrice getActivePriceConfig(ServiceCode code) {
         return servicePriceRepository.findActivePriceByCode(code, LocalDate.now())
                 .orElseThrow(() -> new RuntimeException("Service price has not yet been configured: " + code));
@@ -359,10 +427,10 @@ public class InvoiceService {
                 .orElse(BigDecimal.ZERO);
     }
 
-    private InvoiceLineItemDTO createLineItem(String desc, int qty, BigDecimal price, BigDecimal total) {
+    private InvoiceLineItemDTO createLineItem(String desc, int quantity, BigDecimal price, BigDecimal total) {
         return InvoiceLineItemDTO.builder()
                 .description(desc)
-                .quantity(BigDecimal.valueOf(qty))
+                .quantity(BigDecimal.valueOf(quantity))
                 .unitPrice(price)
                 .amount(total)
                 .build();
@@ -376,7 +444,7 @@ public class InvoiceService {
             return "[]";
         }
     }
-    
+
     public List<InvoiceSummary> confirmInvoices(int month, int year, UUID staffId) {
         List<Invoice> pendingInvoices = invoiceRepository.findByMonthAndYearAndStatus(
                 month, year, InvoiceStatus.PENDING);
@@ -385,17 +453,29 @@ public class InvoiceService {
             throw new RuntimeException(
                 String.format("Not found PENDING invoice in %d/%d", month, year));
         }
+
+        int BATCH_SIZE = 50;
+        List<Invoice> invoiceBatch = new ArrayList<>();
         
         for (Invoice invoice : pendingInvoices) {
             try {
                 invoice.setStatus(InvoiceStatus.UNPAID);
                 createInvoiceNotification(invoice, staffId);
+                invoiceBatch.add(invoice);
+                if (invoiceBatch.size() >= BATCH_SIZE) {
+                    invoiceRepository.saveAll(invoiceBatch);
+                    invoiceRepository.flush(); // Đẩy lệnh SQL đi ngay để giải phóng bộ nhớ
+                    invoiceBatch.clear();       // Xóa danh sách tạm
+                }
             } catch (Exception e) {
                 log.error("Error comfirming invoice {}: {}", invoice.getId(), e.getMessage());
             }
         }
-        
-        invoiceRepository.saveAll(pendingInvoices);
+
+        if (!invoiceBatch.isEmpty()) {
+            invoiceRepository.saveAll(invoiceBatch);
+            invoiceRepository.flush();
+        }
         
         return invoiceRepository.findInvoiceSummariesByMonthYearStatus(month, year, InvoiceStatus.UNPAID);
     }
@@ -419,11 +499,11 @@ public class InvoiceService {
         announcementService.createAnnouncement(request);
     }
     
+    @SuppressWarnings("null")
     public List<InvoiceSummary> getInvoicesByApartmentId(UUID apartmentId) {
         if (!apartmentRepository.existsById(apartmentId)) {
             throw new RuntimeException("Apartment not found with ID: " + apartmentId);
         }
         return invoiceRepository.findInvoiceSummariesByApartmentId(apartmentId);
     }
-
 }

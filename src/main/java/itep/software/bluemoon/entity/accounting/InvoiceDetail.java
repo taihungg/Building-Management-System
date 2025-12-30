@@ -54,7 +54,16 @@ public class InvoiceDetail {
     @Column(name = "unit_price", precision = 20, scale = 2)
     private BigDecimal unitPrice; // giá bậc 0 hoặc trung bình
 
-    @Column(name = "amount", precision = 20, scale = 2)
+    @Column(name = "amount_initial", precision = 20, scale = 2)
+    private BigDecimal amountInitial;
+
+    @Column(name = "vat", precision = 20, scale = 2)
+    private BigDecimal vat;
+
+    @Column(name = "env", precision = 20, scale = 2)
+    private BigDecimal env;
+
+    @Column(name = "amount", nullable = false, precision = 20, scale = 2)
     private BigDecimal amount;
 
     //nếu tính giá điện, nước thì cần thuộc tính này, không thì null
