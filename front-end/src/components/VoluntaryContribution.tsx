@@ -132,13 +132,13 @@ export function VoluntaryContribution() {
     const fetchCampaigns = useCallback(async () => {
         setIsLoadingCampaigns(true);
         try {
-            const response = await fetch('https://untoasted-jean-unsympathisingly.ngrok-free.dev/api/v1/campaigns',{
+            const response = await fetch('https://untoasted-jean-unsympathisingly.ngrok-free.dev/api/v1/campaigns', {
                 method: 'GET',
                 headers: {
-                  'Content-Type': 'application/json',
-                  'ngrok-skip-browser-warning': 'true'
+                    'Content-Type': 'application/json',
+                    'ngrok-skip-browser-warning': 'true'
                 }
-              });
+            });
             if (!response.ok) {
                 const t = await response.text().catch(() => '');
                 throw new Error(t || `HTTP ${response.status}`);
@@ -176,13 +176,13 @@ export function VoluntaryContribution() {
         setIsDetailModalOpen(true);
         setIsDetailLoading(true);
         try {
-            const response = await fetch(`https://untoasted-jean-unsympathisingly.ngrok-free.dev/api/v1/campaigns/${campaignId}`,{
+            const response = await fetch(`https://untoasted-jean-unsympathisingly.ngrok-free.dev/api/v1/campaigns/${campaignId}`, {
                 method: 'GET',
                 headers: {
-                  'Content-Type': 'application/json',
-                  'ngrok-skip-browser-warning': 'true'
+                    'Content-Type': 'application/json',
+                    'ngrok-skip-browser-warning': 'true'
                 }
-              });
+            });
             if (!response.ok) {
                 const t = await response.text().catch(() => '');
                 throw new Error(t || `HTTP ${response.status}`);
@@ -226,8 +226,34 @@ export function VoluntaryContribution() {
         setIsAddContributionSubmitting(false);
     };
 
-    const handleExportExcel = (campaignTitle: string) => {
-        toast.success(`Đang xuất danh sách đóng góp: ${campaignTitle}`);
+    const handleExportExcel = async (campaignId: string, campaignTitle: string) => {
+        toast.info(`Đang xuất danh sách đóng góp: ${campaignTitle}`);
+        try {
+            const response = await fetch(`https://untoasted-jean-unsympathisingly.ngrok-free.dev/api/v1/campaigns/${campaignId}/export/excel`, {
+                method: 'GET',
+                headers: {
+                    'ngrok-skip-browser-warning': 'true'
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error('Không thể tải xuống file Excel');
+            }
+
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `Danh_sach_dong_gop_${campaignTitle}.xlsx`;
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+            toast.success('Xuất file Excel thành công');
+        } catch (error) {
+            console.error('Export error:', error);
+            toast.error('Lỗi khi xuất file Excel');
+        }
     };
 
     const submitCreate = async () => {
@@ -251,7 +277,7 @@ export function VoluntaryContribution() {
         const action = async () => {
             const response = await fetch('https://untoasted-jean-unsympathisingly.ngrok-free.dev/api/v1/campaigns', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json','ngrok-skip-browser-warning': 'true' },
+                headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' },
                 body: JSON.stringify({
                     title,
                     description: createDescription.trim() || null,
@@ -272,7 +298,7 @@ export function VoluntaryContribution() {
             loading: 'Đang tạo campaign...',
             success: () => {
                 setIsCreateModalOpen(false);
-                fetchCampaigns().catch(() => {});
+                fetchCampaigns().catch(() => { });
                 return 'Tạo campaign thành công';
             },
             error: (err) => `Tạo campaign thất bại: ${(err as Error).message}`,
@@ -304,7 +330,7 @@ export function VoluntaryContribution() {
         const action = async () => {
             const response = await fetch(`https://untoasted-jean-unsympathisingly.ngrok-free.dev/api/v1/campaigns/${selectedCampaignId}`, {
                 method: 'PUT',
-                headers: { 'Content-Type': 'application/json','ngrok-skip-browser-warning': 'true' },
+                headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' },
                 body: JSON.stringify({
                     title,
                     description: editDescription.trim() || null,
@@ -325,9 +351,9 @@ export function VoluntaryContribution() {
             loading: 'Đang cập nhật campaign...',
             success: () => {
                 setIsEditModalOpen(false);
-                fetchCampaigns().catch(() => {});
+                fetchCampaigns().catch(() => { });
                 if (isDetailModalOpen && selectedCampaignId) {
-                    openDetail(selectedCampaignId).catch(() => {});
+                    openDetail(selectedCampaignId).catch(() => { });
                 }
                 return 'Cập nhật campaign thành công';
             },
@@ -347,10 +373,10 @@ export function VoluntaryContribution() {
             const response = await fetch(`https://untoasted-jean-unsympathisingly.ngrok-free.dev/api/v1/campaigns/${deleteTargetId}`, {
                 method: 'DELETE',
                 headers: {
-                  'Content-Type': 'application/json',
-                  'ngrok-skip-browser-warning': 'true'
+                    'Content-Type': 'application/json',
+                    'ngrok-skip-browser-warning': 'true'
                 }
-              });
+            });
             if (!response.ok) {
                 const t = await response.text().catch(() => '');
                 throw new Error(t || `HTTP ${response.status}`);
@@ -363,7 +389,7 @@ export function VoluntaryContribution() {
                 setDeleteTargetId(null);
                 setIsDetailModalOpen(false);
                 setCampaignDetail(null);
-                fetchCampaigns().catch(() => {});
+                fetchCampaigns().catch(() => { });
                 return 'Xóa campaign thành công';
             },
             error: (err) => `Xóa campaign thất bại: ${(err as Error).message}`,
@@ -395,7 +421,7 @@ export function VoluntaryContribution() {
         const action = async () => {
             const response = await fetch('https://untoasted-jean-unsympathisingly.ngrok-free.dev/api/v1/campaigns/contributions', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json','ngrok-skip-browser-warning': 'true' },
+                headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' },
                 body: JSON.stringify({
                     campaignId: selectedCampaignId,
                     contributorName: name,
@@ -415,9 +441,9 @@ export function VoluntaryContribution() {
             loading: 'Đang ghi nhận đóng góp...',
             success: () => {
                 setIsAddContributionOpen(false);
-                fetchCampaigns().catch(() => {});
+                fetchCampaigns().catch(() => { });
                 if (selectedCampaignId) {
-                    openDetail(selectedCampaignId).catch(() => {});
+                    openDetail(selectedCampaignId).catch(() => { });
                 }
                 return 'Ghi nhận đóng góp thành công';
             },
@@ -472,166 +498,166 @@ export function VoluntaryContribution() {
                         Không có campaign nào
                     </div>
                 ) : campaigns
-                // Sắp xếp theo ngày bắt đầu (startDate) từ mới nhất đến cũ nhất
-                .sort((a, b) => {
-                    const dateA = a.startDate ? new Date(a.startDate).getTime() : 0;
-                    const dateB = b.startDate ? new Date(b.startDate).getTime() : 0;
-                    return dateB - dateA; // Đổi thành dateA - dateB nếu chú muốn ngày cũ hiện trước
-                }).map((cp) => {
-                    const total = parseMoney(cp.totalCollected);
-                    const goal = parseMoney(cp.goalAmount);
-                    const percent = goal > 0 ? Math.round((total / goal) * 100) : 0;
-                    const isSuccess = percent >= 100;
-                    const st = statusLabel(cp.status);
-                    const isBusy = isCreateSubmitting || isEditSubmitting || isDeleteSubmitting || isAddContributionSubmitting;
+                    // Sắp xếp theo ngày bắt đầu (startDate) từ mới nhất đến cũ nhất
+                    .sort((a, b) => {
+                        const dateA = a.startDate ? new Date(a.startDate).getTime() : 0;
+                        const dateB = b.startDate ? new Date(b.startDate).getTime() : 0;
+                        return dateB - dateA; // Đổi thành dateA - dateB nếu chú muốn ngày cũ hiện trước
+                    }).map((cp) => {
+                        const total = parseMoney(cp.totalCollected);
+                        const goal = parseMoney(cp.goalAmount);
+                        const percent = goal > 0 ? Math.round((total / goal) * 100) : 0;
+                        const isSuccess = percent >= 100;
+                        const st = statusLabel(cp.status);
+                        const isBusy = isCreateSubmitting || isEditSubmitting || isDeleteSubmitting || isAddContributionSubmitting;
 
-                    return (
-                        <div 
-                            key={cp.id} 
-                            style={{ 
-                                backgroundColor: '#ffffff', padding: '28px', borderRadius: '32px', 
-                                border: '1px solid #eef2f6', boxShadow: '0 10px 25px -5px rgba(0,0,0,0.04)' 
-                            }}
-                        >
-                            <div className="flex justify-between items-start mb-6">
-                                <div style={{ 
-                                    padding: '12px', 
-                                    backgroundColor: isSuccess ? '#ecfdf5' : '#fff1f2', 
-                                    color: isSuccess ? '#10b981' : '#e11d48', 
-                                    borderRadius: '16px' 
-                                }}>
-                                    <Heart size={22} fill={isSuccess ? '#10b981' : 'none'} />
-                                </div>
-                                <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider ${st.className}`}>
-                                    {st.text}
-                                </span>
-                            </div>
-                            
-                            <h3 className="font-bold text-xl text-slate-800 mb-6 leading-tight h-12 line-clamp-2">
-                                {String(cp.title ?? '')}
-                            </h3>
-                            {/* THÊM MỚI: Ngày bắt đầu & Ngày kết thúc */}
-                            <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px' }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#64748b' }}>
-                                    <Calendar size={12} style={{ color: '#94a3b8' }} />
-                                    <span style={{ fontSize: '11px', fontWeight: 500, whiteSpace: 'nowrap' }}>
-                                        Bắt đầu: {cp.startDate || 'N/A'}
+                        return (
+                            <div
+                                key={cp.id}
+                                style={{
+                                    backgroundColor: '#ffffff', padding: '28px', borderRadius: '32px',
+                                    border: '1px solid #eef2f6', boxShadow: '0 10px 25px -5px rgba(0,0,0,0.04)'
+                                }}
+                            >
+                                <div className="flex justify-between items-start mb-6">
+                                    <div style={{
+                                        padding: '12px',
+                                        backgroundColor: isSuccess ? '#ecfdf5' : '#fff1f2',
+                                        color: isSuccess ? '#10b981' : '#e11d48',
+                                        borderRadius: '16px'
+                                    }}>
+                                        <Heart size={22} fill={isSuccess ? '#10b981' : 'none'} />
+                                    </div>
+                                    <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider ${st.className}`}>
+                                        {st.text}
                                     </span>
                                 </div>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#64748b' }}>
-                                    <Clock size={12} style={{ color: '#94a3b8' }} />
-                                    <span style={{ fontSize: '11px', fontWeight: 500, whiteSpace: 'nowrap' }}>
-                                        Kết thúc: {cp.campaignEndDate || 'N/A'}
-                                    </span>
+
+                                <h3 className="font-bold text-xl text-slate-800 mb-6 leading-tight h-12 line-clamp-2">
+                                    {String(cp.title ?? '')}
+                                </h3>
+                                {/* THÊM MỚI: Ngày bắt đầu & Ngày kết thúc */}
+                                <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#64748b' }}>
+                                        <Calendar size={12} style={{ color: '#94a3b8' }} />
+                                        <span style={{ fontSize: '11px', fontWeight: 500, whiteSpace: 'nowrap' }}>
+                                            Bắt đầu: {cp.startDate || 'N/A'}
+                                        </span>
+                                    </div>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#64748b' }}>
+                                        <Clock size={12} style={{ color: '#94a3b8' }} />
+                                        <span style={{ fontSize: '11px', fontWeight: 500, whiteSpace: 'nowrap' }}>
+                                            Kết thúc: {cp.campaignEndDate || 'N/A'}
+                                        </span>
+                                    </div>
                                 </div>
-                            </div>
-                            {/* CỤM PROGRESS BAR NÂNG CẤP */}
-                            <div className="space-y-3 mb-6">
-                                <div style={{ marginTop: '12px', marginBottom: '24px' }}>
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '8px' }}>
-                                        <div style={{ display: 'flex', flexDirection: 'column' }}>
-                                            <span style={{ fontSize: '10px', fontWeight: 'bold', color: '#94a3b8', textTransform: 'uppercase' }}>Đã huy động</span>
-                                            <span style={{ fontSize: '18px', fontWeight: 900, color: isSuccess ? '#059669' : '#e11d48' }}>
-                                                {formatCurrency(total)}
-                                            </span>
+                                {/* CỤM PROGRESS BAR NÂNG CẤP */}
+                                <div className="space-y-3 mb-6">
+                                    <div style={{ marginTop: '12px', marginBottom: '24px' }}>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '8px' }}>
+                                            <div style={{ display: 'flex', flexDirection: 'column' }}>
+                                                <span style={{ fontSize: '10px', fontWeight: 'bold', color: '#94a3b8', textTransform: 'uppercase' }}>Đã huy động</span>
+                                                <span style={{ fontSize: '18px', fontWeight: 900, color: isSuccess ? '#059669' : '#e11d48' }}>
+                                                    {formatCurrency(total)}
+                                                </span>
+                                            </div>
+                                            <div style={{ textAlign: 'right' }}>
+                                                <span style={{ fontSize: '24px', fontWeight: 900, color: isSuccess ? '#10b981' : '#334155' }}>
+                                                    {percent}%
+                                                </span>
+                                            </div>
                                         </div>
-                                        <div style={{ textAlign: 'right' }}>
-                                            <span style={{ fontSize: '24px', fontWeight: 900, color: isSuccess ? '#10b981' : '#334155' }}>
-                                                {percent}%
+
+                                        {/* THANH CHẠY (PROGRESS BAR) - ÉP HIỂN THỊ BẰNG INLINE CSS */}
+                                        <div style={{
+                                            width: '100%',
+                                            height: '12px',
+                                            backgroundColor: '#f1f5f9',
+                                            borderRadius: '999px',
+                                            padding: '2px',
+                                            position: 'relative',
+                                            display: 'block',
+                                            overflow: 'hidden'
+                                        }}>
+                                            <div
+                                                style={{
+                                                    height: '100%',
+                                                    borderRadius: '999px',
+                                                    backgroundColor: isSuccess ? '#10b981' : '#f43f5e',
+                                                    width: `${Math.min(percent, 100)}%`, // Ép width theo % thực tế
+                                                    transition: 'width 1s ease-out',
+                                                    boxShadow: isSuccess ? '0 0 8px rgba(16, 185, 129, 0.4)' : 'none'
+                                                }}
+                                            ></div>
+                                        </div>
+
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '8px' }}>
+                                            <span style={{ fontSize: '10px', fontWeight: 'bold', color: '#94a3b8', textTransform: 'uppercase' }}>
+                                                Mục tiêu: {formatCurrency(goal)}
+                                            </span>
+                                            <span style={{ fontSize: '10px', fontWeight: 'bold', color: '#94a3b8', textTransform: 'uppercase' }}>
+                                                {cp.totalContributors ?? 0} người
                                             </span>
                                         </div>
                                     </div>
-
-                                {/* THANH CHẠY (PROGRESS BAR) - ÉP HIỂN THỊ BẰNG INLINE CSS */}
-                                    <div style={{ 
-                                        width: '100%', 
-                                        height: '12px', 
-                                        backgroundColor: '#f1f5f9', 
-                                        borderRadius: '999px', 
-                                        padding: '2px', 
-                                        position: 'relative',
-                                        display: 'block',
-                                        overflow: 'hidden'
-                                    }}>
-                                        <div 
-                                            style={{ 
-                                                height: '100%', 
-                                                borderRadius: '999px', 
+                                    {/* Thanh chạy (Thứ chú cần đây) */}
+                                    <div className="w-full h-3 bg-slate-100 rounded-full overflow-hidden p-[2px]">
+                                        <div
+                                            className="h-full rounded-full transition-all duration-1000 ease-out"
+                                            style={{
+                                                width: animate ? `${Math.min(percent, 100)}%` : '0%',
                                                 backgroundColor: isSuccess ? '#10b981' : '#f43f5e',
-                                                width: `${Math.min(percent, 100)}%`, // Ép width theo % thực tế
-                                                transition: 'width 1s ease-out',
-                                                boxShadow: isSuccess ? '0 0 8px rgba(16, 185, 129, 0.4)' : 'none'
+                                                boxShadow: isSuccess ? '0 0 10px rgba(16, 185, 129, 0.4)' : 'none'
                                             }}
                                         ></div>
                                     </div>
-                                    
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '8px' }}>
-                                        <span style={{ fontSize: '10px', fontWeight: 'bold', color: '#94a3b8', textTransform: 'uppercase' }}>
-                                            Mục tiêu: {formatCurrency(goal)}
-                                        </span>
-                                        <span style={{ fontSize: '10px', fontWeight: 'bold', color: '#94a3b8', textTransform: 'uppercase' }}>
-                                            {cp.totalContributors ?? 0} người
-                                        </span>
-                                    </div>
                                 </div>
-                                {/* Thanh chạy (Thứ chú cần đây) */}
-                                <div className="w-full h-3 bg-slate-100 rounded-full overflow-hidden p-[2px]">
-                                    <div 
-                                        className="h-full rounded-full transition-all duration-1000 ease-out"
-                                        style={{ 
-                                            width: animate ? `${Math.min(percent, 100)}%` : '0%',
-                                            backgroundColor: isSuccess ? '#10b981' : '#f43f5e',
-                                            boxShadow: isSuccess ? '0 0 10px rgba(16, 185, 129, 0.4)' : 'none'
-                                        }}
-                                    ></div>
+
+                                <div className="flex flex-wrap gap-3">
+                                    <button
+                                        onClick={() => handleExportExcel(String(cp.id), String(cp.title ?? ''))}
+                                        disabled={isBusy}
+                                        className="flex-1 min-w-[140px] flex items-center justify-center gap-2 py-3 bg-slate-50 text-slate-600 rounded-xl text-xs font-bold hover:bg-slate-100 transition-all border border-slate-100 disabled:opacity-60 disabled:cursor-not-allowed"
+                                    >
+                                        <Download size={14} /> Danh sách
+                                    </button>
+                                    <button
+                                        onClick={() => openDetail(String(cp.id))}
+                                        disabled={isBusy}
+                                        className="flex-1 min-w-[140px] flex items-center justify-center gap-2 py-3 bg-rose-50 text-rose-600 rounded-xl text-xs font-bold hover:bg-rose-100 transition-all disabled:opacity-60 disabled:cursor-not-allowed"
+                                    >
+                                        <ExternalLink size={14} /> Chi tiết
+                                    </button>
+                                </div>
+
+                                <div className="mt-4 flex flex-wrap gap-2">
+                                    <button
+                                        onClick={() => openAddContribution(String(cp.id))}
+                                        disabled={isBusy}
+                                        className="flex-1 min-w-[200px] flex items-center justify-center gap-2 py-2.5 bg-emerald-50 text-emerald-700 rounded-xl text-xs font-bold hover:bg-emerald-100 transition-all disabled:opacity-60 disabled:cursor-not-allowed"
+                                    >
+                                        + Ghi nhận đóng góp
+                                    </button>
+                                    <button
+                                        onClick={() => openEdit(cp)}
+                                        disabled={isBusy}
+                                        className="h-10 w-10 flex items-center justify-center bg-slate-50 text-slate-600 rounded-xl hover:bg-slate-100 transition-all disabled:opacity-60 disabled:cursor-not-allowed"
+                                        title="Sửa campaign"
+                                    >
+                                        <Pencil size={14} />
+                                    </button>
+                                    <button
+                                        onClick={() => openDeleteConfirm(String(cp.id))}
+                                        disabled={isBusy}
+                                        className="h-10 w-10 flex items-center justify-center bg-rose-50 text-rose-600 rounded-xl hover:bg-rose-100 transition-all disabled:opacity-60 disabled:cursor-not-allowed"
+                                        title="Xóa campaign"
+                                    >
+                                        <Trash2 size={14} />
+                                    </button>
                                 </div>
                             </div>
-
-                            <div className="flex flex-wrap gap-3">
-                                <button
-                                    onClick={() => handleExportExcel(String(cp.title ?? ''))}
-                                    disabled={isBusy}
-                                    className="flex-1 min-w-[140px] flex items-center justify-center gap-2 py-3 bg-slate-50 text-slate-600 rounded-xl text-xs font-bold hover:bg-slate-100 transition-all border border-slate-100 disabled:opacity-60 disabled:cursor-not-allowed"
-                                >
-                                    <Download size={14} /> Danh sách
-                                </button>
-                                <button
-                                    onClick={() => openDetail(String(cp.id))}
-                                    disabled={isBusy}
-                                    className="flex-1 min-w-[140px] flex items-center justify-center gap-2 py-3 bg-rose-50 text-rose-600 rounded-xl text-xs font-bold hover:bg-rose-100 transition-all disabled:opacity-60 disabled:cursor-not-allowed"
-                                >
-                                    <ExternalLink size={14} /> Chi tiết
-                                </button>
-                            </div>
-
-                            <div className="mt-4 flex flex-wrap gap-2">
-                                <button
-                                    onClick={() => openAddContribution(String(cp.id))}
-                                    disabled={isBusy}
-                                    className="flex-1 min-w-[200px] flex items-center justify-center gap-2 py-2.5 bg-emerald-50 text-emerald-700 rounded-xl text-xs font-bold hover:bg-emerald-100 transition-all disabled:opacity-60 disabled:cursor-not-allowed"
-                                >
-                                    + Ghi nhận đóng góp
-                                </button>
-                                <button
-                                    onClick={() => openEdit(cp)}
-                                    disabled={isBusy}
-                                    className="h-10 w-10 flex items-center justify-center bg-slate-50 text-slate-600 rounded-xl hover:bg-slate-100 transition-all disabled:opacity-60 disabled:cursor-not-allowed"
-                                    title="Sửa campaign"
-                                >
-                                    <Pencil size={14} />
-                                </button>
-                                <button
-                                    onClick={() => openDeleteConfirm(String(cp.id))}
-                                    disabled={isBusy}
-                                    className="h-10 w-10 flex items-center justify-center bg-rose-50 text-rose-600 rounded-xl hover:bg-rose-100 transition-all disabled:opacity-60 disabled:cursor-not-allowed"
-                                    title="Xóa campaign"
-                                >
-                                    <Trash2 size={14} />
-                                </button>
-                            </div>
-                        </div>
-                    );
-                })}
+                        );
+                    })}
             </div>
 
             {/* MODAL TẠO CAMPAIGN */}
@@ -732,10 +758,10 @@ export function VoluntaryContribution() {
                 </div>
             </Modal>
 
-            <Modal 
-                isOpen={isDetailModalOpen} 
-                onClose={() => setIsDetailModalOpen(false)} 
-                title="Thông tin chi tiết chiến dịch" 
+            <Modal
+                isOpen={isDetailModalOpen}
+                onClose={() => setIsDetailModalOpen(false)}
+                title="Thông tin chi tiết chiến dịch"
                 width="900px"
             >
                 {isDetailLoading ? (
@@ -788,8 +814,8 @@ export function VoluntaryContribution() {
                                 <div>
                                     <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Tỷ lệ</p>
                                     <p className="text-lg font-black text-emerald-600">
-                                        {campaignDetail?.campaign?.goalAmount > 0 
-                                            ? Math.round((campaignDetail.campaign.totalCollected / campaignDetail.campaign.goalAmount) * 100) 
+                                        {campaignDetail?.campaign?.goalAmount > 0
+                                            ? Math.round((campaignDetail.campaign.totalCollected / campaignDetail.campaign.goalAmount) * 100)
                                             : 0}%
                                     </p>
                                 </div>
@@ -830,7 +856,7 @@ export function VoluntaryContribution() {
                             >
                                 + GHI NHẬN ĐÓNG GÓP
                             </button>
-                           
+
                         </div>
 
                         {/* Danh sách đóng góp (Bảng đẹp Modal 2) */}
@@ -904,8 +930,8 @@ export function VoluntaryContribution() {
                             </div>
 
                             {/* Hàng 2: Nút đóng nằm dưới */}
-                            <button 
-                                onClick={() => setIsDetailModalOpen(false)} 
+                            <button
+                                onClick={() => setIsDetailModalOpen(false)}
                                 className="w-full py-4 bg-slate-800 text-black font-bold rounded-2xl hover:bg-slate-900 transition-all shadow-lg shadow-slate-200"
                             >
                                 ĐÓNG CỬA SỔ
