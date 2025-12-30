@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Lock, User, Eye, EyeOff, Mail } from 'lucide-react'; 
 import React from 'react';
 import { toast } from 'sonner'; // Chú nhớ cài sonner hoặc dùng alert bình thường nhé
+import { authProvider } from './auth';
 
 interface LoginProps {
   // OnLogin bây giờ sẽ nhận object chứa role và thông tin user
@@ -39,9 +40,10 @@ export function Login({ onLogin, onNavigateAuth }: LoginProps) {
         // 2. Lưu thông tin đăng nhập vào máy (localStorage)
         localStorage.setItem('user_role', res.data.role);
         localStorage.setItem('account_id', res.data.accountId);
+        localStorage.setItem('person_id',res.data.personId);
         
         toast.success("Đăng nhập thành công!");
-        
+        authProvider.saveAuthData(res.data.role, res.data.accountId, res.data.personId);
         // 3. Trả dữ liệu về cho App để chuyển trang
         onLogin({
           role: res.data.role,
