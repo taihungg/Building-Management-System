@@ -452,26 +452,10 @@ export function DebtManagement() {
   // Pay invoice (Thanh toán) - Chuyển từ UNPAID sang PAID
   const handlePayInvoice = async (invoiceId: string) => {
     try {
-      // Gọi API để thanh toán hóa đơn
-      const response = await fetch(`https://untoasted-jean-unsympathisingly.ngrok-free.dev/api/v1/accounting/invoices/${invoiceId}/pay`, { 
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'ngrok-skip-browser-warning': 'true'
-        }
+      toast.info("Chưa hỗ trợ thanh toán trên hệ thống", {
+        description: "Backend hiện chưa có API /api/v1/accounting/invoices/{id}/pay",
       });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(errorText || `HTTP ${response.status}: ${response.statusText}`);
-      }
-
-      const res = await response.json();
-      
-      // Reload dữ liệu từ API sau khi thanh toán
-      await fetchBills();
-      
-      toast.success("Thanh toán thành công", { description: res.message || "Hóa đơn đã được thanh toán" });
+      void invoiceId;
     } catch (error) {
       console.error("Lỗi thanh toán:", error);
       toast.error("Lỗi thanh toán", { description: (error as Error).message });
@@ -487,26 +471,9 @@ export function DebtManagement() {
     }
 
     try {
-      // Gọi API để thanh toán tất cả hóa đơn UNPAID
-      const response = await fetch(`https://untoasted-jean-unsympathisingly.ngrok-free.dev/api/v1/accounting/invoices/pay-all?month=${selectedMonth}&year=${selectedYear}`, { 
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'ngrok-skip-browser-warning': 'true'
-        }
+      toast.info("Chưa hỗ trợ thanh toán hàng loạt", {
+        description: "Backend hiện chưa có API /api/v1/accounting/invoices/pay-all",
       });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(errorText || `HTTP ${response.status}: ${response.statusText}`);
-      }
-
-      const res = await response.json();
-      
-      // Reload dữ liệu từ API sau khi thanh toán
-      await fetchBills();
-      
-      toast.success("Đã thanh toán tất cả hóa đơn", { description: res.message || `Đã thanh toán ${unpaidBills.length} hóa đơn` });
     } catch (error) {
       console.error("Lỗi thanh toán:", error);
       toast.error("Lỗi thanh toán", { description: (error as Error).message });
@@ -517,16 +484,16 @@ export function DebtManagement() {
     fetchBills();
   }, [selectedMonth, selectedYear]); 
   
-  const calculateStats = (data) => {
-    const initialStats = { 
+  const calculateStats = (data: any[]) => {
+    const initialStats: { totalRevenue: number; pendingAmount: number; paidAmount: number; unpaidAmount: number } = { 
       totalRevenue: 0, 
       pendingAmount: 0, 
       paidAmount: 0, 
       unpaidAmount: 0 
     };
     
-    const calculated = data.reduce((acc, bill) => {
-      const amount = bill.totalAmount || 0; 
+    const calculated = data.reduce((acc: typeof initialStats, bill: any) => {
+      const amount = Number(bill?.totalAmount || 0); 
       
       acc.totalRevenue += amount;
       
@@ -544,7 +511,7 @@ export function DebtManagement() {
     setStats(calculated);
   };
 
-  const formatCurrency = (amount) => {
+  const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('vi-VN', { 
         style: 'currency', 
         currency: 'VND',

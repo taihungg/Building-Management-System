@@ -182,12 +182,10 @@ const handleEditCell = (index: number, field: keyof UsageImportData, value: any)
               inset: 0,
               zIndex: 9999,
               display: 'flex',
-              itemsCenter: 'center',
+              alignItems: 'center',
               justifyContent: 'center',
               backgroundColor: 'rgba(0, 0, 0, 0.5)',
-              backdropFilter: 'blur(4px)',
-              display: 'flex',
-              alignItems: 'center'
+              backdropFilter: 'blur(4px)'
           }}>
               <div style={{
                   backgroundColor: '#ffffff',

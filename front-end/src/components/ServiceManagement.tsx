@@ -6,6 +6,16 @@ import React from 'react';
 
 // UUID giả định để khắc phục lỗi 400 Bad Request khi gửi 'default-admin-reporter-id'
 const FALLBACK_REPORTER_UUID = '00000000-0000-0000-0000-000000000001'; 
+const PAYMENT_REQUEST_MARKER = '[PAYMENT_REQUEST]';
+const isPaymentRequestIssue = (title: string, description: string) => {
+  const safeTitle = String(title ?? '');
+  const safeDescription = String(description ?? '');
+  const haystack = `${safeTitle}\n${safeDescription}`;
+  if (haystack.includes(PAYMENT_REQUEST_MARKER)) return true;
+  const lowerTitle = safeTitle.toLowerCase();
+  const lowerDescription = safeDescription.toLowerCase();
+  return lowerTitle.includes('yêu cầu xác nhận thanh toán') && lowerDescription.includes('invoiceid:');
+};
 
 const categoryIcons: Record<string, any> = {
   Plumbing: Droplet,
@@ -17,14 +27,6 @@ const categoryIcons: Record<string, any> = {
   Security: Shield,
   Complaint: Shield, // Thêm Complaint
 };
-
-// Danh sách các trạng thái ENUM Backend và UI Label tương ứng (ĐÃ DỊCH)
-const STATUS_OPTIONS = [
-    { enum: 'UNPROCESSED', label: 'Chưa xử lý' },
-    { enum: 'PROCESSING', label: 'Đang xử lý' },
-    // ENUM PROCESSED (Backend) -> Label Processed (Frontend)
-    { enum: 'PROCESSED', label: 'Đã xử lý' }, 
-];
 
 type IssueStatusEnum = 'UNPROCESSED' | 'PROCESSING' | 'PROCESSED' | (string & {});
 type IssueTypeEnum = 'MAINTENANCE' | 'COMPLAINT' | 'AUTHORITY' | 'SECURITY' | (string & {});
@@ -59,7 +61,14 @@ type IssueCreateRequest = {
   reporterId: string;
 };
 
-export function ServiceManagement() {
+type ServiceManagementProps = {
+  issueType?: IssueTypeEnum;
+  title?: string;
+  subtitle?: string;
+  mode?: 'default' | 'payment_requests';
+};
+
+export function ServiceManagement({ issueType, title, subtitle, mode = 'default' }: ServiceManagementProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('All'); // Cập nhật filter mặc định theo tiếng Việt
   const [isNewRequestOpen, setIsNewRequestOpen] = useState(false);
@@ -84,6 +93,24 @@ export function ServiceManagement() {
 
   // State quản lý menu trạng thái
   const [openIssueMenuId, setOpenIssueMenuId] = useState<string | null>(null); 
+
+  const isPaymentRequestsMode = mode === 'payment_requests';
+
+  const statusOptions = isPaymentRequestsMode
+    ? [
+        { enum: 'UNPROCESSED', label: 'Chưa xác nhận' },
+        { enum: 'PROCESSING', label: 'Đang kiểm tra' },
+        { enum: 'PROCESSED', label: 'Đã xác nhận' },
+      ]
+    : [
+        { enum: 'UNPROCESSED', label: 'Chưa xử lý' },
+        { enum: 'PROCESSING', label: 'Đang xử lý' },
+        { enum: 'PROCESSED', label: 'Đã xử lý' },
+      ];
+
+  const statusFilterTabs = isPaymentRequestsMode
+    ? (['Chưa xác nhận', 'Đang kiểm tra', 'Đã xác nhận', 'All'] as const)
+    : (['Chưa Xử Lý', 'Đang Xử Lý', 'Đã Xử Lý', 'All'] as const);
 
 
   // --- HÀM GỌI API ---
@@ -147,6 +174,7 @@ export function ServiceManagement() {
     setError(null);
     try {
         let url = 'https://untoasted-jean-unsympathisingly.ngrok-free.dev/api/issues';
+        if (issueType) url += `?type=${encodeURIComponent(issueType)}`;
         const response = await fetch(url ,{method: 'GET',
           headers: {
               'Content-Type': 'application/json',
@@ -164,12 +192,19 @@ export function ServiceManagement() {
             
             // Hàm chuyển đổi status từ ENUM sang UI Label (ĐÃ DỊCH)
             const mapStatus = (status: IssueStatusEnum | null | undefined) => { 
+                if (isPaymentRequestsMode) {
+                    switch (status) {
+                        case 'UNPROCESSED': return 'Chưa xác nhận';
+                        case 'PROCESSING': return 'Đang kiểm tra';
+                        case 'PROCESSED': return 'Đã xác nhận';
+                        default: return 'Chưa xác nhận';
+                    }
+                }
+
                 switch (status) {
                     case 'UNPROCESSED': return 'Chưa Xử Lý';
                     case 'PROCESSING': return 'Đang Xử Lý';
-                    // Đảm bảo cả RESOLVED và PROCESSED đều map thành Đã Xử Lý trên UI
-                    case 'PROCESSED': 
-                        return 'Đã Xử Lý'; 
+                    case 'PROCESSED': return 'Đã Xử Lý'; 
                     default: return 'Chưa Xử Lý';
                 }
             };
@@ -178,6 +213,7 @@ export function ServiceManagement() {
 
             // Hàm map Type sang Category (ĐÃ DỊCH)
             const mapCategory = (type: IssueTypeEnum | null | undefined) => { 
+                if (isPaymentRequestsMode) return 'Thanh toán';
                 switch (type) {
                     case 'MAINTENANCE': return 'Bảo Trì'; 
                     case 'COMPLAINT': return 'Khiếu Nại'; 
@@ -186,27 +222,35 @@ export function ServiceManagement() {
                 }
             };
             
+            const rawTitle = String(issue.title ?? '');
+            const rawDescription = String(issue.description ?? '');
+            const nextTitle = isPaymentRequestsMode ? rawTitle.replace(PAYMENT_REQUEST_MARKER, '').trim() : rawTitle;
+
             return {
                 id: String(issue.id ?? ''),
-                title: String(issue.title ?? ''),
+                title: nextTitle,
                 category: mapCategory(issue.type), // Label đã dịch
                 type: (issue.type ?? 'MAINTENANCE') as IssueTypeEnum, // 🔥 Giữ ENUM gốc (MAINTENANCE, COMPLAINT, AUTHORITY)
                 status: mapStatus(rawStatus), 
                 rawStatus: rawStatus, // Lưu trạng thái ENUM gốc
                 unit: String(issue.roomNumber ?? ''), 
                 resident: String(issue.reporterName ?? ''), 
-                description: String(issue.description ?? ''),
+                description: rawDescription,
             };
         });
 
-        setAllIssue(transformedData);
+        const filteredData = isPaymentRequestsMode
+          ? transformedData.filter((x) => isPaymentRequestIssue(x.title, x.description))
+          : transformedData.filter((x) => !isPaymentRequestIssue(x.title, x.description));
+
+        setAllIssue(filteredData);
         
     } catch (err: unknown) {
         setError(err instanceof Error ? err.message : 'Không thể tải danh sách yêu cầu/sự cố.');
     } finally {
         setIsLoading(false);
     }
-  }, []);
+  }, [issueType, isPaymentRequestsMode]);
 
   // 4. API Tìm kiếm Căn hộ Dropdown (GET /dropdown)
   const fetchApartmentDropdown = async (keyword: string) => {
@@ -323,6 +367,14 @@ export function ServiceManagement() {
 
   // Chuyển đổi trạng thái filter từ tiếng Việt sang UI Label tiếng Anh (để so sánh với Issue data)
   const mapFilterToStatusLabel = (filter: string) => {
+      if (isPaymentRequestsMode) {
+          switch(filter) {
+              case 'Chưa xác nhận': return 'Chưa xác nhận';
+              case 'Đang kiểm tra': return 'Đang kiểm tra';
+              case 'Đã xác nhận': return 'Đã xác nhận';
+              default: return 'All';
+          }
+      }
       switch(filter) {
           case 'Chưa Xử Lý': return 'Chưa Xử Lý';
           case 'Đang Xử Lý': return 'Đang Xử Lý';
@@ -365,8 +417,8 @@ export function ServiceManagement() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl text-slate-900">Quản lý yêu cầu dịch vụ và sự cố</h1>
-          <p className="text-slate-500 mt-1">Theo dõi và quản lý tất cả các yêu cầu dịch vụ và sự cố</p>
+          <h1 className="text-3xl text-slate-900">{title ?? 'Quản lý yêu cầu dịch vụ và sự cố'}</h1>
+          <p className="text-slate-500 mt-1">{subtitle ?? 'Theo dõi và quản lý tất cả các yêu cầu dịch vụ và sự cố'}</p>
         </div>
         {/* Nút Tạo Yêu Cầu Mới - Đặt ở đây để nằm bên phải Header */}
       </div>
@@ -412,9 +464,9 @@ export function ServiceManagement() {
             <div className="w-10 h-10 rounded-lg bg-orange-100 flex items-center justify-center">
               <Clock className="w-5 h-5 text-orange-600" />
             </div>
-            <p className="text-slate-500 text-sm">Chưa xử lý</p>
+            <p className="text-slate-500 text-sm">{isPaymentRequestsMode ? 'Chưa xác nhận' : 'Chưa xử lý'}</p>
           </div>
-          <p className="text-2xl text-slate-900">{allIssue.filter(s => s.status === 'Chưa Xử Lý').length}</p>
+          <p className="text-2xl text-slate-900">{allIssue.filter(s => s.status === (isPaymentRequestsMode ? 'Chưa xác nhận' : 'Chưa Xử Lý')).length}</p>
         </div>
 
         <div className="bg-white rounded-xl p-6 shadow-sm border border-slate-200">
@@ -422,9 +474,9 @@ export function ServiceManagement() {
             <div className="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center">
               <Wrench className="w-5 h-5 text-blue-600" />
             </div>
-            <p className="text-slate-500 text-sm">Đang xử lý</p>
+            <p className="text-slate-500 text-sm">{isPaymentRequestsMode ? 'Đang kiểm tra' : 'Đang xử lý'}</p>
           </div>
-          <p className="text-2xl text-slate-900">{allIssue.filter(s => s.status === 'Đang Xử Lý').length}</p>
+          <p className="text-2xl text-slate-900">{allIssue.filter(s => s.status === (isPaymentRequestsMode ? 'Đang kiểm tra' : 'Đang Xử Lý')).length}</p>
         </div>
         
         <div className="bg-white rounded-xl p-6 shadow-sm border border-slate-200">
@@ -432,9 +484,9 @@ export function ServiceManagement() {
             <div className="w-10 h-10 rounded-lg bg-emerald-100 flex items-center justify-center">
               <CheckCircle className="w-5 h-5 text-emerald-600" />
             </div>
-            <p className="text-slate-500 text-sm">Đã xử lý</p> 
+            <p className="text-slate-500 text-sm">{isPaymentRequestsMode ? 'Đã xác nhận' : 'Đã xử lý'}</p> 
           </div>
-          <p className="text-2xl text-slate-900">{allIssue.filter(s => s.status === 'Đã Xử Lý').length}</p> 
+          <p className="text-2xl text-slate-900">{allIssue.filter(s => s.status === (isPaymentRequestsMode ? 'Đã xác nhận' : 'Đã Xử Lý')).length}</p> 
         </div>
 
         <div className="bg-white rounded-xl p-6 shadow-sm border border-slate-200">
@@ -452,7 +504,7 @@ export function ServiceManagement() {
 
       {/* Status Filter Tabs - ĐÃ DỊCH */}
       <div className="flex gap-2">
-        {['Chưa Xử Lý', 'Đang Xử Lý', 'Đã Xử Lý', 'All'].map((status) => (
+        {statusFilterTabs.map((status) => (
           <button
             key={status}
             onClick={() => setStatusFilter(status)}
@@ -530,7 +582,7 @@ export function ServiceManagement() {
                           {openIssueMenuId === service.id && (
                               <div className="absolute right-0 mt-2 w-48 bg-white border border-slate-200 rounded-lg shadow-xl z-20 overflow-hidden">
                                   <div className="py-1 px-3 text-xs text-slate-500 border-b">Thay Đổi Trạng Thái</div>
-                                  {STATUS_OPTIONS.map(option => (
+                                  {statusOptions.map(option => (
                                       <button 
                                           key={option.enum}
                                           onClick={(e) => {

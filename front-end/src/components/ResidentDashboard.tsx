@@ -1,46 +1,208 @@
-import { Bell, Receipt, FileText, TrendingUp, Wallet, ArrowRight } from 'lucide-react';
-import { useState, useEffect } from 'react';
+import { Bell, Receipt, FileText, Wallet } from 'lucide-react';
+import { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { getUnreadCount, subscribe } from '../utils/announcements';
-import { getBills, subscribe as subscribeBills, type Bill } from '../utils/bills';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { authProvider } from './auth';
+
+type ApiEnvelope<T> = {
+  message?: string;
+  data?: T;
+};
+
+type ResidentDetailApi = {
+  roomNumber?: number | null;
+  building?: string | null;
+};
+
+type InvoiceSummaryApi = {
+  id: string;
+  totalAmount?: number;
+  status?: string;
+  createdDate?: string;
+  apartmentLabel?: string;
+};
+
+type Bill = {
+  id: string;
+  type: string;
+  amount: number;
+  dueDate: string;
+  status: 'Paid' | 'Pending';
+  period: string;
+  createdAt: string;
+};
+
+const API_BASE_URL = 'https://untoasted-jean-unsympathisingly.ngrok-free.dev';
+const NGROK_HEADERS = { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' };
+
+const pad2 = (n: number) => String(n).padStart(2, '0');
+const toYmd = (date: Date) => `${date.getFullYear()}-${pad2(date.getMonth() + 1)}-${pad2(date.getDate())}`;
+const toPeriod = (iso: string) => {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return 'Không rõ';
+  return `Tháng ${d.getMonth() + 1}/${d.getFullYear()}`;
+};
+const toBillStatus = (status?: string): Bill['status'] => (status === 'PAID' ? 'Paid' : 'Pending');
+const addDaysIso = (iso: string, days: number) => {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return '';
+  d.setDate(d.getDate() + days);
+  return toYmd(d);
+};
+const toMonthKey = (iso: string) => {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return null;
+  return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}`;
+};
+const getRecentPeriods = (count: number) => {
+  const periods: Array<{ month: number; year: number }> = [];
+  const now = new Date();
+  for (let i = 0; i < count; i++) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    periods.push({ month: d.getMonth() + 1, year: d.getFullYear() });
+  }
+  return periods;
+};
+const normalizeApartmentLabel = (roomNumber: number | string) => {
+  const raw = String(roomNumber ?? '').trim();
+  const normalized = raw.toUpperCase().startsWith('P.') ? raw.slice(2) : raw;
+  return `P.${normalized}`;
+};
 
 interface ResidentDashboardProps {
   onNavigate?: (page: string) => void;
 }
 
 export function ResidentDashboard({ onNavigate }: ResidentDashboardProps = {}) {
-  const [unreadAnnouncements, setUnreadAnnouncements] = useState(getUnreadCount());
-  const [bills, setBills] = useState<Bill[]>(getBills());
+  const [unreadAnnouncements, setUnreadAnnouncements] = useState(0);
+  const [bills, setBills] = useState<Bill[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const unsubscribeAnnouncements = subscribe(() => {
-      setUnreadAnnouncements(getUnreadCount());
-    });
-    
-    const unsubscribeBills = subscribeBills((updatedBills) => {
-      setBills(updatedBills);
-    });
-    
-    return () => {
-      unsubscribeAnnouncements();
-      unsubscribeBills();
+    const load = async () => {
+      setIsLoading(true);
+      setError(null);
+
+      try {
+        const residentId = authProvider.getPersonId();
+        if (!residentId) {
+          throw new Error('Không tìm thấy thông tin cư dân');
+        }
+
+        const unreadCountPromise = (async () => {
+          const res = await fetch(`${API_BASE_URL}/api/announcements/resident/${residentId}`, {
+            method: 'GET',
+            headers: NGROK_HEADERS,
+          });
+
+          const json = (await res.json()) as ApiEnvelope<
+            Array<{ id: string; isRead?: boolean; createdDate?: string; title?: string; message?: string }>
+          >;
+
+          if (!res.ok) {
+            throw new Error(json.message || 'Không thể tải thông báo');
+          }
+
+          const list = Array.isArray(json.data) ? json.data : [];
+          return list.filter((a) => !a.isRead).length;
+        })();
+
+        const billsPromise = (async () => {
+          const residentRes = await fetch(`${API_BASE_URL}/api/v1/residents/${residentId}`, {
+            method: 'GET',
+            headers: NGROK_HEADERS,
+          });
+          const residentJson = (await residentRes.json()) as ApiEnvelope<ResidentDetailApi>;
+
+          if (!residentRes.ok) {
+            throw new Error(residentJson.message || 'Không thể tải thông tin cư dân');
+          }
+
+          const roomNumber = residentJson.data?.roomNumber ?? null;
+          if (!roomNumber) return [] as Bill[];
+          const apartmentLabel = normalizeApartmentLabel(roomNumber);
+
+          const periods = getRecentPeriods(6);
+          const invoicesByPeriod = await Promise.all(
+            periods.map(async ({ month, year }) => {
+              const invRes = await fetch(`${API_BASE_URL}/api/v1/accounting/invoices?month=${month}&year=${year}`, {
+                method: 'GET',
+                headers: NGROK_HEADERS,
+              });
+              const invJson = (await invRes.json()) as ApiEnvelope<InvoiceSummaryApi[]>;
+
+              if (!invRes.ok) {
+                throw new Error(invJson.message || 'Không thể tải hóa đơn');
+              }
+
+              const invoices = Array.isArray(invJson.data) ? invJson.data : [];
+              return { month, year, invoices };
+            })
+          );
+
+          return invoicesByPeriod
+            .flatMap(({ month, year, invoices }) => {
+              const createdAt = new Date(year, month - 1, 1).toISOString();
+              const dueDate = addDaysIso(createdAt, 14);
+              const period = `Tháng ${month}/${year}`;
+
+              return invoices
+                .filter((inv) => !!inv.id && String(inv?.apartmentLabel ?? '').trim() === apartmentLabel)
+                .map((inv) => ({
+                  id: inv.id,
+                  type: 'Hóa đơn tháng',
+                  amount: Number(inv.totalAmount || 0),
+                  dueDate,
+                  status: toBillStatus(inv.status),
+                  period,
+                  createdAt,
+                }));
+            })
+            .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+        })();
+
+        const [unreadCount, billsData] = await Promise.all([unreadCountPromise, billsPromise]);
+        setUnreadAnnouncements(unreadCount);
+        setBills(billsData);
+      } catch (e) {
+        setError((e as Error).message);
+        setUnreadAnnouncements(0);
+        setBills([]);
+      } finally {
+        setIsLoading(false);
+      }
     };
+
+    void load();
   }, []);
 
   const unpaidBills = bills.filter(b => b.status !== 'Paid');
   const totalUnpaid = unpaidBills.reduce((sum, b) => sum + b.amount, 0);
   const recentBills = bills.slice(0, 6);
 
-  // Dummy data for cost chart (6 months: June - December 2025)
-  const costChartData = [
-    { month: 'Tháng 6', electricity: 850000, water: 320000 },
-    { month: 'Tháng 7', electricity: 920000, water: 350000 },
-    { month: 'Tháng 8', electricity: 1100000, water: 380000 },
-    { month: 'Tháng 9', electricity: 980000, water: 340000 },
-    { month: 'Tháng 10', electricity: 1050000, water: 360000 },
-    { month: 'Tháng 11', electricity: 1150000, water: 390000 },
-  ];
+  const costChartData = useMemo(() => {
+    const months = Array.from({ length: 6 }, (_, idx) => {
+      const d = new Date();
+      d.setDate(1);
+      d.setHours(0, 0, 0, 0);
+      d.setMonth(d.getMonth() - (5 - idx));
+      const key = `${d.getFullYear()}-${pad2(d.getMonth() + 1)}`;
+      return { key, month: `Tháng ${d.getMonth() + 1}`, paid: 0, unpaid: 0 };
+    });
+
+    const byKey = new Map(months.map((m) => [m.key, m]));
+    for (const bill of bills) {
+      const key = toMonthKey(bill.createdAt);
+      if (!key) continue;
+      const bucket = byKey.get(key);
+      if (!bucket) continue;
+      if (bill.status === 'Paid') bucket.paid += bill.amount;
+      else bucket.unpaid += bill.amount;
+    }
+
+    return months;
+  }, [bills]);
 
   // Custom tooltip for cost chart
   const CostTooltip = ({ active, payload }: any) => {
@@ -64,6 +226,18 @@ export function ResidentDashboard({ onNavigate }: ResidentDashboardProps = {}) {
       <div>
         <h1 className="text-3xl text-gray-900">Quản lý căn hộ</h1>
       </div>
+
+      {error && (
+        <div className="bg-white rounded-2xl p-4 border-2 border-red-200 text-red-700">
+          {error}
+        </div>
+      )}
+
+      {isLoading && (
+        <div className="bg-white rounded-2xl p-4 border-2 border-gray-200 text-gray-600">
+          Đang tải dữ liệu...
+        </div>
+      )}
 
       {/* Stats Grid - KhaService Style Sync */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
@@ -97,6 +271,7 @@ export function ResidentDashboard({ onNavigate }: ResidentDashboardProps = {}) {
         {/* Card 4: Nội quy chung cư - Orange */}
         <Link
           to="/resident/rules"
+          onClick={() => onNavigate?.('resident-rules')}
           className="p-6 rounded-xl h-32 flex justify-between items-center text-white shadow-sm cursor-pointer no-underline"
           style={{ backgroundColor: '#ea580c' }}
         >
@@ -113,7 +288,7 @@ export function ResidentDashboard({ onNavigate }: ResidentDashboardProps = {}) {
         {/* Left Section: Cost Chart (2/3 width) */}
         <div className="lg:col-span-2 bg-white rounded-2xl shadow-sm p-6">
           <div className="flex items-center justify-between mb-6">
-            <h3 className="text-lg font-bold text-gray-900">Biểu đồ chi phí</h3>
+            <h3 className="text-lg font-bold text-gray-900">Biểu đồ hóa đơn</h3>
             <div className="text-sm text-gray-500 bg-gray-50 px-3 py-1 rounded-full">
               6 tháng gần nhất
             </div>
@@ -145,22 +320,22 @@ export function ResidentDashboard({ onNavigate }: ResidentDashboardProps = {}) {
                   wrapperStyle={{ paddingTop: 10 }} 
                   iconType="circle"
                   formatter={(value) => {
-                    if (value === 'electricity') return 'Điện';
-                    if (value === 'water') return 'Nước';
+                    if (value === 'paid') return 'Đã thanh toán';
+                    if (value === 'unpaid') return 'Chưa thanh toán';
                     return value;
                   }}
                 />
                 <Bar 
-                  dataKey="electricity" 
-                  name="Điện" 
-                  fill="#2563eb" 
+                  dataKey="unpaid" 
+                  name="Chưa thanh toán" 
+                  fill="#f97316" 
                   barSize={40} 
                   radius={[4, 4, 0, 0]} 
                 />
                 <Bar 
-                  dataKey="water" 
-                  name="Nước" 
-                  fill="#06b6d4" 
+                  dataKey="paid" 
+                  name="Đã thanh toán" 
+                  fill="#10b981" 
                   barSize={40} 
                   radius={[4, 4, 0, 0]} 
                 />
@@ -175,6 +350,7 @@ export function ResidentDashboard({ onNavigate }: ResidentDashboardProps = {}) {
             <h3 className="text-lg font-bold text-gray-900">Hóa đơn gần đây</h3>
             <Link 
               to="/resident/invoice"
+              onClick={() => onNavigate?.('resident-invoice')}
               className="text-sm text-cyan-500 hover:text-cyan-600 transition-colors"
             >
               Xem tất cả
@@ -204,7 +380,7 @@ export function ResidentDashboard({ onNavigate }: ResidentDashboardProps = {}) {
                   </div>
                   <div className="flex items-center justify-between mt-3">
                     <span className="text-lg font-bold text-gray-900">{bill.amount.toLocaleString('vi-VN')} đ</span>
-                    <span className="text-xs text-gray-500">Hạn: {bill.dueDate}</span>
+                    <span className="text-xs text-gray-500">Ngày tạo: {bill.createdAt ? toYmd(new Date(bill.createdAt)) : bill.dueDate}</span>
                   </div>
                 </div>
               );
@@ -215,4 +391,3 @@ export function ResidentDashboard({ onNavigate }: ResidentDashboardProps = {}) {
     </div>
   );
 }
-
