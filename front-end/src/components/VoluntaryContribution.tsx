@@ -1,4 +1,4 @@
-import { Heart, Plus, Download, ExternalLink, Trash2, Loader2, Pencil } from 'lucide-react';
+import { Heart, Plus, Download, ExternalLink, Trash2, Loader2, Pencil, Calendar, Clock, Info, Users } from 'lucide-react';
 import { Modal } from './Modal';
 import { Toaster, toast } from 'sonner';
 import { useMemo, useState, useEffect, useCallback } from 'react';
@@ -180,7 +180,6 @@ export function VoluntaryContribution() {
                 method: 'GET',
                 headers: {
                   'Content-Type': 'application/json',
-                  // 2. Thêm header để ngrok không chặn dữ liệu trả về
                   'ngrok-skip-browser-warning': 'true'
                 }
               });
@@ -349,7 +348,6 @@ export function VoluntaryContribution() {
                 method: 'DELETE',
                 headers: {
                   'Content-Type': 'application/json',
-                  // 2. Thêm header để ngrok không chặn dữ liệu trả về
                   'ngrok-skip-browser-warning': 'true'
                 }
               });
@@ -397,7 +395,7 @@ export function VoluntaryContribution() {
         const action = async () => {
             const response = await fetch('https://untoasted-jean-unsympathisingly.ngrok-free.dev/api/v1/campaigns/contributions', {
                 method: 'POST',
-                headers: { 'ngrok-skip-browser-warning': 'true' },
+                headers: { 'Content-Type': 'application/json','ngrok-skip-browser-warning': 'true' },
                 body: JSON.stringify({
                     campaignId: selectedCampaignId,
                     contributorName: name,
@@ -467,7 +465,13 @@ export function VoluntaryContribution() {
                     <div className="col-span-full text-center py-12 text-gray-500">
                         Không có campaign nào
                     </div>
-                ) : campaigns.map((cp) => {
+                ) : campaigns
+                // Sắp xếp theo ngày bắt đầu (startDate) từ mới nhất đến cũ nhất
+                .sort((a, b) => {
+                    const dateA = a.startDate ? new Date(a.startDate).getTime() : 0;
+                    const dateB = b.startDate ? new Date(b.startDate).getTime() : 0;
+                    return dateB - dateA; // Đổi thành dateA - dateB nếu chú muốn ngày cũ hiện trước
+                }).map((cp) => {
                     const total = parseMoney(cp.totalCollected);
                     const goal = parseMoney(cp.goalAmount);
                     const percent = goal > 0 ? Math.round((total / goal) * 100) : 0;
@@ -500,23 +504,70 @@ export function VoluntaryContribution() {
                             <h3 className="font-bold text-xl text-slate-800 mb-6 leading-tight h-12 line-clamp-2">
                                 {String(cp.title ?? '')}
                             </h3>
-
+                            {/* THÊM MỚI: Ngày bắt đầu & Ngày kết thúc */}
+                            <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#64748b' }}>
+                                    <Calendar size={12} style={{ color: '#94a3b8' }} />
+                                    <span style={{ fontSize: '11px', fontWeight: 500, whiteSpace: 'nowrap' }}>
+                                        Bắt đầu: {cp.startDate || 'N/A'}
+                                    </span>
+                                </div>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#64748b' }}>
+                                    <Clock size={12} style={{ color: '#94a3b8' }} />
+                                    <span style={{ fontSize: '11px', fontWeight: 500, whiteSpace: 'nowrap' }}>
+                                        Kết thúc: {cp.campaignEndDate || 'N/A'}
+                                    </span>
+                                </div>
+                            </div>
                             {/* CỤM PROGRESS BAR NÂNG CẤP */}
                             <div className="space-y-3 mb-6">
-                                <div className="flex justify-between items-end">
-                                    <div className="flex flex-col">
-                                        <span className="text-[10px] font-bold text-gray-400 uppercase">Đã huy động</span>
-                                        <span className={`text-lg font-black ${isSuccess ? 'text-emerald-600' : 'text-rose-600'}`}>
-                                            {formatCurrency(total)}
-                                        </span>
+                                <div style={{ marginTop: '12px', marginBottom: '24px' }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '8px' }}>
+                                        <div style={{ display: 'flex', flexDirection: 'column' }}>
+                                            <span style={{ fontSize: '10px', fontWeight: 'bold', color: '#94a3b8', textTransform: 'uppercase' }}>Đã huy động</span>
+                                            <span style={{ fontSize: '18px', fontWeight: 900, color: isSuccess ? '#059669' : '#e11d48' }}>
+                                                {formatCurrency(total)}
+                                            </span>
+                                        </div>
+                                        <div style={{ textAlign: 'right' }}>
+                                            <span style={{ fontSize: '24px', fontWeight: 900, color: isSuccess ? '#10b981' : '#334155' }}>
+                                                {percent}%
+                                            </span>
+                                        </div>
                                     </div>
-                                    <div className="text-right">
-                                        <span className={`text-2xl font-black ${isSuccess ? 'text-emerald-500' : 'text-slate-700'}`}>
-                                            {percent}%
+
+                                {/* THANH CHẠY (PROGRESS BAR) - ÉP HIỂN THỊ BẰNG INLINE CSS */}
+                                    <div style={{ 
+                                        width: '100%', 
+                                        height: '12px', 
+                                        backgroundColor: '#f1f5f9', 
+                                        borderRadius: '999px', 
+                                        padding: '2px', 
+                                        position: 'relative',
+                                        display: 'block',
+                                        overflow: 'hidden'
+                                    }}>
+                                        <div 
+                                            style={{ 
+                                                height: '100%', 
+                                                borderRadius: '999px', 
+                                                backgroundColor: isSuccess ? '#10b981' : '#f43f5e',
+                                                width: `${Math.min(percent, 100)}%`, // Ép width theo % thực tế
+                                                transition: 'width 1s ease-out',
+                                                boxShadow: isSuccess ? '0 0 8px rgba(16, 185, 129, 0.4)' : 'none'
+                                            }}
+                                        ></div>
+                                    </div>
+                                    
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '8px' }}>
+                                        <span style={{ fontSize: '10px', fontWeight: 'bold', color: '#94a3b8', textTransform: 'uppercase' }}>
+                                            Mục tiêu: {formatCurrency(goal)}
+                                        </span>
+                                        <span style={{ fontSize: '10px', fontWeight: 'bold', color: '#94a3b8', textTransform: 'uppercase' }}>
+                                            {cp.totalContributors ?? 0} người
                                         </span>
                                     </div>
                                 </div>
-
                                 {/* Thanh chạy (Thứ chú cần đây) */}
                                 <div className="w-full h-3 bg-slate-100 rounded-full overflow-hidden p-[2px]">
                                     <div 
@@ -680,99 +731,187 @@ export function VoluntaryContribution() {
                 </div>
             </Modal>
 
-            <Modal isOpen={isDetailModalOpen} onClose={() => setIsDetailModalOpen(false)} title="Chi tiết campaign">
-                <div className="p-6 space-y-5">
-                    {isDetailLoading ? (
-                        <div className="flex items-center justify-center py-10 text-gray-500">
-                            <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                            Đang tải chi tiết...
-                        </div>
-                    ) : (
-                        <>
-                            <div className="space-y-1">
-                                <div className="text-xl font-bold text-gray-900">{String(campaignDetail?.campaign?.title ?? '')}</div>
-                                <div className="text-sm text-gray-600">{String(campaignDetail?.campaign?.description ?? '')}</div>
-                                <div className="mt-3 grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
-                                    <div className="p-3 rounded-xl bg-gray-50 border border-gray-100">
-                                        <div className="text-xs font-bold text-gray-400 uppercase">Đã huy động</div>
-                                        <div className="font-black text-rose-600">{formatCurrency(campaignDetail?.campaign?.totalCollected)}</div>
-                                    </div>
-                                    <div className="p-3 rounded-xl bg-gray-50 border border-gray-100">
-                                        <div className="text-xs font-bold text-gray-400 uppercase">Mục tiêu</div>
-                                        <div className="font-black text-gray-800">{formatCurrency(campaignDetail?.campaign?.goalAmount)}</div>
-                                    </div>
-                                    <div className="p-3 rounded-xl bg-gray-50 border border-gray-100">
-                                        <div className="text-xs font-bold text-gray-400 uppercase">Số người</div>
-                                        <div className="font-black text-gray-800">{campaignDetail?.campaign?.totalContributors ?? 0}</div>
-                                    </div>
-                                </div>
-                                <div className="mt-3 text-xs text-gray-500">
-                                    Bắt đầu: {normalizeLocalDate(campaignDetail?.campaign?.startDate) || 'N/A'} · Hạn nhận: {normalizeLocalDate(campaignDetail?.campaign?.contributionDeadline) || 'N/A'} · Kết thúc: {normalizeLocalDate(campaignDetail?.campaign?.campaignEndDate) || 'N/A'}
+            <Modal 
+                isOpen={isDetailModalOpen} 
+                onClose={() => setIsDetailModalOpen(false)} 
+                title="Thông tin chi tiết chiến dịch" 
+                width="900px"
+            >
+                {isDetailLoading ? (
+                    <div className="flex items-center justify-center py-20 text-gray-500">
+                        <Loader2 className="w-8 h-8 mr-2 animate-spin text-rose-600" />
+                        <span className="font-bold">Đang tải chi tiết chiến dịch...</span>
+                    </div>
+                ) : (
+                    <div className="p-8 space-y-8 max-h-[85vh] overflow-y-auto">
+                        {/* Phần Header & Thông tin cơ bản */}
+                        <div className="p-6 bg-slate-50 rounded-[32px] border border-slate-100 relative overflow-hidden">
+                            <div className="absolute top-4 right-4 flex gap-2">
+                                <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase ${campaignDetail?.campaign?.isPublic ? 'bg-blue-100 text-blue-600' : 'bg-slate-200 text-slate-500'}`}>
+                                    {campaignDetail?.campaign?.isPublic ? '🌐 Công khai' : '🔒 Nội bộ'}
+                                </span>
+                                <span className="px-3 py-1 rounded-full text-[10px] font-black uppercase bg-emerald-100 text-emerald-600">
+                                    {String(campaignDetail?.campaign?.status ?? 'ĐANG CHẠY')}
+                                </span>
+                            </div>
+
+                            <div className="space-y-3">
+                                <h2 className="text-3xl font-black text-slate-800 pr-20">
+                                    {String(campaignDetail?.campaign?.title ?? '')}
+                                </h2>
+                                <div className="flex items-start gap-2 text-slate-500 max-w-2xl">
+                                    <Info size={18} className="mt-0.5 flex-shrink-0 text-slate-400" />
+                                    <p className="text-sm italic">
+                                        {campaignDetail?.campaign?.description || 'Không có mô tả chi tiết cho chiến dịch này.'}
+                                    </p>
                                 </div>
                             </div>
 
-                            <div className="flex flex-col md:flex-row gap-3">
-                                <button
-                                    onClick={() => selectedCampaignId && openAddContribution(selectedCampaignId)}
-                                    disabled={isCreateSubmitting || isEditSubmitting || isDeleteSubmitting || isAddContributionSubmitting}
-                                    className="flex-1 py-3 rounded-xl bg-emerald-600 text-white font-bold hover:bg-emerald-700 transition-all disabled:opacity-60 disabled:cursor-not-allowed"
-                                >
-                                    + Ghi nhận đóng góp
-                                </button>
+                            {/* Grid thông số tiền bạc */}
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-8 pt-6 border-t border-slate-200/50">
+                                <div>
+                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Đã thu được</p>
+                                    <p className="text-lg font-black text-rose-600">{formatCurrency(campaignDetail?.campaign?.totalCollected)}</p>
+                                </div>
+                                <div>
+                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Mục tiêu</p>
+                                    <p className="text-lg font-black text-slate-700">{formatCurrency(campaignDetail?.campaign?.goalAmount)}</p>
+                                </div>
+                                <div>
+                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Người đóng góp</p>
+                                    <div className="flex items-center gap-2">
+                                        <Users size={16} className="text-slate-400" />
+                                        <p className="text-lg font-black text-slate-700">{campaignDetail?.campaign?.totalContributors ?? 0}</p>
+                                    </div>
+                                </div>
+                                <div>
+                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Tỷ lệ</p>
+                                    <p className="text-lg font-black text-emerald-600">
+                                        {campaignDetail?.campaign?.goalAmount > 0 
+                                            ? Math.round((campaignDetail.campaign.totalCollected / campaignDetail.campaign.goalAmount) * 100) 
+                                            : 0}%
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Các mốc thời gian */}
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div className="p-4 bg-white border border-slate-100 rounded-2xl flex items-center gap-4 shadow-sm">
+                                <div className="p-3 bg-blue-50 text-blue-600 rounded-xl"><Calendar size={20} /></div>
+                                <div>
+                                    <p className="text-[10px] font-bold text-slate-400 uppercase">Bắt đầu</p>
+                                    <p className="text-sm font-bold text-slate-700">{normalizeLocalDate(campaignDetail?.campaign?.startDate)}</p>
+                                </div>
+                            </div>
+                            <div className="p-4 bg-white border border-slate-100 rounded-2xl flex items-center gap-4 shadow-sm">
+                                <div className="p-3 bg-slate-50 text-slate-600 rounded-xl"><Calendar size={20} /></div>
+                                <div>
+                                    <p className="text-[10px] font-bold text-slate-400 uppercase">Kết thúc</p>
+                                    <p className="text-sm font-bold text-slate-700">{normalizeLocalDate(campaignDetail?.campaign?.campaignEndDate)}</p>
+                                </div>
+                            </div>
+                            <div className="p-4 bg-amber-50 border border-amber-100 rounded-2xl flex items-center gap-4 shadow-sm">
+                                <div className="p-3 bg-amber-100 text-amber-600 rounded-xl"><Clock size={20} /></div>
+                                <div>
+                                    <p className="text-[10px] font-bold text-amber-500 uppercase">Hạn chót</p>
+                                    <p className="text-sm font-black text-amber-700">{normalizeLocalDate(campaignDetail?.campaign?.contributionDeadline)}</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Nút hành động (Lấy từ Modal 1) */}
+                        <div className="flex flex-col md:flex-row gap-4">
+                            <button
+                                onClick={() => selectedCampaignId && openAddContribution(selectedCampaignId)}
+                                disabled={isCreateSubmitting || isEditSubmitting || isDeleteSubmitting || isAddContributionSubmitting}
+                                className="flex-1 py-4 rounded-2xl bg-emerald-600 text-black font-black shadow-lg shadow-emerald-200 hover:bg-emerald-700 transition-all disabled:opacity-60"
+                            >
+                                + GHI NHẬN ĐÓNG GÓP
+                            </button>
+                           
+                        </div>
+
+                        {/* Danh sách đóng góp (Bảng đẹp Modal 2) */}
+                        <div className="bg-white border border-slate-100 rounded-[24px] overflow-hidden shadow-sm min-h-[250px]">
+                            <div className="px-6 py-4 bg-slate-50 border-b border-slate-100 flex justify-between items-center">
+                                <h3 className="text-sm font-black text-slate-700 uppercase tracking-wider">
+                                    Danh sách đóng góp ({Array.isArray(campaignDetail?.contributions) ? campaignDetail.contributions.length : 0})
+                                </h3>
+                            </div>
+                            <div className="max-h-[350px] overflow-y-auto">
+                                <table className="w-full text-left border-collapse">
+                                    <thead className="sticky top-0 bg-slate-50 z-10">
+                                        <tr>
+                                            <th className="p-4 text-[10px] font-black text-slate-400 uppercase">Người đóng</th>
+                                            <th className="p-4 text-[10px] font-black text-slate-400 uppercase">Thông tin</th>
+                                            <th className="p-4 text-[10px] font-black text-slate-400 uppercase text-right">Số tiền</th>
+                                            <th className="p-4 text-[10px] font-black text-slate-400 uppercase text-right">Thời gian</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-slate-50">
+                                        {(Array.isArray(campaignDetail?.contributions) ? campaignDetail.contributions : []).map((item) => (
+                                            <tr key={item.id} className="hover:bg-slate-50/50 transition-colors">
+                                                <td className="p-4">
+                                                    <div className="flex items-center gap-3">
+                                                        <div className="w-8 h-8 rounded-full bg-rose-100 flex items-center justify-center text-rose-600 font-bold text-xs uppercase">
+                                                            {String(item.contributorName ?? '?').charAt(0)}
+                                                        </div>
+                                                        <span className="font-bold text-slate-700 text-sm">{item.contributorName}</span>
+                                                    </div>
+                                                </td>
+                                                <td className="p-4 text-xs italic text-slate-500">
+                                                    {item.address} {item.phone && `(${item.phone})`}
+                                                </td>
+                                                <td className="p-4 text-right font-black text-emerald-600">
+                                                    +{formatCurrency(item.amount)}
+                                                </td>
+                                                <td className="p-4 text-right text-xs font-bold text-slate-400">
+                                                    {normalizeLocalDate(item.contributionDate)}
+                                                </td>
+                                            </tr>
+                                        ))}
+                                        {(!campaignDetail?.contributions || campaignDetail.contributions.length === 0) && (
+                                            <tr>
+                                                <td colSpan={4} className="p-12 text-center text-slate-400 italic text-sm">
+                                                    Chưa có đóng góp nào cho chiến dịch này.
+                                                </td>
+                                            </tr>
+                                        )}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <div className="pt-2 space-y-3">
+                            {/* Hàng 1: Hai nút nằm ngang */}
+                            <div className="flex flex-row gap-3">
                                 <button
                                     onClick={() => campaignDetail?.campaign && openEdit(campaignDetail.campaign)}
                                     disabled={isCreateSubmitting || isEditSubmitting || isDeleteSubmitting || isAddContributionSubmitting}
-                                    className="flex-1 py-3 rounded-xl bg-slate-100 text-slate-700 font-bold hover:bg-slate-200 transition-all disabled:opacity-60 disabled:cursor-not-allowed"
+                                    className="flex-1 py-4 rounded-2xl bg-slate-100 text-slate-700 font-bold hover:bg-slate-200 transition-all disabled:opacity-60"
                                 >
-                                    Sửa campaign
+                                    SỬA CHIẾN DỊCH
                                 </button>
                                 <button
                                     onClick={() => selectedCampaignId && openDeleteConfirm(selectedCampaignId)}
                                     disabled={isCreateSubmitting || isEditSubmitting || isDeleteSubmitting || isAddContributionSubmitting}
-                                    className="flex-1 py-3 rounded-xl bg-rose-50 text-rose-600 font-bold hover:bg-rose-100 transition-all disabled:opacity-60 disabled:cursor-not-allowed"
+                                    className="flex-1 py-4 rounded-2xl bg-rose-50 text-rose-600 font-bold hover:bg-rose-100 transition-all disabled:opacity-60"
                                 >
-                                    Xóa campaign
+                                    XÓA CHIẾN DỊCH
                                 </button>
                             </div>
 
-                            <div className="border border-gray-100 rounded-2xl overflow-hidden">
-                                <div className="px-4 py-3 bg-gray-50 text-sm font-bold text-gray-700">
-                                    Danh sách đóng góp ({Array.isArray(campaignDetail?.contributions) ? campaignDetail!.contributions!.length : 0})
-                                </div>
-                                <div className="max-h-[320px] overflow-auto">
-                                    <table className="w-full text-sm">
-                                        <thead className="sticky top-0 bg-white">
-                                            <tr className="border-b border-gray-100">
-                                                <th className="text-left px-4 py-3 text-xs font-bold text-gray-500">Người đóng góp</th>
-                                                <th className="text-right px-4 py-3 text-xs font-bold text-gray-500">Số tiền</th>
-                                                <th className="text-right px-4 py-3 text-xs font-bold text-gray-500">Ngày</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody className="divide-y divide-gray-100">
-                                            {(Array.isArray(campaignDetail?.contributions) ? campaignDetail!.contributions! : []).map((c) => (
-                                                <tr key={c.id} className="hover:bg-gray-50">
-                                                    <td className="px-4 py-3">
-                                                        <div className="font-semibold text-gray-800">{String(c.contributorName ?? '')}</div>
-                                                        <div className="text-xs text-gray-500">{[c.phone, c.address].filter(Boolean).join(' · ')}</div>
-                                                    </td>
-                                                    <td className="px-4 py-3 text-right font-black text-rose-600">{formatCurrency(c.amount)}</td>
-                                                    <td className="px-4 py-3 text-right text-gray-600">{normalizeLocalDate(c.contributionDate) || 'N/A'}</td>
-                                                </tr>
-                                            ))}
-                                            {(Array.isArray(campaignDetail?.contributions) ? campaignDetail!.contributions! : []).length === 0 ? (
-                                                <tr>
-                                                    <td colSpan={3} className="px-4 py-8 text-center text-gray-500">
-                                                        Chưa có đóng góp nào
-                                                    </td>
-                                                </tr>
-                                            ) : null}
-                                        </tbody>
-                                    </table>
-                                </div>
-                            </div>
-                        </>
-                    )}
-                </div>
+                            {/* Hàng 2: Nút đóng nằm dưới */}
+                            <button 
+                                onClick={() => setIsDetailModalOpen(false)} 
+                                className="w-full py-4 bg-slate-800 text-black font-bold rounded-2xl hover:bg-slate-900 transition-all shadow-lg shadow-slate-200"
+                            >
+                                ĐÓNG CỬA SỔ
+                            </button>
+                        </div>
+                    </div>
+                )}
             </Modal>
 
             <Modal isOpen={isEditModalOpen} onClose={() => setIsEditModalOpen(false)} title="Sửa campaign">
