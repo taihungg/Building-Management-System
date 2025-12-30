@@ -11,6 +11,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -39,7 +40,6 @@ import itep.software.bluemoon.repository.ServiceTypeRepository;
 import itep.software.bluemoon.repository.UsageRecordRepository;
 import itep.software.bluemoon.repository.VehicleRepository;
 import itep.software.bluemoon.util.VndUtils;
-import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -423,5 +423,13 @@ public class InvoiceService {
         
         // Gọi service có sẵn
         announcementService.createAnnouncement(request);
+    }
+    
+    @Transactional(readOnly = true)
+    public List<InvoiceSummary> getInvoicesByApartmentId(UUID apartmentId) {
+        if (!apartmentRepository.existsById(apartmentId)) {
+            throw new RuntimeException("Apartment not found with ID: " + apartmentId);
+        }
+        return invoiceRepository.findInvoiceSummariesByApartmentId(apartmentId);
     }
 }

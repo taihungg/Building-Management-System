@@ -15,7 +15,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-
+import org.springframework.web.bind.annotation.PathVariable;
 import itep.software.bluemoon.model.DTO.accounting.AccountingDashboardResponseDTO;
 import itep.software.bluemoon.model.DTO.accounting.MonthlyRevenueDTO;
 import itep.software.bluemoon.model.DTO.accounting.RevenueDistributionDTO;
@@ -127,6 +127,17 @@ public class AccountingController {
         return ApiResponse.responseBuilder(
                 HttpStatus.OK,
                 String.format("Confirmed %d invoices and sent notifications successfully!", invoices.size()),
+                invoices
+        );
+    }
+    
+    @GetMapping("/invoices/apartment/{apartmentId}")
+    public ResponseEntity<Object> getInvoicesByApartment(@PathVariable UUID apartmentId) {
+        List<InvoiceSummary> invoices = invoiceService.getInvoicesByApartmentId(apartmentId);
+        
+        return ApiResponse.responseBuilder(
+                HttpStatus.OK,
+                "Invoices retrieved successfully for apartment",
                 invoices
         );
     }

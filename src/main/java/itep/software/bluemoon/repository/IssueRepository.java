@@ -71,4 +71,22 @@ public interface IssueRepository extends JpaRepository<Issue, UUID> {
             WHERE i.id = :id
             """)
     Optional<IssueSummary> findIssueSummaryById(@Param("id") UUID id);
+    
+    
+    @Query("""
+            SELECT i.id as id,
+                   a.roomNumber as roomNumber,
+                   r.fullName as reporterName,
+                   i.title as title,
+                   i.description as description,
+                   i.status as status,
+                   i.type as type,
+                   i.createdDate as createdDate,
+                   i.location as location
+            FROM Issue i
+            JOIN i.apartment a
+            JOIN i.reporter r
+            WHERE r.id = :reporterId
+            """)
+    List<IssueSummary> findIssueSummariesByReporterId(@Param("reporterId") UUID reporterId);
 }
