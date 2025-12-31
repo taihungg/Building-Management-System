@@ -449,10 +449,30 @@ export function DebtManagement() {
   };
 
   // Open Payment Modal
-  const handlePaymentClick = (bill: any) => {
-    setSelectedBill(bill);
+  const handlePaymentClick = async (bill: any) => {
+    // Show modal immediately with existing data or a loading state
+    setSelectedBill({ ...bill, isLoading: true });
     setPaymentAmount('');
     setIsPaymentModalOpen(true);
+
+    try {
+      const url = `https://untoasted-jean-unsympathisingly.ngrok-free.dev/api/v1/accounting/invoices/${bill.id}`;
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: { 'ngrok-skip-browser-warning': 'true' }
+      });
+
+      if (response.ok) {
+        const res = await response.json();
+        const { invoice } = res.data;
+        setSelectedBill({ ...invoice, isLoading: false });
+      } else {
+        setSelectedBill((prev: any) => ({ ...prev, isLoading: false }));
+      }
+    } catch (error) {
+      console.error("Error fetching latest invoice for payment:", error);
+      setSelectedBill((prev: any) => ({ ...prev, isLoading: false }));
+    }
   };
 
   // Confirm Payment
@@ -1271,7 +1291,12 @@ export function DebtManagement() {
         <div className="p-6">
           {selectedBill && (
             <div className="space-y-4">
-              <div className="bg-gray-50 p-4 rounded-lg space-y-2">
+              <div className="bg-gray-50 p-4 rounded-lg space-y-2 relative">
+                {selectedBill.isLoading && (
+                  <div className="absolute inset-0 bg-white/50 backdrop-blur-[1px] flex items-center justify-center rounded-lg z-10">
+                    <Loader2 className="w-6 h-6 animate-spin text-blue-500" />
+                  </div>
+                )}
                 <div className="flex justify-between">
                   <span className="text-gray-600">Căn hộ:</span>
                   <span className="font-semibold text-gray-900">{selectedBill.apartmentLabel}</span>
