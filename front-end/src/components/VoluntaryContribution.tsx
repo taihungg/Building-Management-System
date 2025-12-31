@@ -528,9 +528,7 @@ export function VoluntaryContribution() {
                                     }}>
                                         <Heart size={22} fill={isSuccess ? '#10b981' : 'none'} />
                                     </div>
-                                    <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider ${st.className}`}>
-                                        {st.text}
-                                    </span>
+                                    {/* Status removed */}
                                 </div>
 
                                 <h3 className="font-bold text-xl text-slate-800 mb-6 leading-tight h-12 line-clamp-2">
@@ -779,9 +777,7 @@ export function VoluntaryContribution() {
                                 <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase ${campaignDetail?.campaign?.isPublic ? 'bg-blue-100 text-blue-600' : 'bg-slate-200 text-slate-500'}`}>
                                     {campaignDetail?.campaign?.isPublic ? '🌐 Công khai' : '🔒 Nội bộ'}
                                 </span>
-                                <span className="px-3 py-1 rounded-full text-[10px] font-black uppercase bg-emerald-100 text-emerald-600">
-                                    {String(campaignDetail?.campaign?.status ?? 'ĐANG CHẠY')}
-                                </span>
+                                {/* Status removed */}
                             </div>
 
                             <div className="space-y-3">

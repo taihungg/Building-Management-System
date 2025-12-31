@@ -150,19 +150,26 @@ export function ResidentVoluntaryContribution() {
                                 <div style={{ padding: '12px', backgroundColor: isSuccess ? '#ecfdf5' : '#fff1f2', color: isSuccess ? '#10b981' : '#e11d48', borderRadius: '16px' }}>
                                     <Heart size={22} fill={isSuccess ? '#10b981' : 'none'} />
                                 </div>
-                                <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider ${cp.status === 'ACTIVE' ? 'bg-emerald-100 text-emerald-700' :
-                                    cp.status === 'CLOSED' ? 'bg-slate-200 text-slate-600' :
-                                        cp.status === 'PENDING' ? 'bg-amber-100 text-amber-700' :
-                                            'bg-slate-100 text-slate-600'
-                                    }`}>
-                                    {cp.status === 'ACTIVE' ? 'Đang kêu gọi' :
-                                        cp.status === 'CLOSED' ? 'Đã kết thúc' :
-                                            cp.status === 'PENDING' ? 'Chờ kết thúc' :
-                                                'Bản nháp'}
-                                </span>
+                                {/* Status removed */}
                             </div>
 
                             <h3 className="font-bold text-xl text-slate-800 mb-6 leading-tight h-12 line-clamp-2">{cp.title}</h3>
+
+                            {/* THÊM MỚI: Ngày bắt đầu & Ngày kết thúc */}
+                            <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#64748b' }}>
+                                    <Calendar size={12} style={{ color: '#94a3b8' }} />
+                                    <span style={{ fontSize: '11px', fontWeight: 500, whiteSpace: 'nowrap' }}>
+                                        Bắt đầu: {cp.startDate || 'N/A'}
+                                    </span>
+                                </div>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#64748b' }}>
+                                    <Clock size={12} style={{ color: '#94a3b8' }} />
+                                    <span style={{ fontSize: '11px', fontWeight: 500, whiteSpace: 'nowrap' }}>
+                                        Kết thúc: {cp.campaignEndDate || 'N/A'}
+                                    </span>
+                                </div>
+                            </div>
 
                             <div className="space-y-3 mb-6">
                                 <div className="flex justify-between items-end">
@@ -218,19 +225,7 @@ export function ResidentVoluntaryContribution() {
                                     <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Người đóng góp</p>
                                     <div className="flex items-center gap-2"><Users size={16} className="text-slate-400" /><p className="text-lg font-black text-slate-700">{selectedCampaign.totalContributors}</p></div>
                                 </div>
-                                <div>
-                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Trạng thái</p>
-                                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider ${selectedCampaign.status === 'ACTIVE' ? 'bg-emerald-100 text-emerald-700' :
-                                            selectedCampaign.status === 'CLOSED' ? 'bg-slate-200 text-slate-600' :
-                                                selectedCampaign.status === 'PENDING' ? 'bg-amber-100 text-amber-700' :
-                                                    'bg-slate-100 text-slate-600'
-                                        }`}>
-                                        {selectedCampaign.status === 'ACTIVE' ? 'Đang kêu gọi' :
-                                            selectedCampaign.status === 'CLOSED' ? 'Đã kết thúc' :
-                                                selectedCampaign.status === 'PENDING' ? 'Chờ kết thúc' :
-                                                    'Bản nháp'}
-                                    </span>
-                                </div>
+                                {/* Status removed */}
                             </div>
                         </div>
 

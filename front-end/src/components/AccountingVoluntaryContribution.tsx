@@ -508,9 +508,7 @@ export function AccountingVoluntaryContribution() {
                                     }}>
                                         <Heart size={22} fill={isSuccess ? '#10b981' : 'none'} />
                                     </div>
-                                    <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider ${st.className}`}>
-                                        {st.text}
-                                    </span>
+                                    {/* Status removed */}
                                 </div>
 
                                 <h3 className="font-bold text-xl text-slate-800 mb-6 leading-tight h-12 line-clamp-2">
@@ -594,23 +592,24 @@ export function AccountingVoluntaryContribution() {
 
                                 </div>
 
-                                {cp.status === 'ACTIVE' && (
+                                <div className="flex flex-wrap gap-3">
                                     <button
-                                        onClick={() => openAddContribution(String(cp.id))}
+                                        onClick={() => handleExportExcel(String(cp.id), String(cp.title ?? ''))}
                                         disabled={isBusy}
-                                        className="flex-1 min-w-[200px] flex items-center justify-center gap-2 py-2.5 bg-emerald-50 text-emerald-700 rounded-xl text-xs font-bold hover:bg-emerald-100 transition-all disabled:opacity-60 disabled:cursor-not-allowed"
+                                        className="flex-1 min-w-[140px] flex items-center justify-center gap-2 py-3 bg-slate-50 text-slate-600 rounded-xl text-xs font-bold hover:bg-slate-100 transition-all border border-slate-100 disabled:opacity-60 disabled:cursor-not-allowed"
                                     >
-                                        + Ghi nhận đóng góp
+                                        <Download size={14} /> Danh sách
                                     </button>
-                                )}
-                                <button
-                                    onClick={() => openEdit(cp)}
-                                    disabled={isBusy}
-                                    className="h-10 w-10 flex items-center justify-center bg-slate-50 text-slate-600 rounded-xl hover:bg-slate-100 transition-all disabled:opacity-60 disabled:cursor-not-allowed"
-                                    title="Sửa campaign"
-                                >
-                                    <Pencil size={14} />
-                                </button>
+                                    <button
+                                        onClick={() => openDetail(String(cp.id))}
+                                        disabled={isBusy}
+                                        className="flex-1 min-w-[140px] flex items-center justify-center gap-2 py-3 bg-rose-50 text-rose-600 rounded-xl text-xs font-bold hover:bg-rose-100 transition-all disabled:opacity-60 disabled:cursor-not-allowed"
+                                    >
+                                        <ExternalLink size={14} /> Chi tiết
+                                    </button>
+                                </div>
+
+
 
 
                             </div>
@@ -735,9 +734,7 @@ export function AccountingVoluntaryContribution() {
                                 <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase ${campaignDetail?.campaign?.isPublic ? 'bg-blue-100 text-blue-600' : 'bg-slate-200 text-slate-500'}`}>
                                     {campaignDetail?.campaign?.isPublic ? '🌐 Công khai' : '🔒 Nội bộ'}
                                 </span>
-                                <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase ${statusLabel(campaignDetail?.campaign?.status).className}`}>
-                                    {statusLabel(campaignDetail?.campaign?.status).text}
-                                </span>
+                                {/* Status removed */}
                             </div>
 
                             <div className="space-y-3">
@@ -805,17 +802,6 @@ export function AccountingVoluntaryContribution() {
                             </div>
                         </div>
 
-                        {campaignDetail?.campaign?.status === 'ACTIVE' && (
-                            <div className="flex flex-col md:flex-row gap-4 mb-4">
-                                <button
-                                    onClick={() => selectedCampaignId && openAddContribution(selectedCampaignId)}
-                                    disabled={isCreateSubmitting || isEditSubmitting || isDeleteSubmitting || isAddContributionSubmitting}
-                                    className="flex-1 py-4 rounded-2xl bg-emerald-600 text-black font-black shadow-lg shadow-emerald-200 hover:bg-emerald-700 transition-all disabled:opacity-60"
-                                >
-                                    + GHI NHẬN ĐÓNG GÓP
-                                </button>
-                            </div>
-                        )}
 
                         {/* Danh sách đóng góp (Bảng đẹp Modal 2) */}
                         <div className="bg-white border border-slate-100 rounded-[24px] overflow-hidden shadow-sm min-h-[250px]">
@@ -869,9 +855,23 @@ export function AccountingVoluntaryContribution() {
                         </div>
 
                         <div className="pt-2 space-y-3">
+                            <div className="flex flex-row gap-3">
+                                <button
+                                    onClick={() => campaignDetail?.campaign && openEdit(campaignDetail.campaign)}
+                                    disabled={isCreateSubmitting || isEditSubmitting || isDeleteSubmitting || isAddContributionSubmitting}
+                                    className="flex-1 py-4 rounded-2xl bg-slate-100 text-slate-700 font-bold hover:bg-slate-200 transition-all disabled:opacity-60"
+                                >
+                                    SỬA CHIẾN DỊCH
+                                </button>
+                                <button
+                                    onClick={() => selectedCampaignId && openDeleteConfirm(selectedCampaignId)}
+                                    disabled={isCreateSubmitting || isEditSubmitting || isDeleteSubmitting || isAddContributionSubmitting}
+                                    className="flex-1 py-4 rounded-2xl bg-rose-50 text-rose-600 font-bold hover:bg-rose-100 transition-all disabled:opacity-60"
+                                >
+                                    XÓA CHIẾN DỊCH
+                                </button>
+                            </div>
 
-
-                            {/* Hàng 2: Nút đóng nằm dưới */}
                             <button
                                 onClick={() => setIsDetailModalOpen(false)}
                                 className="w-full py-4 bg-slate-800 text-black font-bold rounded-2xl hover:bg-slate-900 transition-all shadow-lg shadow-slate-200"
