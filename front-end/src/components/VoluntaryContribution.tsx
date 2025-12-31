@@ -117,7 +117,7 @@ export function VoluntaryContribution() {
     const statusLabel = (status: any) => {
         switch (status) {
             case 'DRAFT':
-                return { text: 'Nháp', className: 'bg-slate-100 text-slate-600' };
+                return { text: 'Bản nháp', className: 'bg-slate-100 text-slate-600' };
             case 'ACTIVE':
                 return { text: 'Đang kêu gọi', className: 'bg-emerald-100 text-emerald-700' };
             case 'PENDING':
@@ -631,7 +631,7 @@ export function VoluntaryContribution() {
                                 </div>
 
                                 <div className="mt-4 flex flex-wrap gap-2">
-                                    {cp.status !== 'DRAFT' && (
+                                    {cp.status === 'ACTIVE' && (
                                         <button
                                             onClick={() => openAddContribution(String(cp.id))}
                                             disabled={isBusy}
@@ -849,7 +849,7 @@ export function VoluntaryContribution() {
                             </div>
                         </div>
 
-                        {campaignDetail?.campaign?.status !== 'DRAFT' && (
+                        {campaignDetail?.campaign?.status === 'ACTIVE' && (
                             <div className="flex flex-col md:flex-row gap-4">
                                 <button
                                     onClick={() => selectedCampaignId && openAddContribution(selectedCampaignId)}

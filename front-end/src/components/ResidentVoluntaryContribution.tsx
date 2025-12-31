@@ -13,7 +13,7 @@ interface Campaign {
     totalContributors: number;
     description: string;
     startDate: string;
-    campaignEndDate: string;      
+    campaignEndDate: string;
     contributionDeadline: string;
     isPublic: boolean;
 }
@@ -74,7 +74,7 @@ export function ResidentVoluntaryContribution() {
                 headers: NGROK_HEADERS
             });
             const result = await response.json();
-            
+
             if (response.ok || result.statusCode === 200) {
                 // Giữ nguyên logic map dữ liệu của chú
                 setSelectedCampaign(result.data.campaign || result.data);
@@ -150,13 +150,20 @@ export function ResidentVoluntaryContribution() {
                                 <div style={{ padding: '12px', backgroundColor: isSuccess ? '#ecfdf5' : '#fff1f2', color: isSuccess ? '#10b981' : '#e11d48', borderRadius: '16px' }}>
                                     <Heart size={22} fill={isSuccess ? '#10b981' : 'none'} />
                                 </div>
-                                <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider ${cp.status === 'ACTIVE' ? 'bg-emerald-100 text-emerald-700' : cp.status === 'CLOSED' ? 'bg-slate-200 text-slate-600' : 'bg-gray-100 text-gray-500'}`}>
-                                    {cp.status === 'ACTIVE' ? 'Đang kêu gọi' : cp.status === 'CLOSED' ? 'Đã kết thúc' : 'Đang chuẩn bị'}
+                                <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider ${cp.status === 'ACTIVE' ? 'bg-emerald-100 text-emerald-700' :
+                                    cp.status === 'CLOSED' ? 'bg-slate-200 text-slate-600' :
+                                        cp.status === 'PENDING' ? 'bg-amber-100 text-amber-700' :
+                                            'bg-slate-100 text-slate-600'
+                                    }`}>
+                                    {cp.status === 'ACTIVE' ? 'Đang kêu gọi' :
+                                        cp.status === 'CLOSED' ? 'Đã kết thúc' :
+                                            cp.status === 'PENDING' ? 'Chờ kết thúc' :
+                                                'Bản nháp'}
                                 </span>
                             </div>
-                            
+
                             <h3 className="font-bold text-xl text-slate-800 mb-6 leading-tight h-12 line-clamp-2">{cp.title}</h3>
-                            
+
                             <div className="space-y-3 mb-6">
                                 <div className="flex justify-between items-end">
                                     <div className="flex flex-col">
@@ -213,7 +220,16 @@ export function ResidentVoluntaryContribution() {
                                 </div>
                                 <div>
                                     <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Trạng thái</p>
-                                    <p className="text-sm font-black text-emerald-600 uppercase">{selectedCampaign.status}</p>
+                                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider ${selectedCampaign.status === 'ACTIVE' ? 'bg-emerald-100 text-emerald-700' :
+                                            selectedCampaign.status === 'CLOSED' ? 'bg-slate-200 text-slate-600' :
+                                                selectedCampaign.status === 'PENDING' ? 'bg-amber-100 text-amber-700' :
+                                                    'bg-slate-100 text-slate-600'
+                                        }`}>
+                                        {selectedCampaign.status === 'ACTIVE' ? 'Đang kêu gọi' :
+                                            selectedCampaign.status === 'CLOSED' ? 'Đã kết thúc' :
+                                                selectedCampaign.status === 'PENDING' ? 'Chờ kết thúc' :
+                                                    'Bản nháp'}
+                                    </span>
                                 </div>
                             </div>
                         </div>
