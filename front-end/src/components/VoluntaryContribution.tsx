@@ -1053,7 +1053,7 @@ export function VoluntaryContribution() {
                         <button
                             onClick={submitDelete}
                             disabled={isDeleteSubmitting}
-                            className="flex-1 py-3 rounded-xl bg-rose-600 text-white font-bold hover:bg-rose-700 transition-all disabled:opacity-60 disabled:cursor-not-allowed"
+                            className="flex-1 py-3 rounded-xl bg-rose-600 text-black font-bold hover:bg-rose-700 transition-all disabled:opacity-60 disabled:cursor-not-allowed"
                         >
                             {isDeleteSubmitting ? 'Đang xóa...' : 'Xóa'}
                         </button>
