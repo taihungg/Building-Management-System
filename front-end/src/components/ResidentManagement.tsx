@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
-import { Search, Plus, Edit, Trash2, MoreVertical, MapPin, Phone, UserCircle, Mail, Eye, Home, Globe, Users, Clock, UserMinus } from "lucide-react"; 
+import { Search, Plus, Edit, Trash2, MoreVertical, MapPin, Phone, UserCircle, Mail, Eye, Home, Globe, Users, Clock, UserMinus, Download } from "lucide-react";
 import { Label } from "./ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
 import { Dropdown } from "./Dropdown";
@@ -93,7 +93,7 @@ export function ResidentManagement() {
   const [residents, setResidents] = useState<ResidentData[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
-const [includeInactive, setIncludeInactive] = useState(false);
+  const [includeInactive, setIncludeInactive] = useState(false);
   const [statusFilter, setStatusFilter] = useState<ResidentStatusFilter>("ALL");
   const [nameSort, setNameSort] = useState<"none" | "asc" | "desc">("none");
 
@@ -101,7 +101,7 @@ const [includeInactive, setIncludeInactive] = useState(false);
   const [newName, setNewName] = useState("");
   const [newIDCard, setnewIDCard] = useState("");
   const [newDOB, setNewDOB] = useState("");
-  const [newHomeTown, setNewHomeTown] = useState(""); 
+  const [newHomeTown, setNewHomeTown] = useState("");
   const [newAppartmentID, setNewAppartmentID] = useState("");
   const [newEmail, setNewEmail] = useState('');
   const [newPhone, setNewPhone] = useState('');
@@ -109,7 +109,7 @@ const [includeInactive, setIncludeInactive] = useState(false);
   // Tao state cho apartment Dropdown
   const [apartmentList, setApartmentList] = useState<{ id: string, label: string }[]>([]);
   const [apartmentKeyword, setApartmentKeyword] = useState("");
-  
+
   //kiem soat dong mo dialog
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
 
@@ -130,7 +130,7 @@ const [includeInactive, setIncludeInactive] = useState(false);
   const [selectedResident, setSelectedResident] = useState<ResidentData | null>(null);
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
   const [isLoadingDetail, setIsLoadingDetail] = useState(false);
-  const [isEditMode, setIsEditMode] = useState(false); 
+  const [isEditMode, setIsEditMode] = useState(false);
 
   const [isCreatingAccount, setIsCreatingAccount] = useState(false);
 
@@ -198,9 +198,9 @@ const [includeInactive, setIncludeInactive] = useState(false);
     if (statusFilter !== "ALL" && resident.status !== statusFilter) {
       return false;
     }
-  
+
     const keyword = searchTerm.toLowerCase();
-  
+
     return (
       String(resident.fullName || "").toLowerCase().includes(keyword) ||
       String(resident.roomNumber || "").toLowerCase().includes(keyword) ||
@@ -213,11 +213,11 @@ const [includeInactive, setIncludeInactive] = useState(false);
     nameSort === "none"
       ? filteredResidents
       : [...filteredResidents].sort((a, b) => {
-          const aName = String(a.fullName || "");
-          const bName = String(b.fullName || "");
-          const compare = aName.localeCompare(bName, "vi", { sensitivity: "base" });
-          return nameSort === "asc" ? compare : -compare;
-        });
+        const aName = String(a.fullName || "");
+        const bName = String(b.fullName || "");
+        const compare = aName.localeCompare(bName, "vi", { sensitivity: "base" });
+        return nameSort === "asc" ? compare : -compare;
+      });
 
   const statusCounts = residents.reduce(
     (acc, resident) => {
@@ -352,7 +352,7 @@ const [includeInactive, setIncludeInactive] = useState(false);
       try {
         // Thay domain sang ngrok mới của chú
         let url = `https://untoasted-jean-unsympathisingly.ngrok-free.dev/api/v1/apartments/dropdown?keyword=${encodeURIComponent(apartmentKeyword || "")}`;
-        
+
         const response = await fetch(url, {
           method: 'GET',
           headers: {
@@ -361,7 +361,7 @@ const [includeInactive, setIncludeInactive] = useState(false);
             'ngrok-skip-browser-warning': 'true'
           }
         });
-  
+
         if (!response.ok) {
           throw new Error("Can't get apartments");
         }
@@ -442,18 +442,18 @@ const [includeInactive, setIncludeInactive] = useState(false);
       toast.warning("Số điện thoại không hợp lệ", { description: "Số điện thoại chỉ được chứa chữ số và tối đa 10 ký tự" });
       return;
     }
-    
+
     const updateAction = async () => {
       const dataToUpdate = {
         fullName,
         idCard,
         dob: updateDOB,
-        homeTown: updateHomeTown, 
+        homeTown: updateHomeTown,
         email,
         phone,
         status: updateStatus,
       }
-      
+
       // 1. Domain cho lệnh PUT (Cập nhật)
       let url = `https://untoasted-jean-unsympathisingly.ngrok-free.dev/api/v1/residents/${selectedResident.id}`;
       const response = await fetch(url, {
@@ -469,7 +469,7 @@ const [includeInactive, setIncludeInactive] = useState(false);
       if (!response.ok) {
         throw new Error(res.message || "Không thể cập nhật cư dân");
       }
-      
+
       // Tải lại bảng danh sách
       await fetchResidents();
 
@@ -480,9 +480,9 @@ const [includeInactive, setIncludeInactive] = useState(false);
         }
       });
       const detailRes = await detailResponse.json();
-      
-      setSelectedResident(normalizeResidentData(detailRes.data)); 
-      setIsEditMode(false); 
+
+      setSelectedResident(normalizeResidentData(detailRes.data));
+      setIsEditMode(false);
     };
 
     toast.promise(updateAction(), {
@@ -491,7 +491,7 @@ const [includeInactive, setIncludeInactive] = useState(false);
       error: (err) => `Cập nhật thất bại: ${(err as Error).message}`
     });
   }
-  
+
   const handleCreateAccount = async () => {
     if (!selectedResident?.id) return;
     if (selectedResident.hasAccount === true) {
@@ -519,7 +519,7 @@ const [includeInactive, setIncludeInactive] = useState(false);
 
         const updated = normalizeResidentData(res.data);
         setSelectedResident(updated);
-        
+
         // Hàm fetchResidents này chú cũng nhớ phải dùng domain ngrok bên trong nhé
         await fetchResidents();
       } catch (err) {
@@ -541,43 +541,43 @@ const [includeInactive, setIncludeInactive] = useState(false);
   // Hàm tải chi tiết và mở ở chế độ VIEW
   const handleViewDetail = async (id: string) => {
     setIsLoadingDetail(true);
-    setIsEditMode(false); 
+    setIsEditMode(false);
     try {
-        // Thay domain sang ngrok mới của chú
-        const response = await fetch(`https://untoasted-jean-unsympathisingly.ngrok-free.dev/api/v1/residents/${id}`, {
-            method: 'GET',
-            headers: {
-                'Content-Type': 'application/json',
-                // Header "vượt rào" ngrok để lấy dữ liệu JSON thay vì trang cảnh báo
-                'ngrok-skip-browser-warning': 'true'
-            }
-        });
-        
-        if (!response.ok) {
-            throw new Error("Không thể tải thông tin chi tiết cư dân");
+      // Thay domain sang ngrok mới của chú
+      const response = await fetch(`https://untoasted-jean-unsympathisingly.ngrok-free.dev/api/v1/residents/${id}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          // Header "vượt rào" ngrok để lấy dữ liệu JSON thay vì trang cảnh báo
+          'ngrok-skip-browser-warning': 'true'
         }
+      });
 
-        const res = await response.json();
-        const residentData = normalizeResidentData(res.data);
+      if (!response.ok) {
+        throw new Error("Không thể tải thông tin chi tiết cư dân");
+      }
 
-        // Chuẩn bị dữ liệu đầy đủ cho Form Edit
-        setSelectedResident(residentData); 
-        setUpdateName(residentData.fullName);
-        setUpdateIDCard(residentData.idCard || ""); 
-        setUpdateDOB(residentData.dob || "");
-        setUpdateHomeTown(residentData.homeTown || ""); 
-        setUpdateEmail(residentData.email || "");
-        setUpdatePhone(String(residentData.phoneNumber || "").replace(/\D/g, "").slice(0, 10));
-        setUpdateStatus(isEditableResidentStatus(residentData.status) ? residentData.status : "PERMANENT_RESIDENCE");
-        
-        setIsViewModalOpen(true); // Mở Modal
+      const res = await response.json();
+      const residentData = normalizeResidentData(res.data);
+
+      // Chuẩn bị dữ liệu đầy đủ cho Form Edit
+      setSelectedResident(residentData);
+      setUpdateName(residentData.fullName);
+      setUpdateIDCard(residentData.idCard || "");
+      setUpdateDOB(residentData.dob || "");
+      setUpdateHomeTown(residentData.homeTown || "");
+      setUpdateEmail(residentData.email || "");
+      setUpdatePhone(String(residentData.phoneNumber || "").replace(/\D/g, "").slice(0, 10));
+      setUpdateStatus(isEditableResidentStatus(residentData.status) ? residentData.status : "PERMANENT_RESIDENCE");
+
+      setIsViewModalOpen(true); // Mở Modal
     } catch (err) {
-        // Chuẩn cú pháp log lỗi để chú dễ kiểm tra
-        console.log(err);
-        toast.error("Lỗi tải dữ liệu", { description: (err as Error).message });
-        setIsViewModalOpen(false);
+      // Chuẩn cú pháp log lỗi để chú dễ kiểm tra
+      console.log(err);
+      toast.error("Lỗi tải dữ liệu", { description: (err as Error).message });
+      setIsViewModalOpen(false);
     } finally {
-        setIsLoadingDetail(false);
+      setIsLoadingDetail(false);
     }
   };
 
@@ -586,45 +586,81 @@ const [includeInactive, setIncludeInactive] = useState(false);
     setSelectedResident(resident);
     setIsViewModalOpen(true);
     setIsEditMode(true);
-    setIsLoadingDetail(true); 
+    setIsLoadingDetail(true);
 
     try {
-        // Thay domain sang ngrok mới của chú
-        const response = await fetch(`https://untoasted-jean-unsympathisingly.ngrok-free.dev/api/v1/residents/${resident.id}`, {
-            method: 'GET',
-            headers: {
-                'Content-Type': 'application/json',
-                // Header quan trọng để không bị trang cảnh báo ngrok chặn
-                'ngrok-skip-browser-warning': 'true'
-            }
-        });
-        
-        if (!response.ok) {
-            throw new Error("Không thể tải thông tin chi tiết cư dân để chỉnh sửa");
+      // Thay domain sang ngrok mới của chú
+      const response = await fetch(`https://untoasted-jean-unsympathisingly.ngrok-free.dev/api/v1/residents/${resident.id}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          // Header quan trọng để không bị trang cảnh báo ngrok chặn
+          'ngrok-skip-browser-warning': 'true'
         }
+      });
 
-        const res = await response.json();
-        const residentData = normalizeResidentData(res.data);
+      if (!response.ok) {
+        throw new Error("Không thể tải thông tin chi tiết cư dân để chỉnh sửa");
+      }
 
-        // Cập nhật state với DỮ LIỆU ĐẦY ĐỦ từ API chi tiết
-        setSelectedResident(residentData); 
-        setUpdateName(residentData.fullName);
-        setUpdateIDCard(residentData.idCard || ""); 
-        setUpdateDOB(residentData.dob || "");
-        setUpdateHomeTown(residentData.homeTown || ""); 
-        setUpdateEmail(residentData.email || "");
-        setUpdatePhone(String(residentData.phoneNumber || "").replace(/\D/g, "").slice(0, 10));
-        setUpdateStatus(isEditableResidentStatus(residentData.status) ? residentData.status : "PERMANENT_RESIDENCE");
-        
+      const res = await response.json();
+      const residentData = normalizeResidentData(res.data);
+
+      // Cập nhật state với DỮ LIỆU ĐẦY ĐỦ từ API chi tiết
+      setSelectedResident(residentData);
+      setUpdateName(residentData.fullName);
+      setUpdateIDCard(residentData.idCard || "");
+      setUpdateDOB(residentData.dob || "");
+      setUpdateHomeTown(residentData.homeTown || "");
+      setUpdateEmail(residentData.email || "");
+      setUpdatePhone(String(residentData.phoneNumber || "").replace(/\D/g, "").slice(0, 10));
+      setUpdateStatus(isEditableResidentStatus(residentData.status) ? residentData.status : "PERMANENT_RESIDENCE");
+
     } catch (err) {
-        // Log lỗi chuẩn cú pháp chú dặn
-        console.log(err);
-        toast.error("Lỗi tải dữ liệu", { description: (err as Error).message });
-        setIsViewModalOpen(false); 
+      // Log lỗi chuẩn cú pháp chú dặn
+      console.log(err);
+      toast.error("Lỗi tải dữ liệu", { description: (err as Error).message });
+      setIsViewModalOpen(false);
     } finally {
-        setIsLoadingDetail(false); 
+      setIsLoadingDetail(false);
     }
   }
+
+  // --- HANDLE EXPORT CSV ---
+  const handleExportReport = () => {
+    try {
+      const headers = ['Tên cư dân', 'Email', 'Số điện thoại', 'Căn hộ', 'Trạng thái'];
+      const csvRows = [
+        headers.join(','),
+        ...displayedResidents.map((resident) => {
+          const statusVi = getResidentStatusLabel(resident.status);
+          return [
+            `"${resident.fullName || ''}"`,
+            `"${resident.email || ''}"`,
+            `"\t${resident.phoneNumber || ''}"`,
+            `"${resident.roomNumber || ''}"`,
+            `"${statusVi}"`
+          ].join(',');
+        })
+      ];
+
+      const csvContent = csvRows.join('\n');
+      const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      const url = URL.createObjectURL(blob);
+
+      link.setAttribute('href', url);
+      link.setAttribute('download', `danh_sach_cu_dan_${new Date().toISOString().split('T')[0]}.csv`);
+      link.style.visibility = 'hidden';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      toast.success('Xuất báo cáo thành công!');
+    } catch (err: any) {
+      toast.error('Lỗi xuất báo cáo', { description: err.message });
+    }
+  };
 
 
   return (
@@ -641,14 +677,25 @@ const [includeInactive, setIncludeInactive] = useState(false);
           <h1 className="text-3xl text-gray-900">Quản lý cư dân</h1>
           <p className="text-gray-600 mt-1">Quản lý tất cả cư dân và thông tin của họ</p>
         </div>
-        <Button
-          onClick={() => {
-            setIsAddDialogOpen(true);
-          }}
-          className="flex rounded-full items-center gap-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:shadow-xl transition-all">
-          <Plus className="w-5 h-5" />
-          Thêm Cư Dân
-        </Button>
+        <div className="flex items-center gap-3">
+          <Button
+            onClick={handleExportReport}
+            disabled={displayedResidents.length === 0}
+            variant="outline"
+            className="flex rounded-full items-center gap-2 border-blue-600 text-blue-600 hover:bg-blue-50 transition-all font-semibold"
+          >
+            <Download className="w-5 h-5" />
+            Xuất Báo Cáo
+          </Button>
+          <Button
+            onClick={() => {
+              setIsAddDialogOpen(true);
+            }}
+            className="flex rounded-full items-center gap-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:shadow-xl transition-all font-semibold">
+            <Plus className="w-5 h-5" />
+            Thêm Cư Dân
+          </Button>
+        </div>
       </div>
 
       <div className="flex gap-6 items-start">
@@ -824,14 +871,14 @@ const [includeInactive, setIncludeInactive] = useState(false);
 
       {/* Add Resident Modal */}
       <Modal
-    isOpen={isAddDialogOpen}
-    onClose={() => setIsAddDialogOpen(false)}
-    title="Thêm Cư Dân Mới"
-    size="md"
->
-    <div className="p-6 space-y-4">
-        {/* --- CÁC TRƯỜNG THÔNG TIN CƠ BẢN --- */}
-        <div>
+        isOpen={isAddDialogOpen}
+        onClose={() => setIsAddDialogOpen(false)}
+        title="Thêm Cư Dân Mới"
+        size="md"
+      >
+        <div className="p-6 space-y-4">
+          {/* --- CÁC TRƯỜNG THÔNG TIN CƠ BẢN --- */}
+          <div>
             <Label htmlFor="newName">Họ và Tên</Label>
             <Input
               id="newName"
@@ -841,9 +888,9 @@ const [includeInactive, setIncludeInactive] = useState(false);
               onChange={(e) => setNewName(e.target.value)}
               className="mt-1"
             />
-        </div>
-        
-        <div>
+          </div>
+
+          <div>
             <Label htmlFor="newIDCard">CMND / CCCD</Label>
             <Input
               id="newIDCard"
@@ -854,9 +901,9 @@ const [includeInactive, setIncludeInactive] = useState(false);
               maxLength={14}
               className="mt-1"
             />
-        </div>
+          </div>
 
-        <div>
+          <div>
             <Label htmlFor="newDOB">Ngày Sinh</Label>
             <Input
               id="newDOB"
@@ -865,9 +912,9 @@ const [includeInactive, setIncludeInactive] = useState(false);
               onChange={(e) => setNewDOB(e.target.value)}
               className="mt-1"
             />
-        </div>
+          </div>
 
-        <div>
+          <div>
             <Label htmlFor="newHomeTown">Quê Quán</Label>
             <Input
               id="newHomeTown"
@@ -877,10 +924,10 @@ const [includeInactive, setIncludeInactive] = useState(false);
               onChange={(e) => setNewHomeTown(e.target.value)}
               className="mt-1"
             />
-        </div>
+          </div>
 
-        {/* --- TRƯỜNG CHỌN APARTMENT --- */}
-        <div>
+          {/* --- TRƯỜNG CHỌN APARTMENT --- */}
+          <div>
             <Label htmlFor="newApartmentID">Căn Hộ</Label>
             <div className="mt-1 space-y-2">
               <Input
@@ -925,12 +972,12 @@ const [includeInactive, setIncludeInactive] = useState(false);
                 <p className="text-sm text-green-600 mt-1">Đã chọn: {apartmentKeyword}</p>
               ) : null}
             </div>
-        </div>
+          </div>
 
-        {/* --- KẾT THÚC TRƯỜNG CHỌN APARTMENT ĐÃ SỬA --- */}
+          {/* --- KẾT THÚC TRƯỜNG CHỌN APARTMENT ĐÃ SỬA --- */}
 
-        <div className="pt-4 border-t mt-6 space-y-4">
-          <div>
+          <div className="pt-4 border-t mt-6 space-y-4">
+            <div>
               <Label htmlFor="newEmail">Email</Label>
               <Input
                 id="newEmail"
@@ -940,9 +987,9 @@ const [includeInactive, setIncludeInactive] = useState(false);
                 onChange={(e) => setNewEmail(e.target.value)}
                 className="mt-1"
               />
-          </div>
+            </div>
 
-          <div>
+            <div>
               <Label htmlFor="newPhone">Số Điện Thoại (SĐT)</Label>
               <Input
                 id="newPhone"
@@ -958,11 +1005,11 @@ const [includeInactive, setIncludeInactive] = useState(false);
                 maxLength={10}
                 className="mt-1"
               />
+            </div>
           </div>
-        </div>
 
-        {/* --- NÚT SUBMIT --- */}
-        <div className="flex gap-3 pt-4 border-t mt-6">
+          {/* --- NÚT SUBMIT --- */}
+          <div className="flex gap-3 pt-4 border-t mt-6">
             <Button
               variant="outline"
               onClick={() => setIsAddDialogOpen(false)}
@@ -976,8 +1023,8 @@ const [includeInactive, setIncludeInactive] = useState(false);
             >
               Thêm cư dân
             </Button>
+          </div>
         </div>
-    </div>
       </Modal>
 
       {/* Delete Resident Modal */}
@@ -1027,266 +1074,265 @@ const [includeInactive, setIncludeInactive] = useState(false);
           </div>
         </div>
       </Modal>
-      
+
       {/* --- MODAL VIEW/EDIT RESIDENT DETAIL (ĐÃ DỊCH) --- */}
       <Modal
-    isOpen={isViewModalOpen}
-    onClose={handleCloseViewModal}
-    title={isEditMode ? "Chỉnh Sửa Thông Tin Cư Dân" : "Chi Tiết Cư Dân"}
->
-    {isLoadingDetail ? (
-        <div className="flex flex-col items-center justify-center py-12 text-gray-500">
+        isOpen={isViewModalOpen}
+        onClose={handleCloseViewModal}
+        title={isEditMode ? "Chỉnh Sửa Thông Tin Cư Dân" : "Chi Tiết Cư Dân"}
+      >
+        {isLoadingDetail ? (
+          <div className="flex flex-col items-center justify-center py-12 text-gray-500">
             <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600 mb-3"></div>
             <p>Đang tải thông tin cư dân...</p>
-        </div>
-    ) : selectedResident ? (
-        <div className="flex flex-col h-full">
-            
+          </div>
+        ) : selectedResident ? (
+          <div className="flex flex-col h-full">
+
             {/* 1. HEADER GRADIENT */}
             <div className="-mx-6 -mt-6 mb-6 bg-gradient-to-r from-blue-600 to-indigo-600 p-6 text-white rounded-t-lg shadow-md relative overflow-hidden">
-                <div className="absolute top-0 right-0 p-4 opacity-10">
-                    <UserCircle className="w-32 h-32" />
+              <div className="absolute top-0 right-0 p-4 opacity-10">
+                <UserCircle className="w-32 h-32" />
+              </div>
+              <div className="relative z-10 flex items-start gap-4">
+                <div className="w-16 h-16 rounded-full bg-white/20 backdrop-blur-sm border-2 border-white/50 flex items-center justify-center text-2xl font-bold shadow-lg">
+                  {selectedResident.fullName?.charAt(0)}
                 </div>
-                <div className="relative z-10 flex items-start gap-4">
-                    <div className="w-16 h-16 rounded-full bg-white/20 backdrop-blur-sm border-2 border-white/50 flex items-center justify-center text-2xl font-bold shadow-lg">
-                        {selectedResident.fullName?.charAt(0)}
+                <div className="flex-1">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <h2 className="text-2xl font-bold">{isEditMode ? updateName : selectedResident.fullName}</h2>
+                      <p className="text-blue-100 text-sm flex items-center gap-1 mt-1">
+                        {/* Hiển thị Home Town ngay trên Header */}
+                        <MapPin className="w-4 h-4" />
+                        {isEditMode ? updateHomeTown : (selectedResident.homeTown || "Chưa cập nhật quê quán")}
+                      </p>
                     </div>
-                    <div className="flex-1">
-                        <div className="flex justify-between items-start">
-                            <div>
-                                <h2 className="text-2xl font-bold">{isEditMode ? updateName : selectedResident.fullName}</h2>
-                                <p className="text-blue-100 text-sm flex items-center gap-1 mt-1">
-                                    {/* Hiển thị Home Town ngay trên Header */}
-                                    <MapPin className="w-4 h-4" /> 
-                                    {isEditMode ? updateHomeTown : (selectedResident.homeTown || "Chưa cập nhật quê quán")}
-                                </p>
-                            </div>
-                            <span
-                              className="px-3 py-1 rounded-full text-xs font-bold border shadow-sm"
-                              style={getResidentStatusBadgeStyle(isEditMode ? updateStatus : selectedResident.status)}
-                            >
-                                {getResidentStatusLabel(isEditMode ? updateStatus : selectedResident.status)}
-                            </span>
-                        </div>
-                    </div>
+                    <span
+                      className="px-3 py-1 rounded-full text-xs font-bold border shadow-sm"
+                      style={getResidentStatusBadgeStyle(isEditMode ? updateStatus : selectedResident.status)}
+                    >
+                      {getResidentStatusLabel(isEditMode ? updateStatus : selectedResident.status)}
+                    </span>
+                  </div>
                 </div>
+              </div>
             </div>
 
             {/* 2. NỘI DUNG CHÍNH (Conditional Rendering) */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 px-6 pb-6">
-                
-                {isEditMode ? (
-                    /* --- CHẾ ĐỘ CHỈNH SỬA (EDIT MODE) - ĐÃ DỊCH --- */
-                    <>
-                        {/* CỘT TRÁI: Form Cá nhân */}
-                        <div className="space-y-4 rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
-                            <h3 className="text-sm font-bold text-gray-500 uppercase tracking-wider border-b pb-2">
-                                Thông Tin Cá Nhân
-                            </h3>
-                            <div className="space-y-3">
-                                <div><Label htmlFor="updateName">Họ và Tên</Label>
-                                <Input id="updateName" type="text" value={updateName} onChange={(e) => setUpdateName(e.target.value)} className="mt-1 h-11 rounded-xl bg-white border-gray-200 px-4"/></div>
-                                
-                                <div><Label htmlFor="updateIDCard">CMND / CCCD</Label>
-                                <Input id="updateIDCard" type="text" value={updateIDCard} onChange={(e) => setUpdateIDCard(e.target.value)} maxLength={14} className="mt-1 h-11 rounded-xl bg-white border-gray-200 px-4"/></div>
-                                
-                                <div><Label htmlFor="updateDOB">Ngày Sinh</Label>
-                                <Input id="updateDOB" type="date" value={updateDOB} onChange={(e) => setUpdateDOB(e.target.value)} className="mt-1 h-11 rounded-xl bg-white border-gray-200 px-4"/></div>
-                                
-                                <div><Label htmlFor="updateHomeTown">Quê Quán</Label>
-                                <Input id="updateHomeTown" type="text" value={updateHomeTown} onChange={(e) => setUpdateHomeTown(e.target.value)} className="mt-1 h-11 rounded-xl bg-white border-gray-200 px-4"/></div>
-                            </div>
-                        </div>
 
-                        {/* CỘT PHẢI: Form Liên lạc */}
-                        <div className="space-y-4 rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
-                            <h3 className="text-sm font-bold text-gray-500 uppercase tracking-wider border-b pb-2">
-                                Thông Tin Liên Hệ
-                            </h3>
-                            <div className="space-y-3">
-                                <div><Label htmlFor="updatePhone">Số Điện Thoại</Label>
-                                <Input id="updatePhone" type="tel" value={updatePhone} inputMode="numeric" pattern="\\d*" onChange={(e) => setUpdatePhone(e.target.value.replace(/\D/g, "").slice(0, 10))} maxLength={10} className="mt-1 h-11 rounded-xl bg-white border-gray-200 px-4"/></div>
-                                
-                                <div><Label htmlFor="updateEmail">Email</Label>
-                                <Input id="updateEmail" type="email" value={updateEmail} onChange={(e) => setUpdateEmail(e.target.value)} className="mt-1 h-11 rounded-xl bg-white border-gray-200 px-4"/></div>
+              {isEditMode ? (
+                /* --- CHẾ ĐỘ CHỈNH SỬA (EDIT MODE) - ĐÃ DỊCH --- */
+                <>
+                  {/* CỘT TRÁI: Form Cá nhân */}
+                  <div className="space-y-4 rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
+                    <h3 className="text-sm font-bold text-gray-500 uppercase tracking-wider border-b pb-2">
+                      Thông Tin Cá Nhân
+                    </h3>
+                    <div className="space-y-3">
+                      <div><Label htmlFor="updateName">Họ và Tên</Label>
+                        <Input id="updateName" type="text" value={updateName} onChange={(e) => setUpdateName(e.target.value)} className="mt-1 h-11 rounded-xl bg-white border-gray-200 px-4" /></div>
 
-                                <div>
-                                    <Label htmlFor="updateStatus">Trạng thái cư trú</Label>
-                                    <select
-                                      id="updateStatus"
-                                      value={updateStatus}
-                                      onChange={(e) => setUpdateStatus(e.target.value as EditableResidentStatus)}
-                                      className="mt-1 h-11 w-full rounded-xl bg-white border border-gray-200 px-4 text-base md:text-sm text-gray-700 shadow-sm hover:border-blue-400 transition-all outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400"
-                                    >
-                                      {RESIDENT_STATUS_OPTIONS.map((opt) => (
-                                        <option key={opt.value} value={opt.value}>
-                                          {opt.label}
-                                        </option>
-                                      ))}
-                                    </select>
-                                </div>
-                                
-                                {/* Apartment (Read Only) */}
-                                <div className="mt-4 p-4 bg-gray-100 border border-gray-200 rounded-xl">
-                                    <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Căn Hộ (Chỉ Xem)</p>
-                                    <div className="grid grid-cols-[auto,1fr,auto,auto] items-baseline gap-x-2">
-                                        <span className="text-sm font-semibold text-gray-500 uppercase">Tòa</span>
-                                        <span className="text-base font-bold text-gray-900 tracking-tight truncate">
-                                            {selectedResident.building || "N/A"}
-                                        </span>
-                                        <span className="text-sm font-semibold text-gray-500 uppercase">Phòng</span>
-                                        <span className="text-xl font-extrabold text-gray-900 tracking-tight font-mono">
-                                            {selectedResident.roomNumber || "N/A"}
-                                        </span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </>
-                ) : (
-                    /* --- CHẾ ĐỘ XEM (VIEW MODE) - ĐÃ DỊCH --- */
-                    <>
-                        {/* CỘT TRÁI: Thông tin cá nhân */}
-                        <div className="space-y-4 rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
-                            <h3 className="text-sm font-bold text-gray-500 uppercase tracking-wider border-b pb-2">
-                                Thông Tin Cá Nhân
-                            </h3>
-                            <div className="space-y-3">
-                                {/* ID Card (CMND/CCCD) */}
-                                <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg border border-gray-100">
-                                    <div className="p-2 bg-blue-100 text-blue-600 rounded-md">
-                                        <span className="text-xs font-bold">ID</span>
-                                    </div>
-                                    <div>
-                                        <p className="text-xs text-gray-500">CMND / CCCD</p>
-                                        <p className="font-medium text-gray-900">{selectedResident.idCard || "N/A"}</p>
-                                    </div>
-                                </div>
-                                {/* DOB */}
-                                <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg border border-gray-100">
-                                    <div className="p-2 bg-purple-100 text-purple-600 rounded-md">
-                                        <span className="text-xs font-bold">DOB</span>
-                                    </div>
-                                    <div>
-                                        <p className="text-xs text-gray-500">Ngày Sinh</p>
-                                        <p className="font-medium text-gray-900">{selectedResident.dob || "N/A"}</p>
-                                    </div>
-                                </div>
-                                 {/* HOME TOWN */}
-                                <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg border border-gray-100">
-                                    <div className="p-2 bg-pink-100 text-pink-600 rounded-md">
-                                        <Globe className="w-4 h-4" />
-                                    </div>
-                                    <div>
-                                        <p className="text-xs text-gray-500">Quê Quán</p>
-                                        <p className="font-medium text-gray-900">{selectedResident.homeTown || "N/A"}</p>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
+                      <div><Label htmlFor="updateIDCard">CMND / CCCD</Label>
+                        <Input id="updateIDCard" type="text" value={updateIDCard} onChange={(e) => setUpdateIDCard(e.target.value)} maxLength={14} className="mt-1 h-11 rounded-xl bg-white border-gray-200 px-4" /></div>
 
-                        {/* CỘT PHẢI: Liên lạc & Căn hộ */}
-                        <div className="space-y-4 rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
-                            <h3 className="text-sm font-bold text-gray-500 uppercase tracking-wider border-b pb-2">
-                                Liên Hệ & Cư Trú
-                            </h3>
-                            <div className="space-y-3">
-                                <div className="flex items-center gap-3">
-                                    <Phone className="w-5 h-5 text-gray-400" />
-                                    <div>
-                                        <p className="text-xs text-gray-500">Số Điện Thoại</p>
-                                        <p className="font-medium text-gray-900">{selectedResident.phoneNumber || "N/A"}</p>
-                                    </div>
-                                </div>
-                                <div className="flex items-center gap-3">
-                                    <Mail className="w-5 h-5 text-gray-400" />
-                                    <div>
-                                        <p className="text-xs text-gray-500">Địa Chỉ Email</p>
-                                        <p className="font-medium text-gray-900 break-all">{selectedResident.email || "N/A"}</p>
-                                    </div>
-                                </div>
-                                {/* Current Apartment */}
-                                <div className="mt-4 p-4 bg-blue-50 border border-blue-100 rounded-xl relative overflow-hidden group">
-                                    <div className="absolute top-0 right-0 p-2 opacity-5 group-hover:opacity-10 transition-opacity">
-                                        <Home className="w-7 h-7 text-blue-600" />
-                                    </div>
-                                    <p className="text-xs font-bold text-blue-600/80 uppercase tracking-wider mb-1">Căn Hộ Hiện Tại</p>
-                                    <div className="grid grid-cols-[auto,1fr,auto,auto] items-baseline gap-x-2 relative z-10">
-                                        <span className="text-sm font-semibold text-blue-600 uppercase">Tòa</span>
-                                        <span className="text-base font-bold text-blue-900 tracking-tight truncate">
-                                            {selectedResident.building || "N/A"}
-                                        </span>
-                                        <span className="text-sm font-semibold text-blue-600 uppercase">Phòng</span>
-                                        <span className="text-xl font-extrabold text-blue-900 tracking-tight font-mono">
-                                            {selectedResident.roomNumber || "N/A"}
-                                        </span>
-                                    </div>
-                                </div>
-                            </div>
+                      <div><Label htmlFor="updateDOB">Ngày Sinh</Label>
+                        <Input id="updateDOB" type="date" value={updateDOB} onChange={(e) => setUpdateDOB(e.target.value)} className="mt-1 h-11 rounded-xl bg-white border-gray-200 px-4" /></div>
+
+                      <div><Label htmlFor="updateHomeTown">Quê Quán</Label>
+                        <Input id="updateHomeTown" type="text" value={updateHomeTown} onChange={(e) => setUpdateHomeTown(e.target.value)} className="mt-1 h-11 rounded-xl bg-white border-gray-200 px-4" /></div>
+                    </div>
+                  </div>
+
+                  {/* CỘT PHẢI: Form Liên lạc */}
+                  <div className="space-y-4 rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
+                    <h3 className="text-sm font-bold text-gray-500 uppercase tracking-wider border-b pb-2">
+                      Thông Tin Liên Hệ
+                    </h3>
+                    <div className="space-y-3">
+                      <div><Label htmlFor="updatePhone">Số Điện Thoại</Label>
+                        <Input id="updatePhone" type="tel" value={updatePhone} inputMode="numeric" pattern="\\d*" onChange={(e) => setUpdatePhone(e.target.value.replace(/\D/g, "").slice(0, 10))} maxLength={10} className="mt-1 h-11 rounded-xl bg-white border-gray-200 px-4" /></div>
+
+                      <div><Label htmlFor="updateEmail">Email</Label>
+                        <Input id="updateEmail" type="email" value={updateEmail} onChange={(e) => setUpdateEmail(e.target.value)} className="mt-1 h-11 rounded-xl bg-white border-gray-200 px-4" /></div>
+
+                      <div>
+                        <Label htmlFor="updateStatus">Trạng thái cư trú</Label>
+                        <select
+                          id="updateStatus"
+                          value={updateStatus}
+                          onChange={(e) => setUpdateStatus(e.target.value as EditableResidentStatus)}
+                          className="mt-1 h-11 w-full rounded-xl bg-white border border-gray-200 px-4 text-base md:text-sm text-gray-700 shadow-sm hover:border-blue-400 transition-all outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400"
+                        >
+                          {RESIDENT_STATUS_OPTIONS.map((opt) => (
+                            <option key={opt.value} value={opt.value}>
+                              {opt.label}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      {/* Apartment (Read Only) */}
+                      <div className="mt-4 p-4 bg-gray-100 border border-gray-200 rounded-xl">
+                        <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Căn Hộ (Chỉ Xem)</p>
+                        <div className="grid grid-cols-[auto,1fr,auto,auto] items-baseline gap-x-2">
+                          <span className="text-sm font-semibold text-gray-500 uppercase">Tòa</span>
+                          <span className="text-base font-bold text-gray-900 tracking-tight truncate">
+                            {selectedResident.building || "N/A"}
+                          </span>
+                          <span className="text-sm font-semibold text-gray-500 uppercase">Phòng</span>
+                          <span className="text-xl font-extrabold text-gray-900 tracking-tight font-mono">
+                            {selectedResident.roomNumber || "N/A"}
+                          </span>
                         </div>
-                    </>
-                )}
+                      </div>
+                    </div>
+                  </div>
+                </>
+              ) : (
+                /* --- CHẾ ĐỘ XEM (VIEW MODE) - ĐÃ DỊCH --- */
+                <>
+                  {/* CỘT TRÁI: Thông tin cá nhân */}
+                  <div className="space-y-4 rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
+                    <h3 className="text-sm font-bold text-gray-500 uppercase tracking-wider border-b pb-2">
+                      Thông Tin Cá Nhân
+                    </h3>
+                    <div className="space-y-3">
+                      {/* ID Card (CMND/CCCD) */}
+                      <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg border border-gray-100">
+                        <div className="p-2 bg-blue-100 text-blue-600 rounded-md">
+                          <span className="text-xs font-bold">ID</span>
+                        </div>
+                        <div>
+                          <p className="text-xs text-gray-500">CMND / CCCD</p>
+                          <p className="font-medium text-gray-900">{selectedResident.idCard || "N/A"}</p>
+                        </div>
+                      </div>
+                      {/* DOB */}
+                      <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg border border-gray-100">
+                        <div className="p-2 bg-purple-100 text-purple-600 rounded-md">
+                          <span className="text-xs font-bold">DOB</span>
+                        </div>
+                        <div>
+                          <p className="text-xs text-gray-500">Ngày Sinh</p>
+                          <p className="font-medium text-gray-900">{selectedResident.dob || "N/A"}</p>
+                        </div>
+                      </div>
+                      {/* HOME TOWN */}
+                      <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg border border-gray-100">
+                        <div className="p-2 bg-pink-100 text-pink-600 rounded-md">
+                          <Globe className="w-4 h-4" />
+                        </div>
+                        <div>
+                          <p className="text-xs text-gray-500">Quê Quán</p>
+                          <p className="font-medium text-gray-900">{selectedResident.homeTown || "N/A"}</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* CỘT PHẢI: Liên lạc & Căn hộ */}
+                  <div className="space-y-4 rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
+                    <h3 className="text-sm font-bold text-gray-500 uppercase tracking-wider border-b pb-2">
+                      Liên Hệ & Cư Trú
+                    </h3>
+                    <div className="space-y-3">
+                      <div className="flex items-center gap-3">
+                        <Phone className="w-5 h-5 text-gray-400" />
+                        <div>
+                          <p className="text-xs text-gray-500">Số Điện Thoại</p>
+                          <p className="font-medium text-gray-900">{selectedResident.phoneNumber || "N/A"}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <Mail className="w-5 h-5 text-gray-400" />
+                        <div>
+                          <p className="text-xs text-gray-500">Địa Chỉ Email</p>
+                          <p className="font-medium text-gray-900 break-all">{selectedResident.email || "N/A"}</p>
+                        </div>
+                      </div>
+                      {/* Current Apartment */}
+                      <div className="mt-4 p-4 bg-blue-50 border border-blue-100 rounded-xl relative overflow-hidden group">
+                        <div className="absolute top-0 right-0 p-2 opacity-5 group-hover:opacity-10 transition-opacity">
+                          <Home className="w-7 h-7 text-blue-600" />
+                        </div>
+                        <p className="text-xs font-bold text-blue-600/80 uppercase tracking-wider mb-1">Căn Hộ Hiện Tại</p>
+                        <div className="grid grid-cols-[auto,1fr,auto,auto] items-baseline gap-x-2 relative z-10">
+                          <span className="text-sm font-semibold text-blue-600 uppercase">Tòa</span>
+                          <span className="text-base font-bold text-blue-900 tracking-tight truncate">
+                            {selectedResident.building || "N/A"}
+                          </span>
+                          <span className="text-sm font-semibold text-blue-600 uppercase">Phòng</span>
+                          <span className="text-xl font-extrabold text-blue-900 tracking-tight font-mono">
+                            {selectedResident.roomNumber || "N/A"}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </>
+              )}
             </div>
 
             {/* 3. FOOTER (Conditional Buttons) - ĐÃ DỊCH VÀ THÊM NÚT TẠO TK */}
             <div className="mt-6 flex justify-end px-6 pb-6 pt-4 border-t gap-3">
-                
-                {isEditMode ? (
-                    <>
-                        <Button 
-                            variant="outline" 
-                            onClick={() => {
-                                setIsEditMode(false); // Quay lại chế độ xem
-                            }} 
-                            className="rounded-full px-6"
-                        >
-                            Hủy Chỉnh Sửa
-                        </Button>
-                        <Button 
-                            onClick={handleUpdate} 
-                            className="bg-green-600 hover:bg-green-700 text-white rounded-full px-6 shadow-lg shadow-green-500/30"
-                        >
-                            <Edit className="w-4 h-4 mr-2" /> Lưu Thay Đổi
-                        </Button>
-                    </>
-                ) : (
-                    <>
-                        <Button variant="outline" onClick={handleCloseViewModal} className="rounded-full px-6">
-                            Đóng
-                        </Button>
-                        
-                        {/* 🔥 NÚT CREATE ACCOUNT (TẠO TÀI KHOẢN) */}
-                        <Button 
-                            onClick={() => {
-                              if (hasAccount) {
-                                toast.info("Cư dân đã có tài khoản");
-                                return;
-                              }
-                              handleCreateAccount();
-                            }}
-                            disabled={isCreatingAccount}
-                            className={`rounded-full px-6 shadow-lg disabled:opacity-100 ${
-                              hasAccount
-                                ? "bg-gray-200 text-gray-600 shadow-none cursor-default"
-                                : "bg-green-600 text-white"
-                            }`}
-                        >
-                            <Users className="w-4 h-4 mr-2" /> {accountButtonLabel}
-                        </Button>
-                        
-                        <Button 
-                            onClick={() => handleOpenEdit(selectedResident)} 
-                            className="bg-blue-600 hover:bg-blue-700 text-white rounded-full px-6 shadow-lg shadow-blue-500/30"
-                        >
-                            <Edit className="w-4 h-4 mr-2" /> Chỉnh Sửa
-                        </Button>
-                    </>
-                )}
+
+              {isEditMode ? (
+                <>
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      setIsEditMode(false); // Quay lại chế độ xem
+                    }}
+                    className="rounded-full px-6"
+                  >
+                    Hủy Chỉnh Sửa
+                  </Button>
+                  <Button
+                    onClick={handleUpdate}
+                    className="bg-green-600 hover:bg-green-700 text-white rounded-full px-6 shadow-lg shadow-green-500/30"
+                  >
+                    <Edit className="w-4 h-4 mr-2" /> Lưu Thay Đổi
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <Button variant="outline" onClick={handleCloseViewModal} className="rounded-full px-6">
+                    Đóng
+                  </Button>
+
+                  {/* 🔥 NÚT CREATE ACCOUNT (TẠO TÀI KHOẢN) */}
+                  <Button
+                    onClick={() => {
+                      if (hasAccount) {
+                        toast.info("Cư dân đã có tài khoản");
+                        return;
+                      }
+                      handleCreateAccount();
+                    }}
+                    disabled={isCreatingAccount}
+                    className={`rounded-full px-6 shadow-lg disabled:opacity-100 ${hasAccount
+                        ? "bg-gray-200 text-gray-600 shadow-none cursor-default"
+                        : "bg-green-600 text-white"
+                      }`}
+                  >
+                    <Users className="w-4 h-4 mr-2" /> {accountButtonLabel}
+                  </Button>
+
+                  <Button
+                    onClick={() => handleOpenEdit(selectedResident)}
+                    className="bg-blue-600 hover:bg-blue-700 text-white rounded-full px-6 shadow-lg shadow-blue-500/30"
+                  >
+                    <Edit className="w-4 h-4 mr-2" /> Chỉnh Sửa
+                  </Button>
+                </>
+              )}
             </div>
-        </div>
-    ) : (
-        <div className="text-center py-10 text-gray-500">Không tìm thấy dữ liệu.</div>
-    )}
+          </div>
+        ) : (
+          <div className="text-center py-10 text-gray-500">Không tìm thấy dữ liệu.</div>
+        )}
       </Modal>
     </div>
   );

@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
-import { Search, Plus, Edit, Trash2, MoreVertical, MapPin,ShieldCheck,HomeIcon,Contact, Phone, UserCircle, Mail, Eye, Home, Fingerprint, Globe, Building2, Clock, AlertCircle, Users, Key, UserCheck, UserMinus, Download, ChevronDown, UserX } from "lucide-react";
+import { Search, Plus, Edit, Trash2, MoreVertical, MapPin, ShieldCheck, HomeIcon, Contact, Phone, UserCircle, Mail, Eye, Home, Fingerprint, Globe, Building2, Clock, AlertCircle, Users, Key, UserCheck, UserMinus, Download, ChevronDown, UserX } from "lucide-react";
 import { Label } from "./ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
 import { Dropdown } from "./Dropdown";
@@ -25,7 +25,7 @@ const getResidenceType = (resident: any): ResidenceType => {
 
   // 2. NGƯỜI NƯỚC NGOÀI: Giả định nếu ID Card quá ngắn (< 8) hoặc có dấu hiệu không phải quốc tịch VN
   if (idCard.length > 0 && idCard.length < 8 || homeTown.includes('foreign') || homeTown.includes('nước ngoài')) {
-       return 'nguoiNuocNgoai';
+    return 'nguoiNuocNgoai';
   }
 
   // 3. THƯỜNG TRÚ (Ưu tiên: Nếu ID là 9 hoặc 12 chữ số)
@@ -276,7 +276,7 @@ export function AuthorityResidentManagement() {
           return [
             `"${resident.fullName || ''}"`,
             `"${resident.email || ''}"`,
-            `"${resident.phone || ''}"`,
+            `"\t${resident.phone || resident.phoneNumber || ''}"`,
             `"${resident.roomNumber || ''}"`,
             `"${statusVi}"`
           ].join(',');
@@ -307,7 +307,7 @@ export function AuthorityResidentManagement() {
     setIsViewModalOpen(true);
     setSelectedResident(null);
     try {
-      const response = await fetch(`https://untoasted-jean-unsympathisingly.ngrok-free.dev/api/v1/residents/${residentId}`,{
+      const response = await fetch(`https://untoasted-jean-unsympathisingly.ngrok-free.dev/api/v1/residents/${residentId}`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -528,17 +528,16 @@ export function AuthorityResidentManagement() {
                           }
                           const statusVi = mapStatusToVietnamese(statusApi);
                           return (
-                            <span className={`inline-flex items-center justify-center px-3 py-1 rounded-full text-xs font-medium min-w-[100px] ${
-                              statusApi === 'PERMANENT_RESIDENCE'
+                            <span className={`inline-flex items-center justify-center px-3 py-1 rounded-full text-xs font-medium min-w-[100px] ${statusApi === 'PERMANENT_RESIDENCE'
                                 ? 'bg-green-100 text-green-800 border border-green-300'
                                 : statusApi === 'TEMPORARY_RESIDENCE'
-                                ? 'bg-orange-100 text-orange-800 border border-orange-300'
-                                : statusApi === 'TEMPORARY_ABSENCE'
-                                ? 'bg-blue-100 text-blue-800 border border-blue-300'
-                                : statusApi === 'VISITOR'
-                                ? 'bg-purple-100 text-purple-800 border border-purple-300'
-                                : 'bg-gray-100 text-gray-700 border border-gray-300'
-                            }`}>
+                                  ? 'bg-orange-100 text-orange-800 border border-orange-300'
+                                  : statusApi === 'TEMPORARY_ABSENCE'
+                                    ? 'bg-blue-100 text-blue-800 border border-blue-300'
+                                    : statusApi === 'VISITOR'
+                                      ? 'bg-purple-100 text-purple-800 border border-purple-300'
+                                      : 'bg-gray-100 text-gray-700 border border-gray-300'
+                              }`}>
                               {statusVi || '-'}
                             </span>
                           );
@@ -564,171 +563,171 @@ export function AuthorityResidentManagement() {
       </div>
 
       {isViewModalOpen && selectedResident && (
-    <Modal
-        isOpen={isViewModalOpen}
-        onClose={() => {
+        <Modal
+          isOpen={isViewModalOpen}
+          onClose={() => {
             setIsViewModalOpen(false);
             setSelectedResident(null);
-        }}
-        title="Chi tiết cư dân"
-        size="lg"
-    >
-        {isLoadingDetail ? (
+          }}
+          title="Chi tiết cư dân"
+          size="lg"
+        >
+          {isLoadingDetail ? (
             <div className="flex justify-center items-center h-48">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-                <p className="ml-3 text-lg text-gray-500">Đang tải chi tiết cư dân...</p>
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+              <p className="ml-3 text-lg text-gray-500">Đang tải chi tiết cư dân...</p>
             </div>
-        ) : (
+          ) : (
             <div className="p-4 space-y-8">
 
-                {/* 1. THÔNG TIN TÓM TẮT QUAN TRỌNG (Tên và Phòng) */}
-                <div className="bg-blue-50 border border-blue-300 rounded-2xl p-6 shadow-lg flex items-center justify-between">
-                    {/* Họ và Tên */}
-                    <div className='flex items-center gap-4'>
-                        <UserCircle className='w-10 h-10 text-blue-600' />
-                        <div>
-                            <dt className="text-base font-bold text-blue-600 tracking-wide">Họ và tên</dt>
-                            <dd className="text-3xl font-extrabold text-blue-900 mt-1">
-                                {selectedResident.fullName || 'Chưa cung cấp'}
-                            </dd>
-                        </div>
-                    </div>
-
-                    {/* Số Phòng */}
-                    <div className="text-right">
-                        <dt className="text-base font-bold text-orange-600 tracking-wide">Số phòng</dt>
-                        <dd className="text-3xl font-extrabold text-orange-700 mt-1 flex items-center gap-2 justify-end">
-                            <HomeIcon className='w-8 h-8 text-orange-500'/>
-                            {selectedResident.roomNumber || 'Chưa có'}
-                        </dd>
-                    </div>
+              {/* 1. THÔNG TIN TÓM TẮT QUAN TRỌNG (Tên và Phòng) */}
+              <div className="bg-blue-50 border border-blue-300 rounded-2xl p-6 shadow-lg flex items-center justify-between">
+                {/* Họ và Tên */}
+                <div className='flex items-center gap-4'>
+                  <UserCircle className='w-10 h-10 text-blue-600' />
+                  <div>
+                    <dt className="text-base font-bold text-blue-600 tracking-wide">Họ và tên</dt>
+                    <dd className="text-3xl font-extrabold text-blue-900 mt-1">
+                      {selectedResident.fullName || 'Chưa cung cấp'}
+                    </dd>
+                  </div>
                 </div>
 
-                {/* 2. NỘI DUNG CHÍNH - Chia thành 2 cột lớn */}
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-
-                    {/* CỘT 1 & 2: THÔNG TIN CÁ NHÂN & LIÊN HỆ (2/3 chiều rộng) */}
-                    <div className="lg:col-span-2 space-y-8">
-
-                        {/* A. Thông tin Cá nhân */}
-                        <div className="bg-white border border-gray-200 rounded-2xl p-8 shadow-xl">
-                            <h4 className="flex items-center text-xl font-bold text-gray-800 mb-6 border-b pb-4 border-gray-300">
-                                <UserCircle className="w-7 h-7 mr-3 text-blue-600" />
-                                Chi tiết cá nhân
-                            </h4>
-                            <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-10 gap-y-6">
-
-                                {/* CMND/CCCD */}
-                                <div>
-                                    <dt className="text-sm font-semibold text-gray-500 tracking-wide flex items-center gap-2">
-                                        <Fingerprint className="w-4 h-4 text-purple-500" />
-                                        CMND/CCCD
-                                    </dt>
-                                    <dd className="text-lg text-gray-900 font-extrabold mt-1">{selectedResident.idCard || 'Chưa có'}</dd>
-                                </div>
-
-                                {/* Ngày Sinh */}
-                                <div>
-                                    <dt className="text-sm font-semibold text-gray-500 tracking-wide flex items-center gap-2">
-                                        <Clock className="w-4 h-4 text-pink-500" />
-                                        Ngày sinh
-                                    </dt>
-                                    <dd className="text-lg text-gray-800 font-semibold mt-1">{selectedResident.dob || 'Chưa có'}</dd>
-                                </div>
-
-                                {/* Quê Quán */}
-                                <div className="col-span-1 sm:col-span-2">
-                                    <dt className="text-sm font-semibold text-gray-500 tracking-wide flex items-center gap-2">
-                                        <MapPin className="w-4 h-4 text-red-500" />
-                                        Quê quán
-                                    </dt>
-                                    <dd className="text-lg text-gray-800 font-semibold mt-1">{selectedResident.homeTown || 'Chưa có'}</dd>
-                                </div>
-
-                            </dl>
-                        </div>
-
-                        {/* B. Thông tin Liên hệ */}
-                        <div className="bg-white border border-gray-200 rounded-2xl p-8 shadow-xl">
-                            <h4 className="flex items-center text-xl font-bold text-gray-800 mb-6 border-b pb-4 border-gray-300">
-                                <Contact className="w-7 h-7 mr-3 text-blue-600" />
-                                Thông tin liên hệ
-                            </h4>
-                            <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-10 gap-y-6">
-
-                                {/* Số Điện Thoại */}
-                                <div>
-                                    <dt className="text-sm font-semibold text-gray-500 tracking-wide flex items-center gap-2">
-                                        <Phone className="w-4 h-4 text-green-600" />
-                                        Số điện thoại
-                                    </dt>
-                                    <dd className="text-xl text-green-700 font-extrabold mt-1">{selectedResident.phone || selectedResident.phoneNumber || 'Chưa có'}</dd>
-                                </div>
-
-                                {/* Email */}
-                                <div>
-                                    <dt className="text-sm font-semibold uppercase text-gray-500 tracking-wide flex items-center gap-2">
-                                        <Mail className="w-4 h-4 text-blue-600" />
-                                        Email
-                                    </dt>
-                                    <dd className="text-lg text-blue-600 font-semibold hover:underline mt-1">{selectedResident.email || 'Chưa có'}</dd>
-                                </div>
-                            </dl>
-                        </div>
-                    </div>
-
-                    {/* CỘT 3: TRẠNG THÁI (1/3 chiều rộng) */}
-                    <div className="lg:col-span-1">
-                        <div className="bg-white border border-gray-200 rounded-2xl p-8 shadow-xl h-full">
-                            <h4 className="flex items-center text-xl font-bold text-gray-800 mb-6 border-b pb-4 border-gray-300">
-                                <ShieldCheck className="w-7 h-7 mr-3 text-blue-600" />
-                                Trạng thái
-                            </h4>
-                            <dl className="space-y-8">
-
-                                {/* Tình Trạng Cư Trú */}
-                                <div>
-                                    <dt className="text-sm font-semibold text-gray-500 tracking-wide flex items-center gap-2">
-                                        <Home className="w-4 h-4 text-indigo-500" />
-                                        Tình trạng cư trú
-                                    </dt>
-                                    <div className="mt-2">
-                                        {selectedResident && (() => {
-                                            // Lấy status từ API (PERMANENT_RESIDENCE, etc.) hoặc residenceType
-                                            const apiStatus = (selectedResident.status as string) ||
-                                                             (selectedResident.residenceType as string) ||
-                                                             'PERMANENT_RESIDENCE';
-
-                                            // Map API status sang tiếng Việt
-                                            const statusVi = mapStatusToVietnamese(apiStatus);
-
-                                            // Dùng residenceType để lấy icon và color
-                                            const residenceType = selectedResident.residenceType || getResidenceTypeFromStatus(apiStatus);
-                                            const Icon = getResidenceTypeIcon(residenceType);
-                                            const label = statusVi || getResidenceTypeLabel(residenceType);
-                                            const color = getResidenceTypeColor(residenceType);
-
-                                            return (
-                                                <span className={`inline-flex items-center justify-center gap-2 px-4 py-2 rounded-xl text-base font-bold border shadow-md transition-colors min-w-[120px] ${color}`}>
-                                                    <Icon className="w-5 h-5" />
-                                                    {label}
-                                                </span>
-                                            );
-                                        })()}
-                                    </div>
-                                </div>
-
-                            </dl>
-                        </div>
-                    </div>
-
+                {/* Số Phòng */}
+                <div className="text-right">
+                  <dt className="text-base font-bold text-orange-600 tracking-wide">Số phòng</dt>
+                  <dd className="text-3xl font-extrabold text-orange-700 mt-1 flex items-center gap-2 justify-end">
+                    <HomeIcon className='w-8 h-8 text-orange-500' />
+                    {selectedResident.roomNumber || 'Chưa có'}
+                  </dd>
                 </div>
+              </div>
+
+              {/* 2. NỘI DUNG CHÍNH - Chia thành 2 cột lớn */}
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+
+                {/* CỘT 1 & 2: THÔNG TIN CÁ NHÂN & LIÊN HỆ (2/3 chiều rộng) */}
+                <div className="lg:col-span-2 space-y-8">
+
+                  {/* A. Thông tin Cá nhân */}
+                  <div className="bg-white border border-gray-200 rounded-2xl p-8 shadow-xl">
+                    <h4 className="flex items-center text-xl font-bold text-gray-800 mb-6 border-b pb-4 border-gray-300">
+                      <UserCircle className="w-7 h-7 mr-3 text-blue-600" />
+                      Chi tiết cá nhân
+                    </h4>
+                    <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-10 gap-y-6">
+
+                      {/* CMND/CCCD */}
+                      <div>
+                        <dt className="text-sm font-semibold text-gray-500 tracking-wide flex items-center gap-2">
+                          <Fingerprint className="w-4 h-4 text-purple-500" />
+                          CMND/CCCD
+                        </dt>
+                        <dd className="text-lg text-gray-900 font-extrabold mt-1">{selectedResident.idCard || 'Chưa có'}</dd>
+                      </div>
+
+                      {/* Ngày Sinh */}
+                      <div>
+                        <dt className="text-sm font-semibold text-gray-500 tracking-wide flex items-center gap-2">
+                          <Clock className="w-4 h-4 text-pink-500" />
+                          Ngày sinh
+                        </dt>
+                        <dd className="text-lg text-gray-800 font-semibold mt-1">{selectedResident.dob || 'Chưa có'}</dd>
+                      </div>
+
+                      {/* Quê Quán */}
+                      <div className="col-span-1 sm:col-span-2">
+                        <dt className="text-sm font-semibold text-gray-500 tracking-wide flex items-center gap-2">
+                          <MapPin className="w-4 h-4 text-red-500" />
+                          Quê quán
+                        </dt>
+                        <dd className="text-lg text-gray-800 font-semibold mt-1">{selectedResident.homeTown || 'Chưa có'}</dd>
+                      </div>
+
+                    </dl>
+                  </div>
+
+                  {/* B. Thông tin Liên hệ */}
+                  <div className="bg-white border border-gray-200 rounded-2xl p-8 shadow-xl">
+                    <h4 className="flex items-center text-xl font-bold text-gray-800 mb-6 border-b pb-4 border-gray-300">
+                      <Contact className="w-7 h-7 mr-3 text-blue-600" />
+                      Thông tin liên hệ
+                    </h4>
+                    <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-10 gap-y-6">
+
+                      {/* Số Điện Thoại */}
+                      <div>
+                        <dt className="text-sm font-semibold text-gray-500 tracking-wide flex items-center gap-2">
+                          <Phone className="w-4 h-4 text-green-600" />
+                          Số điện thoại
+                        </dt>
+                        <dd className="text-xl text-green-700 font-extrabold mt-1">{selectedResident.phone || selectedResident.phoneNumber || 'Chưa có'}</dd>
+                      </div>
+
+                      {/* Email */}
+                      <div>
+                        <dt className="text-sm font-semibold uppercase text-gray-500 tracking-wide flex items-center gap-2">
+                          <Mail className="w-4 h-4 text-blue-600" />
+                          Email
+                        </dt>
+                        <dd className="text-lg text-blue-600 font-semibold hover:underline mt-1">{selectedResident.email || 'Chưa có'}</dd>
+                      </div>
+                    </dl>
+                  </div>
+                </div>
+
+                {/* CỘT 3: TRẠNG THÁI (1/3 chiều rộng) */}
+                <div className="lg:col-span-1">
+                  <div className="bg-white border border-gray-200 rounded-2xl p-8 shadow-xl h-full">
+                    <h4 className="flex items-center text-xl font-bold text-gray-800 mb-6 border-b pb-4 border-gray-300">
+                      <ShieldCheck className="w-7 h-7 mr-3 text-blue-600" />
+                      Trạng thái
+                    </h4>
+                    <dl className="space-y-8">
+
+                      {/* Tình Trạng Cư Trú */}
+                      <div>
+                        <dt className="text-sm font-semibold text-gray-500 tracking-wide flex items-center gap-2">
+                          <Home className="w-4 h-4 text-indigo-500" />
+                          Tình trạng cư trú
+                        </dt>
+                        <div className="mt-2">
+                          {selectedResident && (() => {
+                            // Lấy status từ API (PERMANENT_RESIDENCE, etc.) hoặc residenceType
+                            const apiStatus = (selectedResident.status as string) ||
+                              (selectedResident.residenceType as string) ||
+                              'PERMANENT_RESIDENCE';
+
+                            // Map API status sang tiếng Việt
+                            const statusVi = mapStatusToVietnamese(apiStatus);
+
+                            // Dùng residenceType để lấy icon và color
+                            const residenceType = selectedResident.residenceType || getResidenceTypeFromStatus(apiStatus);
+                            const Icon = getResidenceTypeIcon(residenceType);
+                            const label = statusVi || getResidenceTypeLabel(residenceType);
+                            const color = getResidenceTypeColor(residenceType);
+
+                            return (
+                              <span className={`inline-flex items-center justify-center gap-2 px-4 py-2 rounded-xl text-base font-bold border shadow-md transition-colors min-w-[120px] ${color}`}>
+                                <Icon className="w-5 h-5" />
+                                {label}
+                              </span>
+                            );
+                          })()}
+                        </div>
+                      </div>
+
+                    </dl>
+                  </div>
+                </div>
+
+              </div>
 
 
             </div>
-        )}
-    </Modal>
-)}
+          )}
+        </Modal>
+      )}
 
 
     </div>
