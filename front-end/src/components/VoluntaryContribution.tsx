@@ -500,8 +500,8 @@ export function VoluntaryContribution() {
                 ) : campaigns
                     // Sắp xếp theo ngày bắt đầu (startDate) từ mới nhất đến cũ nhất
                     .sort((a, b) => {
-                        const dateA = a.startDate ? new Date(a.startDate).getTime() : 0;
-                        const dateB = b.startDate ? new Date(b.startDate).getTime() : 0;
+                        const dateA = a.startDate ? new Date(normalizeLocalDate(a.startDate)).getTime() : 0;
+                        const dateB = b.startDate ? new Date(normalizeLocalDate(b.startDate)).getTime() : 0;
                         return dateB - dateA; // Đổi thành dateA - dateB nếu chú muốn ngày cũ hiện trước
                     }).map((cp) => {
                         const total = parseMoney(cp.totalCollected);
@@ -631,13 +631,15 @@ export function VoluntaryContribution() {
                                 </div>
 
                                 <div className="mt-4 flex flex-wrap gap-2">
-                                    <button
-                                        onClick={() => openAddContribution(String(cp.id))}
-                                        disabled={isBusy}
-                                        className="flex-1 min-w-[200px] flex items-center justify-center gap-2 py-2.5 bg-emerald-50 text-emerald-700 rounded-xl text-xs font-bold hover:bg-emerald-100 transition-all disabled:opacity-60 disabled:cursor-not-allowed"
-                                    >
-                                        + Ghi nhận đóng góp
-                                    </button>
+                                    {cp.status !== 'DRAFT' && (
+                                        <button
+                                            onClick={() => openAddContribution(String(cp.id))}
+                                            disabled={isBusy}
+                                            className="flex-1 min-w-[200px] flex items-center justify-center gap-2 py-2.5 bg-emerald-50 text-emerald-700 rounded-xl text-xs font-bold hover:bg-emerald-100 transition-all disabled:opacity-60 disabled:cursor-not-allowed"
+                                        >
+                                            + Ghi nhận đóng góp
+                                        </button>
+                                    )}
                                     <button
                                         onClick={() => openEdit(cp)}
                                         disabled={isBusy}
@@ -762,7 +764,7 @@ export function VoluntaryContribution() {
                 isOpen={isDetailModalOpen}
                 onClose={() => setIsDetailModalOpen(false)}
                 title="Thông tin chi tiết chiến dịch"
-                width="900px"
+                size="lg"
             >
                 {isDetailLoading ? (
                     <div className="flex items-center justify-center py-20 text-gray-500">
@@ -814,8 +816,8 @@ export function VoluntaryContribution() {
                                 <div>
                                     <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Tỷ lệ</p>
                                     <p className="text-lg font-black text-emerald-600">
-                                        {campaignDetail?.campaign?.goalAmount > 0
-                                            ? Math.round((campaignDetail.campaign.totalCollected / campaignDetail.campaign.goalAmount) * 100)
+                                        {campaignDetail?.campaign?.goalAmount && Number(campaignDetail.campaign.goalAmount) > 0
+                                            ? Math.round((Number(campaignDetail.campaign.totalCollected || 0) / Number(campaignDetail.campaign.goalAmount)) * 100)
                                             : 0}%
                                     </p>
                                 </div>
@@ -847,17 +849,17 @@ export function VoluntaryContribution() {
                             </div>
                         </div>
 
-                        {/* Nút hành động (Lấy từ Modal 1) */}
-                        <div className="flex flex-col md:flex-row gap-4">
-                            <button
-                                onClick={() => selectedCampaignId && openAddContribution(selectedCampaignId)}
-                                disabled={isCreateSubmitting || isEditSubmitting || isDeleteSubmitting || isAddContributionSubmitting}
-                                className="flex-1 py-4 rounded-2xl bg-emerald-600 text-black font-black shadow-lg shadow-emerald-200 hover:bg-emerald-700 transition-all disabled:opacity-60"
-                            >
-                                + GHI NHẬN ĐÓNG GÓP
-                            </button>
-
-                        </div>
+                        {campaignDetail?.campaign?.status !== 'DRAFT' && (
+                            <div className="flex flex-col md:flex-row gap-4">
+                                <button
+                                    onClick={() => selectedCampaignId && openAddContribution(selectedCampaignId)}
+                                    disabled={isCreateSubmitting || isEditSubmitting || isDeleteSubmitting || isAddContributionSubmitting}
+                                    className="flex-1 py-4 rounded-2xl bg-emerald-600 text-black font-black shadow-lg shadow-emerald-200 hover:bg-emerald-700 transition-all disabled:opacity-60"
+                                >
+                                    + GHI NHẬN ĐÓNG GÓP
+                                </button>
+                            </div>
+                        )}
 
                         {/* Danh sách đóng góp (Bảng đẹp Modal 2) */}
                         <div className="bg-white border border-slate-100 rounded-[24px] overflow-hidden shadow-sm min-h-[250px]">
