@@ -519,13 +519,13 @@ export function AccountingVoluntaryContribution() {
                                     <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#64748b' }}>
                                         <Calendar size={12} style={{ color: '#94a3b8' }} />
                                         <span style={{ fontSize: '11px', fontWeight: 500, whiteSpace: 'nowrap' }}>
-                                            Bắt đầu: {cp.startDate || 'N/A'}
+                                            Bắt đầu: {normalizeLocalDate(cp.startDate)}
                                         </span>
                                     </div>
                                     <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#64748b' }}>
                                         <Clock size={12} style={{ color: '#94a3b8' }} />
                                         <span style={{ fontSize: '11px', fontWeight: 500, whiteSpace: 'nowrap' }}>
-                                            Kết thúc: {cp.campaignEndDate || 'N/A'}
+                                            Kết thúc: {normalizeLocalDate(cp.campaignEndDate)}
                                         </span>
                                     </div>
                                 </div>

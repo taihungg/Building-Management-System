@@ -92,6 +92,19 @@ export function ResidentVoluntaryContribution() {
     const formatCurrency = (amount: number) =>
         new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND', maximumFractionDigits: 0 }).format(amount);
 
+    const normalizeLocalDate = (value: any): string => {
+        if (!value) return 'N/A';
+        if (Array.isArray(value)) {
+            const [y, m, d] = value;
+            return `${String(d).padStart(2, '0')}/${String(m).padStart(2, '0')}/${y}`;
+        }
+        if (typeof value === 'string' && value.includes('-')) {
+            const parts = value.split('-');
+            if (parts.length === 3) return `${parts[2]}/${parts[1]}/${parts[0]}`;
+        }
+        return String(value);
+    };
+
     const filteredCampaigns = campaigns.filter((cp) => {
         const q = searchTerm.trim().toLowerCase();
         if (!q) return true;
@@ -160,13 +173,13 @@ export function ResidentVoluntaryContribution() {
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#64748b' }}>
                                     <Calendar size={12} style={{ color: '#94a3b8' }} />
                                     <span style={{ fontSize: '11px', fontWeight: 500, whiteSpace: 'nowrap' }}>
-                                        Bắt đầu: {cp.startDate || 'N/A'}
+                                        Bắt đầu: {normalizeLocalDate(cp.startDate)}
                                     </span>
                                 </div>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#64748b' }}>
                                     <Clock size={12} style={{ color: '#94a3b8' }} />
                                     <span style={{ fontSize: '11px', fontWeight: 500, whiteSpace: 'nowrap' }}>
-                                        Kết thúc: {cp.campaignEndDate || 'N/A'}
+                                        Kết thúc: {normalizeLocalDate(cp.campaignEndDate)}
                                     </span>
                                 </div>
                             </div>
@@ -233,15 +246,15 @@ export function ResidentVoluntaryContribution() {
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                             <div className="p-4 bg-white border border-slate-100 rounded-2xl flex items-center gap-4">
                                 <div className="p-3 bg-blue-50 text-blue-600 rounded-xl"><Calendar size={20} /></div>
-                                <div><p className="text-[10px] font-bold text-slate-400 uppercase">Bắt đầu</p><p className="text-sm font-bold text-slate-700">{selectedCampaign.startDate}</p></div>
+                                <div><p className="text-[10px] font-bold text-slate-400 uppercase">Bắt đầu</p><p className="text-sm font-bold text-slate-700">{normalizeLocalDate(selectedCampaign.startDate)}</p></div>
                             </div>
                             <div className="p-4 bg-white border border-slate-100 rounded-2xl flex items-center gap-4">
                                 <div className="p-3 bg-slate-50 text-slate-600 rounded-xl"><Calendar size={20} /></div>
-                                <div><p className="text-[10px] font-bold text-slate-400 uppercase">Kết thúc</p><p className="text-sm font-bold text-slate-700">{selectedCampaign.campaignEndDate}</p></div>
+                                <div><p className="text-[10px] font-bold text-slate-400 uppercase">Kết thúc</p><p className="text-sm font-bold text-slate-700">{normalizeLocalDate(selectedCampaign.campaignEndDate)}</p></div>
                             </div>
                             <div className="p-4 bg-amber-50 border border-amber-100 rounded-2xl flex items-center gap-4">
                                 <div className="p-3 bg-amber-100 text-amber-600 rounded-xl"><Clock size={20} /></div>
-                                <div><p className="text-[10px] font-bold text-amber-500 uppercase">Hạn chót</p><p className="text-sm font-black text-amber-700">{selectedCampaign.contributionDeadline}</p></div>
+                                <div><p className="text-[10px] font-bold text-amber-500 uppercase">Hạn chót</p><p className="text-sm font-black text-amber-700">{normalizeLocalDate(selectedCampaign.contributionDeadline)}</p></div>
                             </div>
                         </div>
 
