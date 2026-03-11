@@ -27,7 +27,7 @@ export function InvoiceCreation() {
   const [isLoading, setIsLoading] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const BASE_URL = 'https://untoasted-jean-unsympathisingly.ngrok-free.dev';
+  const BASE_URL = 'https://building-management-system.fly.dev';
 
   // --- HÀM LẤY DỮ LIỆU ĐÃ CÓ TRÊN HỆ THỐNG ---
   const fetchExistingData = useCallback(async () => {

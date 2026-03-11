@@ -32,7 +32,7 @@ type Bill = {
   createdAt: string;
 };
 
-const API_BASE_URL = 'https://untoasted-jean-unsympathisingly.ngrok-free.dev';
+const API_BASE_URL = 'https://building-management-system.fly.dev';
 const NGROK_HEADERS = { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' };
 
 const pad2 = (n: number) => String(n).padStart(2, '0');
@@ -300,12 +300,12 @@ export function ResidentDashboard({ onNavigate }: ResidentDashboardProps = {}) {
                 margin={{ top: 20, right: 30, left: 10, bottom: 5 }}
               >
                 <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" vertical={false} />
-                <XAxis 
-                  dataKey="month" 
+                <XAxis
+                  dataKey="month"
                   stroke="#6b7280"
                   tick={{ fontSize: 12 }}
                 />
-                <YAxis 
+                <YAxis
                   stroke="#6b7280"
                   tick={{ fontSize: 12 }}
                   tickFormatter={(value: number) => {
@@ -316,8 +316,8 @@ export function ResidentDashboard({ onNavigate }: ResidentDashboardProps = {}) {
                   }}
                 />
                 <Tooltip content={<CostTooltip />} />
-                <Legend 
-                  wrapperStyle={{ paddingTop: 10 }} 
+                <Legend
+                  wrapperStyle={{ paddingTop: 10 }}
                   iconType="circle"
                   formatter={(value) => {
                     if (value === 'paid') return 'Đã thanh toán';
@@ -325,19 +325,19 @@ export function ResidentDashboard({ onNavigate }: ResidentDashboardProps = {}) {
                     return value;
                   }}
                 />
-                <Bar 
-                  dataKey="unpaid" 
-                  name="Chưa thanh toán" 
-                  fill="#f97316" 
-                  barSize={40} 
-                  radius={[4, 4, 0, 0]} 
+                <Bar
+                  dataKey="unpaid"
+                  name="Chưa thanh toán"
+                  fill="#f97316"
+                  barSize={40}
+                  radius={[4, 4, 0, 0]}
                 />
-                <Bar 
-                  dataKey="paid" 
-                  name="Đã thanh toán" 
-                  fill="#10b981" 
-                  barSize={40} 
-                  radius={[4, 4, 0, 0]} 
+                <Bar
+                  dataKey="paid"
+                  name="Đã thanh toán"
+                  fill="#10b981"
+                  barSize={40}
+                  radius={[4, 4, 0, 0]}
                 />
               </BarChart>
             </ResponsiveContainer>
@@ -348,7 +348,7 @@ export function ResidentDashboard({ onNavigate }: ResidentDashboardProps = {}) {
         <div className="lg:col-span-1 bg-white rounded-xl p-6 border-2 border-gray-200">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-bold text-gray-900">Hóa đơn gần đây</h3>
-            <Link 
+            <Link
               to="/resident/invoice"
               onClick={() => onNavigate?.('resident-invoice')}
               className="text-sm text-cyan-500 hover:text-cyan-600 transition-colors"
@@ -362,19 +362,18 @@ export function ResidentDashboard({ onNavigate }: ResidentDashboardProps = {}) {
               const monthMatch = bill.period.match(/Tháng\s+(\d+)/);
               const monthNumber = monthMatch ? monthMatch[1] : '';
               const billTitle = monthNumber ? `Hóa đơn tháng ${monthNumber}` : bill.type;
-              
+
               return (
-                <div 
-                  key={bill.id} 
+                <div
+                  key={bill.id}
                   className="p-4 rounded-lg border-2 border-gray-200 bg-gray-50 hover:shadow-md transition-all"
                 >
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-sm font-semibold text-gray-900">{billTitle}</span>
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                      bill.status === 'Paid' ? 'bg-green-100 text-green-700' :
-                      bill.status === 'Pending' ? 'bg-orange-100 text-orange-700' :
-                      'bg-red-100 text-red-700'
-                    }`}>
+                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${bill.status === 'Paid' ? 'bg-green-100 text-green-700' :
+                        bill.status === 'Pending' ? 'bg-orange-100 text-orange-700' :
+                          'bg-red-100 text-red-700'
+                      }`}>
                       {bill.status === 'Paid' ? 'Đã thanh toán' : 'Chưa thanh toán'}
                     </span>
                   </div>

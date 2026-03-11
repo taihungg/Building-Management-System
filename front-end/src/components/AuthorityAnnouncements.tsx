@@ -70,11 +70,11 @@ export function AuthorityAnnouncements() {
     try {
       // Fetch all issues (vì type STATE chưa có data, dùng tất cả hoặc SECURITY)
       // Có thể thay đổi thành ?type=SECURITY nếu chỉ muốn security issues
-      const response = await fetch('https://untoasted-jean-unsympathisingly.ngrok-free.dev/api/issues',{
+      const response = await fetch('https://building-management-system.fly.dev/api/issues', {
         method: 'GET',
         headers: {
           // TUYỆT ĐỐI KHÔNG để 'Content-Type': 'application/json' ở đây khi dùng FormData
-          'ngrok-skip-browser-warning': 'true' 
+          'ngrok-skip-browser-warning': 'true'
         },
       });
       if (!response.ok) {
@@ -128,12 +128,12 @@ export function AuthorityAnnouncements() {
       console.log('Announcements - Fetched:', issues.length, 'total issues');
       console.log('Announcements - Filtered:', filteredIssues.length, 'SECURITY/STATE issues');
       console.log('Announcements - Mapped:', sortedData.length, 'announcements');
-        setAnnouncements(sortedData);
+      setAnnouncements(sortedData);
     } catch (err: any) {
       console.error('Error fetching announcements:', err);
       setAnnouncements([]);
     } finally {
-        setIsLoading(false);
+      setIsLoading(false);
     }
   };
 
@@ -206,18 +206,18 @@ export function AuthorityAnnouncements() {
       ann.title.toLowerCase().includes(searchLower) ||
       ann.message.toLowerCase().includes(searchLower)
     );
-    
+
     // Status filter
-    const matchesStatus = selectedStatus === 'all' || 
+    const matchesStatus = selectedStatus === 'all' ||
       (selectedStatus === 'pending' && ann.status === 'pending') ||
       (selectedStatus === 'in_progress' && ann.status === 'in_progress') ||
       (selectedStatus === 'handled' && ann.status === 'handled');
-    
+
     // Date range filter
     const now = new Date();
     const annDate = ann.createdAt;
     let matchesDateRange = true;
-    
+
     if (selectedDateRange === 'today') {
       const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
       matchesDateRange = annDate >= todayStart;
@@ -228,7 +228,7 @@ export function AuthorityAnnouncements() {
       const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
       matchesDateRange = annDate >= monthStart;
     }
-    
+
     return matchesSearch && matchesStatus && matchesDateRange;
   });
 
@@ -315,7 +315,7 @@ export function AuthorityAnnouncements() {
   const handleStatusUpdate = async (announcementId: string, newStatus: 'pending' | 'in_progress' | 'handled') => {
     try {
       const issueStatus = mapAnnouncementStatusToIssueStatus(newStatus);
-      const response = await fetch(`https://untoasted-jean-unsympathisingly.ngrok-free.dev/api/issues/${announcementId}/status`, {
+      const response = await fetch(`https://building-management-system.fly.dev/api/issues/${announcementId}/status`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -445,8 +445,8 @@ export function AuthorityAnnouncements() {
 
       {isLoading ? (
         <div className="bg-white rounded-2xl p-12 border-2 border-gray-200 text-center">
-            <Loader className="w-16 h-16 text-blue-500 mx-auto mb-4 animate-spin" />
-            <p className="text-gray-600 text-lg">Đang tải dữ liệu thông báo...</p>
+          <Loader className="w-16 h-16 text-blue-500 mx-auto mb-4 animate-spin" />
+          <p className="text-gray-600 text-lg">Đang tải dữ liệu thông báo...</p>
         </div>
       ) : filteredAnnouncements.length === 0 ? (
         <div className="bg-white rounded-2xl p-12 border-2 border-gray-200 text-center">
@@ -467,19 +467,19 @@ export function AuthorityAnnouncements() {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-100">
-          {filteredAnnouncements.map((announcement) => {
-            const statusInfo = getStatusLabel(announcement.status);
+                {filteredAnnouncements.map((announcement) => {
+                  const statusInfo = getStatusLabel(announcement.status);
                   const location = getLocation(announcement);
                   const reporterName = announcement.reporterName || 'Chưa có';
                   const reporterAvatar = announcement.reporterAvatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(reporterName)}&background=3b82f6&color=fff`;
-            
-            return (
+
+                  return (
                     <tr key={announcement.id} className="hover:bg-gray-50/80 transition-colors duration-150 border-b border-gray-100 last:border-0">
                       {/* Người báo: Avatar + Name */}
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-3">
-                          <img 
-                            src={reporterAvatar} 
+                          <img
+                            src={reporterAvatar}
                             alt={reporterName}
                             className="w-10 h-10 rounded-full bg-gray-200"
                             onError={(e) => {
@@ -522,17 +522,16 @@ export function AuthorityAnnouncements() {
                               e.stopPropagation();
                               setEditingStatusId(editingStatusId === announcement.id ? null : announcement.id);
                             }}
-                            className={`inline-flex rounded-full px-3 py-1 text-xs font-medium cursor-pointer transition-all hover:shadow-md ${
-                              announcement.status === 'pending'
+                            className={`inline-flex rounded-full px-3 py-1 text-xs font-medium cursor-pointer transition-all hover:shadow-md ${announcement.status === 'pending'
                                 ? 'bg-gray-100 text-gray-800 border border-gray-300'
                                 : announcement.status === 'in_progress'
-                                ? 'bg-orange-100 text-orange-800 border border-orange-300'
-                            : announcement.status === 'handled'
-                                ? 'bg-green-100 text-green-800 border border-green-300'
-                                : 'bg-red-100 text-red-800 border border-red-300'
-                            }`}
+                                  ? 'bg-orange-100 text-orange-800 border border-orange-300'
+                                  : announcement.status === 'handled'
+                                    ? 'bg-green-100 text-green-800 border border-green-300'
+                                    : 'bg-red-100 text-red-800 border border-red-300'
+                              }`}
                           >
-                          {statusInfo.label}
+                            {statusInfo.label}
                           </button>
 
                           {/* Dropdown Menu */}
@@ -554,93 +553,93 @@ export function AuthorityAnnouncements() {
                               }}
                             >
                               <div style={{ backgroundColor: '#ffffff', width: '100%', height: '100%' }}>
-                        <button 
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleStatusUpdate(announcement.id, 'pending');
-                                }}
-                                className="w-full text-left px-4 py-2.5 text-sm transition-colors flex items-center gap-2"
-                                style={{
-                                  backgroundColor: announcement.status === 'pending' ? '#f3f4f6' : '#ffffff',
-                                  opacity: 1,
-                                  background: announcement.status === 'pending' ? '#f3f4f6' : '#ffffff'
-                                }}
-                                onMouseEnter={(e) => {
-                                  if (announcement.status !== 'pending') {
-                                    e.currentTarget.style.backgroundColor = '#f3f4f6';
-                                    e.currentTarget.style.background = '#f3f4f6';
-                                  }
-                                }}
-                                onMouseLeave={(e) => {
-                                  if (announcement.status !== 'pending') {
-                                    e.currentTarget.style.backgroundColor = '#ffffff';
-                                    e.currentTarget.style.background = '#ffffff';
-                                  }
-                                }}
-                              >
-                                <span className="w-2 h-2 rounded-full bg-gray-500" style={{ backgroundColor: '#6b7280', opacity: 1 }}></span>
-                                <span className={announcement.status === 'pending' ? 'font-semibold text-gray-800' : 'text-gray-700'} style={{ opacity: 1 }}>
-                                  Chưa xử lý
-                                </span>
-                        </button>
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleStatusUpdate(announcement.id, 'in_progress');
-                                }}
-                                className="w-full text-left px-4 py-2.5 text-sm transition-colors flex items-center gap-2"
-                                style={{
-                                  backgroundColor: announcement.status === 'in_progress' ? '#fff7ed' : '#ffffff',
-                                  opacity: 1,
-                                  background: announcement.status === 'in_progress' ? '#fff7ed' : '#ffffff'
-                                }}
-                                onMouseEnter={(e) => {
-                                  if (announcement.status !== 'in_progress') {
-                                    e.currentTarget.style.backgroundColor = '#fff7ed';
-                                    e.currentTarget.style.background = '#fff7ed';
-                                  }
-                                }}
-                                onMouseLeave={(e) => {
-                                  if (announcement.status !== 'in_progress') {
-                                    e.currentTarget.style.backgroundColor = '#ffffff';
-                                    e.currentTarget.style.background = '#ffffff';
-                                  }
-                                }}
-                              >
-                                <span className="w-2 h-2 rounded-full bg-orange-500" style={{ backgroundColor: '#f97316', opacity: 1 }}></span>
-                                <span className={announcement.status === 'in_progress' ? 'font-semibold text-orange-800' : 'text-gray-700'} style={{ opacity: 1 }}>
-                                  Đang xử lý
-                                </span>
-                              </button>
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleStatusUpdate(announcement.id, 'handled');
-                                }}
-                                className="w-full text-left px-4 py-2.5 text-sm transition-colors flex items-center gap-2"
-                                style={{
-                                  backgroundColor: announcement.status === 'handled' ? '#f0fdf4' : '#ffffff',
-                                  opacity: 1,
-                                  background: announcement.status === 'handled' ? '#f0fdf4' : '#ffffff'
-                                }}
-                                onMouseEnter={(e) => {
-                                  if (announcement.status !== 'handled') {
-                                    e.currentTarget.style.backgroundColor = '#f0fdf4';
-                                    e.currentTarget.style.background = '#f0fdf4';
-                                  }
-                                }}
-                                onMouseLeave={(e) => {
-                                  if (announcement.status !== 'handled') {
-                                    e.currentTarget.style.backgroundColor = '#ffffff';
-                                    e.currentTarget.style.background = '#ffffff';
-                                  }
-                                }}
-                              >
-                                <span className="w-2 h-2 rounded-full bg-green-500" style={{ backgroundColor: '#22c55e', opacity: 1 }}></span>
-                                <span className={announcement.status === 'handled' ? 'font-semibold text-green-800' : 'text-gray-700'} style={{ opacity: 1 }}>
-                                  Đã xử lý
-                                </span>
-                              </button>
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleStatusUpdate(announcement.id, 'pending');
+                                  }}
+                                  className="w-full text-left px-4 py-2.5 text-sm transition-colors flex items-center gap-2"
+                                  style={{
+                                    backgroundColor: announcement.status === 'pending' ? '#f3f4f6' : '#ffffff',
+                                    opacity: 1,
+                                    background: announcement.status === 'pending' ? '#f3f4f6' : '#ffffff'
+                                  }}
+                                  onMouseEnter={(e) => {
+                                    if (announcement.status !== 'pending') {
+                                      e.currentTarget.style.backgroundColor = '#f3f4f6';
+                                      e.currentTarget.style.background = '#f3f4f6';
+                                    }
+                                  }}
+                                  onMouseLeave={(e) => {
+                                    if (announcement.status !== 'pending') {
+                                      e.currentTarget.style.backgroundColor = '#ffffff';
+                                      e.currentTarget.style.background = '#ffffff';
+                                    }
+                                  }}
+                                >
+                                  <span className="w-2 h-2 rounded-full bg-gray-500" style={{ backgroundColor: '#6b7280', opacity: 1 }}></span>
+                                  <span className={announcement.status === 'pending' ? 'font-semibold text-gray-800' : 'text-gray-700'} style={{ opacity: 1 }}>
+                                    Chưa xử lý
+                                  </span>
+                                </button>
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleStatusUpdate(announcement.id, 'in_progress');
+                                  }}
+                                  className="w-full text-left px-4 py-2.5 text-sm transition-colors flex items-center gap-2"
+                                  style={{
+                                    backgroundColor: announcement.status === 'in_progress' ? '#fff7ed' : '#ffffff',
+                                    opacity: 1,
+                                    background: announcement.status === 'in_progress' ? '#fff7ed' : '#ffffff'
+                                  }}
+                                  onMouseEnter={(e) => {
+                                    if (announcement.status !== 'in_progress') {
+                                      e.currentTarget.style.backgroundColor = '#fff7ed';
+                                      e.currentTarget.style.background = '#fff7ed';
+                                    }
+                                  }}
+                                  onMouseLeave={(e) => {
+                                    if (announcement.status !== 'in_progress') {
+                                      e.currentTarget.style.backgroundColor = '#ffffff';
+                                      e.currentTarget.style.background = '#ffffff';
+                                    }
+                                  }}
+                                >
+                                  <span className="w-2 h-2 rounded-full bg-orange-500" style={{ backgroundColor: '#f97316', opacity: 1 }}></span>
+                                  <span className={announcement.status === 'in_progress' ? 'font-semibold text-orange-800' : 'text-gray-700'} style={{ opacity: 1 }}>
+                                    Đang xử lý
+                                  </span>
+                                </button>
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleStatusUpdate(announcement.id, 'handled');
+                                  }}
+                                  className="w-full text-left px-4 py-2.5 text-sm transition-colors flex items-center gap-2"
+                                  style={{
+                                    backgroundColor: announcement.status === 'handled' ? '#f0fdf4' : '#ffffff',
+                                    opacity: 1,
+                                    background: announcement.status === 'handled' ? '#f0fdf4' : '#ffffff'
+                                  }}
+                                  onMouseEnter={(e) => {
+                                    if (announcement.status !== 'handled') {
+                                      e.currentTarget.style.backgroundColor = '#f0fdf4';
+                                      e.currentTarget.style.background = '#f0fdf4';
+                                    }
+                                  }}
+                                  onMouseLeave={(e) => {
+                                    if (announcement.status !== 'handled') {
+                                      e.currentTarget.style.backgroundColor = '#ffffff';
+                                      e.currentTarget.style.background = '#ffffff';
+                                    }
+                                  }}
+                                >
+                                  <span className="w-2 h-2 rounded-full bg-green-500" style={{ backgroundColor: '#22c55e', opacity: 1 }}></span>
+                                  <span className={announcement.status === 'handled' ? 'font-semibold text-green-800' : 'text-gray-700'} style={{ opacity: 1 }}>
+                                    Đã xử lý
+                                  </span>
+                                </button>
                               </div>
                             </div>
                           )}
@@ -657,7 +656,7 @@ export function AuthorityAnnouncements() {
 
       {/* Centered Modal for Detail View */}
       {isDrawerOpen && selectedAnnouncement && (
-        <div 
+        <div
           className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4"
           onClick={() => {
             setIsDrawerOpen(false);
@@ -665,7 +664,7 @@ export function AuthorityAnnouncements() {
           }}
         >
           {/* Modal Box */}
-          <div 
+          <div
             className="bg-white w-full max-w-md rounded-3xl shadow-[0_20px_50px_rgba(0,0,0,0.15)] overflow-hidden relative transform transition-all duration-300 ease-out"
             onClick={(e) => e.stopPropagation()}
             style={{
@@ -694,7 +693,7 @@ export function AuthorityAnnouncements() {
                   Thông tin người báo
                 </label>
                 <div className="flex items-center gap-4 p-4 bg-gray-50 rounded-lg">
-                  <img 
+                  <img
                     src={selectedAnnouncement.reporterAvatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(selectedAnnouncement.reporterName || 'Chưa có')}&background=3b82f6&color=fff`}
                     alt={selectedAnnouncement.reporterName || 'Chưa có'}
                     className="w-12 h-12 rounded-full bg-gray-200"
@@ -713,10 +712,10 @@ export function AuthorityAnnouncements() {
                     </div>
                   </div>
                 </div>
-                      </div>
+              </div>
 
               {/* Nội dung sự vụ */}
-                      <div>
+              <div>
                 <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3 block">
                   Nội dung sự vụ
                 </label>
@@ -724,7 +723,7 @@ export function AuthorityAnnouncements() {
                   <h3 className="text-base font-semibold text-gray-900">{selectedAnnouncement.title}</h3>
                   <p className="text-sm text-gray-600 leading-relaxed">{selectedAnnouncement.message}</p>
                 </div>
-                      </div>
+              </div>
 
               {/* Thời gian & Địa điểm */}
               <div>

@@ -72,7 +72,7 @@ export function BillManagement() {
     setIsLoading(true);
     try {
       // 1. Thay domain sang ngrok mới
-      let url = `https://untoasted-jean-unsympathisingly.ngrok-free.dev/api/v1/accounting/invoices?year=${selectedYear}`;
+      let url = `https://building-management-system.fly.dev/api/v1/accounting/invoices?year=${selectedYear}`;
       if (selectedMonth > 0) url += `&month=${selectedMonth}`;
 
       const response = await fetch(url, {
@@ -145,7 +145,7 @@ export function BillManagement() {
   const handleExportToExcel = () => {
     const promise = new Promise(async (resolve, reject) => {
       try {
-        const url = `https://untoasted-jean-unsympathisingly.ngrok-free.dev/api/v1/accounting/invoices/export?month=${selectedMonth}&year=${selectedYear}`;
+        const url = `https://building-management-system.fly.dev/api/v1/accounting/invoices/export?month=${selectedMonth}&year=${selectedYear}`;
 
         const response = await fetch(url, {
           method: 'GET',
@@ -184,7 +184,7 @@ export function BillManagement() {
   const handleDownloadPDF = async (invoiceId, apartmentLabel) => {
     try {
       toast.info("Đang tải xuống PDF...");
-      const url = `https://untoasted-jean-unsympathisingly.ngrok-free.dev/api/v1/accounting/${invoiceId}/export-pdf`;
+      const url = `https://building-management-system.fly.dev/api/v1/accounting/${invoiceId}/export-pdf`;
 
       const response = await fetch(url, {
         method: 'GET',
@@ -222,7 +222,7 @@ export function BillManagement() {
         setSelectedBill({ ...basicBill, details: [], isLoadingDetails: true });
       }
 
-      const url = `https://untoasted-jean-unsympathisingly.ngrok-free.dev/api/v1/accounting/invoices/${billId}`;
+      const url = `https://building-management-system.fly.dev/api/v1/accounting/invoices/${billId}`;
       console.log(`Fetching detail for billId: ${billId} at URL: ${url}`);
       const response = await fetch(url, {
         method: 'GET',

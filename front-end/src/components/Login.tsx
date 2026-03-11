@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Lock, User, Eye, EyeOff, Mail } from 'lucide-react'; 
+import { Lock, User, Eye, EyeOff, Mail } from 'lucide-react';
 import React from 'react';
 import { toast } from 'sonner'; // Chú nhớ cài sonner hoặc dùng alert bình thường nhé
 import { authProvider } from './auth';
@@ -22,7 +22,7 @@ export function Login({ onLogin, onNavigateAuth }: LoginProps) {
     setIsLoading(true);
 
     try {
-      const response = await fetch('https://untoasted-jean-unsympathisingly.ngrok-free.dev/api/v1/auth/login', {
+      const response = await fetch('https://building-management-system.fly.dev/api/v1/auth/login', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -40,8 +40,8 @@ export function Login({ onLogin, onNavigateAuth }: LoginProps) {
         // 2. Lưu thông tin đăng nhập vào máy (localStorage)
         localStorage.setItem('user_role', res.data.role);
         localStorage.setItem('account_id', res.data.accountId);
-        localStorage.setItem('person_id',res.data.personId);
-        
+        localStorage.setItem('person_id', res.data.personId);
+
         toast.success("Đăng nhập thành công!");
         authProvider.saveAuthData(res.data.role, res.data.accountId, res.data.personId);
         // 3. Trả dữ liệu về cho App để chuyển trang

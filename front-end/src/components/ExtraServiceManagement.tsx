@@ -1,5 +1,5 @@
 import { Search, Plus, Calendar, Trash2, Home, ArrowRight, Eye } from 'lucide-react';
-import { Modal } from './Modal'; 
+import { Modal } from './Modal';
 import { Toaster, toast } from 'sonner';
 import { useState, useEffect, useCallback } from 'react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
@@ -33,7 +33,7 @@ type ExtraFeeDetailApi = {
 export function ExtraServiceManagement() {
     const [searchTerm, setSearchTerm] = useState('');
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
-    
+
     // STATE CHO CHI TIẾT
     const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
     const [selectedService, setSelectedService] = useState<(ExtraFeeSummary & ExtraFeeDetailApi) | null>(null);
@@ -86,13 +86,13 @@ export function ExtraServiceManagement() {
         setSelectedService(service);
         setIsDetailLoading(true);
         try {
-            const response = await fetch(`https://untoasted-jean-unsympathisingly.ngrok-free.dev/api/v1/extrafee/${service.id}`,{
+            const response = await fetch(`https://building-management-system.fly.dev/api/v1/extrafee/${service.id}`, {
                 method: 'GET',
                 headers: {
-                  'Content-Type': 'application/json',
-                  'ngrok-skip-browser-warning': 'true'
+                    'Content-Type': 'application/json',
+                    'ngrok-skip-browser-warning': 'true'
                 }
-              });
+            });
             if (!response.ok) {
                 const errorText = await response.text().catch(() => '');
                 throw new Error(errorText || `HTTP ${response.status}: ${response.statusText}`);
@@ -117,16 +117,16 @@ export function ExtraServiceManagement() {
         try {
             const trimmed = keyword.trim();
             const url = trimmed
-                ? `https://untoasted-jean-unsympathisingly.ngrok-free.dev/api/v1/extrafee?keyword=${encodeURIComponent(trimmed)}`
-                : `https://untoasted-jean-unsympathisingly.ngrok-free.dev/api/v1/extrafee`;
-            const response = await fetch(url,{
+                ? `https://building-management-system.fly.dev/api/v1/extrafee?keyword=${encodeURIComponent(trimmed)}`
+                : `https://building-management-system.fly.dev/api/v1/extrafee`;
+            const response = await fetch(url, {
                 method: 'GET',
                 headers: {
-                  'Content-Type': 'application/json',
-                  // 2. Thêm header để ngrok không chặn dữ liệu trả về
-                  'ngrok-skip-browser-warning': 'true'
+                    'Content-Type': 'application/json',
+                    // 2. Thêm header để ngrok không chặn dữ liệu trả về
+                    'ngrok-skip-browser-warning': 'true'
                 }
-              });
+            });
             if (!response.ok) {
                 const errorText = await response.text().catch(() => '');
                 throw new Error(errorText || `HTTP ${response.status}: ${response.statusText}`);
@@ -157,14 +157,14 @@ export function ExtraServiceManagement() {
                 return;
             }
             try {
-                const response = await fetch(`https://untoasted-jean-unsympathisingly.ngrok-free.dev/api/v1/apartments/dropdown?keyword=${encodeURIComponent(keyword)}`,{
+                const response = await fetch(`https://building-management-system.fly.dev/api/v1/apartments/dropdown?keyword=${encodeURIComponent(keyword)}`, {
                     method: 'GET',
                     headers: {
-                      'Content-Type': 'application/json',
-                      // 2. Thêm header để ngrok không chặn dữ liệu trả về
-                      'ngrok-skip-browser-warning': 'true'
+                        'Content-Type': 'application/json',
+                        // 2. Thêm header để ngrok không chặn dữ liệu trả về
+                        'ngrok-skip-browser-warning': 'true'
                     }
-                  });
+                });
                 if (!response.ok) return;
                 const res = await response.json();
                 const data = (res.data || []) as ApartmentDropdownItem[];
@@ -221,7 +221,7 @@ export function ExtraServiceManagement() {
 
         setIsCreateSubmitting(true);
         try {
-            const response = await fetch(`https://untoasted-jean-unsympathisingly.ngrok-free.dev/api/v1/extrafee`, {
+            const response = await fetch(`https://building-management-system.fly.dev/api/v1/extrafee`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' },
                 body: JSON.stringify({
@@ -277,14 +277,14 @@ export function ExtraServiceManagement() {
 
         setIsDeleteSubmitting(true);
         const action = async () => {
-            const response = await fetch(`https://untoasted-jean-unsympathisingly.ngrok-free.dev/api/v1/extrafee/${deleteTarget.id}`, {
+            const response = await fetch(`https://building-management-system.fly.dev/api/v1/extrafee/${deleteTarget.id}`, {
                 method: 'DELETE',
                 headers: {
-                  'Content-Type': 'application/json',
-                  // 2. Thêm header để ngrok không chặn dữ liệu trả về
-                  'ngrok-skip-browser-warning': 'true'
+                    'Content-Type': 'application/json',
+                    // 2. Thêm header để ngrok không chặn dữ liệu trả về
+                    'ngrok-skip-browser-warning': 'true'
                 }
-              });
+            });
             if (!response.ok) {
                 const errorText = await response.text().catch(() => '');
                 throw new Error(errorText || `HTTP ${response.status}: ${response.statusText}`);
@@ -416,7 +416,7 @@ export function ExtraServiceManagement() {
                                     </span>
                                 </td>
                                 <td className="px-6 py-4 flex justify-center gap-2">
-                                    <button 
+                                    <button
                                         onClick={() => handleViewDetail(item)}
                                         className="p-2 text-indigo-500 hover:bg-indigo-50 rounded-lg transition-colors"
                                         title="Xem chi tiết"
@@ -591,8 +591,8 @@ export function ExtraServiceManagement() {
             </Modal>
 
             {/* MODAL CHI TIẾT KHOẢN THU */}
-            <Modal 
-                isOpen={isDetailModalOpen} 
+            <Modal
+                isOpen={isDetailModalOpen}
                 onClose={() => {
                     setIsDetailModalOpen(false);
                     setSelectedService(null);
@@ -664,7 +664,7 @@ export function ExtraServiceManagement() {
                             )}
                         </div>
 
-                        <button 
+                        <button
                             onClick={() => setIsDetailModalOpen(false)}
                             className="w-full py-4 bg-gray-900 text-white rounded-2xl font-bold transition-all hover:bg-gray-800"
                         >

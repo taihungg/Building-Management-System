@@ -47,7 +47,7 @@ type IssueCreateRequest = {
   reporterId: string;
 };
 
-const API_BASE_URL = 'https://untoasted-jean-unsympathisingly.ngrok-free.dev';
+const API_BASE_URL = 'https://building-management-system.fly.dev';
 const NGROK_HEADERS = { 'ngrok-skip-browser-warning': 'true' };
 const PAYMENT_REQUEST_STORAGE_KEY = 'payment_requests_v1';
 const PAYMENT_REQUEST_MARKER = '[PAYMENT_REQUEST]';
@@ -357,7 +357,7 @@ export function ResidentBills() {
   const handleDownloadPDF = async (invoiceId: string, apartmentLabel: string) => {
     try {
       toast.info("Đang tải xuống PDF...");
-      const url = `https://untoasted-jean-unsympathisingly.ngrok-free.dev/api/v1/accounting/${invoiceId}/export-pdf`;
+      const url = `https://building-management-system.fly.dev/api/v1/accounting/${invoiceId}/export-pdf`;
 
       const response = await fetch(url, {
         method: 'GET',

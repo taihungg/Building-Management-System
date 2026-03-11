@@ -175,7 +175,7 @@ Or create `application-local.properties` (do not commit) and run with a matching
 Configured in `src/main/java/.../config/WebConfig.java` to allow:
 - `http://localhost:*`
 - `https://*.vercel.app`
-- `https://untoasted-jean-unsympathisingly.ngrok-free.dev/`
+- `https://building-management-system.fly.dev/`
 
 Adjust as needed for your FE origin(s).
 

@@ -27,7 +27,7 @@ type Announcement = {
   read: boolean;
 };
 
-const API_BASE_URL = 'https://untoasted-jean-unsympathisingly.ngrok-free.dev';
+const API_BASE_URL = 'https://building-management-system.fly.dev';
 const NGROK_HEADERS = { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' };
 
 const inferAnnouncementType = (title: string, message: string): Announcement['type'] => {
@@ -53,39 +53,39 @@ const inferAnnouncementType = (title: string, message: string): Announcement['ty
 // Icon mapping function to match summary cards
 const getNotificationIcon = (announcement: Announcement) => {
   const title = announcement.title.toLowerCase();
-  
+
   // Urgent/Technical (bảo trì, hệ thống) - Red AlertTriangle (matches "Tin khẩn cấp" card)
   if (announcement.type === 'alert' || title.includes('bảo trì') || title.includes('hệ thống') || title.includes('maintenance')) {
-    return { 
-      Icon: AlertTriangle, 
-      bgClass: 'bg-red-100', 
-      textClass: 'text-red-600' 
+    return {
+      Icon: AlertTriangle,
+      bgClass: 'bg-red-100',
+      textClass: 'text-red-600'
     };
   }
-  
+
   // Financial (thu phí, hóa đơn, thanh toán) - Green Wallet (matches "Tiền phí & Hóa đơn" card)
   if (title.includes('thu phí') || title.includes('hóa đơn') || title.includes('phí dịch vụ') || title.includes('thanh toán') || title.includes('payment')) {
-    return { 
-      Icon: Wallet, 
-      bgClass: 'bg-emerald-100', 
-      textClass: 'text-emerald-600' 
+    return {
+      Icon: Wallet,
+      bgClass: 'bg-emerald-100',
+      textClass: 'text-emerald-600'
     };
   }
-  
+
   // General/Rules (nội quy, quy định, lịch họp) - Blue Megaphone (matches "Tin tức chung" card)
   if (title.includes('nội quy') || title.includes('quy định') || title.includes('lịch họp') || title.includes('họp cư dân') || announcement.type === 'info') {
-    return { 
-      Icon: Megaphone, 
-      bgClass: 'bg-blue-100', 
-      textClass: 'text-blue-600' 
+    return {
+      Icon: Megaphone,
+      bgClass: 'bg-blue-100',
+      textClass: 'text-blue-600'
     };
   }
-  
+
   // Success/Completion - Blue Megaphone (default for general news)
-  return { 
-    Icon: Megaphone, 
-    bgClass: 'bg-blue-100', 
-    textClass: 'text-blue-600' 
+  return {
+    Icon: Megaphone,
+    bgClass: 'bg-blue-100',
+    textClass: 'text-blue-600'
   };
 };
 
@@ -263,7 +263,7 @@ export function ResidentAnnouncements() {
         <div className="h-32 rounded-2xl p-6 flex justify-between items-center text-white shadow-sm relative overflow-hidden" style={{ backgroundColor: '#059669' }}>
           <div className="flex flex-col">
             <p className="text-3xl font-bold">
-              {announcements.filter(n => 
+              {announcements.filter(n =>
                 n.type === 'info' && (n.title.toLowerCase().includes('phí') || n.title.toLowerCase().includes('hóa đơn') || n.title.toLowerCase().includes('thanh toán'))
               ).length}
             </p>
@@ -276,7 +276,7 @@ export function ResidentAnnouncements() {
         <div className="h-32 rounded-2xl p-6 flex justify-between items-center text-white shadow-sm relative overflow-hidden" style={{ backgroundColor: '#2563eb' }}>
           <div className="flex flex-col">
             <p className="text-3xl font-bold">
-              {announcements.filter(n => 
+              {announcements.filter(n =>
                 n.type === 'info' && !(n.title.toLowerCase().includes('phí') || n.title.toLowerCase().includes('hóa đơn') || n.title.toLowerCase().includes('thanh toán'))
               ).length}
             </p>
@@ -297,24 +297,22 @@ export function ResidentAnnouncements() {
             <button
               key={tab.id}
               onClick={() => setFilter(tab.id as typeof filter)}
-              className={`text-sm font-medium px-4 py-2 rounded-xl transition-all ${
-                filter === tab.id
+              className={`text-sm font-medium px-4 py-2 rounded-xl transition-all ${filter === tab.id
                   ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-lg'
                   : 'bg-white text-gray-700 border-2 border-gray-200 hover:bg-gray-50'
-              }`}
+                }`}
             >
               {tab.label}
             </button>
           ))}
         </div>
-        <button 
+        <button
           onClick={handleMarkAllAsRead}
           disabled={unreadCount === 0}
-          className={`text-sm font-medium transition-colors flex items-center gap-2 px-4 py-2 rounded-xl ${
-            unreadCount === 0
+          className={`text-sm font-medium transition-colors flex items-center gap-2 px-4 py-2 rounded-xl ${unreadCount === 0
               ? 'text-gray-400 cursor-not-allowed bg-gray-100'
               : 'text-blue-600 bg-blue-50 hover:bg-blue-100 hover:text-blue-700'
-          }`}
+            }`}
         >
           Đánh dấu tất cả đã đọc
         </button>
@@ -330,20 +328,19 @@ export function ResidentAnnouncements() {
 
         {filteredAnnouncements.map((announcement) => {
           const { Icon, bgClass, textClass } = getNotificationIcon(announcement);
-          
+
           return (
-            <div 
-              key={announcement.id} 
+            <div
+              key={announcement.id}
               onClick={() => handleAnnouncementClick(announcement)}
-              className={`bg-white rounded-2xl p-6 border-2 transition-all hover:shadow-md cursor-pointer ${
-                announcement.read ? 'border-gray-200' : 'border-blue-200 bg-blue-50/30'
-              }`}
+              className={`bg-white rounded-2xl p-6 border-2 transition-all hover:shadow-md cursor-pointer ${announcement.read ? 'border-gray-200' : 'border-blue-200 bg-blue-50/30'
+                }`}
             >
               <div className="flex items-start gap-4">
                 <div className={`w-10 h-10 rounded-full ${bgClass} flex items-center justify-center flex-shrink-0`}>
                   <Icon className={`w-5 h-5 ${textClass}`} />
                 </div>
-                
+
                 <div className="flex-1 min-w-0">
                   <div className="flex items-start justify-between gap-4 mb-2">
                     <h3 className="text-lg text-gray-900 font-semibold">{announcement.title}</h3>
@@ -382,11 +379,11 @@ export function ResidentAnnouncements() {
 
       {/* Announcement Detail Modal */}
       {selectedAnnouncement && (
-        <div 
+        <div
           className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
           onClick={() => setSelectedAnnouncement(null)}
         >
-          <div 
+          <div
             className="bg-white rounded-2xl p-8 max-w-2xl w-full border-2 border-gray-200 max-h-[90vh] overflow-y-auto"
             onClick={(e) => e.stopPropagation()}
           >
@@ -402,11 +399,11 @@ export function ResidentAnnouncements() {
                 })()}
                 <div className="flex-1">
                   <h2 className="text-2xl font-bold text-gray-900 mb-2">{selectedAnnouncement.title}</h2>
-                    <div className="flex items-center gap-4 text-sm text-gray-500">
-                      <span>Ngày đăng: {selectedAnnouncement.createdAt ? formatDate(selectedAnnouncement.createdAt) : 'Không rõ'}</span>
-                      <span>•</span>
-                      <span>{selectedAnnouncement.createdAt ? formatRelativeTime(selectedAnnouncement.createdAt) : 'Không rõ'}</span>
-                    </div>
+                  <div className="flex items-center gap-4 text-sm text-gray-500">
+                    <span>Ngày đăng: {selectedAnnouncement.createdAt ? formatDate(selectedAnnouncement.createdAt) : 'Không rõ'}</span>
+                    <span>•</span>
+                    <span>{selectedAnnouncement.createdAt ? formatRelativeTime(selectedAnnouncement.createdAt) : 'Không rõ'}</span>
+                  </div>
                 </div>
               </div>
               <button
@@ -416,7 +413,7 @@ export function ResidentAnnouncements() {
                 <X className="w-5 h-5 text-gray-500" />
               </button>
             </div>
-            
+
             <div className="prose max-w-none">
               <p className="text-gray-700 leading-relaxed whitespace-pre-wrap">
                 {selectedAnnouncement.message}

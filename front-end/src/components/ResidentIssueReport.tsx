@@ -3,7 +3,7 @@ import { AlertCircle, Wrench, Shield, FileText, Plus, Search, Filter, Clock, Che
 import { toast } from 'sonner';
 import { authProvider } from './auth';
 
-const BASE_URL = 'https://untoasted-jean-unsympathisingly.ngrok-free.dev';
+const BASE_URL = 'https://building-management-system.fly.dev';
 const NGROK_HEADERS = {
   'Content-Type': 'application/json',
   'ngrok-skip-browser-warning': 'true'
@@ -116,7 +116,7 @@ export function ResidentIssueReport() {
         if (residentData) {
           const roomNumber = residentData.roomNumber;
           const building = residentData.building;
-          
+
           // If we have room number, try to find apartment ID
           let apartmentId: string | undefined = undefined;
           if (roomNumber) {
@@ -279,10 +279,10 @@ export function ResidentIssueReport() {
     const matchesSearch = issue.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
       issue.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
       issue.location.toLowerCase().includes(searchTerm.toLowerCase());
-    
+
     const matchesType = typeFilter === 'All' || issue.type === typeFilter;
     const matchesStatus = statusFilter === 'All' || issue.status === statusFilter;
-    
+
     return matchesSearch && matchesType && matchesStatus;
   });
 
@@ -485,18 +485,16 @@ export function ResidentIssueReport() {
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
                     <div className="flex items-center gap-4 mb-3">
-                      <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${
-                        issue.type === 'MAINTENANCE' ? 'bg-blue-100' :
-                        issue.type === 'COMPLAINT' ? 'bg-orange-100' :
-                        issue.type === 'AUTHORITY' ? 'bg-purple-100' :
-                        'bg-red-100'
-                      }`}>
-                        <Icon className={`w-6 h-6 ${
-                          issue.type === 'MAINTENANCE' ? 'text-blue-600' :
-                          issue.type === 'COMPLAINT' ? 'text-orange-600' :
-                          issue.type === 'AUTHORITY' ? 'text-purple-600' :
-                          'text-red-600'
-                        }`} />
+                      <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${issue.type === 'MAINTENANCE' ? 'bg-blue-100' :
+                          issue.type === 'COMPLAINT' ? 'bg-orange-100' :
+                            issue.type === 'AUTHORITY' ? 'bg-purple-100' :
+                              'bg-red-100'
+                        }`}>
+                        <Icon className={`w-6 h-6 ${issue.type === 'MAINTENANCE' ? 'text-blue-600' :
+                            issue.type === 'COMPLAINT' ? 'text-orange-600' :
+                              issue.type === 'AUTHORITY' ? 'text-purple-600' :
+                                'text-red-600'
+                          }`} />
                       </div>
                       <div className="flex-1">
                         <h3 className="text-lg font-semibold text-gray-900">{issue.title}</h3>
@@ -567,18 +565,16 @@ export function ResidentIssueReport() {
                 {(() => {
                   const Icon = issueTypeIcons[selectedIssue.type] || AlertCircle;
                   return (
-                    <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${
-                      selectedIssue.type === 'MAINTENANCE' ? 'bg-blue-100' :
-                      selectedIssue.type === 'COMPLAINT' ? 'bg-orange-100' :
-                      selectedIssue.type === 'AUTHORITY' ? 'bg-purple-100' :
-                      'bg-red-100'
-                    }`}>
-                      <Icon className={`w-6 h-6 ${
-                        selectedIssue.type === 'MAINTENANCE' ? 'text-blue-600' :
-                        selectedIssue.type === 'COMPLAINT' ? 'text-orange-600' :
-                        selectedIssue.type === 'AUTHORITY' ? 'text-purple-600' :
-                        'text-red-600'
-                      }`} />
+                    <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${selectedIssue.type === 'MAINTENANCE' ? 'bg-blue-100' :
+                        selectedIssue.type === 'COMPLAINT' ? 'bg-orange-100' :
+                          selectedIssue.type === 'AUTHORITY' ? 'bg-purple-100' :
+                            'bg-red-100'
+                      }`}>
+                      <Icon className={`w-6 h-6 ${selectedIssue.type === 'MAINTENANCE' ? 'text-blue-600' :
+                          selectedIssue.type === 'COMPLAINT' ? 'text-orange-600' :
+                            selectedIssue.type === 'AUTHORITY' ? 'text-purple-600' :
+                              'text-red-600'
+                        }`} />
                     </div>
                   );
                 })()}

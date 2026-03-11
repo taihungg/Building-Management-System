@@ -71,7 +71,7 @@ export function DebtManagement() {
     setIsConfirming(true);
     try {
       // 2. Xây dựng URL với các tham số từ State và authProvider
-      const url = `https://untoasted-jean-unsympathisingly.ngrok-free.dev/api/v1/accounting/invoices/confirm?month=${selectedMonth}&year=${selectedYear}&staffId=${authProvider.getPersonId()}`;
+      const url = `https://building-management-system.fly.dev/api/v1/accounting/invoices/confirm?month=${selectedMonth}&year=${selectedYear}&staffId=${authProvider.getPersonId()}`;
 
       const response = await fetch(url, {
         method: 'PATCH', // Thường confirm là hành động thay đổi dữ liệu nên dùng POST
@@ -107,7 +107,7 @@ export function DebtManagement() {
     setIsLoading(true);
     try {
       // Bắt buộc có tháng và năm
-      const url = `https://untoasted-jean-unsympathisingly.ngrok-free.dev/api/v1/accounting/invoices?year=${selectedYear}&month=${selectedMonth}`;
+      const url = `https://building-management-system.fly.dev/api/v1/accounting/invoices?year=${selectedYear}&month=${selectedMonth}`;
 
       const response = await fetch(url, {
         method: 'GET',
@@ -152,7 +152,7 @@ export function DebtManagement() {
 
     try {
       // Gọi API POST với month và year trên URL
-      const url = `https://untoasted-jean-unsympathisingly.ngrok-free.dev/api/v1/accounting/invoices/generation?month=${selectedMonth}&year=${selectedYear}`;
+      const url = `https://building-management-system.fly.dev/api/v1/accounting/invoices/generation?month=${selectedMonth}&year=${selectedYear}`;
 
       const response = await fetch(url, {
         method: 'POST',
@@ -286,7 +286,7 @@ export function DebtManagement() {
 
           // Gọi API để tạo hóa đơn từ file
           const response = await fetch(
-            `https://untoasted-jean-unsympathisingly.ngrok-free.dev/api/v1/accounting/invoices/generation?month=${selectedMonth}&year=${selectedYear}`,
+            `https://building-management-system.fly.dev/api/v1/accounting/invoices/generation?month=${selectedMonth}&year=${selectedYear}`,
             {
               method: 'POST',
               headers: {
@@ -368,7 +368,7 @@ export function DebtManagement() {
     setIsApproving(true);
     try {
       // Gọi API để duyệt tất cả hóa đơn PENDING
-      const response = await fetch(`https://untoasted-jean-unsympathisingly.ngrok-free.dev/api/v1/accounting/invoices/approve-all?month=${selectedMonth}&year=${selectedYear}`, {
+      const response = await fetch(`https://building-management-system.fly.dev/api/v1/accounting/invoices/approve-all?month=${selectedMonth}&year=${selectedYear}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -414,7 +414,7 @@ export function DebtManagement() {
 
     try {
       // Gọi API để cập nhật hóa đơn
-      const response = await fetch(`https://untoasted-jean-unsympathisingly.ngrok-free.dev/api/v1/accounting/invoices/${billId}`, {
+      const response = await fetch(`https://building-management-system.fly.dev/api/v1/accounting/invoices/${billId}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -456,7 +456,7 @@ export function DebtManagement() {
     setIsPaymentModalOpen(true);
 
     try {
-      const url = `https://untoasted-jean-unsympathisingly.ngrok-free.dev/api/v1/accounting/invoices/${bill.id}`;
+      const url = `https://building-management-system.fly.dev/api/v1/accounting/invoices/${bill.id}`;
       const response = await fetch(url, {
         method: 'GET',
         headers: { 'ngrok-skip-browser-warning': 'true' }
@@ -495,7 +495,7 @@ export function DebtManagement() {
     }
 
     try {
-      const url = `https://untoasted-jean-unsympathisingly.ngrok-free.dev/api/v1/accounting/invoices/${selectedBill.id}/payment`;
+      const url = `https://building-management-system.fly.dev/api/v1/accounting/invoices/${selectedBill.id}/payment`;
       const response = await fetch(url, {
         method: 'PUT',
         headers: {
@@ -653,7 +653,7 @@ export function DebtManagement() {
     setIsExporting(true);
     try {
       // API đúng như chú gửi
-      const url = `https://untoasted-jean-unsympathisingly.ngrok-free.dev/api/v1/accounting/invoices/export?month=${selectedMonth}&year=${selectedYear}`;
+      const url = `https://building-management-system.fly.dev/api/v1/accounting/invoices/export?month=${selectedMonth}&year=${selectedYear}`;
 
       const response = await fetch(url, {
         method: 'GET',
@@ -688,7 +688,7 @@ export function DebtManagement() {
     try {
       toast.info("Đang tải xuống PDF...");
       // Assuming GET endpoint for PDF download
-      const url = `https://untoasted-jean-unsympathisingly.ngrok-free.dev/api/v1/accounting/${invoiceId}/export-pdf`;
+      const url = `https://building-management-system.fly.dev/api/v1/accounting/${invoiceId}/export-pdf`;
 
       const response = await fetch(url, {
         method: 'GET',
@@ -723,7 +723,7 @@ export function DebtManagement() {
         setSelectedInvoice({ ...basicBill, details: [], isLoadingDetails: true });
       }
 
-      const url = `https://untoasted-jean-unsympathisingly.ngrok-free.dev/api/v1/accounting/invoices/${billId}`;
+      const url = `https://building-management-system.fly.dev/api/v1/accounting/invoices/${billId}`;
       const response = await fetch(url, {
         method: 'GET',
         headers: { 'ngrok-skip-browser-warning': 'true' }

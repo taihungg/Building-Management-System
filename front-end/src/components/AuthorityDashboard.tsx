@@ -64,14 +64,14 @@ export function AuthorityDashboard() {
   const navigate = useNavigate();
   const [announcements, setAnnouncements] = useState([]);
   const [residents, setResidents] = useState([]);
-  const [error, setError] = useState ();
+  const [error, setError] = useState();
   const [activeLostItemIndex, setActiveLostItemIndex] = useState<number | null>(null);
   const [currentTime, setCurrentTime] = useState(new Date()); // State để cập nhật thời gian thực
 
   useEffect(() => {
-      fetchResidents();
-      fetchUrgentIssues();
-    }, []);
+    fetchResidents();
+    fetchUrgentIssues();
+  }, []);
 
   // Cập nhật thời gian thực mỗi phút để hiển thị thời gian tương đối chính xác
   useEffect(() => {
@@ -93,17 +93,17 @@ export function AuthorityDashboard() {
     return today;
   };
 
-    
+
 
   const fetchResidents = async () => {
     try {
-      let url = 'https://untoasted-jean-unsympathisingly.ngrok-free.dev/api/v1/residents';
+      let url = 'https://building-management-system.fly.dev/api/v1/residents';
 
-      const response = await fetch(url,{
+      const response = await fetch(url, {
         method: 'GET',
         headers: {
-           'Content-Type': 'application/json' ,
-          'ngrok-skip-browser-warning': 'true' 
+          'Content-Type': 'application/json',
+          'ngrok-skip-browser-warning': 'true'
         },
       });
       if (!response.ok) {
@@ -122,21 +122,21 @@ export function AuthorityDashboard() {
   const fetchUrgentIssues = async () => {
     try {
       // Fetch issues với type SECURITY hoặc STATE (ưu tiên SECURITY vì có data)
-      const response = await fetch('https://untoasted-jean-unsympathisingly.ngrok-free.dev/api/issues?type=SECURITY',{
+      const response = await fetch('https://building-management-system.fly.dev/api/issues?type=SECURITY', {
         method: 'GET',
         headers: {
-           'Content-Type': 'application/json' ,
-          'ngrok-skip-browser-warning': 'true' 
+          'Content-Type': 'application/json',
+          'ngrok-skip-browser-warning': 'true'
         },
       });
       if (!response.ok) {
         throw new Error('Không thể tải danh sách tin báo');
-    }
+      }
       const res = await response.json();
       const issues = res.data || [];
 
       // Filter lấy các tin báo chưa xử lý (UNPROCESSED) hoặc đang xử lý (PROCESSING) và type là SECURITY hoặc STATE
-      const unprocessedIssues = issues.filter((issue: any) => 
+      const unprocessedIssues = issues.filter((issue: any) =>
         (issue.status === 'UNPROCESSED' || issue.status === 'PROCESSING') && (issue.type === 'SECURITY' || issue.type === 'STATE')
       );
 
@@ -231,7 +231,7 @@ export function AuthorityDashboard() {
       { name: 'Tạm trú', value: statusCounts.TEMPORARY_RESIDENCE, color: '#F59E0B' },
       { name: 'Tạm vắng', value: statusCounts.TEMPORARY_ABSENCE, color: '#3B82F6' },
       { name: 'Lưu trú', value: statusCounts.VISITOR, color: '#8B5CF6' },
-  ];
+    ];
 
     // Debug: Log để kiểm tra
     console.log('Dashboard - Resident Status Data:', result);
@@ -280,7 +280,7 @@ export function AuthorityDashboard() {
         </div>
 
         {/* Card 3: Tổng cư dân (Bright Blue) */}
-        <div 
+        <div
           className="rounded-xl shadow-md p-6 h-32 relative overflow-hidden flex justify-between items-center"
           style={{ backgroundColor: '#3b82f6' }}
         >
@@ -292,7 +292,7 @@ export function AuthorityDashboard() {
         </div>
 
         {/* Card 4: Tin báo mới (Orange) */}
-        <div 
+        <div
           className="rounded-xl shadow-md p-6 h-32 relative overflow-hidden flex justify-between items-center"
           style={{ backgroundColor: '#f97316' }}
         >
@@ -309,7 +309,7 @@ export function AuthorityDashboard() {
         {/* Biểu đồ tròn - tỉ lệ cư dân (1/3 width) */}
         <div className="bg-white rounded-2xl p-6 border-2 border-gray-200 flex flex-col lg:col-span-1 h-[340px]">
           <h3 className="text-xl font-semibold text-gray-900 mb-4">Tỉ lệ cư dân</h3>
-          
+
           {/* Donut chart centered */}
           <div className="flex-1 flex items-center justify-center relative cursor-pointer">
             <ResponsiveContainer width="100%" height={220}>
@@ -328,30 +328,30 @@ export function AuthorityDashboard() {
                   onMouseLeave={() => setActiveLostItemIndex(null)}
                 >
                   {residentStatusData.filter(item => item.value > 0).map((entry, index) => (
-                    <Cell 
-                      key={`cell-${index}`} 
+                    <Cell
+                      key={`cell-${index}`}
                       fill={entry.color}
                       cursor="pointer"
                       onMouseEnter={() => setActiveLostItemIndex(index)}
                     />
                   ))}
                 </Pie>
-                <Tooltip 
+                <Tooltip
                   cursor={{ fill: 'transparent' }}
                   formatter={(value: number, name: string) => [
                     `${value} người`,
                     name,
                   ]}
-                  contentStyle={{ 
+                  contentStyle={{
                     backgroundColor: '#ffffff',
                     borderRadius: '8px',
                     border: 'none',
                     boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
                     padding: '10px'
                   }}
-                  itemStyle={{ 
+                  itemStyle={{
                     color: '#374151',
-                    fontWeight: 500 
+                    fontWeight: 500
                   }}
                 />
               </PieChart>
@@ -367,20 +367,20 @@ export function AuthorityDashboard() {
           {/* Compact legend under chart */}
           <div className="mt-4 space-y-2">
             {residentStatusData.map((item, index) => (
-              <div 
-                key={index} 
+              <div
+                key={index}
                 className="flex items-center justify-between px-3 py-2 rounded-lg bg-gray-50"
               >
                 <div className="flex items-center gap-2">
                   <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: item.color }}></div>
-                  <span 
+                  <span
                     className="text-xs font-medium"
                     style={{ color: item.color }}
                   >
                     {item.name}
                   </span>
                 </div>
-                <span 
+                <span
                   className="text-xs font-semibold"
                   style={{ color: item.color }}
                 >
@@ -393,93 +393,93 @@ export function AuthorityDashboard() {
 
         {/* Tin báo cần xử lý gấp (2/3 width) */}
         <div className="bg-white rounded-2xl shadow-sm border-2 border-gray-200 p-6 lg:col-span-2">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-bold text-gray-800">Tin báo cần xử lý gấp</h2>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-bold text-gray-800">Tin báo cần xử lý gấp</h2>
             <button
               onClick={() => navigate('/authority/announcements')}
               className="text-sm text-blue-600 hover:underline cursor-pointer"
             >
-            Xem tất cả
-          </button>
-        </div>
+              Xem tất cả
+            </button>
+          </div>
 
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead className="bg-gray-50 border-b border-gray-100">
-              <tr className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                <th className="py-3 px-6 text-left">Người báo</th>
-                <th className="py-3 px-6 text-left w-[40%]">Sự vụ</th>
-                <th className="py-3 px-6 text-left">Thời gian</th>
-                <th className="py-3 px-6 text-left">Trạng thái</th>
-                <th className="py-3 px-6 text-right">Hành động</th>
-              </tr>
-            </thead>
-            <tbody>
-              {announcements.length > 0 ? (
-                announcements.map((announcement: any, index: number) => {
-                  const statusInfo = getStatusInfo(announcement.status);
-                  const initials = announcement.reporterName
-                    ? announcement.reporterName.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2)
-                    : 'NN';
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="bg-gray-50 border-b border-gray-100">
+                <tr className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                  <th className="py-3 px-6 text-left">Người báo</th>
+                  <th className="py-3 px-6 text-left w-[40%]">Sự vụ</th>
+                  <th className="py-3 px-6 text-left">Thời gian</th>
+                  <th className="py-3 px-6 text-left">Trạng thái</th>
+                  <th className="py-3 px-6 text-right">Hành động</th>
+                </tr>
+              </thead>
+              <tbody>
+                {announcements.length > 0 ? (
+                  announcements.map((announcement: any, index: number) => {
+                    const statusInfo = getStatusInfo(announcement.status);
+                    const initials = announcement.reporterName
+                      ? announcement.reporterName.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2)
+                      : 'NN';
 
-                  // Color mapping với style inline
-                  const colorConfigs = [
-                    { bg: 'bg-blue-100', text: 'text-blue-700' },
-                    { bg: 'bg-emerald-100', text: 'text-emerald-700' },
-                    { bg: 'bg-indigo-100', text: 'text-indigo-700' },
-                    { bg: 'bg-purple-100', text: 'text-purple-700' },
-                    { bg: 'bg-pink-100', text: 'text-pink-700' }
-                  ];
-                  const colorConfig = colorConfigs[index % colorConfigs.length];
+                    // Color mapping với style inline
+                    const colorConfigs = [
+                      { bg: 'bg-blue-100', text: 'text-blue-700' },
+                      { bg: 'bg-emerald-100', text: 'text-emerald-700' },
+                      { bg: 'bg-indigo-100', text: 'text-indigo-700' },
+                      { bg: 'bg-purple-100', text: 'text-purple-700' },
+                      { bg: 'bg-pink-100', text: 'text-pink-700' }
+                    ];
+                    const colorConfig = colorConfigs[index % colorConfigs.length];
 
-                  return (
-                    <tr key={announcement.id} className="border-b border-gray-100 last:border-0 hover:bg-gray-50 transition-colors duration-150">
-                <td className="py-4 px-6 align-top">
-                  <div className="flex items-center gap-3">
-                          <div className={`w-9 h-9 rounded-full ${colorConfig.bg} flex items-center justify-center text-xs font-semibold ${colorConfig.text}`}>
-                            {initials}
-                    </div>
-                    <div>
-                            <p className="text-sm font-medium text-gray-800">{announcement.reporterName || 'Chưa có'}</p>
-                            <p className="text-xs text-gray-500">Căn hộ {announcement.roomNumber || 'N/A'}</p>
-                    </div>
-                  </div>
-                </td>
-                <td className="py-4 px-6 align-top">
-                        <p className="text-sm font-medium text-gray-900">{announcement.title}</p>
-                  <p className="mt-1 text-xs text-gray-500 line-clamp-2">
-                          {announcement.message || announcement.description || ''}
-                  </p>
-                </td>
-                <td className="py-4 px-6 align-top text-gray-700 whitespace-nowrap">
-                        {formatTime(announcement.createdAt)}
-                </td>
-                <td className="py-4 px-6 align-top">
-                        <span className={`inline-flex px-3 py-1 rounded-full text-xs font-semibold border ${statusInfo.color}`}>
-                          {statusInfo.label}
-                  </span>
-                </td>
-                <td className="py-4 px-6 align-top text-right">
-                        <button
-                          onClick={() => navigate('/authority/announcements')}
-                          className="text-sm font-semibold text-indigo-600 hover:text-indigo-900 hover:underline cursor-pointer"
-                        >
-                    Xử lý ngay
-                  </button>
-                </td>
-              </tr>
-                  );
-                })
-              ) : (
-                <tr>
-                  <td colSpan={5} className="py-8 text-center text-gray-500">
-                    Không có tin báo nào
-                </td>
-              </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
+                    return (
+                      <tr key={announcement.id} className="border-b border-gray-100 last:border-0 hover:bg-gray-50 transition-colors duration-150">
+                        <td className="py-4 px-6 align-top">
+                          <div className="flex items-center gap-3">
+                            <div className={`w-9 h-9 rounded-full ${colorConfig.bg} flex items-center justify-center text-xs font-semibold ${colorConfig.text}`}>
+                              {initials}
+                            </div>
+                            <div>
+                              <p className="text-sm font-medium text-gray-800">{announcement.reporterName || 'Chưa có'}</p>
+                              <p className="text-xs text-gray-500">Căn hộ {announcement.roomNumber || 'N/A'}</p>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="py-4 px-6 align-top">
+                          <p className="text-sm font-medium text-gray-900">{announcement.title}</p>
+                          <p className="mt-1 text-xs text-gray-500 line-clamp-2">
+                            {announcement.message || announcement.description || ''}
+                          </p>
+                        </td>
+                        <td className="py-4 px-6 align-top text-gray-700 whitespace-nowrap">
+                          {formatTime(announcement.createdAt)}
+                        </td>
+                        <td className="py-4 px-6 align-top">
+                          <span className={`inline-flex px-3 py-1 rounded-full text-xs font-semibold border ${statusInfo.color}`}>
+                            {statusInfo.label}
+                          </span>
+                        </td>
+                        <td className="py-4 px-6 align-top text-right">
+                          <button
+                            onClick={() => navigate('/authority/announcements')}
+                            className="text-sm font-semibold text-indigo-600 hover:text-indigo-900 hover:underline cursor-pointer"
+                          >
+                            Xử lý ngay
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })
+                ) : (
+                  <tr>
+                    <td colSpan={5} className="py-8 text-center text-gray-500">
+                      Không có tin báo nào
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
     </div>

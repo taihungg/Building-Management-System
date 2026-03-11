@@ -20,7 +20,7 @@ type ResidentAnnouncement = {
   read: boolean;
 };
 
-const API_BASE_URL = 'https://untoasted-jean-unsympathisingly.ngrok-free.dev';
+const API_BASE_URL = 'https://building-management-system.fly.dev';
 const SEEN_STORAGE_KEY = 'resident_seen_announcement_ids';
 const MAX_SEEN_IDS = 2000;
 const MAX_HEADER_NOTIFICATIONS = 10;

@@ -132,7 +132,7 @@ export function AccountingVoluntaryContribution() {
     const fetchCampaigns = useCallback(async () => {
         setIsLoadingCampaigns(true);
         try {
-            const response = await fetch('https://untoasted-jean-unsympathisingly.ngrok-free.dev/api/v1/campaigns', {
+            const response = await fetch('https://building-management-system.fly.dev/api/v1/campaigns', {
                 method: 'GET',
                 headers: {
                     'Content-Type': 'application/json',
@@ -176,7 +176,7 @@ export function AccountingVoluntaryContribution() {
         setIsDetailModalOpen(true);
         setIsDetailLoading(true);
         try {
-            const response = await fetch(`https://untoasted-jean-unsympathisingly.ngrok-free.dev/api/v1/campaigns/${campaignId}`, {
+            const response = await fetch(`https://building-management-system.fly.dev/api/v1/campaigns/${campaignId}`, {
                 method: 'GET',
                 headers: {
                     'Content-Type': 'application/json',
@@ -229,7 +229,7 @@ export function AccountingVoluntaryContribution() {
     const handleExportExcel = async (campaignId: string, campaignTitle: string) => {
         toast.info(`Đang xuất danh sách đóng góp: ${campaignTitle}`);
         try {
-            const response = await fetch(`https://untoasted-jean-unsympathisingly.ngrok-free.dev/api/v1/campaigns/${campaignId}/export/excel`, {
+            const response = await fetch(`https://building-management-system.fly.dev/api/v1/campaigns/${campaignId}/export/excel`, {
                 method: 'GET',
                 headers: {
                     'ngrok-skip-browser-warning': 'true'
@@ -275,7 +275,7 @@ export function AccountingVoluntaryContribution() {
 
         setIsCreateSubmitting(true);
         const action = async () => {
-            const response = await fetch('https://untoasted-jean-unsympathisingly.ngrok-free.dev/api/v1/campaigns', {
+            const response = await fetch('https://building-management-system.fly.dev/api/v1/campaigns', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' },
                 body: JSON.stringify({
@@ -328,7 +328,7 @@ export function AccountingVoluntaryContribution() {
 
         setIsEditSubmitting(true);
         const action = async () => {
-            const response = await fetch(`https://untoasted-jean-unsympathisingly.ngrok-free.dev/api/v1/campaigns/${selectedCampaignId}`, {
+            const response = await fetch(`https://building-management-system.fly.dev/api/v1/campaigns/${selectedCampaignId}`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' },
                 body: JSON.stringify({
@@ -370,7 +370,7 @@ export function AccountingVoluntaryContribution() {
         setIsDeleteSubmitting(true);
 
         const action = async () => {
-            const response = await fetch(`https://untoasted-jean-unsympathisingly.ngrok-free.dev/api/v1/campaigns/${deleteTargetId}`, {
+            const response = await fetch(`https://building-management-system.fly.dev/api/v1/campaigns/${deleteTargetId}`, {
                 method: 'DELETE',
                 headers: {
                     'Content-Type': 'application/json',
@@ -419,7 +419,7 @@ export function AccountingVoluntaryContribution() {
 
         setIsAddContributionSubmitting(true);
         const action = async () => {
-            const response = await fetch('https://untoasted-jean-unsympathisingly.ngrok-free.dev/api/v1/campaigns/contributions', {
+            const response = await fetch('https://building-management-system.fly.dev/api/v1/campaigns/contributions', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' },
                 body: JSON.stringify({

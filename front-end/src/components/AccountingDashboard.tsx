@@ -6,7 +6,7 @@ import { toast, Toaster } from 'sonner';
 export function AccountingDashboard() {
   const [isLoading, setIsLoading] = useState(false);
   const [monthlyRevenueData, setMonthlyRevenueData] = useState<any[]>([]);
-  
+
   // --- STATE MỚI: Chọn số tháng hiển thị (Mặc định 12) ---
   const [viewRange, setViewRange] = useState<number>(12);
 
@@ -30,7 +30,7 @@ export function AccountingDashboard() {
     const currentYear = new Date().getFullYear();
     try {
       const [metricsRes, barchartRes] = await Promise.all([
-        fetch(`https://untoasted-jean-unsympathisingly.ngrok-free.dev/api/v1/accounting/dashboard/fourmetrics`,{
+        fetch(`https://building-management-system.fly.dev/api/v1/accounting/dashboard/fourmetrics`, {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
@@ -38,7 +38,7 @@ export function AccountingDashboard() {
             'ngrok-skip-browser-warning': 'true'
           }
         }),
-        fetch(`https://untoasted-jean-unsympathisingly.ngrok-free.dev/api/v1/accounting/dashboard/barchart?year=${currentYear}`,{
+        fetch(`https://building-management-system.fly.dev/api/v1/accounting/dashboard/barchart?year=${currentYear}`, {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
@@ -121,18 +121,17 @@ export function AccountingDashboard() {
         <div className="col-span-2 bg-white rounded-xl p-6 border border-gray-200 shadow-sm">
           <div className="flex items-center justify-between mb-6">
             <h3 className="text-lg font-bold text-gray-900">Phân tích dòng tiền</h3>
-            
+
             {/* BỘ CHỌN KHOẢNG THỜI GIAN */}
             <div className="flex items-center gap-2 bg-gray-50 p-1 rounded-lg border border-gray-200">
               {[3, 6, 12].map((range) => (
                 <button
                   key={range}
                   onClick={() => setViewRange(range)}
-                  className={`px-3 py-1.5 text-xs font-bold rounded-md transition-all ${
-                    viewRange === range 
-                    ? 'bg-white text-blue-600 shadow-sm' 
-                    : 'text-gray-500 hover:text-gray-700'
-                  }`}
+                  className={`px-3 py-1.5 text-xs font-bold rounded-md transition-all ${viewRange === range
+                      ? 'bg-white text-blue-600 shadow-sm'
+                      : 'text-gray-500 hover:text-gray-700'
+                    }`}
                 >
                   {range} tháng
                 </button>
@@ -150,8 +149,8 @@ export function AccountingDashboard() {
                 <BarChart data={filteredChartData}>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
                   <XAxis dataKey="monthLabel" stroke="#9ca3af" fontSize={11} tickLine={false} axisLine={false} />
-                  <YAxis stroke="#9ca3af" fontSize={11} tickLine={false} axisLine={false} tickFormatter={(v) => v >= 1000000 ? `${v/1000000}M` : v} />
-                  <Tooltip cursor={{fill: '#f9fafb'}} formatter={(val: number) => formatCurrency(val)} />
+                  <YAxis stroke="#9ca3af" fontSize={11} tickLine={false} axisLine={false} tickFormatter={(v) => v >= 1000000 ? `${v / 1000000}M` : v} />
+                  <Tooltip cursor={{ fill: '#f9fafb' }} formatter={(val: number) => formatCurrency(val)} />
                   <Legend iconType="circle" verticalAlign="top" align="right" />
                   <Bar dataKey="revenue" fill="#3b82f6" name="Phải thu" radius={[4, 4, 0, 0]} barSize={viewRange === 3 ? 40 : 20} />
                   <Bar dataKey="paid" fill="#10b981" name="Thực thu" radius={[4, 4, 0, 0]} barSize={viewRange === 3 ? 40 : 20} />
@@ -167,7 +166,7 @@ export function AccountingDashboard() {
           <div style={{ width: '100%', height: '220px' }}>
             <ResponsiveContainer width="100%" height="100%">
               <RechartsPieChart>
-                <Pie data={pieData.length > 0 ? pieData : [{name: 'Trống', value: 1, color: '#f3f4f6'}]} innerRadius={60} outerRadius={85} paddingAngle={5} dataKey="value">
+                <Pie data={pieData.length > 0 ? pieData : [{ name: 'Trống', value: 1, color: '#f3f4f6' }]} innerRadius={60} outerRadius={85} paddingAngle={5} dataKey="value">
                   {pieData.map((entry, index) => <Cell key={index} fill={entry.color} />)}
                 </Pie>
                 <Tooltip formatter={(v, name) => [`${v} hóa đơn`, name]} />

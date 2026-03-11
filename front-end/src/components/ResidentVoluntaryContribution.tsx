@@ -36,7 +36,7 @@ export function ResidentVoluntaryContribution() {
     const [isLoadingCampaigns, setIsLoadingCampaigns] = useState(false);
     const [animate, setAnimate] = useState(false);
 
-    const API_BASE_URL = 'https://untoasted-jean-unsympathisingly.ngrok-free.dev';
+    const API_BASE_URL = 'https://building-management-system.fly.dev';
     const NGROK_HEADERS = {
         'Content-Type': 'application/json',
         'ngrok-skip-browser-warning': 'true',

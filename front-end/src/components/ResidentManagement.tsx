@@ -149,7 +149,7 @@ export function ResidentManagement() {
       const params = new URLSearchParams({
         include_inactive: String(shouldIncludeInactive),
       });
-      const url = `https://untoasted-jean-unsympathisingly.ngrok-free.dev/api/v1/residents?${params.toString()}`;
+      const url = `https://building-management-system.fly.dev/api/v1/residents?${params.toString()}`;
 
       const response = await fetch(url, {
         method: 'GET',
@@ -234,7 +234,7 @@ export function ResidentManagement() {
   const createResident = async (dataToCreate: any) => {
     try {
       // Thay sang domain ngrok mới
-      const response = await fetch('https://untoasted-jean-unsympathisingly.ngrok-free.dev/api/v1/residents', {
+      const response = await fetch('https://building-management-system.fly.dev/api/v1/residents', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -351,7 +351,7 @@ export function ResidentManagement() {
     const getApartmentDropDown = async () => {
       try {
         // Thay domain sang ngrok mới của chú
-        let url = `https://untoasted-jean-unsympathisingly.ngrok-free.dev/api/v1/apartments/dropdown?keyword=${encodeURIComponent(apartmentKeyword || "")}`;
+        let url = `https://building-management-system.fly.dev/api/v1/apartments/dropdown?keyword=${encodeURIComponent(apartmentKeyword || "")}`;
 
         const response = await fetch(url, {
           method: 'GET',
@@ -385,7 +385,7 @@ export function ResidentManagement() {
 
   const handleDelete = async (residentID: string, isHardDelete: boolean) => {
     const deleteAction = async () => {
-      let baseUrl = `https://untoasted-jean-unsympathisingly.ngrok-free.dev/api/v1/residents`;
+      let baseUrl = `https://building-management-system.fly.dev/api/v1/residents`;
       let url = `${baseUrl}?id=${residentID}`;
       if (isHardDelete) {
         url += '&hard=true';
@@ -455,7 +455,7 @@ export function ResidentManagement() {
       }
 
       // 1. Domain cho lệnh PUT (Cập nhật)
-      let url = `https://untoasted-jean-unsympathisingly.ngrok-free.dev/api/v1/residents/${selectedResident.id}`;
+      let url = `https://building-management-system.fly.dev/api/v1/residents/${selectedResident.id}`;
       const response = await fetch(url, {
         method: "PUT",
         headers: {
@@ -474,7 +474,7 @@ export function ResidentManagement() {
       await fetchResidents();
 
       // 2. Domain cho lệnh GET (Lấy chi tiết sau khi sửa)
-      const detailResponse = await fetch(`https://untoasted-jean-unsympathisingly.ngrok-free.dev/api/v1/residents/${selectedResident.id}`, {
+      const detailResponse = await fetch(`https://building-management-system.fly.dev/api/v1/residents/${selectedResident.id}`, {
         headers: {
           "ngrok-skip-browser-warning": "true" // Vượt rào ngrok
         }
@@ -503,7 +503,7 @@ export function ResidentManagement() {
       setIsCreatingAccount(true);
       try {
         // Thay domain sang ngrok mới của chú
-        const response = await fetch(`https://untoasted-jean-unsympathisingly.ngrok-free.dev/api/v1/residents/${selectedResident.id}/account`, {
+        const response = await fetch(`https://building-management-system.fly.dev/api/v1/residents/${selectedResident.id}/account`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -544,7 +544,7 @@ export function ResidentManagement() {
     setIsEditMode(false);
     try {
       // Thay domain sang ngrok mới của chú
-      const response = await fetch(`https://untoasted-jean-unsympathisingly.ngrok-free.dev/api/v1/residents/${id}`, {
+      const response = await fetch(`https://building-management-system.fly.dev/api/v1/residents/${id}`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -590,7 +590,7 @@ export function ResidentManagement() {
 
     try {
       // Thay domain sang ngrok mới của chú
-      const response = await fetch(`https://untoasted-jean-unsympathisingly.ngrok-free.dev/api/v1/residents/${resident.id}`, {
+      const response = await fetch(`https://building-management-system.fly.dev/api/v1/residents/${resident.id}`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -1313,8 +1313,8 @@ export function ResidentManagement() {
                     }}
                     disabled={isCreatingAccount}
                     className={`rounded-full px-6 shadow-lg disabled:opacity-100 ${hasAccount
-                        ? "bg-gray-200 text-gray-600 shadow-none cursor-default"
-                        : "bg-green-600 text-white"
+                      ? "bg-gray-200 text-gray-600 shadow-none cursor-default"
+                      : "bg-green-600 text-white"
                       }`}
                   >
                     <Users className="w-4 h-4 mr-2" /> {accountButtonLabel}

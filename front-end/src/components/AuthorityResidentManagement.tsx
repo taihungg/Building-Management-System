@@ -192,7 +192,7 @@ export function AuthorityResidentManagement() {
         params.append('include_inactive', 'true');
       }
       const queryString = params.toString();
-      let url = `https://untoasted-jean-unsympathisingly.ngrok-free.dev/api/v1/residents${queryString ? `?${queryString}` : ''}`;
+      let url = `https://building-management-system.fly.dev/api/v1/residents${queryString ? `?${queryString}` : ''}`;
 
       const response = await fetch(url, {
         method: 'GET',
@@ -307,7 +307,7 @@ export function AuthorityResidentManagement() {
     setIsViewModalOpen(true);
     setSelectedResident(null);
     try {
-      const response = await fetch(`https://untoasted-jean-unsympathisingly.ngrok-free.dev/api/v1/residents/${residentId}`, {
+      const response = await fetch(`https://building-management-system.fly.dev/api/v1/residents/${residentId}`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -529,14 +529,14 @@ export function AuthorityResidentManagement() {
                           const statusVi = mapStatusToVietnamese(statusApi);
                           return (
                             <span className={`inline-flex items-center justify-center px-3 py-1 rounded-full text-xs font-medium min-w-[100px] ${statusApi === 'PERMANENT_RESIDENCE'
-                                ? 'bg-green-100 text-green-800 border border-green-300'
-                                : statusApi === 'TEMPORARY_RESIDENCE'
-                                  ? 'bg-orange-100 text-orange-800 border border-orange-300'
-                                  : statusApi === 'TEMPORARY_ABSENCE'
-                                    ? 'bg-blue-100 text-blue-800 border border-blue-300'
-                                    : statusApi === 'VISITOR'
-                                      ? 'bg-purple-100 text-purple-800 border border-purple-300'
-                                      : 'bg-gray-100 text-gray-700 border border-gray-300'
+                              ? 'bg-green-100 text-green-800 border border-green-300'
+                              : statusApi === 'TEMPORARY_RESIDENCE'
+                                ? 'bg-orange-100 text-orange-800 border border-orange-300'
+                                : statusApi === 'TEMPORARY_ABSENCE'
+                                  ? 'bg-blue-100 text-blue-800 border border-blue-300'
+                                  : statusApi === 'VISITOR'
+                                    ? 'bg-purple-100 text-purple-800 border border-purple-300'
+                                    : 'bg-gray-100 text-gray-700 border border-gray-300'
                               }`}>
                               {statusVi || '-'}
                             </span>
